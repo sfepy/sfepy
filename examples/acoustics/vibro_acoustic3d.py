@@ -116,7 +116,7 @@ equations = {
       + %s * dw_surface_dot.5.GammaOut(q2, p2)
       - %s * dw_surface_dot.5.Gamma0_1(q1, g0)
       + %s * dw_surface_dot.5.Gamma0_2(q2, tr(g0))
-      = %s * dw_surface_integrate.5.GammaIn(q1)"""\
+      = %s * dw_integrate.5.GammaIn(q1)"""\
         % (c2, c2, w2, w2,
            1j * wc, 1j * wc,
            1j * wc2, 1j * wc2,

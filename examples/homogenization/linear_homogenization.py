@@ -124,7 +124,7 @@ options = {
     'coefs': 'coefs',
     'requirements': 'requirements',
     'ls': 'ls',  # linear solver to use
-    'volume': {'expression': 'd_volume.i.Y(u)'},
+    'volume': {'expression': 'd_region.i.Y(u)'},
     'output_dir': 'output',
     'coefs_filename': 'coefs_le',
     'recovery_hook': 'recovery_le',

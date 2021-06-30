@@ -53,7 +53,7 @@ def post_process(out, pb, state, extend=False):
 
         flux = pb.evaluate('d_surface_flux.i.%s(m.K, t)' % gamma,
                            verbose=False)
-        area = pb.evaluate('d_surface.i.%s(t)' % gamma, verbose=False)
+        area = pb.evaluate('d_region.i.%s(t)' % gamma, verbose=False)
 
         flux_data = (gamma, flux, area, flux / area)
         totals += flux_data[1:]
@@ -102,7 +102,7 @@ integrals = {
 equations = {
     'Temperature' : """
            dw_diffusion.i.Omega(m.K, s, t)
-         = dw_surface_integrate.i.Gamma_N(flux.val, s)
+         = dw_integrate.i.Gamma_N(flux.val, s)
     """
 }
 

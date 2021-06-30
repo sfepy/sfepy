@@ -280,7 +280,7 @@ Try to display them with:
     spause(r""">>>
 Then the volume of the domain is needed.
 ['q'/other key to quit/continue...]""")
-    volume = problem.evaluate('d_volume.i3.Y(uc)')
+    volume = problem.evaluate('d_region.i3.Y(uc)')
     print(volume)
 
     spause(r""">>>

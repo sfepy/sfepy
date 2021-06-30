@@ -59,12 +59,12 @@ equations = {
     'komp1': """dw_diffusion.5.Omega1(mat.K, q1, p1)
               + dw_volume_dot.5.Omega1(mat.G_alfa, q1, p1)
               - dw_volume_dot.5.Omega1(mat.G_alfa, q1, p2)
-              = dw_volume_integrate.5.Source(mat.f_1, q1)""",
+              = dw_integrate.5.Source(mat.f_1, q1)""",
 
     'komp2': """dw_diffusion.5.Omega2(mat.K, q2, p2)
               + dw_volume_dot.5.Omega2(mat.G_alfa, q2, p2)
               - dw_volume_dot.5.Omega2(mat.G_alfa, q2, p1)
-              = dw_volume_integrate.5.Sink(mat.f_2, q2)"""
+              = dw_integrate.5.Sink(mat.f_2, q2)"""
 }
 
 solvers = {
@@ -102,7 +102,7 @@ options = {
 }
 
 def postproc(out, pb, state, extend=False):
-    alpha = pb.evaluate('ev_volume_integrate_mat.5.Omega(mat.G_alfa, p1)',
+    alpha = pb.evaluate('ev_integrate_mat.5.Omega(mat.G_alfa, p1)',
                         mode='el_avg')
     out['alpha'] = Struct(name='output_data',
                           mode='cell',
