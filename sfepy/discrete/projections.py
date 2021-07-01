@@ -26,7 +26,7 @@ def create_mass_matrix(field):
     v = FieldVariable('v', 'test', field, primary_var_name='u')
 
     integral = Integral('i', order=field.approx_order * 2)
-    term = Term.new('dw_volume_dot(v, u)', integral, field.region, v=v, u=u)
+    term = Term.new('dw_dot(v, u)', integral, field.region, v=v, u=u)
     eq = Equation('aux', term)
     eqs = Equations([eq])
     eqs.time_update(None)
@@ -88,7 +88,7 @@ def make_l2_projection_data(target, eval_data, order=None,
     un = FieldVariable('u', 'unknown', target.field)
 
     v = FieldVariable('v', 'test', un.field, primary_var_name=un.name)
-    lhs = Term.new('dw_volume_dot(v, %s)' % un.name, integral,
+    lhs = Term.new('dw_dot(v, %s)' % un.name, integral,
                    un.field.region, v=v, **{un.name : un})
 
     def _eval_data(ts, coors, mode, **kwargs):
@@ -139,7 +139,7 @@ def make_h1_projection_data(target, eval_data):
 
     un = target.name
     v = FieldVariable('v', 'test', target.field, primary_var_name=un)
-    lhs1 = Term.new('dw_volume_dot(v, %s)' % un, integral,
+    lhs1 = Term.new('dw_dot(v, %s)' % un, integral,
                     target.field.region, v=v, **{un : target})
     lhs2 = Term.new('dw_laplace(v, %s)' % un, integral,
                     target.field.region, v=v, **{un : target})
