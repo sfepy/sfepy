@@ -400,7 +400,7 @@ class CauchyStrainTerm(Term):
     :Definition:
 
     .. math::
-        \int_{R} \ull{e}(\ul{w}) \mbox{, where } R \in \{\Omega, \Gamma\}
+        \int_{\cal{D}} \ull{e}(\ul{w})
 
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \ull{e}(\ul{w}) /
@@ -462,8 +462,7 @@ class CauchyStressTerm(Term):
     :Definition:
 
     .. math::
-        \int_{R} D_{ijkl} e_{kl}(\ul{w})
-        \mbox{, where } R \in \{\Omega, \Gamma\}
+        \int_{\cal{D}} D_{ijkl} e_{kl}(\ul{w})
 
     .. math::
         \mbox{vector for } K \from \Ical_h:

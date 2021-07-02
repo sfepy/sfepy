@@ -16,18 +16,18 @@ class DotProductTerm(Term):
     :Definition:
 
     .. math::
-        \int_{R} q p \mbox{ , } \int_{R} \ul{v} \cdot \ul{u}
+        \int_{\cal{D}} q p \mbox{ , } \int_{\cal{D}} \ul{v} \cdot \ul{u}
         \mbox{ , }
         \int_\Gamma \ul{v} \cdot \ul{n} p \mbox{ , }
         \int_\Gamma q \ul{n} \cdot \ul{u} \mbox{ , }
-        \int_{R} p r \mbox{ , } \int_{R} \ul{u} \cdot \ul{w}
+        \int_{\cal{D}} p r \mbox{ , } \int_{\cal{D}} \ul{u} \cdot \ul{w}
         \mbox{ , } \int_\Gamma \ul{w} \cdot \ul{n} p \\
-        \int_{R} c q p \mbox{ , } \int_{R} c \ul{v} \cdot \ul{u}
+        \int_{\cal{D}} c q p \mbox{ , } \int_{\cal{D}} c \ul{v} \cdot \ul{u}
         \mbox{ , }
-        \int_{R} c p r \mbox{ , } \int_{R} c \ul{u} \cdot \ul{w} \\
-        \int_{R} \ul{v} \cdot \ull{M} \cdot \ul{u}
+        \int_{\cal{D}} c p r \mbox{ , } \int_{\cal{D}} c \ul{u} \cdot \ul{w} \\
+        \int_{\cal{D}} \ul{v} \cdot \ull{M} \cdot \ul{u}
         \mbox{ , }
-        \int_{R} \ul{u} \cdot \ull{M} \cdot \ul{w}
+        \int_{\cal{D}} \ul{u} \cdot \ull{M} \cdot \ul{w}
 
     :Arguments 1:
         - material : :math:`c` or :math:`\ull{M}` (optional)

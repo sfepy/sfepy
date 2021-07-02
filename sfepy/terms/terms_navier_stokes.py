@@ -333,8 +333,7 @@ class GradTerm(Term):
     :Definition:
 
     .. math::
-        \int_{R} \nabla p \mbox{ or } \int_{R} \nabla \ul{w}
-        \mbox{, where } R \in \{\Omega, \Gamma\}
+        \int_{\cal{D}} \nabla p \mbox{ or } \int_{\cal{D}} \nabla \ul{w}
 
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
@@ -392,8 +391,7 @@ class DivTerm(Term):
     :Definition:
 
     .. math::
-         \int_{R} \nabla \cdot \ul{u}
-         \mbox{, where } R \in \{\Omega, \Gamma\}
+         \int_{\cal{D}} \nabla \cdot \ul{u}
 
     .. math::
          \mbox{vector for } K \from \Ical_h:

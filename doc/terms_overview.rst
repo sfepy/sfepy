@@ -26,6 +26,8 @@ The following notation is used:
      - volume (sub)domain
    * - :math:`\Gamma`
      - surface (sub)domain
+   * - :math:`\cal{D}`
+     - volume or surface (sub)domain
    * - :math:`d`
      - dimension of space
    * - :math:`t`

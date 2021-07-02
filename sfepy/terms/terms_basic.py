@@ -48,11 +48,10 @@ class IntegrateTerm(Term):
     :Definition:
 
     .. math::
-        \int_{R} y \mbox{ , } \int_{R} \ul{y}
+        \int_{\cal{D}} y \mbox{ , } \int_{\cal{D}} \ul{y}
         \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n}\\
-        \int_{R} c y \mbox{ , } \int_{R} c \ul{y}
+        \int_{\cal{D}} c y \mbox{ , } \int_{\cal{D}} c \ul{y}
         \mbox{ , } \int_\Gamma c \ul{y} \cdot \ul{n} \mbox{ flux }
-        \mbox{, where } R \in \{\Omega, \Gamma\}
 
     .. math::
         \mbox{vector for } K \from \Ical_h:
@@ -133,8 +132,7 @@ class IntegrateOperatorTerm(Term):
     :Definition:
 
     .. math::
-        \int_{R} q \mbox{ or } \int_\Omega c q
-        \mbox{, where } R \in \{\Omega, \Gamma\}
+        \int_{\cal{D}} q \mbox{ or } \int_{\cal{D}} c q
 
     :Arguments:
         - material : :math:`c` (optional)
@@ -171,7 +169,7 @@ class VolumeTerm(Term):
     :Definition:
 
     .. math::
-        \int_{R} 1 \mbox{, where } R \in \{\Omega, \Gamma\}
+        \int_{\cal{D}} 1
 
     :Arguments:
         - parameter : any variable
@@ -287,8 +285,7 @@ class IntegrateMatTerm(Term):
     :Definition:
 
     .. math::
-        \int_{R} m
-        \mbox{, where } R \in \{\Omega, \Gamma\}
+        \int_{\cal{D}} m
 
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1

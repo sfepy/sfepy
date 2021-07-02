@@ -295,8 +295,7 @@ class DiffusionVelocityTerm( Term ):
     :Definition:
 
     .. math::
-        - \int_{R} K_{ij} \nabla_j \bar{p}
-        \mbox{, where } R \in \{\Omega, \Gamma\}
+        - \int_{\cal{D}} K_{ij} \nabla_j \bar{p}
 
     .. math::
         \mbox{vector for } K \from \Ical_h: - \int_{T_K} K_{ij} \nabla_j \bar{p}
