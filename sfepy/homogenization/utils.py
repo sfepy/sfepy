@@ -270,7 +270,7 @@ def get_volume(problem, field_name, region_name, quad_order=1):
     var = FieldVariable('u', 'parameter', field, 1,
                         primary_var_name='(set-to-None)')
 
-    vol = problem.evaluate('d_region.%d.%s( u )' % (quad_order, region_name),
+    vol = problem.evaluate('ev_volume.%d.%s( u )' % (quad_order, region_name),
                            u=var)
 
     return vol

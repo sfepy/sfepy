@@ -176,7 +176,7 @@ class VolumeTerm(Term):
     :Arguments:
         - parameter : any variable
     """
-    name = 'd_region'
+    name = 'ev_volume'
     arg_types = ('parameter',)
     arg_shapes = [{'parameter' : 'N'}]
     integration = 'by_region'

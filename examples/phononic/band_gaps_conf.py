@@ -219,7 +219,7 @@ class BandGapsConf(Struct):
 
         expr_coefs = {
             'D' : """dw_lin_elastic.i.Y_m( m.D_m, u1_m, u2_m )""",
-            'VF' : """d_region.i.%s(aux)""",
+            'VF' : """ev_volume.i.%s(aux)""",
             'ema' : """ev_integrate.i.Y_c( m.density_c, u_c )""",
         }
 
@@ -402,7 +402,7 @@ class BandGapsRigidConf(BandGapsConf):
         }
 
         expr_coefs = {
-            'VF' : """d_region.i.%s(aux)""",
+            'VF' : """ev_volume.i.%s(aux)""",
             'ema' : """ev_integrate.i.Y_c( m.density_c, u )
                      + ev_integrate.i.Y_r( m.density_r, u )""",
         }

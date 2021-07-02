@@ -234,7 +234,7 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
         },
         'vol': {
             'regions': ['Ym', 'Yc1', 'Yc2'],
-            'expression': 'd_region.i2.%s(svar)',
+            'expression': 'ev_volume.i2.%s(svar)',
             'class': cb.VolumeFractions,
         },
         'eps0': {

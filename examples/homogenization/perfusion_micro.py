@@ -386,7 +386,7 @@ options = {
     'volumes': {
         'total': {
             'variables': ['vol_all'],
-            'expression': """d_region.iV.Y(vol_all)""",
+            'expression': """ev_volume.iV.Y(vol_all)""",
         },
         'one': {
             'value': 1.0,
@@ -404,11 +404,11 @@ for ipm in ['p', 'm']:
     options['volumes'].update({
         'bYM' + ipm: {
             'variables': ['pM'],
-            'expression': "d_region.iS.bYM%s(pM)" % ipm,
+            'expression': "ev_volume.iS.bYM%s(pM)" % ipm,
         },
         'bY' + ipm: {
             'variables': ['vol_all'],
-            'expression': "d_region.iS.bY%s(vol_all)" % ipm,
+            'expression': "ev_volume.iS.bY%s(vol_all)" % ipm,
         }
     })
 
@@ -417,14 +417,14 @@ for ch in six.iterkeys(reg_io):
         options['volumes'].update({
             ireg: {
                 'variables': ['p' + ch],
-                'expression': "d_region.iS.%s(p%s)" % (ireg, ch),
+                'expression': "ev_volume.iS.%s(p%s)" % (ireg, ch),
             }
         })
 
 coefs = {
     'vol_bYMpm': {
         'regions': ['bYMp', 'bYMm'],
-        'expression': 'd_region.iS.%s(pM)',
+        'expression': 'ev_volume.iS.%s(pM)',
         'class': cb.VolumeFractions,
     },
     'filenames': {},

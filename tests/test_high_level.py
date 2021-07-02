@@ -47,7 +47,7 @@ class Test(TestCommon):
         u = FieldVariable('u', 'parameter', self.field,
                           primary_var_name='(set-to-None)')
 
-        term = Term.new('d_region(u)', integral, self.omega, u=u)
+        term = Term.new('ev_volume(u)', integral, self.omega, u=u)
         term *= 10.0
 
         term.setup()
@@ -74,8 +74,8 @@ class Test(TestCommon):
         u = FieldVariable('u', 'parameter', self.field,
                           primary_var_name='(set-to-None)')
 
-        t1 = Term.new('d_region(u)', integral, self.omega, u=u)
-        t2 = Term.new('d_region(u)', integral, self.gamma1, u=u)
+        t1 = Term.new('ev_volume(u)', integral, self.omega, u=u)
+        t2 = Term.new('ev_volume(u)', integral, self.gamma1, u=u)
 
         expr = 2.2j * (t1 * 5.5 - 3j * t2) * 0.25
 

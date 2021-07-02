@@ -138,7 +138,7 @@ dim = 2
 options = {
     'coefs': 'coefs',
     'requirements': 'requirements',
-    'volume': {'expression': 'd_region.5.Y(u)'},
+    'volume': {'expression': 'ev_volume.5.Y(u)'},
     'output_dir': './output',
     'coefs_filename': 'coefs_hyper_homog',
     'multiprocessing': True,

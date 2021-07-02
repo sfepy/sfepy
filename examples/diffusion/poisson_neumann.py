@@ -53,7 +53,7 @@ def post_process(out, pb, state, extend=False):
 
         flux = pb.evaluate('d_surface_flux.i.%s(m.K, t)' % gamma,
                            verbose=False)
-        area = pb.evaluate('d_region.i.%s(t)' % gamma, verbose=False)
+        area = pb.evaluate('ev_volume.i.%s(t)' % gamma, verbose=False)
 
         flux_data = (gamma, flux, area, flux / area)
         totals += flux_data[1:]

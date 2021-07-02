@@ -21,8 +21,8 @@ regions = {
 }
 
 expressions = {
-    'volume_p' : 'd_region.i.Omega(p)',
-    'volume_u' : 'd_region.i.Omega(u)',
+    'volume_p' : 'ev_volume.i.Omega(p)',
+    'volume_u' : 'ev_volume.i.Omega(u)',
     'surface_p' : 'd_volume_surface.i.Gamma(p)',
     'surface_u' : 'd_volume_surface.i.Gamma(u)',
 }
