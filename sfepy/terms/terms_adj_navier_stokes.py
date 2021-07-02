@@ -229,7 +229,7 @@ class SDDotVolumeTerm(Term):
         - parameter_2 : :math:`q` or :math:`\ul{w}`
         - parameter_mv : :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_volume_dot'
+    name = 'ev_sd_volume_dot'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_mv')
     arg_shapes = [{'parameter_1' : 'D', 'parameter_2' : 'D',
                    'parameter_mv' : 'D'},
@@ -270,7 +270,7 @@ class SDDivTerm(Term):
         - parameter_p : :math:`p`
         - parameter_mv : :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_div'
+    name = 'ev_sd_div'
     arg_types = ('parameter_u', 'parameter_p', 'parameter_mv')
     arg_shapes = {'parameter_u' : 'D', 'parameter_p' : 1,
                   'parameter_mv' : 'D'}
@@ -316,7 +316,7 @@ class SDDivGradTerm(Term):
         - parameter_w : :math:`\ul{w}`
         - parameter_mv : :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_div_grad'
+    name = 'ev_sd_div_grad'
     arg_types = ('opt_material', 'parameter_u', 'parameter_w',
                  'parameter_mv')
     arg_shapes = [{'opt_material' : '1, 1',
@@ -364,7 +364,7 @@ class SDConvectTerm(Term):
         - parameter_w : :math:`\ul{w}`
         - parameter_mv : :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_convect'
+    name = 'ev_sd_convect'
     arg_types = ('parameter_u', 'parameter_w', 'parameter_mv')
     arg_shapes = {'parameter_u' : 'D', 'parameter_w' : 'D',
                   'parameter_mv' : 'D'}
@@ -424,7 +424,7 @@ class NSOFSurfMinDPressTerm(Term):
         - material_2 : :math:`bpress` (given pressure)
         - parameter  : :math:`p`
     """
-    name = 'd_of_ns_surf_min_d_press'
+    name = 'ev_of_ns_surf_min_d_press'
     arg_types = ('material_1', 'material_2', 'parameter')
     arg_shapes = {'material_1' : 1, 'material_2' : 1,
                   'parameter' : 1}
@@ -489,7 +489,7 @@ class SDGradDivStabilizationTerm(Term):
         - parameter_mv : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
-    name = 'd_sd_st_grad_div'
+    name = 'ev_sd_st_grad_div'
     arg_types = ('material', 'parameter_u', 'parameter_w',
                  'parameter_mv')
     arg_shapes = {'material' : '1, 1',
@@ -538,7 +538,7 @@ class SDSUPGCStabilizationTerm(Term):
         - parameter_mv : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
-    name = 'd_sd_st_supg_c'
+    name = 'ev_sd_st_supg_c'
     arg_types = ('material', 'parameter_b', 'parameter_u', 'parameter_w',
                 'parameter_mv')
     arg_shapes = {'material' : '1, 1',
@@ -586,7 +586,7 @@ class SDPSPGCStabilizationTerm(Term):
         - parameter_mv : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
-    name = 'd_sd_st_pspg_c'
+    name = 'ev_sd_st_pspg_c'
     arg_types = ('material', 'parameter_b', 'parameter_u', 'parameter_r',
                 'parameter_mv')
     arg_shapes = {'material' : '1, 1',
@@ -631,7 +631,7 @@ class SDPSPGPStabilizationTerm(Term):
         - parameter_mv : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
-    name = 'd_sd_st_pspg_p'
+    name = 'ev_sd_st_pspg_p'
     arg_types = ('material', 'parameter_r', 'parameter_p',
                 'parameter_mv')
     arg_shapes = {'material' : '1, 1',

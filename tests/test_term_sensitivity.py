@@ -54,14 +54,14 @@ materials = {
 equations = {}
 
 test_terms = [
-    ('d_sd_lin_elastic', 'dw_lin_elastic', 'Omega', 'mat.D', 'U1', 'U2'),
-    ('d_sd_volume_dot', 'dw_dot', 'Omega', None, 'U1', 'U2'),
-    ('d_sd_diffusion', 'dw_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
-    ('d_sd_div', 'dw_stokes', 'Omega', None, 'U1', 'P1'),
-    ('d_sd_div_grad', 'dw_div_grad', 'Omega', 'mat.c', 'U1', 'U2'),
-    ('d_sd_piezo_coupling', 'dw_piezo_coupling', 'Omega', 'mat.g', 'U1', 'P1'),
-    ('d_sd_convect', 'de_convect', 'Omega', None, 'U1', 'U2'),
-    ('d_sd_surface_ltr', 'dw_surface_ltr', 'Interface', 'mat.s', 'U1', None),
+    ('ev_sd_lin_elastic', 'dw_lin_elastic', 'Omega', 'mat.D', 'U1', 'U2'),
+    ('ev_sd_volume_dot', 'dw_dot', 'Omega', None, 'U1', 'U2'),
+    ('ev_sd_diffusion', 'dw_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
+    ('ev_sd_div', 'dw_stokes', 'Omega', None, 'U1', 'P1'),
+    ('ev_sd_div_grad', 'dw_div_grad', 'Omega', 'mat.c', 'U1', 'U2'),
+    ('ev_sd_piezo_coupling', 'dw_piezo_coupling', 'Omega', 'mat.g', 'U1', 'P1'),
+    ('ev_sd_convect', 'de_convect', 'Omega', None, 'U1', 'U2'),
+    ('ev_sd_surface_ltr', 'dw_surface_ltr', 'Interface', 'mat.s', 'U1', None),
 ]
 
 

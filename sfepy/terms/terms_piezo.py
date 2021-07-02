@@ -112,7 +112,7 @@ class SDPiezoCouplingTerm(ETermBase):
         - parameter_p : :math:`p`
         - parameter_mv : :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_piezo_coupling'
+    name = 'ev_sd_piezo_coupling'
     arg_types = ('material', 'parameter_u', 'parameter_p', 'parameter_mv')
     arg_shapes = {'material': 'D, S', 'parameter_u': 'D', 'parameter_p': 1,
                   'parameter_mv': 'D'}

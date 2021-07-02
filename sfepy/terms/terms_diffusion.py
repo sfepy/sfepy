@@ -95,7 +95,7 @@ class SDDiffusionTerm(Term):
         - parameter_p: :math:`p`
         - parameter_mesh_velocity: :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_diffusion'
+    name = 'ev_sd_diffusion'
     arg_types = ('material', 'parameter_q', 'parameter_p',
                  'parameter_mesh_velocity')
     arg_shapes = {'material' : 'D, D',
@@ -369,7 +369,7 @@ class SurfaceFluxTerm(Term):
         - material: :math:`\ul{K}`
         - parameter:  :math:`\bar{p}`,
     """
-    name = 'd_surface_flux'
+    name = 'ev_surface_flux'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'D, D', 'parameter' : 1}
     integration = 'surface_extra'

@@ -211,7 +211,7 @@ class VolumeSurfaceTerm(Term):
     :Arguments:
         - parameter : any variable
     """
-    name = 'd_volume_surface'
+    name = 'ev_volume_surface'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'N'}
     integration = 'surface'
@@ -247,7 +247,7 @@ class SurfaceMomentTerm(Term):
         - material  : :math:`\ul{x}_0` (special)
         - parameter : any variable
     """
-    name = 'd_surface_moment'
+    name = 'ev_surface_moment'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : '.: D', 'parameter' : 'N'}
     integration = 'surface'
@@ -339,7 +339,7 @@ class SumNodalValuesTerm(Term):
     :Arguments:
         - parameter : :math:`p` or :math:`\ul{u}`
     """
-    name = 'd_sum_vals'
+    name = 'ev_sum_vals'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'N'}
 
