@@ -1088,10 +1088,10 @@ class ETermBase(Term):
                                     kind='ndarray')
         return normals
 
-class EIntegrateVolumeOperatorTerm(ETermBase):
+class EIntegrateOperatorTerm(ETermBase):
     r"""
-    Volume integral of a test function weighted by a scalar function
-    :math:`c`.
+    Volume and surface integral of a test function weighted by a scalar
+    function :math:`c`.
 
     :Definition:
 
@@ -1102,10 +1102,11 @@ class EIntegrateVolumeOperatorTerm(ETermBase):
         - material : :math:`c` (optional)
         - virtual  : :math:`q`
     """
-    name = 'de_volume_integrate'
+    name = 'de_integrate'
     arg_types = ('opt_material', 'virtual')
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                   {'opt_material' : None}]
+    integration = 'by_region'
 
     def get_function(self, mat, virtual, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
@@ -1164,23 +1165,23 @@ class ELaplaceTerm(ETermBase):
 
         return fun
 
-class EVolumeDotTerm(ETermBase):
+class EDotTerm(ETermBase):
     r"""
-    Volume :math:`L^2(\Omega)` weighted dot product for both scalar and vector
-    fields. Can be evaluated. Can use derivatives.
+    Volume and surface :math:`L^2(\Omega)` weighted dot product for both
+    scalar and vector fields. Can be evaluated. Can use derivatives.
 
     :Definition:
 
     .. math::
-        \int_\Omega q p \mbox{ , } \int_\Omega \ul{v} \cdot \ul{u}
+        \int_{\cal{D}} q p \mbox{ , } \int_{\cal{D}} \ul{v} \cdot \ul{u}
         \mbox{ , }
-        \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w} \\
-        \int_\Omega c q p \mbox{ , } \int_\Omega c \ul{v} \cdot \ul{u}
+        \int_{\cal{D}} p r \mbox{ , } \int_{\cal{D}} \ul{u} \cdot \ul{w} \\
+        \int_{\cal{D}} c q p \mbox{ , } \int_{\cal{D}} c \ul{v} \cdot \ul{u}
         \mbox{ , }
-        \int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w} \\
-        \int_\Omega \ul{v} \cdot \ull{M} \cdot \ul{u}
+        \int_{\cal{D}} c p r \mbox{ , } \int_{\cal{D}} c \ul{u} \cdot \ul{w} \\
+        \int_{\cal{D}} \ul{v} \cdot \ull{M} \cdot \ul{u}
         \mbox{ , }
-        \int_\Omega \ul{u} \cdot \ull{M} \cdot \ul{w}
+        \int_{\cal{D}} \ul{u} \cdot \ull{M} \cdot \ul{w}
 
     :Arguments 1:
         - material : :math:`c` or :math:`\ull{M}` (optional)
@@ -1192,7 +1193,7 @@ class EVolumeDotTerm(ETermBase):
         - parameter_1 : :math:`p` or :math:`\ul{u}`
         - parameter_2 : :math:`r` or :math:`\ul{w}`
     """
-    name = 'de_volume_dot'
+    name = 'de_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
@@ -1203,6 +1204,7 @@ class EVolumeDotTerm(ETermBase):
                   {'opt_material' : 'D, D'},
                   {'opt_material' : None}]
     modes = ('weak', 'eval')
+    integration = 'by_region'
 
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
@@ -1224,36 +1226,6 @@ class EVolumeDotTerm(ETermBase):
 
         return fun
 
-class ESurfaceDotTerm(EVolumeDotTerm):
-    r"""
-    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
-    fields.
-
-    :Definition:
-
-    .. math::
-        \int_\Gamma q p \mbox{ , } \int_\Gamma \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w} \\
-        \int_\Gamma c q p \mbox{ , } \int_\Gamma c \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w} \\
-        \int_\Gamma \ul{v} \cdot \ull{M} \cdot \ul{u}
-        \mbox{ , }
-        \int_\Gamma \ul{u} \cdot \ull{M} \cdot \ul{w}
-
-    :Arguments 1:
-        - material : :math:`c` or :math:`\ull{M}` (optional)
-        - virtual  : :math:`q` or :math:`\ul{v}`
-        - state    : :math:`p` or :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`c` or :math:`\ull{M}` (optional)
-        - parameter_1 : :math:`p` or :math:`\ul{u}`
-        - parameter_2 : :math:`r` or :math:`\ul{w}`
-    """
-    name = 'de_surface_dot'
-    integration = 'surface'
 
 class EScalarDotMGradScalarTerm(ETermBase):
     r"""
