@@ -1585,7 +1585,7 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
 - compute volume of a region (`u` is any variable defined in the region
   `Omega`)::
 
-    volume = problem.evaluate('d_volume.2.Omega(u)')
+    volume = problem.evaluate('ev_volume.2.Omega(u)')
 
 Probing
 -------
