@@ -599,8 +599,8 @@ evaluation mode needs to have the following attributes and methods:
 - `name` attribute - the name to be used in `equations`;
 - `arg_types` attribute - the types of arguments the term accepts;
 - `integration` attribute, optional - the kind of integral the term
-  implements, one of `'volume'` (the default, if not given), `'surface'` or
-  `'surface_extra'`;
+  implements, one of `'volume'` (the default, if not given), `'surface'`,
+  `'surface_extra'` or `'by_region'`;
 - `function()` static method - the assembling function;
 - `get_fargs()` method - the method that takes term arguments and
   converts them to arguments for `function()`.
@@ -634,7 +634,10 @@ The integration kinds have the following meaning:
   uses surface face connectivity for assembling;
 - `'surface_extra'` for surface integral over a region that contains
   faces; uses volume element connectivity for assembling - this is
-  needed if full gradients of a variable are required on the boundary.
+  needed if full gradients of a variable are required on the boundary;
+- `'by_region'` -  the integration mode is determined by the region kind,
+  The term attribute 'surface_integration' allows to set `'surface_extra'`
+  integration for surface regions.
 
 `function()`
 """"""""""""
@@ -744,13 +747,13 @@ Examples
 ^^^^^^^^
 
 Let us now discuss the implementation of a simple weak term
-`dw_volume_integrate` defined as :math:`\int_\Omega c q`, where :math:`c` is a
+`dw_integrate` defined as :math:`\int_{\cal{D}} c q`, where :math:`c` is a
 weight (material parameter) and :math:`q` is a virtual variable. This term is
 implemented as follows::
 
-    class IntegrateVolumeOperatorTerm(Term):
+    class IntegrateOperatorTerm(Term):
         r"""
-        Volume integral of a test function weighted by a scalar function
+        Integral of a test function weighted by a scalar function
         :math:`c`.
 
         :Definition:
@@ -762,10 +765,11 @@ implemented as follows::
             - material : :math:`c` (optional)
             - virtual  : :math:`q`
         """
-        name = 'dw_volume_integrate'
+        name = 'dw_integrate'
         arg_types = ('opt_material', 'virtual')
         arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                       {'opt_material' : None}]
+        integration = 'by_region'
 
         @staticmethod
         def function(out, material, bf, geo):
@@ -789,7 +793,8 @@ implemented as follows::
 - line 16: the argument types - here the term takes a single material
   parameter, and a virtual variable;
 - lines 17-18: the possible argument shapes
-- lines 20-28: the term function
+- line 19: the integration mode is choosen according to a given domain
+- lines 21-29: the term function
 
   - its arguments are:
 
@@ -800,20 +805,20 @@ implemented as follows::
       a reference element and
     - a reference element (geometry) mapping `geo`.
 
-  - line 22: transpose the base function and tile it so that is has
+  - line 23: transpose the base function and tile it so that is has
     the correct shape - it is repeated for each element;
-  - line 23: ensure C contiguous order;
-  - lines 24-27: perform numerical integration in C - `geo.integrate()`
+  - line 24: ensure C contiguous order;
+  - lines 25-28: perform numerical integration in C - `geo.integrate()`
     requires the C contiguous order;
-  - line 28: return the status.
+  - line 29: return the status.
 
-- lines 30-35: prepare arguments for the function above:
+- lines 31-36: prepare arguments for the function above:
 
-  - line 32: verify that the variable is scalar, as our implementation
+  - line 33: verify that the variable is scalar, as our implementation
     does not support vectors;
-  - line 33: get reference element mapping corresponding to the virtual
+  - line 34: get reference element mapping corresponding to the virtual
     variable;
-  - line 35: return the arguments for the function.
+  - line 36: return the arguments for the function.
 
 A more complex term that involves an unknown variable and has two call modes,
 is `dw_s_dot_mgrad_s`, defined as :math:`\int_{\Omega} q \ul{y} \cdot \nabla p`
@@ -951,24 +956,24 @@ the original :ref:`original_term_examples`, using
 Examples
 ^^^^^^^^
 
-- `de_volume_integrate` defined as :math:`\int_\Omega c q`, where :math:`c` is
+- `de_integrate` defined as :math:`\int_\Omega c q`, where :math:`c` is
   a weight (material parameter) and :math:`q` is a virtual variable::
 
-    class EIntegrateVolumeOperatorTerm(ETermBase):
+    class EIntegrateOperatorTerm(ETermBase):
         r"""
-        Volume integral of a test function weighted by a scalar function
-        :math:`c`.
+        Volume and surface integral of a test function weighted by a scalar
+        function :math:`c`.
 
         :Definition:
 
         .. math::
-            \int_\Omega q \mbox{ or } \int_\Omega c q
+          \int_{\cal{D}} q \mbox{ or } \int_{\cal{D}} c q
 
         :Arguments:
             - material : :math:`c` (optional)
             - virtual  : :math:`q`
         """
-        name = 'de_volume_integrate'
+        name = 'de_integrate'
         arg_types = ('opt_material', 'virtual')
         arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                       {'opt_material' : None}]
