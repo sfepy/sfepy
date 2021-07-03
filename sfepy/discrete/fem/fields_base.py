@@ -443,6 +443,11 @@ class FEField(Field):
         dim = region.dim
 
         if integration in ('surface', 'surface_extra'):
+            if region_name not in self.surface_data:
+                reg = self.domain.regions[region_name]
+                self.domain.create_surface_group(reg)
+                self.setup_surface_data(reg, False, None)
+
             sd = self.surface_data[region_name]
 
             # This works also for surface fields.

@@ -29,7 +29,7 @@ def get_conductivity(ts, coors, problem, equations=None, mode=None, **kwargs):
     if mode == 'qp':
         # T-field values in quadrature points coordinates given by integral i
         # - they are the same as in `coors` argument.
-        T_values = problem.evaluate('ev_volume_integrate.i.Omega(T)',
+        T_values = problem.evaluate('ev_integrate.i.Omega(T)',
                                     mode='qp', verbose=False)
         val = 2 + 10 * (T_values + 2)
 

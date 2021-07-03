@@ -49,7 +49,7 @@ def get_pars(ts, coor, mode=None, term=None, **kwargs):
             val = nm.zeros((sym, 1), dtype=nm.float64)
             val[:dim] = 0.132
             val[dim:sym] = 0.092
-        elif 'volume_dot' in term.name:
+        elif '_dot' in term.name:
             val = 1.0 / nm.array([3.8], dtype=nm.float64)
         elif 'diffusion' in term.name:
             val = nm.eye(dim, dtype=nm.float64)
@@ -72,7 +72,7 @@ test_terms = [
      ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us', 'ts'))),
     ('%s_diffusion.i.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
-    ('%s_volume_dot.i.Omega( m.val, %s, %s )',
+    ('%s_dot.i.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
 ]
 
@@ -209,7 +209,7 @@ class Test(TestCommon):
         vec[:] = 1.0
         us.set_data(vec)
 
-        expr = 'ev_surface_integrate.i.Left( us )'
+        expr = 'ev_integrate.i.Left( us )'
         val = problem.evaluate(expr, us=us)
         ok1 = nm.abs(val - 1.0) < 1e-15
         self.report('with unknown: %s, value: %s, ok: %s'
@@ -219,7 +219,7 @@ class Test(TestCommon):
                             primary_var_name='(set-to-None)')
         ps1.set_data(vec)
 
-        expr = 'ev_surface_integrate.i.Left( ps1 )'
+        expr = 'ev_integrate.i.Left( ps1 )'
         val = problem.evaluate(expr, ps1=ps1)
         ok2 = nm.abs(val - 1.0) < 1e-15
         self.report('with parameter: %s, value: %s, ok: %s'

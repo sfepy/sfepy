@@ -214,13 +214,13 @@ class BandGapsConf(Struct):
         }
         equations['evp'] = {
             'lhs' : """dw_lin_elastic.i.Y_c( m.D_c, v_c, u_c )""",
-            'rhs' : """dw_volume_dot.i.Y_c( m.density_c, v_c, u_c )""",
+            'rhs' : """dw_dot.i.Y_c( m.density_c, v_c, u_c )""",
         }
 
         expr_coefs = {
             'D' : """dw_lin_elastic.i.Y_m( m.D_m, u1_m, u2_m )""",
-            'VF' : """d_volume.i.%s(aux)""",
-            'ema' : """ev_volume_integrate.i.Y_c( m.density_c, u_c )""",
+            'VF' : """ev_volume.i.%s(aux)""",
+            'ema' : """ev_integrate.i.Y_c( m.density_c, u_c )""",
         }
 
         return equations, expr_coefs
@@ -397,14 +397,14 @@ class BandGapsRigidConf(BandGapsConf):
         equations['evp'] = {
             'lhs' : """dw_lin_elastic.i.Y_c( m.D_c, v, u )
                      + dw_lin_elastic.i.Y_r( m.D_r, v, u )""",
-            'rhs' : """dw_volume_dot.i.Y_c( m.density_c, v, u )
-                     + dw_volume_dot.i.Y_r( m.density_r, v, u )""",
+            'rhs' : """dw_dot.i.Y_c( m.density_c, v, u )
+                     + dw_dot.i.Y_r( m.density_r, v, u )""",
         }
 
         expr_coefs = {
-            'VF' : """d_volume.i.%s(aux)""",
-            'ema' : """ev_volume_integrate.i.Y_c( m.density_c, u )
-                     + ev_volume_integrate.i.Y_r( m.density_r, u )""",
+            'VF' : """ev_volume.i.%s(aux)""",
+            'ema' : """ev_integrate.i.Y_c( m.density_c, u )
+                     + ev_integrate.i.Y_r( m.density_r, u )""",
         }
 
         return equations, expr_coefs

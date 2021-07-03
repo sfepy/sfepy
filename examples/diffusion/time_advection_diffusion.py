@@ -52,7 +52,7 @@ integrals = {
 equations = {
     'advection-diffusion' :
      """
-       dw_volume_dot.i.Omega(s, du/dt)
+       dw_dot.i.Omega(s, du/dt)
      + dw_advect_div_free.i.Omega(m.v, s, u)
      + dw_laplace.i.Omega(m.D, s, u)
      = 0

@@ -75,7 +75,7 @@ equations = {
     'Laplace equation' :
     """dw_laplace.i.Omega( m.c, v, u )
      - dw_convect_v_grad_s.i.Omega( v, w, u )
-     = - dw_volume_dot.i.Omega_L( load.f, v, p )"""
+     = - dw_dot.i.Omega_L( load.f, v, p )"""
 }
 
 solvers = {

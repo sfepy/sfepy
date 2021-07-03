@@ -522,7 +522,7 @@ class CorrEqPar(CorrOne):
     Example:
 
         'equations': 'dw_diffusion.5.Y(mat.k, q, p) =
-                      dw_surface_integrate.5.%s(q)',
+                      dw_integrate.5.%s(q)',
         'eq_pars': ('bYMp', 'bYMm'),
         'class': cb.CorrEqPar,
 

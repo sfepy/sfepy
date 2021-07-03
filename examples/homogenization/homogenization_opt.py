@@ -109,7 +109,7 @@ def define(is_opt=False):
     options = {
         'coefs': 'coefs',
         'requirements': 'requirements',
-        'volume': { 'variables' : ['u'], 'expression' : 'd_volume.5.Y( u )' },
+        'volume': { 'variables' : ['u'], 'expression' : 'ev_volume.5.Y( u )' },
         'output_dir': 'output',
         'coefs_filename': 'coefs_le',
     }
@@ -130,7 +130,7 @@ def define(is_opt=False):
         },
         'vol': {
             'regions': ['Ym', 'Yf'],
-            'expression': 'd_volume.5.%s(u)',
+            'expression': 'ev_volume.5.%s(u)',
             'class': cb.VolumeFractions,
             },
         'filenames' : {},

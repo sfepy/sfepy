@@ -386,7 +386,7 @@ options = {
     'volumes': {
         'total': {
             'variables': ['vol_all'],
-            'expression': """d_volume.iV.Y(vol_all)""",
+            'expression': """ev_volume.iV.Y(vol_all)""",
         },
         'one': {
             'value': 1.0,
@@ -404,11 +404,11 @@ for ipm in ['p', 'm']:
     options['volumes'].update({
         'bYM' + ipm: {
             'variables': ['pM'],
-            'expression': "d_surface.iS.bYM%s(pM)" % ipm,
+            'expression': "ev_volume.iS.bYM%s(pM)" % ipm,
         },
         'bY' + ipm: {
             'variables': ['vol_all'],
-            'expression': "d_surface.iS.bY%s(vol_all)" % ipm,
+            'expression': "ev_volume.iS.bY%s(vol_all)" % ipm,
         }
     })
 
@@ -417,14 +417,14 @@ for ch in six.iterkeys(reg_io):
         options['volumes'].update({
             ireg: {
                 'variables': ['p' + ch],
-                'expression': "d_surface.iS.%s(p%s)" % (ireg, ch),
+                'expression': "ev_volume.iS.%s(p%s)" % (ireg, ch),
             }
         })
 
 coefs = {
     'vol_bYMpm': {
         'regions': ['bYMp', 'bYMm'],
-        'expression': 'd_surface.iS.%s(pM)',
+        'expression': 'ev_volume.iS.%s(pM)',
         'class': cb.VolumeFractions,
     },
     'filenames': {},
@@ -448,7 +448,7 @@ for ipm in ['p', 'm']:
             'epbcs': all_periodicYM,
             'equations': {
                 'eq_gamma_pm': """dw_diffusion.iV.YM(mat2M.k, qM, pM) =
-                             %e * dw_surface_integrate.iS.bYM%s(qM)"""
+                             %e * dw_integrate.iS.bYM%s(qM)"""
                                % (1.0/param_h, ipm),
                 },
             'class': cb.CorrOne,
@@ -461,7 +461,7 @@ for ipm in ['p', 'm']:
             'H' + ipm + ipm2: {  # test+
                 'requires': ['corrs_gamma_' + ipm],
                 'set_variables': [('corr_M', 'corrs_gamma_' + ipm, 'pM')],
-                'expression': 'ev_surface_integrate.iS.bYM%s(corr_M)' % ipm2,
+                'expression': 'ev_integrate.iS.bYM%s(corr_M)' % ipm2,
                 'set_volume': 'bYp',
                 'class': cb.CoefOne,
             },
@@ -561,10 +561,10 @@ for ch, val in six.iteritems(pb_def['channels']):
             'lcbcs': ['imv' + ch],
             'equations': {
                 'eq_pi': """dw_diffusion.iV.Y%s(mat2%s.k, q%s, p%s)
-                            + dw_volume_dot.iV.Y%s(q%s, ls%s)
+                            + dw_dot.iV.Y%s(q%s, ls%s)
                             = - dw_diffusion.iV.Y%s(mat2%s.k, q%s, Pi_%s)"""
                             % ((ch,) * 11),
-                'eq_imv': 'dw_volume_dot.iV.Y%s(lv%s, p%s) = 0' % ((ch,) * 3),
+                'eq_imv': 'dw_dot.iV.Y%s(lv%s, p%s) = 0' % ((ch,) * 3),
             },
             'dim': pb_def['dim'] - 1,
             'class': cb.CorrDim,
@@ -577,7 +577,7 @@ for ch, val in six.iteritems(pb_def['channels']):
             'E' + ipm + ch: {  # test+
                 'requires': ['corrs_eta' + ch],
                 'set_variables': [('corr_M', 'corrs_eta' + ch, 'pM')],
-                'expression': 'ev_surface_integrate.iS.bYM%s(corr_M)' % ipm,
+                'expression': 'ev_integrate.iS.bYM%s(corr_M)' % ipm,
                 'set_volume': 'bYp',
                 'class': cb.CoefOne,
             },
@@ -586,7 +586,7 @@ for ch, val in six.iteritems(pb_def['channels']):
                 'set_variables': [('corr1_M', 'corrs_one' + ch, 'pM'),
                                   ('corr2_M', 'corrs_gamma_' + ipm, 'pM')],
                 'expression': """dw_diffusion.iV.YM(mat2M.k, corr1_M, corr2_M)
-                          - %e * ev_surface_integrate.iS.bYM%s(corr1_M)"""\
+                          - %e * ev_integrate.iS.bYM%s(corr1_M)"""\
                                  % (1.0/param_h, ipm),
                 'class': cb.CoefOne,
             },
@@ -607,7 +607,7 @@ for ch, val in six.iteritems(pb_def['channels']):
             'P' + io: {  # test+
                 'requires': ['pis_' + ch, 'corrs_pi' + ch],
                 'set_variables': set_corr_cc,
-                'expression': 'ev_surface_integrate.iS.bY%s(corr1_%s)'\
+                'expression': 'ev_integrate.iS.bY%s(corr1_%s)'\
                               % (io, ch),
                 'set_volume': 'bYp',
                 'dim': pb_def['dim'] - 1,
@@ -616,7 +616,7 @@ for ch, val in six.iteritems(pb_def['channels']):
             'S_test' + io: {
                 'requires': ['corrs_pi' + ch],
                 'set_variables': [('corr1_' + ch, 'corrs_pi' + ch, 'p' + ch)],
-                'expression': '%e * ev_surface_integrate.iS.bY%s(corr1_%s)'\
+                'expression': '%e * ev_integrate.iS.bY%s(corr1_%s)'\
                               % (1.0 / param_h, io, ch),
                 'dim': pb_def['dim'] - 1,
                 'class': cb.CoefDim,
@@ -632,10 +632,10 @@ for ch, val in six.iteritems(pb_def['channels']):
                 'lcbcs': ['imv' + ch],
                 'equations': {
                     'eq_gamma': """dw_diffusion.iV.Y%s(mat2%s.k, q%s, p%s)
-                                   + dw_volume_dot.iV.Y%s(q%s, ls%s)
-                                   = %e * dw_surface_integrate.iS.bY%s(q%s)"""
+                                   + dw_dot.iV.Y%s(q%s, ls%s)
+                                   = %e * dw_integrate.iS.bY%s(q%s)"""
                                     % ((ch,) * 7 + (1.0/param_h, io, ch)),
-                    'eq_imv': 'dw_volume_dot.iV.Y%s(lv%s, p%s) = 0'
+                    'eq_imv': 'dw_dot.iV.Y%s(lv%s, p%s) = 0'
                               % ((ch,) * 3),
                 },
                 'class': cb.CorrOne,
@@ -651,7 +651,7 @@ for ch, val in six.iteritems(pb_def['channels']):
                     'requires': ['corrs_gamma_' + io2],
                     'set_variables': [('corr1_' + ch, 'corrs_gamma_' + io2,
                                        'p' + ch)],
-                    'expression': 'ev_surface_integrate.iS.bY%s(corr1_%s)'\
+                    'expression': 'ev_integrate.iS.bY%s(corr1_%s)'\
                                   % (io, ch),
                     'set_volume': 'bYp',
                     'class': cb.CoefOne,

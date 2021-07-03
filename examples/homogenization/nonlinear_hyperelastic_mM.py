@@ -16,7 +16,7 @@ def post_process(out, pb, state, extend=False):
         pass
     else:
         pb.update_materials_flag = 2
-        stress = pb.evaluate('ev_volume_integrate_mat.1.Omega(solid.S, u)',
+        stress = pb.evaluate('ev_integrate_mat.1.Omega(solid.S, u)',
                              mode='el_avg')
 
         out['cauchy_stress'] = Struct(name='output_data',
@@ -24,7 +24,7 @@ def post_process(out, pb, state, extend=False):
                                       data=stress,
                                       dofs=None)
 
-        strain = pb.evaluate('ev_volume_integrate_mat.1.Omega(solid.E, u)',
+        strain = pb.evaluate('ev_integrate_mat.1.Omega(solid.E, u)',
                              mode='el_avg')
 
         out['green_strain'] = Struct(name='output_data',

@@ -254,7 +254,7 @@ def define(plot=False):
                = 0""",
         'volume'
             : """dw_tl_volume.2.Omega(q, u)
-               = dw_volume_dot.2.Omega(q, omega)""",
+               = dw_dot.2.Omega(q, omega)""",
     }
 
     solvers = {

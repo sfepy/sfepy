@@ -208,7 +208,7 @@ ics = {
 
 equations = {
     'balance_of_forces' :
-    """dw_volume_dot.i.Omega(solid.rho, ddv, ddu)
+    """dw_dot.i.Omega(solid.rho, ddv, ddu)
      + dw_zero.i.Omega(dv, du)
      + dw_lin_elastic.i.Omega(solid.D, v, u) = 0""",
 }

@@ -81,7 +81,7 @@ integral_1 = {
 
 equations = {
     'Temperature' :
-    """dw_volume_dot.i.Omega( s, dT/dt )
+    """dw_dot.i.Omega( s, dT/dt )
      + dw_laplace.i.Omega( coef.val, s, T ) = 0"""
 }
 

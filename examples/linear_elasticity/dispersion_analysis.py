@@ -180,7 +180,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
         'S' : 'dw_elastic_wave.i.Omega(m.D, wave.vec, v, u)',
         'R' : """1j * dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, u, v)
                - 1j * dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, v, u)""",
-        'M' : 'dw_volume_dot.i.Omega(m.density, v, u)',
+        'M' : 'dw_dot.i.Omega(m.density, v, u)',
     }
 
     solver_0 = solver_conf.copy()
@@ -199,11 +199,11 @@ def set_wave_dir(pb, wdir):
     wave_mat.set_extra_args(wdir=wdir)
 
 def save_materials(output_dir, pb, options):
-    stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
+    stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
     young, poisson = mc.youngpoisson_from_stiffness(stiffness,
                                                     plane=options.plane)
-    density = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.density, u)',
+    density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
                           mode='el_avg', copy_materials=False, verbose=False)
 
     out = {}
@@ -216,11 +216,11 @@ def save_materials(output_dir, pb, options):
     pb.save_state(materials_filename, out=out)
 
 def get_std_wave_fun(pb, options):
-    stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
+    stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
     young, poisson = mc.youngpoisson_from_stiffness(stiffness,
                                                     plane=options.plane)
-    density = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.density, u)',
+    density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
                           mode='el_avg', copy_materials=False, verbose=False)
 
     lam, mu = mc.lame_from_youngpoisson(young, poisson,

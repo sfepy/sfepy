@@ -333,7 +333,7 @@ class GradTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} \nabla p \mbox{ or } \int_{\Omega} \nabla \ul{w}
+        \int_{\cal{D}} \nabla p \mbox{ or } \int_{\cal{D}} \nabla \ul{w}
 
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
@@ -349,6 +349,8 @@ class GradTerm(Term):
     name = 'ev_grad'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'N'}
+    integration = 'by_region'
+    surface_integration = 'surface_extra'
 
     @staticmethod
     def function(out, grad, vg, fmode):
@@ -380,12 +382,6 @@ class GradTerm(Term):
 
         return (n_el, n_qp, dim, n_c), parameter.dtype
 
-class SurfaceGradTerm(GradTerm):
-    __doc__ = GradTerm.__doc__.replace('Omega', 'Gamma')
-
-    name = 'ev_surface_grad'
-    integration = 'surface_extra'
-
 class DivTerm(Term):
     r"""
     Evaluate divergence of a vector field.
@@ -395,7 +391,7 @@ class DivTerm(Term):
     :Definition:
 
     .. math::
-         \int_{\Omega} \nabla \cdot \ul{u}
+         \int_{\cal{D}} \nabla \cdot \ul{u}
 
     .. math::
          \mbox{vector for } K \from \Ical_h:
@@ -410,6 +406,8 @@ class DivTerm(Term):
     name = 'ev_div'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'D'}
+    integration = 'by_region'
+    surface_integration = 'surface_extra'
 
     @staticmethod
     def function(out, div, vg, fmode):
@@ -440,12 +438,6 @@ class DivTerm(Term):
             n_qp = 1
 
         return (n_el, n_qp, 1, 1), parameter.dtype
-
-class SurfaceDivTerm(DivTerm):
-    __doc__ = DivTerm.__doc__.replace('Omega', 'Gamma')
-
-    name = 'ev_surface_div'
-    integration = 'surface_extra'
 
 class DivOperatorTerm(Term):
     r"""

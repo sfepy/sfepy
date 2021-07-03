@@ -55,17 +55,17 @@ def verify_tractions(out, problem, state, extend=False):
     from sfepy.discrete import Material, Function
 
     load_force = problem.evaluate(
-        'ev_surface_integrate_mat.2.Right(load.val, u)'
+        'ev_integrate_mat.2.Right(load.val, u)'
     )
     output('surface load force:', load_force)
 
     def eval_force(region_name):
         strain = problem.evaluate(
-            'ev_cauchy_strain_s.i.%s(u)' % region_name, mode='qp',
+            'ev_cauchy_strain.i.%s(u)' % region_name, mode='qp',
             verbose=False,
         )
         D = problem.evaluate(
-            'ev_surface_integrate_mat.i.%s(solid.D, u)' % region_name,
+            'ev_integrate_mat.i.%s(solid.D, u)' % region_name,
             mode='qp',
             verbose=False,
         )
@@ -86,7 +86,7 @@ def verify_tractions(out, problem, state, extend=False):
         aux = Material('aux', function=Function('get_force', get_force))
 
         middle_force = - problem.evaluate(
-            'ev_surface_integrate_mat.i.%s(aux.force, u)' % region_name,
+            'ev_integrate_mat.i.%s(aux.force, u)' % region_name,
             aux=aux,
             verbose=False,
         )

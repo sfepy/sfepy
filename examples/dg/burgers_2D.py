@@ -237,7 +237,7 @@ def define(filename_mesh=None,
 
     equations = {
       'balance':
-         "dw_volume_dot.i.Omega(v, p)" +
+         "dw_dot.i.Omega(v, p)" +
          # non-linear hyperbolic terms
          " - dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, p[-1], v)" +
          " + dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, p[-1])" +

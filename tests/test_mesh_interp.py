@@ -246,7 +246,7 @@ class Test(TestCommon):
             qps = get_physical_qps(omega, integral)
             coors = qps.values
 
-            term = Term.new('ev_volume_integrate(u)', integral, omega, u=u)
+            term = Term.new('ev_integrate(u)', integral, omega, u=u)
             term.setup()
             val1 = term.evaluate(mode='qp')
             val1 = val1.ravel()

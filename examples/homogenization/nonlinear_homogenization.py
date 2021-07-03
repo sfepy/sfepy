@@ -22,7 +22,7 @@ def recovery_hook(pb, ncoors, region, ts,
         out = {}
         pb.set_mesh_coors(ncoors[ii], update_fields=True,
                           clear_all=False, actual=True)
-        stress = pb.evaluate('ev_volume_integrate_mat.3.Y(mat_he.S, u)',
+        stress = pb.evaluate('ev_integrate_mat.3.Y(mat_he.S, u)',
                              mode='el_avg')
 
         out['cauchy_stress'] = Struct(name='output_data',
@@ -30,7 +30,7 @@ def recovery_hook(pb, ncoors, region, ts,
                                       data=stress,
                                       dofs=None)
 
-        strain = pb.evaluate('ev_volume_integrate_mat.3.Y(mat_he.E, u)',
+        strain = pb.evaluate('ev_integrate_mat.3.Y(mat_he.E, u)',
                              mode='el_avg')
 
         out['green_strain'] = Struct(name='output_data',
@@ -138,7 +138,7 @@ dim = 2
 options = {
     'coefs': 'coefs',
     'requirements': 'requirements',
-    'volume': {'expression': 'd_volume.5.Y(u)'},
+    'volume': {'expression': 'ev_volume.5.Y(u)'},
     'output_dir': './output',
     'coefs_filename': 'coefs_hyper_homog',
     'multiprocessing': True,
@@ -201,7 +201,7 @@ coefs = {
         'class': cb.CoefNonSymNonSym,
     },
     'S': {
-        'expression': 'ev_volume_integrate_mat.3.Y(mat_he.S, u)',
+        'expression': 'ev_integrate_mat.3.Y(mat_he.S, u)',
         'class': cb.CoefOne,
     }
 }

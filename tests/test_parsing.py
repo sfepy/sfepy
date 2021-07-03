@@ -12,7 +12,7 @@ class Test(TestCommon):
         from sfepy.discrete.parse_equations import create_bnf
 
         test_strs = [
-            """- d_volume.i1.Omega(uc)""",
+            """- ev_volume.i1.Omega(uc)""",
             """- 2 * dw_term.i1.Omega(uc)
              = - 3.0 * dw_term2.i1.Omega2(uc)""",
             """2 * dw_term.i1.Omega(uc)

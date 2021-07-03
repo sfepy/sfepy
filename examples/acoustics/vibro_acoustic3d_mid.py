@@ -99,18 +99,18 @@ materials = {
 
 equations = {
     'eq_3': """
-        %e * dw_volume_dot.5.Gamma0(ac.c, z, g0)
-      - %e * dw_volume_dot.5.Gamma0(ac.T, z, w)
-      - %e * dw_volume_dot.5.Gamma0(ac.hR, z, w)
+        %e * dw_dot.5.Gamma0(ac.c, z, g0)
+      - %e * dw_dot.5.Gamma0(ac.T, z, w)
+      - %e * dw_dot.5.Gamma0(ac.hR, z, w)
            + dw_diffusion.5.Gamma0(ac.hG, z, w)
            - dw_v_dot_grad_s.5.Gamma0(ac.hG, theta, z)
       = 0"""\
         % (w2, w2, w2),
     'eq_4': """
-      - %e * dw_volume_dot.5.Gamma0(ac.h3R, nu, theta)
+      - %e * dw_dot.5.Gamma0(ac.h3R, nu, theta)
            + dw_lin_elastic.5.Gamma0(ac.h3C, nu, theta)
            - dw_v_dot_grad_s.5.Gamma0(ac.hG, nu, w)
-           + dw_volume_dot.5.Gamma0(ac.hG, nu, theta)
+           + dw_dot.5.Gamma0(ac.hG, nu, theta)
       = 0"""\
         % (w2, ),
     }

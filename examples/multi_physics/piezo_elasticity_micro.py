@@ -47,7 +47,7 @@ def recovery_micro(pb, corrs, macro):
         for jj in range(dim):
             kk = coor_to_sym(ii, jj, dim)
             mvar['svar'].set_data(macro['strain'][:, kk])
-            mac_e_Ymc = pb.evaluate('ev_volume_integrate.i2.Ymc(svar)',
+            mac_e_Ymc = pb.evaluate('ev_integrate.i2.Ymc(svar)',
                                     mode='el_avg',
                                     var_dict={'svar': mvar['svar']})
 
@@ -234,7 +234,7 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
         },
         'vol': {
             'regions': ['Ym', 'Yc1', 'Yc2'],
-            'expression': 'd_volume.i2.%s(svar)',
+            'expression': 'ev_volume.i2.%s(svar)',
             'class': cb.VolumeFractions,
         },
         'eps0': {
