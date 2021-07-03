@@ -300,7 +300,7 @@ def main(cli_args):
         'dw_tl_volume(q, u)',
         integral, omega, q=q, u=u, term_mode='volume')
     term_volume = Term.new(
-        'dw_volume_integrate(q)',
+        'dw_integrate(q)',
         integral, omega, q=q)
 
     eq_balance = Equation('balance', term_neohook+term_mooney+term_pressure)
