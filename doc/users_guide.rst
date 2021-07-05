@@ -1409,7 +1409,7 @@ The weak formulation of :eq:`eq_laplace` is: Find :math:`T \in V`, such that
 where we assume no fluxes over :math:`\partial \Omega \setminus \Gamma`. In the
 syntax used in *SfePy* input files, this can be written as::
 
-    dw_volume_dot.i.Omega( s, dT/dt ) + dw_laplace.i.Omega( coef, s, T) = 0
+    dw_dot.i.Omega( s, dT/dt ) + dw_laplace.i.Omega( coef, s, T) = 0
 
 which directly corresponds to the discrete version of :eq:`eq_wlaplace`: Find
 :math:`\bm{T} \in V_h`, such that
@@ -1574,7 +1574,7 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
     def post_process(out, pb, state, extend=False):
         from sfepy.base.base import Struct
 
-        mu = pb.evaluate('ev_volume_integrate_mat.2.Omega(nonlinear.mu, u)',
+        mu = pb.evaluate('ev_integrate_mat.2.Omega(nonlinear.mu, u)',
                          mode='el_avg', copy_materials=False, verbose=False)
         out['mu'] = Struct(name='mu', mode='cell', data=mu, dofs=None)
 

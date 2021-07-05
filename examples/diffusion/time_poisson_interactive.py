@@ -172,7 +172,7 @@ def main():
 
     t1 = Term.new('dw_diffusion(m.diffusivity, s, T)',
                   integral, omega, m=m, s=s, T=T)
-    t2 = Term.new('dw_volume_dot(s, dT/dt)',
+    t2 = Term.new('dw_dot(s, dT/dt)',
                   integral, omega, s=s, T=T)
     eq = Equation('balance', t1 + t2)
     eqs = Equations([eq])

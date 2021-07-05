@@ -215,7 +215,7 @@ def main():
     integral = Integral('i', order=2*options.order)
 
     t1 = Term.new('dw_lin_elastic(m.D, v, u)', integral, omega, m=m, v=v, u=u)
-    t2 = Term.new('dw_volume_dot(m.rho, v, u)', integral, omega, m=m, v=v, u=u)
+    t2 = Term.new('dw_dot(m.rho, v, u)', integral, omega, m=m, v=v, u=u)
     eq1 = Equation('stiffness', t1)
     eq2 = Equation('mass', t2)
     lhs_eqs = Equations([eq1, eq2])
