@@ -1,9 +1,11 @@
 from sfepy.terms.terms_dot import DotProductTerm
 from sfepy.terms.terms_basic import IntegrateTerm, IntegrateOperatorTerm,\
-    VolumeTerm, IntegrateMatTerm
+    VolumeTerm, IntegrateMatTerm, VolumeSurfaceTerm, SurfaceMomentTerm,\
+    SumNodalValuesTerm
 from sfepy.terms.terms_elastic import CauchyStrainTerm
 from sfepy.terms.terms_navier_stokes import GradTerm, DivTerm
-
+from sfepy.terms.terms_diffusion import SurfaceFluxTerm
+from sfepy.terms.terms_adj_navier_stokes import SDDotTerm
 
 # deprecated names, will be removed in future
 
@@ -57,3 +59,22 @@ class SurfaceGradTerm(GradTerm):
 
 class SurfaceDivTerm(DivTerm):
     name = 'ev_surface_div'
+
+
+class DVolumeSurfaceTerm(VolumeSurfaceTerm):
+    name = 'd_volume_surface'
+
+
+class DSurfaceMomentTerm(SurfaceMomentTerm):
+    name = 'd_surface_moment'
+
+
+class DSumNodalValuesTerm(SumNodalValuesTerm):
+    name = 'd_sum_vals'
+
+
+class DSurfaceFluxTerm(SurfaceFluxTerm):
+    name = 'd_surface_flux'
+
+class SDVolumeDotTerm(SDDotTerm):
+    name = 'ev_sd_volume_dot'

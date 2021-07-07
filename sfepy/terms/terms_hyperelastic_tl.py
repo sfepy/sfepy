@@ -724,7 +724,7 @@ class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
         - parameter_1 : :math:`p`
         - parameter_2 : :math:`\ul{u}^{(n-1)}`
     """
-    name = 'd_tl_surface_flux'
+    name = 'ev_tl_surface_flux'
     arg_types = ('material_1', 'material_2', 'parameter_1', 'parameter_2')
     arg_shapes = {'material_1' : 'D, D', 'material_2' : '1, 1',
                   'parameter_1' : 1, 'parameter_2' : 'D'}
@@ -824,7 +824,7 @@ class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
     :Arguments:
         - parameter : :math:`\ul{u}`
     """
-    name = 'd_tl_volume_surface'
+    name = 'ev_tl_volume_surface'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'D'}
     family_data_names = ['det_f', 'inv_f']

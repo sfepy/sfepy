@@ -51,7 +51,7 @@ def post_process(out, pb, state, extend=False):
     totals = nm.zeros(3)
     for gamma in ['Gamma_N', 'Gamma_N0', 'Gamma_D']:
 
-        flux = pb.evaluate('d_surface_flux.i.%s(m.K, t)' % gamma,
+        flux = pb.evaluate('ev_surface_flux.i.%s(m.K, t)' % gamma,
                            verbose=False)
         area = pb.evaluate('ev_volume.i.%s(t)' % gamma, verbose=False)
 

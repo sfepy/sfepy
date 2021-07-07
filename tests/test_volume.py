@@ -23,8 +23,8 @@ regions = {
 expressions = {
     'volume_p' : 'ev_volume.i.Omega(p)',
     'volume_u' : 'ev_volume.i.Omega(u)',
-    'surface_p' : 'd_volume_surface.i.Gamma(p)',
-    'surface_u' : 'd_volume_surface.i.Gamma(u)',
+    'surface_p' : 'ev_volume_surface.i.Gamma(p)',
+    'surface_u' : 'ev_volume_surface.i.Gamma(u)',
 }
 
 import numpy as nm
@@ -88,7 +88,7 @@ class Test(TestCommon):
         vval = self.problem.evaluate('dw_tl_volume.i.Omega( q, u )',
                                      term_mode='volume', q=var_q, u=var_u)
 
-        sval = self.problem.evaluate('d_tl_volume_surface.i.Gamma( u )',
+        sval = self.problem.evaluate('ev_tl_volume_surface.i.Gamma( u )',
                                      u=var_u)
 
         ok = abs(vval - sval) < 1e-14

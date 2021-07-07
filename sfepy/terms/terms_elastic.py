@@ -152,7 +152,7 @@ class SDLinearElasticTerm(Term):
         - parameter_u : :math:`\ul{u}`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_lin_elastic'
+    name = 'ev_sd_lin_elastic'
     arg_types = ('material', 'parameter_w', 'parameter_u',
                  'parameter_mesh_velocity')
     arg_shapes = {'material' : 'S, S',

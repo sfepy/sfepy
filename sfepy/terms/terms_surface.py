@@ -121,7 +121,7 @@ class SDLinearTractionTerm(Term):
         - parameter : :math:`\ul{v}`
     """
 
-    name = 'd_sd_surface_ltr'
+    name = 'ev_sd_surface_ltr'
     arg_types = ('opt_material', 'parameter', 'parameter_mv')
     arg_shapes = [{'opt_material': 'S, 1', 'parameter': 'D',
                    'parameter_mv': 'D'}, {'opt_material': '1, 1'},
@@ -555,7 +555,7 @@ class SDSufaceIntegrateTerm(Term):
         - parameter : :math:`p`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_surface_integrate'
+    name = 'ev_sd_surface_integrate'
     arg_types = ('parameter', 'parameter_mesh_velocity')
     arg_shapes = {'parameter' : 1, 'parameter_mesh_velocity' : 'D'}
     integration = 'surface'

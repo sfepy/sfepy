@@ -104,16 +104,11 @@ Term names are (usually) prefixed according to the following conventions:
      - `'weak'`
      - terms having a virtual (test) argument and zero or more unknown
        arguments, used for FE assembling
-   * - d
-     - discrete
-     - `'eval'`, `'el_eval'`
-     - terms having all arguments known, the result is the value of the term
-       integral evaluation
    * - ev
      - evaluate
      - `'eval'`, `'el_eval'`, `'el_avg'`, `'qp'`
-     - terms having all arguments known and supporting all evaluation modes
-       except `'weak'` (no virtual variables in arguments, no FE assembling)
+     - terms having all arguments known, modes `'el_avg'`, `'qp'` are not
+       supported by all `ev_` terms
    * - de
      - discrete einsum
      - any (work in progress)
