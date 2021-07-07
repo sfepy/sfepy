@@ -214,7 +214,7 @@ class SUPGPAdj2StabilizationTerm(Term):
 
         return grad_u, state(), mat, vg_u, vg_r, conn_r, fmode
 
-class SDDotVolumeTerm(Term):
+class SDDotTerm(Term):
     r"""
     Sensitivity (shape derivative) of dot product of scalars or vectors.
 
@@ -229,7 +229,7 @@ class SDDotVolumeTerm(Term):
         - parameter_2 : :math:`q` or :math:`\ul{w}`
         - parameter_mv : :math:`\ul{\Vcal}`
     """
-    name = 'ev_sd_volume_dot'
+    name = 'ev_sd_dot'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_mv')
     arg_shapes = [{'parameter_1' : 'D', 'parameter_2' : 'D',
                    'parameter_mv' : 'D'},

@@ -55,7 +55,7 @@ equations = {}
 
 test_terms = [
     ('ev_sd_lin_elastic', 'dw_lin_elastic', 'Omega', 'mat.D', 'U1', 'U2'),
-    ('ev_sd_volume_dot', 'dw_dot', 'Omega', None, 'U1', 'U2'),
+    ('ev_sd_dot', 'dw_dot', 'Omega', None, 'U1', 'U2'),
     ('ev_sd_diffusion', 'dw_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
     ('ev_sd_div', 'dw_stokes', 'Omega', None, 'U1', 'P1'),
     ('ev_sd_div_grad', 'dw_div_grad', 'Omega', 'mat.c', 'U1', 'U2'),

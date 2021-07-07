@@ -5,6 +5,7 @@ from sfepy.terms.terms_basic import IntegrateTerm, IntegrateOperatorTerm,\
 from sfepy.terms.terms_elastic import CauchyStrainTerm
 from sfepy.terms.terms_navier_stokes import GradTerm, DivTerm
 from sfepy.terms.terms_diffusion import SurfaceFluxTerm
+from sfepy.terms.terms_adj_navier_stokes import SDDotTerm
 
 # deprecated names, will be removed in future
 
@@ -74,3 +75,6 @@ class DSumNodalValuesTerm(SumNodalValuesTerm):
 
 class DSurfaceFluxTerm(SurfaceFluxTerm):
     name = 'd_surface_flux'
+
+class SDVolumeDotTerm(SDDotTerm):
+    name = 'ev_sd_volume_dot'
