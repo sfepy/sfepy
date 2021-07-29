@@ -40,6 +40,9 @@
    - Semi-automatic generation of finite element meshes from CT/MR scans stored
      in the DICOM file format: http://sfepy.org/dicom2fem
    - PUCGen (Periodic Unit Cell Generator): https://github.com/sfepy/pucgen
+   - Utilities to run parametric studies in parallel, and to scoop the output
+     files produced by the studies into a dataframe:
+     https://github.com/rc/soops
 
    Citing
    ------
