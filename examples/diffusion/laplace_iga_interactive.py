@@ -13,11 +13,11 @@ Usage Examples
 
 Default options, storing results in this file's parent directory::
 
-  $ python3 laplace_iga_interactive.py
+  $ python3 examples/diffusion/laplace_iga_interactive.py
 
 Command line options for tweaking the geometry of the NURBS-patch & more::
 
-  $ python3 laplace_iga_interactive.py --R1=0.7 --C2=0.1,0.1 --viewpatch
+  $ python3 examples/diffusion/laplace_iga_interactive.py --R1=0.7 --C2=0.1,0.1 --viewpatch
 
 View the results using::
 
@@ -86,8 +86,8 @@ def create_patch(R1, R2, C1, C2, order=2, viewpatch=False):
     srf = ruled(c1,c2).transpose() # make the radial direction first
 
     # Refinement
-    insert_U = insertUniformly(srf.knots[0], 8)
-    insert_V = insertUniformly(srf.knots[1], 4)
+    insert_U = insert_uniformly(srf.knots[0], 6)
+    insert_V = insert_uniformly(srf.knots[1], 6)
     srf.refine(0, insert_U).refine(1, insert_V)
 
     # Setting the NURBS-surface degree
@@ -115,9 +115,10 @@ def create_patch(R1, R2, C1, C2, order=2, viewpatch=False):
             iplt.plot(srf)
             iplt.show()
 
-def insertUniformly(U,n):
+def insert_uniformly(U, n):
     """
     Find knots to uniformly add to U.
+    [Code from igakit/demo/venturi.py file]
 
     Given a knot vector U and the number of uniform spans desired,
     find the knots which need to be inserted.
@@ -200,8 +201,9 @@ def main():
     R2 = eval(options.R2)
     C1 = list(eval(options.C1))
     C2 = list(eval(options.C2))
+    order = options.order
     viewpatch = options.viewpatch
-    create_patch(R1, R2, C1, C2, viewpatch=viewpatch)
+    create_patch(R1, R2, C1, C2, order=order, viewpatch=viewpatch)
 
     # Setting a Domain instance
     filename_domain = data_dir + '/meshes/iga/concentric_circles.iga'
@@ -210,18 +212,16 @@ def main():
     # Sub-domains
     omega = domain.create_region('Omega', 'all')
     Gamma_out = domain.create_region('Gamma_out', 'vertices of set xi01',
-                                    kind='facet')
-
+                                     kind='facet')
     Gamma_in = domain.create_region('Gamma_in', 'vertices of set xi00',
                                     kind='facet')
 
     # Field (featuring order elevation)
-    order = 3
     order_increase = order - domain.nurbs.degrees[0]
     order_increase *= int(order_increase>0)
     field = Field.from_args('fu', nm.float64, 'scalar', omega,
-                            approx_order='iga+{:d}'.format(order_increase),
-                            space='H1', poly_space_base='iga')
+                            approx_order='iga', space='H1',
+                            poly_space_base='iga')
 
     # Variables
     u = FieldVariable('u', 'unknown', field) # unknown function
