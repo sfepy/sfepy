@@ -81,8 +81,13 @@ def create_patch(R1, R2, C1, C2, order=2, viewpatch=False):
     assert inter_centers<R2-R1, "Circles are not nested"
 
     # Geometry Creation
-    c1 = circle(radius=R1, center=C1, angle=2*pi)
-    c2 = circle(radius=R2, center=C2, angle=2*pi)
+    centers_direction = [C2[0]-C1[0], C2[1]-C1[1]]
+    if centers_direction[0]==0 and centers_direction[1]==0:
+        start_angle = 0.0
+    else:
+        start_angle = nm.arctan2(centers_direction[1], centers_direction[0])
+    c1 = circle(radius=R1, center=C1, angle=(start_angle, start_angle+ 2*pi))
+    c2 = circle(radius=R2, center=C2, angle=(start_angle, start_angle+ 2*pi))
     srf = ruled(c1,c2).transpose() # make the radial direction first
 
     # Refinement
