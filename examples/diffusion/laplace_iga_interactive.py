@@ -8,6 +8,18 @@ This script allows the creation of a customisable NURBS surface using igakit
 built-in CAD routines, which is then saved in custom HDF5-based files with
 .iga extension.
 
+Notes
+-----
+
+The ``create_patch`` function creates a NURBS-patch of the area between two
+coplanar nested circles using igakit CAD built-in routines. The created patch
+is not connected in the orthoradial direction. This is a problem when the
+disconnected boundary is not perpendicular to the line connecting the two
+centres of the circles, as the solution then exhibits a discontinuity along
+this line. A workaround for this issue is to enforce perpendicularity by
+changing the start angle in function ``igakit.cad.circle`` (see the code down
+below for the actual trick). The discontinuity disappears.
+
 Usage Examples
 --------------
 
@@ -45,7 +57,7 @@ from sfepy.solvers.nls import Newton
 
 def create_patch(R1, R2, C1, C2, order=2, viewpatch=False):
     """
-    Create a single 2d NURBS-patch  of the area between two coplanar nested
+    Create a single 2d NURBS-patch of the area between two coplanar nested
     circles using igakit.
 
     Parameters
