@@ -86,8 +86,8 @@ def create_patch(R1, R2, C1, C2, order=2, viewpatch=False):
         start_angle = 0.0
     else:
         start_angle = nm.arctan2(centers_direction[1], centers_direction[0])
-    c1 = circle(radius=R1, center=C1, angle=(start_angle, start_angle+ 2*pi))
-    c2 = circle(radius=R2, center=C2, angle=(start_angle, start_angle+ 2*pi))
+    c1 = circle(radius=R1, center=C1, angle=(start_angle, start_angle + 2*pi))
+    c2 = circle(radius=R2, center=C2, angle=(start_angle, start_angle + 2*pi))
     srf = ruled(c1,c2).transpose() # make the radial direction first
 
     # Refinement
