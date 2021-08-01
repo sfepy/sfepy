@@ -264,6 +264,12 @@ def main():
     out, err = check_output('%s examples/diffusion/laplace_refine_interactive.py output' % cmd)
     eok += report(out, '...', -3, 5, '2.675866e-15', eps=1e-13)
 
+    out, err = check_output('%s examples/diffusion/laplace_iga_interactive.py -o output-tests' % cmd)
+    eok += report(out, '...', -3, 5, '1.028134e-13', eps=1e-12)
+
+    out, err = check_output('%s examples/dg/imperative_burgers_1D.py -o output-tests' % cmd)
+    eok += report(out, '...', -3, 3, 'moment_1D_limiter')
+
     out, err = check_output('mpiexec -n 2 %s examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor' % cmd)
     eok += report(out, '...', -2, 4, '8.021313824020e-07', eps=1e-6)
 
