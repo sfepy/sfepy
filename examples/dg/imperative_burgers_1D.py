@@ -26,23 +26,31 @@ from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_dg_solvers import TVDRK3StepSolver
 from sfepy.terms.terms_dg import Term
 
-parser = argparse.ArgumentParser(
-    description='Solve Burgers equation and display animated results, '
-                'change script code to modify the problem.',
-    epilog='(c) 2019 T. Zitka , Man-machine Interaction at NTC UWB')
-
-
-def main(argv):
+def parse_args(argv=None):
     if argv is None:
-        argv = sys.argv[1:]
-    args = parser.parse_args(argv)
+        argv = sys.argv
+
+    parser = argparse.ArgumentParser(
+        description='Solve Burgers equation and display animated results, '
+                    'change script code to modify the problem.',
+        epilog='(c) 2019 T. Zitka , Man-machine Interaction at NTC UWB')
+    parser.add_argument('-o', '--output-dir', default='.',
+                        help='output directory')
+    parser.add_argument('-p', '--plot',
+                        action='store_true', dest='plot',
+                        default=False, help='plot animated results')
+    options = parser.parse_args(argv[1:])
+    return options
+
+def main(argv=None):
+    options = parse_args(argv=argv)
 
     # vvvvvvvvvvvvvvvv #
     approx_order = 2
     # ^^^^^^^^^^^^^^^^ #
 
     # Setup output names
-    outputs_folder = "../outputs"
+    outputs_folder = options.output_dir
 
     domain_name = "domain_1D"
     problem_name = "iburgers_1D"
@@ -221,10 +229,11 @@ def main(argv):
     # ----------
     # | Plot 1D|
     # ----------
-    load_and_plot_fun(output_folder, domain_name,
-                      t0, t1, min(tn, save_timestn),
-                      ic_fun)
+    if options.plot:
+        load_and_plot_fun(output_folder, domain_name,
+                          t0, t1, min(tn, save_timestn),
+                          ic_fun)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()
