@@ -55,8 +55,8 @@
      - Plain text:
 
        Cimrman, R., Lukeš, V., Rohan, E., 2019. Multiscale finite element
-       calculations in Python using SfePy. Adv Comput Math.
-       https://doi.org/10.1007/s10444-019-09666-0
+       calculations in Python using SfePy. Advances in Computational
+       Mathematics 45, 1897-1921. https://doi.org/10.1007/s10444-019-09666-0
 
        (preprint: https://arxiv.org/abs/1810.00674)
 
