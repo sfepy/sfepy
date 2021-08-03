@@ -40,37 +40,66 @@
    - Semi-automatic generation of finite element meshes from CT/MR scans stored
      in the DICOM file format: http://sfepy.org/dicom2fem
    - PUCGen (Periodic Unit Cell Generator): https://github.com/sfepy/pucgen
+   - Utilities to run parametric studies in parallel, and to scoop the output
+     files produced by the studies into a dataframe:
+     https://github.com/rc/soops
 
    Citing
    ------
 
    If you would like to cite the SfePy package in a paper or presentation, the
-   following reference (`full-text link <https://rdcu.be/bCn16>`_) can be used:
+   following references can be used:
 
-   - Plain text:
+   - General article:
 
-     Cimrman, R., Lukeš, V., Rohan, E., 2019. Multiscale finite element
-     calculations in Python using SfePy. Adv Comput Math.
-     https://doi.org/10.1007/s10444-019-09666-0
+     - Plain text:
 
-   - BibTeX::
+       Cimrman, R., Lukeš, V., Rohan, E., 2019. Multiscale finite element
+       calculations in Python using SfePy. Advances in Computational
+       Mathematics 45, 1897-1921. https://doi.org/10.1007/s10444-019-09666-0
 
-       @article{Cimrman_Lukes_Rohan_2019,
-         title =        {Multiscale finite element calculations in Python using SfePy},
-         ISSN =         {1572-9044},
-         url =          {https://doi.org/10.1007/s10444-019-09666-0},
-         DOI =          {10.1007/s10444-019-09666-0},
-         journal =      {Advances in Computational Mathematics},
-         author =       {Cimrman, Robert and Lukeš, Vladimír and Rohan, Eduard},
-         year =         2019,
-       }
+       (preprint: https://arxiv.org/abs/1810.00674)
+
+     - BibTeX::
+
+         @article{Cimrman_Lukes_Rohan_2019,
+           title =        {Multiscale finite element calculations in Python using SfePy},
+           author =       {Cimrman, Robert and Lukeš, Vladimír and Rohan, Eduard},
+           issn =         {1572-9044},
+           doi =          {10.1007/s10444-019-09666-0},
+           journal =      {Advances in Computational Mathematics},
+           year =         2019,
+         }
+
+   - Performance related data for version 2021.1 and a description of the
+     multi-linear terms implementation are given in:
+
+     - Plain text:
+
+       Cimrman, R., 2021. Fast evaluation of finite element weak forms using
+       python tensor contraction packages. Advances in Engineering Software
+       159, 103033. https://doi.org/10.1016/j.advengsoft.2021.103033
+
+       (preprint: https://arxiv.org/abs/2107.04121)
+
+     - BibTeX::
+
+         @article{Cimrman_2021,
+           title =        {Fast Evaluation of Finite Element Weak Forms Using Python Tensor Contraction Packages},
+           author =       {Cimrman, Robert},
+           issn =         {0965-9978},
+           doi =          {10.1016/j.advengsoft.2021.103033},
+           journal =      {Advances in Engineering Software},
+           volume =       159,
+           year =         2021,
+         }
 
    - :ref:`example_applications` have links to related scientific articles.
 
    - Other references:
 
      - R. Cimrman. SfePy - write your own FE application. In P. de Buyl
-       and N. Varoquaux, editors, Proceedings of the 6th European Con- ference
+       and N. Varoquaux, editors, Proceedings of the 6th European Conference
        on Python in Science (EuroSciPy 2013), pages 65–70, 2014.
        http://arxiv.org/abs/1404.6391.
 
