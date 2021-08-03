@@ -24,27 +24,33 @@ from sfepy.discrete.fem import FEDomain
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_dg_solvers import TVDRK3StepSolver
-from sfepy.terms.terms_dg import NonlinearHyperbolicDGFluxTerm, \
-    NonlinearScalarDotGradTerm
-from sfepy.terms.terms_dot import DotProductVolumeTerm
+from sfepy.terms.terms_dg import Term
 
-parser = argparse.ArgumentParser(
-    description='Solve Burgers equation and display animated results, '
-                'change script code to modify the problem.',
-    epilog='(c) 2019 T. Zitka , Man-machine Interaction at NTC UWB')
-
-
-def main(argv):
+def parse_args(argv=None):
     if argv is None:
-        argv = sys.argv[1:]
-    args = parser.parse_args(argv)
+        argv = sys.argv
+
+    parser = argparse.ArgumentParser(
+        description='Solve Burgers equation and display animated results, '
+                    'change script code to modify the problem.',
+        epilog='(c) 2019 T. Zitka , Man-machine Interaction at NTC UWB')
+    parser.add_argument('-o', '--output-dir', default='.',
+                        help='output directory')
+    parser.add_argument('-p', '--plot',
+                        action='store_true', dest='plot',
+                        default=False, help='plot animated results')
+    options = parser.parse_args(argv[1:])
+    return options
+
+def main(argv=None):
+    options = parse_args(argv=argv)
 
     # vvvvvvvvvvvvvvvv #
     approx_order = 2
     # ^^^^^^^^^^^^^^^^ #
 
     # Setup output names
-    outputs_folder = "../outputs"
+    outputs_folder = options.output_dir
 
     domain_name = "domain_1D"
     problem_name = "iburgers_1D"
@@ -85,8 +91,7 @@ def main(argv):
     u = FieldVariable('u', 'unknown', field, history=1)
     v = FieldVariable('v', 'test', field, primary_var_name='u')
 
-    MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u",
-                                 integral, omega, u=u, v=v)
+    MassT = Term.new('dw_dot(v, u)', integral, omega, u=u, v=v)
 
     velo = nm.array(1.0)
 
@@ -114,21 +119,19 @@ def main(argv):
         return v1
 
 
-    StiffT = NonlinearScalarDotGradTerm("burgers_stiff(f, df, u, v)",
-                                        "fun , fun_d, u[-1], v",
-                                        integral, omega,
-                                        u=u, v=v,
-                                        fun=burg_fun, fun_d=burg_fun_d)
+    StiffT = Term.new('dw_ns_dot_grad_s(fun, fun_d, u[-1], v)',
+                      integral, omega,
+                      u=u, v=v,
+                      fun=burg_fun, fun_d=burg_fun_d)
 
-    alpha = Material('alpha', val=[.0])
+    # alpha = Material('alpha', val=[.0])
     # FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
     #                          integral, omega, u=u, v=v, a=a, alpha=alpha)
 
-    FluxT = NonlinearHyperbolicDGFluxTerm("burgers_lf_flux(f, df, u, v)",
-                                          "fun , fun_d, v, u[-1]",
-                                          integral, omega,
-                                          u=u, v=v,
-                                          fun=burg_fun, fun_d=burg_fun_d)
+    FluxT = Term.new('dw_dg_nonlinear_laxfrie_flux(fun, fun_d, v, u[-1])',
+                     integral, omega,
+                     u=u, v=v,
+                     fun=burg_fun, fun_d=burg_fun_d)
 
     eq = Equation('balance', MassT - StiffT + FluxT)
     eqs = Equations([eq])
@@ -226,10 +229,11 @@ def main(argv):
     # ----------
     # | Plot 1D|
     # ----------
-    load_and_plot_fun(output_folder, domain_name,
-                      t0, t1, min(tn, save_timestn),
-                      ic_fun)
+    if options.plot:
+        load_and_plot_fun(output_folder, domain_name,
+                          t0, t1, min(tn, save_timestn),
+                          ic_fun)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()

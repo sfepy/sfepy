@@ -192,7 +192,8 @@ helps = {
 def main():
     parser = ArgumentParser(description=__doc__.rstrip(),
                             formatter_class=RawDescriptionHelpFormatter)
-    parser.add_argument('--output_dir', default='.', help=helps['output_dir'])
+    parser.add_argument('-o', '--output-dir', default='.',
+                        help=helps['output_dir'])
     parser.add_argument('--R1', metavar='R1',
                         action='store', dest='R1',
                         default='0.5', help=helps['R1'])
