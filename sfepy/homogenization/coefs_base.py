@@ -692,6 +692,7 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
         """
         problem = get_default(problem, self.problem)
 
+        problem.set_variables()
         problem.set_equations(equations)
         problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
                            lcbc_names=self.get('lcbcs', []))
