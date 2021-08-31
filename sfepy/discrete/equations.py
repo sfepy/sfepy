@@ -486,7 +486,7 @@ class Equations(Container):
 
         output('...done in %.2f s' % timer.stop(), verbose=verbose)
         output('matrix structural nonzeros: %d (%.2e%% fill)' \
-               % (nnz, float(nnz) / size), verbose=verbose)
+               % (nnz, 100.0 * float(nnz) / size), verbose=verbose)
 
         data = nm.zeros((nnz,), dtype=self.variables.dtype)
         matrix = sp.csr_matrix((data, icol, prow), shape)
