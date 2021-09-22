@@ -47,6 +47,8 @@ import os.path as osp
 import pyvista as pv
 from vtk.util.numpy_support import numpy_to_vtk
 
+cache = {}
+
 
 def get_camera_position(bounds, azimuth, elevation, distance=None, zoom=1.):
     phi, psi = nm.deg2rad(azimuth), nm.deg2rad(elevation)
@@ -89,8 +91,6 @@ def parse_options(opts, separator=':'):
 
     return out
 
-
-cache = {}
 
 def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
     _, ext = osp.splitext(filenames[0])
@@ -260,7 +260,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                 mat_val = [mat_val, mat_val]
 
             pipe.append(pipe[-1].threshold(value=mat_val,
-                scalars='mat_id', preference='cell'))
+                        scalars='mat_id', preference='cell'))
 
         if 'r' in opts:  # recalculate cell data to point data
             pipe.append(pipe[-1].cell_data_to_point_data())
@@ -275,9 +275,10 @@ def pv_plot(filenames, options, plotter=None, step=None,
         factor = opts.get('f', options.factor)
         if warp:
             field_data = pipe[-1][warp]
-            if field_data.ndim == 1: field_data.shape = (-1, 1)
+            if field_data.ndim == 1:
+                field_data.shape = (-1, 1)
             nc = field_data.shape[1]
-            if nc == 1: # Warp by scalar.
+            if nc == 1:  # Warp by scalar.
                 pipe.append(pipe[-1].copy())
                 pipe[-1].points[:, 2] += field_data[:, 0] * factor
 
@@ -309,7 +310,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                 pipe[-1][field] *= factor
                 pipe[-1].set_active_vectors(field)
                 pipe.append(pipe[-1].arrows)
-                style=''
+                style = ''
                 plot_info.append('glyphs=%s' % field)
             else:
                 if 'c' in opts:  # select field component
@@ -351,7 +352,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                           nm.max([iv[0][1] for iv in v]))
                 scalar_bars[k] = (limits, ii)
 
-        mappers = {k:[iv[1] for iv in v] for k, v in _scalar_bars.items()}
+        mappers = {k: [iv[1] for iv in v] for k, v in _scalar_bars.items()}
 
         for k, v in scalar_bars.items():
             clim = v[0][:]
@@ -406,17 +407,17 @@ class StoreNumberAction(Action):
 
 helps = {
     'fields':
-        'fields to plot, options separated by ":" are possible:\n'\
-        '"cX" - plot only Xth field component; '\
-        '"e" - print edges; '\
-        '"fX" - scale factor for warp/glyphs; '\
-        '"g - glyphs (for vector fields only), scale by factor; '\
-        '"mX" - plot cells with mat_id=X; '\
-        '"oX" - set opacity to X; '\
-        '"pX" - plot in slot X; '\
-        '"r" - recalculate cell data to point data; '\
-        '"sX" - plot data in step X; '\
-        '"vX" - plotting style: s=surface, w=wireframe, p=points; '\
+        'fields to plot, options separated by ":" are possible:\n'
+        '"cX" - plot only Xth field component; '
+        '"e" - print edges; '
+        '"fX" - scale factor for warp/glyphs; '
+        '"g - glyphs (for vector fields only), scale by factor; '
+        '"mX" - plot cells with mat_id=X; '
+        '"oX" - set opacity to X; '
+        '"pX" - plot in slot X; '
+        '"r" - recalculate cell data to point data; '
+        '"sX" - plot data in step X; '
+        '"vX" - plotting style: s=surface, w=wireframe, p=points; '
         '"wX" - warp mesh by vector field X, scale by factor',
     'fields_map':
         'map fields and cell groups, e.g. 1:u1,p1 2:u2,p2',
@@ -442,7 +443,7 @@ helps = {
     'position_vector':
         'define positions of plots [default: "0,0,1.6"]',
     'view':
-        'camera azimuth, elevation angles, and optionally zoom factor'\
+        'camera azimuth, elevation angles, and optionally zoom factor'
         ' [default: "225,75,0.9"]',
     'animation':
         'create animation, mp4 file type supported',
@@ -493,7 +494,8 @@ def main():
                         action='store', dest='color_map',
                         default='viridis', help=helps['color_map'])
     parser.add_argument('--axes-options', metavar='options',
-                        action=OptsToListAction, nargs="+", dest='axes_options',
+                        action=OptsToListAction, nargs="+",
+                        dest='axes_options',
                         default=[], help=helps['axes_options'])
     parser.add_argument('--no-axes',
                         action='store_false', dest='axes_visibility',
