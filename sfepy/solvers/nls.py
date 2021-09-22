@@ -87,9 +87,9 @@ def conv_test(conf, it, err, err0):
 
     output('nls: iter: %d, residual: %e (rel: %e)' % (it, err, err_r))
 
-    conv_a = err < conf.eps_a
+    conv_a = err <= conf.eps_a
     if it > 0:
-        conv_r = err_r < conf.eps_r
+        conv_r = err_r <= conf.eps_r
 
         if conv_a and conv_r:
             status = 0
