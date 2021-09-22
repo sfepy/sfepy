@@ -360,7 +360,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
             for mapper in mappers[k]:
                 mapper.scalar_range = clim
             plotter.add_scalar_bar(title=k,
-                                   position_x=0.95, position_y=y_pos,
+                                   position_x=0.82, position_y=y_pos,
                                    width=0.15, height=0.05, n_labels=2,
                                    mapper=mapper)
 
