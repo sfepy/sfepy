@@ -278,10 +278,10 @@ def pv_plot(filenames, options, plotter=None, step=None,
         warp = opts.get('w', options.warp)  # warp mesh
         factor = opts.get('f', options.factor)
         if isinstance(factor, tuple):
-            bnds = pipe[-1].bounds
             ws = nm.diff(nm.reshape(pipe[-1].bounds, (-1, 2)), axis=1)
             size = ws[ws > 0.0].min()
-            factor = 0.01 * float(factor[1]) * size
+            fmax = nm.abs(pipe[-1][field]).max()
+            factor = 0.01 * float(factor[1]) * size / fmax
 
         if warp:
             field_data = pipe[-1][warp]
