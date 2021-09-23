@@ -299,7 +299,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
             else:
                 raise ValueError('warp mesh: scalar or vector field required!')
 
-            plot_info.append('warp=%s' % warp)
+            plot_info.append('warp=%s, factor=%.2e' % (warp, factor))
 
         position = opts.get('p', 0)  # determine plotting slot
         bnds = pipe[-1].bounds
@@ -321,7 +321,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                 pipe[-1].set_active_vectors(field)
                 pipe.append(pipe[-1].arrows)
                 style = ''
-                plot_info.append('glyphs=%s' % field)
+                plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
             else:
                 if 'c' in opts:  # select field component
                     comp = opts['c']
