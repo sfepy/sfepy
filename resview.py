@@ -9,35 +9,37 @@ Examples
   The examples assume that run_tests.py has been run successfully and the
   resulting data files are present.
 
-  - view data in output-tests/test_navier_stokes.vtk
+  - View data in output-tests/test_navier_stokes.vtk.
 
     $ python resview.py output-tests/test_navier_stokes.vtk
 
-  - customize the above output,
-    plot0: field "p", switch on edges
-    plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2
+  - Customize the above output:
+    plot0: field "p", switch on edges,
+    plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2.
 
-    $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0\
- u:o.4:p1 u:g:f2e-2:p1
+    $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
 
-  - view data and take a screenshot
+  - As above, but glyphs are scaled by the factor determined automatically as
+    20% of the minimum bounding box size.
+
+    $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f10%:p1
+
+  - View data and take a screenshot.
 
     $ python resview.py output-tests/test_poisson.vtk -o image.png
 
-  - take a screenshot without a window popping up
+  - Take a screenshot without a window popping up.
 
     $ python resview.py output-tests/test_poisson.vtk -o image.png --off-screen
 
-  - create animation from output-tests/test_time_poisson.*.vtk
+  - Create animation from output-tests/test_time_poisson.*.vtk.
 
     $ python resview.py output-tests/test_time_poisson.*.vtk -a mov.mp4
 
-  - create animation from output-tests/test_hyperelastic.*.vtk,
-    set frame rate to 3, plot displacements and mooney_rivlin_stress
+  - Create animation from output-tests/test_hyperelastic.*.vtk,
+    set frame rate to 3, plot displacements and mooney_rivlin_stress.
 
-    $ python resview.py output-tests/test_hyperelastic_TL.*.vtk -f u:wu:e:p0\
- mooney_rivlin_stress:p1 -a mov.mp4 -r 3
-
+    $ python resview.py output-tests/test_hyperelastic_TL.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
 """
 from argparse import ArgumentParser, Action, RawDescriptionHelpFormatter
 from ast import literal_eval
@@ -84,6 +86,8 @@ def parse_options(opts, separator=':'):
             val = True
         elif v[1:].isalpha():
             val = v[1:]
+        elif v[-1] == '%':
+            val = ('%', float(v[1:-1]))
         else:
             val = literal_eval(v[1:])
 
@@ -273,6 +277,12 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
         warp = opts.get('w', options.warp)  # warp mesh
         factor = opts.get('f', options.factor)
+        if isinstance(factor, tuple):
+            ws = nm.diff(nm.reshape(pipe[-1].bounds, (-1, 2)), axis=1)
+            size = ws[ws > 0.0].min()
+            fmax = nm.abs(pipe[-1][field]).max()
+            factor = 0.01 * float(factor[1]) * size / fmax
+
         if warp:
             field_data = pipe[-1][warp]
             if field_data.ndim == 1:
@@ -289,7 +299,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
             else:
                 raise ValueError('warp mesh: scalar or vector field required!')
 
-            plot_info.append('warp=%s' % warp)
+            plot_info.append('warp=%s, factor=%.2e' % (warp, factor))
 
         position = opts.get('p', 0)  # determine plotting slot
         bnds = pipe[-1].bounds
@@ -311,7 +321,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                 pipe[-1].set_active_vectors(field)
                 pipe.append(pipe[-1].arrows)
                 style = ''
-                plot_info.append('glyphs=%s' % field)
+                plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
             else:
                 if 'c' in opts:  # select field component
                     comp = opts['c']
@@ -410,7 +420,7 @@ helps = {
         'fields to plot, options separated by ":" are possible:\n'
         '"cX" - plot only Xth field component; '
         '"e" - print edges; '
-        '"fX" - scale factor for warp/glyphs; '
+        '"fX" - scale factor for warp/glyphs, see --factor option; '
         '"g - glyphs (for vector fields only), scale by factor; '
         '"mX" - plot cells with mat_id=X; '
         '"oX" - set opacity to X; '
@@ -426,7 +436,8 @@ helps = {
     'warp':
         'warp mesh by vector field',
     'factor':
-        'scaling factor for mesh warp and glyphs',
+        'scaling factor for mesh warp and glyphs.'
+        ' Append "%%" to scale relatively to the minimum bounding box size.',
     'edges':
         'plot cell edges',
     'opacity':
