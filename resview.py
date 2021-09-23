@@ -20,6 +20,12 @@ Examples
     $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0\
  u:o.4:p1 u:g:f2e-2:p1
 
+  - As above, but glyphs are scaled by the factor determined automatically as
+    20% of the minimum bounding box size.
+
+    $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0\
+ u:o.4:p1 u:g:f10%:p1
+
   - view data and take a screenshot
 
     $ python resview.py output-tests/test_poisson.vtk -o image.png
@@ -418,7 +424,7 @@ helps = {
         'fields to plot, options separated by ":" are possible:\n'
         '"cX" - plot only Xth field component; '
         '"e" - print edges; '
-        '"fX" - scale factor for warp/glyphs; '
+        '"fX" - scale factor for warp/glyphs, see --factor option; '
         '"g - glyphs (for vector fields only), scale by factor; '
         '"mX" - plot cells with mat_id=X; '
         '"oX" - set opacity to X; '
@@ -434,7 +440,8 @@ helps = {
     'warp':
         'warp mesh by vector field',
     'factor':
-        'scaling factor for mesh warp and glyphs',
+        'scaling factor for mesh warp and glyphs.'
+        ' Append "%%" to scale relatively to the minimum bounding box size.',
     'edges':
         'plot cell edges',
     'opacity':
