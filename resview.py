@@ -167,6 +167,56 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
 
         mesh = cache[key]
 
+    elif ext in ['.h5', '.h5x']:
+        vtk_cell_types = {'1_1' : 1, '1_2' : 3, '2_2' : 3, '3_2' : 3,
+                          '2_3' : 5, '2_4' : 9, '3_4' : 10, '3_8' : 12}
+        # Custom sfepy format.
+        fname = filenames[0]
+        key = (fname, step)
+        if key not in cache:
+            from sfepy.discrete.fem.meshio import MeshIO
+
+            io = MeshIO.any_from_filename(fname)
+
+            mesh = io.read()
+            desc = mesh.descs[0]
+            nv, dim = mesh.coors.shape
+
+            points = nm.c_[mesh.coors, nm.zeros((nv, 3 - dim))]
+            cells, cell_type, offset = make_cells_from_conn(
+                {desc : mesh.get_conn(desc)}, vtk_cell_types,
+            )
+
+            steps, times, nts = io.read_times()
+            for ii, _step in enumerate(steps):
+                grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+                datas = io.read_data(_step)
+                for dk, data in datas.items():
+                    vval = data.data
+                    if 1 < len(data.dofs) < 3:
+                        vval = nm.c_[vval,
+                                     nm.zeros((len(vval), 3 - len(data.dofs)))]
+
+                    if data.mode == 'vertex':
+                        val = numpy_to_vtk(vval)
+                        val.SetName(dk)
+                        grid.GetPointData().AddArray(val)
+
+                    else:
+                        val = numpy_to_vtk(vval[:, 0, :, 0])
+                        val.SetName(dk)
+                        grid.GetCellData().AddArray(val)
+
+                cache[(fname, ii)] = grid
+
+            cache[(fname, None)] = cache[(fname, 0)]
+            cache['n_steps'] = len(steps)
+
+        mesh = cache[key]
+
+    else:
+        raise ValueError('unknown file format! (%s)' % ext)
+
     if print_info:
         arrs = {'s': [], 'v': [], 'o': []}
         for aname in mesh.array_names:
