@@ -95,6 +95,26 @@ def parse_options(opts, separator=':'):
 
     return out
 
+def make_cells_from_conn(conns, convert_to_vtk_type):
+    cells, cell_type, offset = [], [], []
+    _offset = 0
+    for ctype, conn in conns.items():
+        nc, np = conn.shape
+
+        aux = nm.empty((nc, np + 1), dtype=int)
+        aux[:, 0] = np
+        aux[:, 1:] = conn
+        cells.append(aux.ravel())
+
+        cell_type.append(nm.full(nc, convert_to_vtk_type[ctype]))
+        offset.append(nm.arange(nc) * (np + 1) + _offset)
+        _offset += nc
+
+    cells = nm.concatenate(cells)
+    cell_type = nm.concatenate(cell_type)
+    offset = nm.concatenate(offset)
+
+    return cells, cell_type, offset
 
 def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
     _, ext = osp.splitext(filenames[0])
@@ -116,21 +136,9 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
             reader = meshio.xdmf.TimeSeriesReader(fname)
             points, _cells = reader.read_points_cells()
 
-            cells = []
-            cell_type = []
-            offset = []
-            _offset = 0
-            for ctype, cdata in _cells.items():
-                nc, np = cdata.shape
-                cells.append(nm.hstack([nm.ones((nc, 1)) * np,
-                                        cdata]).flatten())
-                cell_type.append(nm.ones(nc) * meshio_to_vtk_type[ctype])
-                offset.append(nm.arange(nc) * (np + 1) + _offset)
-                _offset += nc
-
-            cells = nm.hstack(cells)
-            cell_type = nm.hstack(cell_type)
-            offset = nm.hstack(offset)
+            cells, cell_type, offset = make_cells_from_conn(
+                _cells, meshio_to_vtk_type,
+            )
 
             grids = {}
             time = []
