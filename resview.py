@@ -95,6 +95,26 @@ def parse_options(opts, separator=':'):
 
     return out
 
+def make_cells_from_conn(conns, convert_to_vtk_type):
+    cells, cell_type, offset = [], [], []
+    _offset = 0
+    for ctype, conn in conns.items():
+        nc, np = conn.shape
+
+        aux = nm.empty((nc, np + 1), dtype=int)
+        aux[:, 0] = np
+        aux[:, 1:] = conn
+        cells.append(aux.ravel())
+
+        cell_type.append(nm.full(nc, convert_to_vtk_type[ctype]))
+        offset.append(nm.arange(nc) * (np + 1) + _offset)
+        _offset += nc
+
+    cells = nm.concatenate(cells)
+    cell_type = nm.concatenate(cell_type)
+    offset = nm.concatenate(offset)
+
+    return cells, cell_type, offset
 
 def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
     _, ext = osp.splitext(filenames[0])
@@ -116,21 +136,9 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
             reader = meshio.xdmf.TimeSeriesReader(fname)
             points, _cells = reader.read_points_cells()
 
-            cells = []
-            cell_type = []
-            offset = []
-            _offset = 0
-            for ctype, cdata in _cells.items():
-                nc, np = cdata.shape
-                cells.append(nm.hstack([nm.ones((nc, 1)) * np,
-                                        cdata]).flatten())
-                cell_type.append(nm.ones(nc) * meshio_to_vtk_type[ctype])
-                offset.append(nm.arange(nc) * (np + 1) + _offset)
-                _offset += nc
-
-            cells = nm.hstack(cells)
-            cell_type = nm.hstack(cell_type)
-            offset = nm.hstack(offset)
+            cells, cell_type, offset = make_cells_from_conn(
+                _cells, meshio_to_vtk_type,
+            )
 
             grids = {}
             time = []
@@ -158,6 +166,56 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
             cache['n_steps'] = reader.num_steps
 
         mesh = cache[key]
+
+    elif ext in ['.h5', '.h5x']:
+        vtk_cell_types = {'1_1' : 1, '1_2' : 3, '2_2' : 3, '3_2' : 3,
+                          '2_3' : 5, '2_4' : 9, '3_4' : 10, '3_8' : 12}
+        # Custom sfepy format.
+        fname = filenames[0]
+        key = (fname, step)
+        if key not in cache:
+            from sfepy.discrete.fem.meshio import MeshIO
+
+            io = MeshIO.any_from_filename(fname)
+
+            mesh = io.read()
+            desc = mesh.descs[0]
+            nv, dim = mesh.coors.shape
+
+            points = nm.c_[mesh.coors, nm.zeros((nv, 3 - dim))]
+            cells, cell_type, offset = make_cells_from_conn(
+                {desc : mesh.get_conn(desc)}, vtk_cell_types,
+            )
+
+            steps, times, nts = io.read_times()
+            for ii, _step in enumerate(steps):
+                grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+                datas = io.read_data(_step)
+                for dk, data in datas.items():
+                    vval = data.data
+                    if 1 < len(data.dofs) < 3:
+                        vval = nm.c_[vval,
+                                     nm.zeros((len(vval), 3 - len(data.dofs)))]
+
+                    if data.mode == 'vertex':
+                        val = numpy_to_vtk(vval)
+                        val.SetName(dk)
+                        grid.GetPointData().AddArray(val)
+
+                    else:
+                        val = numpy_to_vtk(vval[:, 0, :, 0])
+                        val.SetName(dk)
+                        grid.GetCellData().AddArray(val)
+
+                cache[(fname, ii)] = grid
+
+            cache[(fname, None)] = cache[(fname, 0)]
+            cache['n_steps'] = len(steps)
+
+        mesh = cache[key]
+
+    else:
+        raise ValueError('unknown file format! (%s)' % ext)
 
     if print_info:
         arrs = {'s': [], 'v': [], 'o': []}
