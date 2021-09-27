@@ -1,5 +1,94 @@
 # created: 20.07.2007 (-1)
 
+.. _2021.2-2021.3:
+
+from 2021.2 to 2021.3
+=====================
+
+- merge pull request #709 from vlukes/volume_surface_terms
+
+  - update term integration: guess integration from region.kind
+  - update terms: unify `ev_/dw_` volume/surface terms
+  - update examples, tests, etc.: new term names
+  - update terms: unify `dw_volume/surface_dot` terms
+  - update examples, tests, etc.: `dw_dot`
+  - new compatibility file: allow for old term names
+  - rename term: `d_region` --> `ev_volume`
+  - update term docstrings: `\cal{D}` stands for a volume or surface domain
+  - unify multilinear terms
+  - update Develeoper Guide
+  - fix User's Guide
+
+- merge pull request #711 from rc/volume-surface-terms-follow-up
+
+  - docs: use only unified volume/surface terms in users' guide
+  - fix docstring of poisson_functions.py example
+  - use dw_dot and dw_integrate in interactive examples
+
+- merge pull request #710 from vlukes/rename_d_terms
+
+  - rename evaluation terms starting with `d_` to `ev_`
+  - update user's guide: Term Overview
+  - rename term: `ev_sd_volume_dot` to `ev_sd_dot`
+
+- merge pull request #714 from rc/evp-solvers-fixes
+
+  - fix QuadraticEVPSolver.__init__() for no solver in conf (use default)
+  - fix MatlabEigenvalueSolver.__call__() for None value of eigenvectors arg
+
+- merge pull request #716 from livoire13/example-interactive-iga
+
+  - new iga-interactive example
+
+- merge pull request #715 from rc/web-update-citing
+
+  - web: update citing information
+  - web: update related projects
+  - web: improve plain text citation
+
+- merge pull request #718 from rc/update-test-install
+
+  - fix imperative_burgers_1D.py for unified surface/volume terms - use
+    Term.new() in main()
+  - imperative_burgers_1D.py: new --output-dir, --plot options - new
+    parse_args(), update main()
+  - laplace_iga_interactive.py: rename --output_dir option to --output-dir
+  - test_install.py: test laplace_iga_interactive.py, imperative_burgers_1D.py
+
+- merge pull request #719 from vlukes/fix_evp_corrector
+
+  - fix TCorrectorsViaPressureEVP.setup_equations()
+
+- merge pull request #721 from rc/fix-fill-in-message
+
+  - fix fill-in message in Equations.create_matrix_graph(),
+    Mesh.create_conn_graph()
+
+- merge pull request #724 from rc/include-nls-tolerances
+
+  - include tolerances in error checking in conv_test() - fixes 'or' eps mode
+    with eps_a == 0.0 and zero initial residual
+
+- merge pull request #725 from vlukes/fix_resview fix resview
+
+  - fix format
+  - fix colorbar position
+
+- merge pull request #726 from rc/resview-auto-factor
+
+  - resview.py: allow automatic percentage-based scaling factor in pv_plot() -
+    update parse_options() for '%' character
+  - resview.py: update help message and docstring
+  - resview.py: use sentences in docstring, facilitate copy/paste of examples
+  - resview.py: fix factor calculation in pv_plot()
+  - resview.py: report scaling factor in pv_plot()
+
+- merge pull request #727 from rc/resview-sfepy-h5
+
+  - resview.py: new make_cells_from_conn(), used in read_mesh()
+  - resview.py: support custom sfepy .h5, .h5x formats in read_mesh()
+  - support h5x format in Problem.setup_output()
+
 .. _2021.1-2021.2:
 
 from 2021.1 to 2021.2
