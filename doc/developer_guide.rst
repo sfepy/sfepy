@@ -1375,6 +1375,7 @@ sfepy.terms package
    src/sfepy/terms/terms_adj_navier_stokes
    src/sfepy/terms/terms_basic
    src/sfepy/terms/terms_biot
+   src/sfepy/terms/terms_compat
    src/sfepy/terms/terms_constraints
    src/sfepy/terms/terms_contact
    src/sfepy/terms/terms_dg

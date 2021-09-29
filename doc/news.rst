@@ -1,6 +1,10 @@
 News
 ====
 
+* **29.09.2021** Version 2021.3 released (unified volume and surface
+  integration terms, improved pyvista-based visualization script, etc.), see
+  :ref:`release notes <2021.2-2021.3>`.
+
 * **29.06.2021** Version 2021.2 released (new sensitivity analysis terms,
   positive FE basis based on Bernstein polynomials, smaller memory footprint of
   terms with constant material parameters, etc.), see :ref:`release notes
@@ -19,9 +23,5 @@ News
 * **29.09.2020** Version 2020.3 released (new script for visualizations based
   on pyvista, generalized Yeoh hyperelastic term + example, etc.), see
   :ref:`release notes <2020.2-2020.3>`.
-
-* **30.06.2020** Version 2020.2 released (discontinuous Galerkin method
-  implementation and examples, new website look, memory usage
-  improvements, etc.), see :ref:`release notes <2020.1-2020.2>`.
 
 For historians: see :ref:`archived_news`.
