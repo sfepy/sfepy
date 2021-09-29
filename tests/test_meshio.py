@@ -214,7 +214,7 @@ class Test(TestCommon):
             try:
                 mesh0.write(filename, io='auto')
 
-            except RuntimeError:
+            except:
                 if cls == 'meshio':
                     import traceback
                     self.report('-> cannot write "%s" format into "%s",'
