@@ -154,6 +154,25 @@ Currently available images are:
 For available runtime options and further information see
 `sfepy-docker <https://github.com/sfepy/sfepy-docker>`__ project on Github.
 
+As a convenience, use the following Docker compose file, which will start the
+*SfePy* image, run Jupyter Lab, and map the contents of the local directory 
+to the *SfePy* home directory within the image. Just create an empty folder and 
+add the following to a file named ``docker-compose.yml``. Then, run ``docker-compose up`` 
+in the same directory.
+
+.. code-block:: yaml
+   version: "3"
+   services:
+     sfepy:
+       container_name: sfepy_container
+       image: sfepy/sfepy-notebook
+       command: jupyter lab
+       volumes:
+         - .:/home/sfepy/
+       ports:
+         - "8888:8888"
+
+
 
 .. _installing_from_sources:
 
