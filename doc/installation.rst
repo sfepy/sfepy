@@ -168,7 +168,7 @@ in the same directory.
        image: sfepy/sfepy-notebook
        command: jupyter lab
        volumes:
-         - .:/home/sfepy/
+         - .:/home/sfepy/code/
        ports:
          - "8888:8888"
 
