@@ -116,6 +116,12 @@ def make_cells_from_conn(conns, convert_to_vtk_type):
 
     return cells, cell_type, offset
 
+def add_mat_id_to_grid(grid, mesh):
+    val = numpy_to_vtk(mesh.cmesh.cell_groups)
+    val.SetName('mat_id')
+    grid.GetCellData().AddArray(val)
+    return grid
+
 def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
     _, ext = osp.splitext(filenames[0])
     if ext in ['.vtk', '.vtu']:
@@ -139,6 +145,11 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
             cells, cell_type, offset = make_cells_from_conn(
                 _cells, meshio_to_vtk_type,
             )
+
+            if not reader.num_steps:
+                grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+                add_mat_id_to_grid(grid, mesh)
+                cache[(fname, 0)] = grid
 
             grids = {}
             time = []
@@ -188,6 +199,11 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
             )
 
             steps, times, nts = io.read_times()
+            if not len(steps):
+                grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+                add_mat_id_to_grid(grid, mesh)
+                cache[(fname, 0)] = grid
+
             for ii, _step in enumerate(steps):
                 grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
                 datas = io.read_data(_step)
