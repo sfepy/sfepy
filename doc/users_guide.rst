@@ -601,6 +601,10 @@ The following geometry elements are supported:
 
 .. image:: images/elements.png
 
+Note the orientation of the vertices matters,
+the figure displays the correct orientation when interpreted in a
+`right-handed coordinate system <https://en.wikipedia.org/wiki/Right-hand_rule#Coordinates>`_.
+
 Regions
 ^^^^^^^
 
