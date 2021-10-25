@@ -134,16 +134,24 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
         cache['n_steps'] = len(filenames)
     elif ext in ['.xdmf', '.xdmf3']:
         import meshio
-        from meshio._common import meshio_to_vtk_type
+        try:
+            from meshio._common import meshio_to_vtk_type
+
+        except ImportError:
+            from meshio._vtk_common import meshio_to_vtk_type
 
         fname = filenames[0]
         key = (fname, step)
         if key not in cache:
             reader = meshio.xdmf.TimeSeriesReader(fname)
             points, _cells = reader.read_points_cells()
+            points = nm.asarray(points)
+            if points.shape[1] < 3:
+                points = nm.pad(points, [(0, 0), (0, 3 - points.shape[1])])
+            _dcells = {ct.type : ct.data for ct in _cells}
 
             cells, cell_type, offset = make_cells_from_conn(
-                _cells, meshio_to_vtk_type,
+                _dcells, meshio_to_vtk_type,
             )
 
             if not reader.num_steps:
