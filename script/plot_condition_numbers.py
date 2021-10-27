@@ -100,7 +100,7 @@ def main():
             assert_(options.matrix_type == 'elasticity')
             term = Term.new('dw_lin_elastic(m.D, v, u)',
                             integral, omega, m=m, v=v, u=u)
-            n_zero = (dim + 1) * dim / 2
+            n_zero = (dim + 1) * dim // 2
 
         term.setup()
 
