@@ -66,7 +66,7 @@ def main():
     domain = FEDomain('domain', mesh)
     omega = domain.create_region('Omega', 'all')
 
-    orders = nm.arange(1, options.max_order + 1, dtype=nm.int)
+    orders = nm.arange(1, options.max_order + 1, dtype=nm.int32)
     conds = []
 
     order_fix = 0 if  options.geometry in ['2_4', '3_8'] else 1
