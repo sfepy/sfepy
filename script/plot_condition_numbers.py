@@ -25,7 +25,7 @@ helps = {
     'max_order' :
     'maximum order of polynomials [default: %(default)s]',
     'matrix_type' :
-    'matrix type, one of "elasticity", "laplace" [default: %(default)s]',
+    'matrix type [default: %(default)s]',
     'geometry' :
     'reference element geometry, one of "2_3", "2_4", "3_4", "3_8"'
     ' [default: %(default)s]',
@@ -40,8 +40,8 @@ def main():
     parser.add_argument('-n', '--max-order', metavar='order', type=int,
                         action='store', dest='max_order',
                         default=10, help=helps['max_order'])
-    parser.add_argument('-m', '--matrix', metavar='type',
-                        action='store', dest='matrix_type',
+    parser.add_argument('-m', '--matrix', action='store', dest='matrix_type',
+                        choices=['laplace', 'elasticity', 'smass', 'vmass'],
                         default='laplace', help=helps['matrix_type'])
     parser.add_argument('-g', '--geometry', metavar='name',
                         action='store', dest='geometry',
@@ -52,7 +52,8 @@ def main():
     output('reference element geometry:')
     output('  dimension: %d, vertices: %d' % (dim, n_ep))
 
-    n_c = {'laplace' : 1, 'elasticity' : dim}[options.matrix_type]
+    n_c = {'laplace' : 1, 'elasticity' : dim,
+           'smass' : 1, 'vmass' : dim}[options.matrix_type]
 
     output('matrix type:', options.matrix_type)
     output('number of variable components:',  n_c)
@@ -89,18 +90,22 @@ def main():
         u = FieldVariable('u', 'unknown', field)
         v = FieldVariable('v', 'test', field, primary_var_name='u')
 
-        m = Material('m', D=stiffness_from_lame(dim, 1.0, 1.0), mu=1.0)
+        m = Material('m', D=stiffness_from_lame(dim, 1.0, 1.0))
 
         if options.matrix_type == 'laplace':
-            term = Term.new('dw_laplace(m.mu, v, u)',
-                            integral, omega, m=m, v=v, u=u)
+            term = Term.new('dw_laplace(v, u)',
+                            integral, omega, v=v, u=u)
             n_zero = 1
 
-        else:
-            assert_(options.matrix_type == 'elasticity')
+        elif options.matrix_type == 'elasticity':
             term = Term.new('dw_lin_elastic(m.D, v, u)',
                             integral, omega, m=m, v=v, u=u)
             n_zero = (dim + 1) * dim // 2
+
+        elif options.matrix_type in ('smass', 'vmass'):
+            term = Term.new('dw_dot(v, u)',
+                            integral, omega, v=v, u=u)
+            n_zero = 0
 
         term.setup()
 
