@@ -293,6 +293,19 @@ def pv_plot(filenames, options, plotter=None, step=None,
     mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True)
     steps = {fstep: mesh}
 
+    if options.position_vector is None:
+        bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
+        ii = nm.where(bbox_sizes > 0)[0]
+        if len(ii):
+            ipv = ii[-1]
+
+        else:
+            ipv = 2
+            print('WARNING: zero size mesh!')
+
+        options.position_vector = [0, 0, 0]
+        options.position_vector[ipv] = 1.6
+
     plotter.resview_step, plotter.resview_n_steps = fstep, n_steps
 
     fields_map = {}
@@ -595,7 +608,7 @@ def main():
                         default=True, help=helps['no_axes'])
     parser.add_argument('--position-vector', metavar='position_vector',
                         action=StoreNumberAction, dest='position_vector',
-                        default=[0, 0, 1.6], help=helps['position_vector'])
+                        default=None, help=helps['position_vector'])
     parser.add_argument('--no-labels',
                         action='store_false', dest='show_labels',
                         default=True, help=helps['no_labels'])
