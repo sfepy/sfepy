@@ -7,6 +7,8 @@ from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser
+import os.path as op
+from functools import partial
 import numpy as nm
 import matplotlib.pyplot as plt
 
@@ -29,6 +31,10 @@ helps = {
     'geometry' :
     'reference element geometry, one of "2_3", "2_4", "3_4", "3_8"'
     ' [default: %(default)s]',
+    'output_dir' :
+    'output directory',
+    'no_show' :
+    'do not show the figures',
 }
 
 def main():
@@ -46,6 +52,12 @@ def main():
     parser.add_argument('-g', '--geometry', metavar='name',
                         action='store', dest='geometry',
                         default='2_4', help=helps['geometry'])
+    parser.add_argument('-o', '--output-dir', metavar='path',
+                        action='store', dest='output_dir',
+                        default=None, help=helps['output_dir'])
+    parser.add_argument('--no-show',
+                        action='store_false', dest='show',
+                        default=True, help=helps['no_show'])
     options = parser.parse_args()
 
     dim, n_ep = int(options.geometry[0]), int(options.geometry[2])
@@ -148,21 +160,42 @@ def main():
 
         output('...done')
 
-    plt.figure(1)
-    plt.semilogy(orders, conds)
-    plt.xticks(orders, orders)
-    plt.xlabel('polynomial order')
-    plt.ylabel('condition number')
-    plt.grid()
+    if options.output_dir is not None:
+        indir = partial(op.join, options.output_dir)
 
-    plt.figure(2)
-    plt.loglog(orders, conds)
-    plt.xticks(orders, orders)
-    plt.xlabel('polynomial order')
-    plt.ylabel('condition number')
-    plt.grid()
+    else:
+        indir = None
 
-    plt.show()
+    fig, ax = plt.subplots()
+    ax.semilogy(orders, conds)
+    ax.set_xticks(orders)
+    ax.set_xticklabels(orders)
+    ax.set_xlabel('polynomial order')
+    ax.set_ylabel('condition number')
+    ax.set_title(f'{options.basis.capitalize()} basis')
+    ax.grid()
+    plt.tight_layout()
+    if indir is not None:
+        fig.savefig(indir(f'{options.basis}-{options.matrix_type}-'
+                          f'{options.geometry}-{options.max_order}-xlin.png'),
+                    bbox_inches='tight')
+
+    fig, ax = plt.subplots()
+    ax.loglog(orders, conds)
+    ax.set_xticks(orders)
+    ax.set_xticklabels(orders)
+    ax.set_xlabel('polynomial order')
+    ax.set_ylabel('condition number')
+    ax.set_title(f'{options.basis.capitalize()} basis')
+    ax.grid()
+    plt.tight_layout()
+    if indir is not None:
+        fig.savefig(indir(f'{options.basis}-{options.matrix_type}-'
+                          f'{options.geometry}-{options.max_order}-xlog.png'),
+                    bbox_inches='tight')
+
+    if options.show:
+        plt.show()
 
 if __name__ == '__main__':
     main()
