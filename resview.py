@@ -116,8 +116,8 @@ def make_cells_from_conn(conns, convert_to_vtk_type):
 
     return cells, cell_type, offset
 
-def add_mat_id_to_grid(grid, mesh):
-    val = numpy_to_vtk(mesh.cmesh.cell_groups)
+def add_mat_id_to_grid(grid, cell_groups):
+    val = numpy_to_vtk(cell_groups)
     val.SetName('mat_id')
     grid.GetCellData().AddArray(val)
     return grid
@@ -156,7 +156,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
 
             if not reader.num_steps:
                 grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
-                add_mat_id_to_grid(grid, mesh)
+                add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
                 cache[(fname, 0)] = grid
 
             grids = {}
@@ -209,7 +209,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
             steps, times, nts = io.read_times()
             if not len(steps):
                 grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
-                add_mat_id_to_grid(grid, mesh)
+                add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
                 cache[(fname, 0)] = grid
 
             for ii, _step in enumerate(steps):
