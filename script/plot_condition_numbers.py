@@ -166,6 +166,9 @@ def main():
     else:
         indir = None
 
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['lines.linewidth'] = 3
+
     fig, ax = plt.subplots()
     ax.semilogy(orders, conds)
     ax.set_xticks(orders)
