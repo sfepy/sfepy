@@ -7,6 +7,8 @@ from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser
+import os.path as op
+from functools import partial
 import numpy as nm
 import matplotlib.pyplot as plt
 
@@ -25,10 +27,14 @@ helps = {
     'max_order' :
     'maximum order of polynomials [default: %(default)s]',
     'matrix_type' :
-    'matrix type, one of "elasticity", "laplace" [default: %(default)s]',
+    'matrix type [default: %(default)s]',
     'geometry' :
     'reference element geometry, one of "2_3", "2_4", "3_4", "3_8"'
     ' [default: %(default)s]',
+    'output_dir' :
+    'output directory',
+    'no_show' :
+    'do not show the figures',
 }
 
 def main():
@@ -40,19 +46,26 @@ def main():
     parser.add_argument('-n', '--max-order', metavar='order', type=int,
                         action='store', dest='max_order',
                         default=10, help=helps['max_order'])
-    parser.add_argument('-m', '--matrix', metavar='type',
-                        action='store', dest='matrix_type',
+    parser.add_argument('-m', '--matrix', action='store', dest='matrix_type',
+                        choices=['laplace', 'elasticity', 'smass', 'vmass'],
                         default='laplace', help=helps['matrix_type'])
     parser.add_argument('-g', '--geometry', metavar='name',
                         action='store', dest='geometry',
                         default='2_4', help=helps['geometry'])
+    parser.add_argument('-o', '--output-dir', metavar='path',
+                        action='store', dest='output_dir',
+                        default=None, help=helps['output_dir'])
+    parser.add_argument('--no-show',
+                        action='store_false', dest='show',
+                        default=True, help=helps['no_show'])
     options = parser.parse_args()
 
     dim, n_ep = int(options.geometry[0]), int(options.geometry[2])
     output('reference element geometry:')
     output('  dimension: %d, vertices: %d' % (dim, n_ep))
 
-    n_c = {'laplace' : 1, 'elasticity' : dim}[options.matrix_type]
+    n_c = {'laplace' : 1, 'elasticity' : dim,
+           'smass' : 1, 'vmass' : dim}[options.matrix_type]
 
     output('matrix type:', options.matrix_type)
     output('number of variable components:',  n_c)
@@ -69,8 +82,6 @@ def main():
     orders = nm.arange(1, options.max_order + 1, dtype=nm.int32)
     conds = []
 
-    order_fix = 0 if  options.geometry in ['2_4', '3_8'] else 1
-
     for order in orders:
         output('order:', order, '...')
 
@@ -78,8 +89,7 @@ def main():
                                 approx_order=order,
                                 space='H1', poly_space_base=options.basis)
 
-        to = field.approx_order
-        quad_order = 2 * (max(to - order_fix, 0))
+        quad_order = 2 * field.approx_order
         output('quadrature order:', quad_order)
 
         integral = Integral('i', order=quad_order)
@@ -89,18 +99,22 @@ def main():
         u = FieldVariable('u', 'unknown', field)
         v = FieldVariable('v', 'test', field, primary_var_name='u')
 
-        m = Material('m', D=stiffness_from_lame(dim, 1.0, 1.0), mu=1.0)
+        m = Material('m', D=stiffness_from_lame(dim, 1.0, 1.0))
 
         if options.matrix_type == 'laplace':
-            term = Term.new('dw_laplace(m.mu, v, u)',
-                            integral, omega, m=m, v=v, u=u)
+            term = Term.new('dw_laplace(v, u)',
+                            integral, omega, v=v, u=u)
             n_zero = 1
 
-        else:
-            assert_(options.matrix_type == 'elasticity')
+        elif options.matrix_type == 'elasticity':
             term = Term.new('dw_lin_elastic(m.D, v, u)',
                             integral, omega, m=m, v=v, u=u)
             n_zero = (dim + 1) * dim // 2
+
+        elif options.matrix_type in ('smass', 'vmass'):
+            term = Term.new('dw_dot(v, u)',
+                            integral, omega, v=v, u=u)
+            n_zero = 0
 
         term.setup()
 
@@ -146,21 +160,45 @@ def main():
 
         output('...done')
 
-    plt.figure(1)
-    plt.semilogy(orders, conds)
-    plt.xticks(orders, orders)
-    plt.xlabel('polynomial order')
-    plt.ylabel('condition number')
-    plt.grid()
+    if options.output_dir is not None:
+        indir = partial(op.join, options.output_dir)
 
-    plt.figure(2)
-    plt.loglog(orders, conds)
-    plt.xticks(orders, orders)
-    plt.xlabel('polynomial order')
-    plt.ylabel('condition number')
-    plt.grid()
+    else:
+        indir = None
 
-    plt.show()
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['lines.linewidth'] = 3
+
+    fig, ax = plt.subplots()
+    ax.semilogy(orders, conds)
+    ax.set_xticks(orders)
+    ax.set_xticklabels(orders)
+    ax.set_xlabel('polynomial order')
+    ax.set_ylabel('condition number')
+    ax.set_title(f'{options.basis.capitalize()} basis')
+    ax.grid()
+    plt.tight_layout()
+    if indir is not None:
+        fig.savefig(indir(f'{options.basis}-{options.matrix_type}-'
+                          f'{options.geometry}-{options.max_order}-xlin.png'),
+                    bbox_inches='tight')
+
+    fig, ax = plt.subplots()
+    ax.loglog(orders, conds)
+    ax.set_xticks(orders)
+    ax.set_xticklabels(orders)
+    ax.set_xlabel('polynomial order')
+    ax.set_ylabel('condition number')
+    ax.set_title(f'{options.basis.capitalize()} basis')
+    ax.grid()
+    plt.tight_layout()
+    if indir is not None:
+        fig.savefig(indir(f'{options.basis}-{options.matrix_type}-'
+                          f'{options.geometry}-{options.max_order}-xlog.png'),
+                    bbox_inches='tight')
+
+    if options.show:
+        plt.show()
 
 if __name__ == '__main__':
     main()
