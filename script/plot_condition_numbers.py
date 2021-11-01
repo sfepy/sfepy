@@ -70,8 +70,6 @@ def main():
     orders = nm.arange(1, options.max_order + 1, dtype=nm.int32)
     conds = []
 
-    order_fix = 0 if  options.geometry in ['2_4', '3_8'] else 1
-
     for order in orders:
         output('order:', order, '...')
 
@@ -79,8 +77,7 @@ def main():
                                 approx_order=order,
                                 space='H1', poly_space_base=options.basis)
 
-        to = field.approx_order
-        quad_order = 2 * (max(to - order_fix, 0))
+        quad_order = 2 * field.approx_order
         output('quadrature order:', quad_order)
 
         integral = Integral('i', order=quad_order)
