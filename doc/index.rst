@@ -21,7 +21,7 @@
    get you started, check :doc:`examples/gallery`, :doc:`examples` and
    :doc:`tutorial`. Some more advanced features are discussed in :doc:`primer`.
    Examples of scientific results obtained with the help of SfePy are listed in
-   :ref:`example_applications`.
+   :ref:`example_applications`. See also :doc:`faq`.
 
    SfePy can be used in parallel (work in progress), see
    :ref:`solving_problems_in_parallel`.
