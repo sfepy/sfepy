@@ -116,6 +116,12 @@ def make_cells_from_conn(conns, convert_to_vtk_type):
 
     return cells, cell_type, offset
 
+def add_mat_id_to_grid(grid, cell_groups):
+    val = numpy_to_vtk(cell_groups)
+    val.SetName('mat_id')
+    grid.GetCellData().AddArray(val)
+    return grid
+
 def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
     _, ext = osp.splitext(filenames[0])
     if ext in ['.vtk', '.vtu']:
@@ -128,17 +134,30 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
         cache['n_steps'] = len(filenames)
     elif ext in ['.xdmf', '.xdmf3']:
         import meshio
-        from meshio._common import meshio_to_vtk_type
+        try:
+            from meshio._common import meshio_to_vtk_type
+
+        except ImportError:
+            from meshio._vtk_common import meshio_to_vtk_type
 
         fname = filenames[0]
         key = (fname, step)
         if key not in cache:
             reader = meshio.xdmf.TimeSeriesReader(fname)
             points, _cells = reader.read_points_cells()
+            points = nm.asarray(points)
+            if points.shape[1] < 3:
+                points = nm.pad(points, [(0, 0), (0, 3 - points.shape[1])])
+            _dcells = {ct.type : ct.data for ct in _cells}
 
             cells, cell_type, offset = make_cells_from_conn(
-                _cells, meshio_to_vtk_type,
+                _dcells, meshio_to_vtk_type,
             )
+
+            if not reader.num_steps:
+                grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+                add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
+                cache[(fname, 0)] = grid
 
             grids = {}
             time = []
@@ -188,6 +207,11 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
             )
 
             steps, times, nts = io.read_times()
+            if not len(steps):
+                grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+                add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
+                cache[(fname, 0)] = grid
+
             for ii, _step in enumerate(steps):
                 grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
                 datas = io.read_data(_step)
@@ -268,6 +292,19 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
     mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True)
     steps = {fstep: mesh}
+
+    if options.position_vector is None:
+        bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
+        ii = nm.where(bbox_sizes > 0)[0]
+        if len(ii):
+            ipv = ii[-1]
+
+        else:
+            ipv = 2
+            print('WARNING: zero size mesh!')
+
+        options.position_vector = [0, 0, 0]
+        options.position_vector[ipv] = 1.6
 
     plotter.resview_step, plotter.resview_n_steps = fstep, n_steps
 
@@ -571,7 +608,7 @@ def main():
                         default=True, help=helps['no_axes'])
     parser.add_argument('--position-vector', metavar='position_vector',
                         action=StoreNumberAction, dest='position_vector',
-                        default=[0, 0, 1.6], help=helps['position_vector'])
+                        default=None, help=helps['position_vector'])
     parser.add_argument('--no-labels',
                         action='store_false', dest='show_labels',
                         default=True, help=helps['no_labels'])
