@@ -26,11 +26,11 @@ Miscellaneous
 
    The quadrature order equal to two-times the field order (used in many
    examples) works well for bilinear forms with constant (on each element)
-   material parameters. For example, a dot product involves integrating u * v,
-   so if the approximation order of u and v is 1, their product's order is 2.
-   Of course, there are terms that could use a lower quadrature order, or
-   higher, depending on the data. Increased quadrature order is required e.g.
-   in terms with highly oscillating material coefficients.
+   material parameters. For example, a dot product involves integrating ``u *
+   v``, so if the approximation order of ``u`` and ``v`` is 1, their product's
+   order is 2. Of course, there are terms that could use a lower quadrature
+   order, or higher, depending on the data. Increased quadrature order is
+   required e.g. in terms with highly oscillating material coefficients.
 
    Example::
 
