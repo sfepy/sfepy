@@ -9,5 +9,6 @@ Documentation
    tutorial
    users_guide
    examples
+   FAQ <faq>
    theory
    terms_overview
