@@ -1,0 +1,192 @@
+Useful Code Snippets and FAQ
+============================
+
+.. only:: html
+
+   .. contents:: Table of Contents
+      :local:
+      :backlinks: top
+
+Miscellaneous
+-------------
+
+#. No module named 'sfepy.discrete.common.extmods.mappings'.
+
+   When installing SfePy from sources or using the git version, its extension
+   modules have to be compiled before using the package, see
+   :ref:`compilation`.
+
+#. Finite element approximation (field) order and numerical quadrature order.
+
+   SfePy supports reading only straight-facet (linear approximation) meshes,
+   nevertheless field orders higher than one can be used, because internally,
+   the mesh elements are enriched with the required additional nodes. The
+   calculation then occurs on such an augmented mesh with appropriate higher
+   order elements.
+
+   The quadrature order equal to two-times the field order (used in many
+   examples) works well for bilinear forms with constant (on each element)
+   material parameters. For example, a dot product involves integrating ``u *
+   v``, so if the approximation order of ``u`` and ``v`` is 1, their product's
+   order is 2. Of course, there are terms that could use a lower quadrature
+   order, or higher, depending on the data. Increased quadrature order is
+   required e.g. in terms with highly oscillating material coefficients.
+
+   Example::
+
+     approx_order = 2
+     # The finite element approximation order.
+     fields = {
+         'displacement': ('real', 3, 'Omega', approx_order),
+     }
+     # The numerical quadrature order.
+     integrals = {
+         'i' : 2 * approx_order,
+     }
+
+
+#. Higher order DOF visualization when using an approximation order greater
+   than one.
+
+   By default, the additional, higher order DOFs, are not used in the VTK/HDF5
+   results files (``'strip'`` linearization kind). To see the influence of
+   those DOFs, ``'adaptive'`` linearization has to be used, see
+   :ref:`diffusion-sinbc` (declarative API) and
+   :ref:`diffusion-laplace_refine_interactive` or
+   :ref:`multi_physics-biot_parallel_interactive` (imperative API, search
+   ``linearization``).
+
+#. Numbering of DOFs.
+
+   Locally (in a connectivity row), the DOFs are stored DOF-by-DOF (``u_0`` in
+   all local nodes, ``u_1`` in all local nodes, ...).
+
+   Globally (in a state vector), the DOFs are stored node-by-node (``u_0, u_1,
+   ..., u_X`` in node 0, ``u_0, u_1, ..., u_X`` in node 1, ...).
+
+   See also :func:`create_adof_conn()
+   <sfepy.discrete.variables.create_adof_conn>`.
+
+#.  How to work with solvers/preconditioners?
+
+    See :ref:`multi_physics-biot_short_syntax` (user-defined preconditioners)
+    or :ref:`navier_stokes-stokes_slip_bc` (petsc solver setup).
+
+#. How to get the linear system components: the matrix and the right-hand side?
+
+   To get the residual vector ``r`` (see :doc:`ebcs_implementation`) and the
+   tangent matrix ``K``, the imperative API can be used as follows::
+
+     # pb is a Problem instance,
+     pb.time_update()
+     state = pb.create_state()
+     state.apply_ebc()
+     r = pb.equations.eval_residuals(state())
+     K = pb.equations.eval_tangent_matrices(state(), pb.mtx_a)
+
+   See also :ref:`diffusion-poisson_parallel_interactive`.
+
+
+Mesh-Related Tasks
+------------------
+
+#. Checking and fixing a mesh (double vertices, disconnected components, etc.).
+
+   - Show the mesh Euler characteristic, number of components and other
+     information::
+
+       python3 script/show_mesh_info.py -d cylinder.mesh
+
+   - Fix double/disconnected vertices::
+
+       python3 script/convert_mesh.py -m bad.mesh maybe-good.mesh
+
+#. Convert a mesh to another format (as supported by meshio).
+
+   - Simple conversion::
+
+       python3 script/convert_mesh.py mesh.format1 mesh.format2
+
+   - Scaling the mesh anisotropically::
+
+       python3 script/convert_mesh.py -s 2,4,3 cylinder.mesh cylinder-scaled.mesh
+
+#. Verify that regions are correctly defined.
+
+   - Using the problem description files (declarative API)::
+
+       python3 simple.py examples/diffusion/poisson_short_syntax.py --save-regions-as-groups --solve-not
+       python3 resview.py -e cylinder_regions.vtk
+
+   - In a script (imperative API)::
+
+       problem.save_regions_as_groups('regions')
+
+#. Remove lower-dimensional entities from a mesh (e.g. edges).
+
+   Use ``script/convert_mesh.py`` with the ``-d <dimension>`` option, where
+   ``<dimension>`` is the topological dimension of cells that should be in the
+   mesh. For example, ``-d 2`` stores only the 2D cells.
+
+
+Material Parameters
+-------------------
+
+#. How to set material parameters per region in the interactive mode
+   (imperative API)?
+
+   Example: define ``rho``, ``D`` to have different values in regions ``omega1``,
+   ``omega2``::
+
+     m = Material('m', values={'rho': {'omega1': 2700, 'omega2': 6000},
+                               'D': {'omega1': D1, 'omega2': D2}})
+
+#. How to implement state dependent materials?
+
+   Besides writing a custom solver, one can use pseudo-time-stepping for this
+   purpose, as demonstrated in :ref:`linear_elasticity-material_nonlinearity`
+   or :ref:`diffusion-poisson_field_dependent_material`. Note that the examples
+   are contrived, and in practice care must be taken to ensure convergence.
+
+#. Why are results of a 2D elasticity simulation not consistent with a properly
+   constrained 3D elasticity simulation?
+
+   Possible reason: when using the Young's modulus and Poisson's ratio as input
+   parameters, and then calling :func:`stiffness_from_youngpoisson()
+   <sfepy.mechanics.matcoefs.stiffness_from_youngpoisson>`, note that the
+   default value of the ``plane`` argument is ``'strain'``, corresponding to
+   the plane strain assumption, see also :func:`lame_from_youngpoisson()
+   <sfepy.mechanics.matcoefs.lame_from_youngpoisson>`. Try setting
+   ``plane='stress'``.
+
+#. How to set (time-dependent) material parameters by a function in the
+   interactive mode (imperative API)?
+
+   Example (also showing the full material function signature)::
+
+     from sfepy.discrete import Material, Function
+
+     def get_pars(ts, coors, mode=None,
+                  equations=None, term=None, problem=None, **kwargs):
+         value1 = a_function(ts.t, coors)
+         value2 = another_function(ts.step, coors)
+         if mode == 'qp':
+             out = {
+                 'value1' : value1.reshape(coors.shape[0], 1, 1),
+                 'value2' : value2.reshape(coors.shape[0], 1, 1),
+             }
+             return out
+     m = Material('m', function=Function('get_pars', get_pars))
+
+#. How to get cells corresponding to coordinates in a material function?
+
+   The full signature of the material function is::
+
+     def get_pars(ts, coors, mode=None,
+                  equations=None, term=None, problem=None, **kwargs)
+
+   Thus it has access to ``term.region.cells``, hence access to the cells that
+   correspond to the coordinates. The length of the ``coors`` is
+   ``n_cell * n_qp``, where ``n_qp`` is the number of quadrature
+   points per cell, and ``n_cell = len(term.region.cells)``, so that
+   ``coors.reshape((n_cell, n_qp, -1))`` can be used.
