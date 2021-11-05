@@ -82,7 +82,7 @@ Miscellaneous
      state = pb.create_state()
      state.apply_ebc()
      r = pb.equations.eval_residuals(state())
-     K = eqs.eval_tangent_matrices(state(), pb.mtx_a)
+     K = pb.equations.eval_tangent_matrices(state(), pb.mtx_a)
 
    See also :ref:`diffusion-poisson_parallel_interactive`.
 
