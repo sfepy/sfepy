@@ -128,6 +128,12 @@ Mesh-Related Tasks
    ``<dimension>`` is the topological dimension of cells that should be in the
    mesh. For example, ``-d 2`` stores only the 2D cells.
 
+#. It is suggested to use ``msh22`` format instead of the default ``msh4``
+   when generating a mesh with ``gmsh``::
+
+      gmsh -2 cylinder.geo -o cylinder.msh -format msh22
+
+   ``msh22`` seems to be more reliable and foolproof when converting.
 
 Material Parameters
 -------------------
