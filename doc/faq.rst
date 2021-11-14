@@ -135,6 +135,38 @@ Mesh-Related Tasks
 
    ``msh22`` seems to be more reliable and foolproof when converting.
 
+
+Regions
+-------
+
+#. How to define a region using a function of coordinates in the interactive mode
+   (imperative API)?
+
+   Examples:
+
+   -  A facet region defined using a function of mesh vertex coordinates::
+
+       from sfepy.discrete import Function, Functions
+
+       def _get_region(coors, domain=None):
+           ii = np.nonzero(coors[:,0] < 0.5)[0]
+           return ii
+
+       get_region = Function('get_region', _get_region)
+       region = domain.create_region(
+           'Region', 'vertices by get_region', 'facet',
+           functions=Functions([get_region]),
+       )
+
+   - Analogously a cell region defined using the coordinates of cell centroids::
+
+       # ...
+       region = domain.create_region(
+           'Region', 'cells by get_region', 'facet',
+           functions=Functions([get_region]),
+       )
+
+
 Material Parameters
 -------------------
 
