@@ -101,7 +101,9 @@ def main():
     ax = pc.plot_cmesh(None, domain.cmesh,
                        wireframe_opts=wireframe_opts,
                        entities_opts=entities_opts)
-    ax.axis('image')
+    if dim == 2:
+        ax.axis('image')
+
     if not options.axes:
         ax.axis('off')
     plt.tight_layout()
