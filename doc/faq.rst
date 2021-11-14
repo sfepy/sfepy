@@ -67,6 +67,25 @@ Miscellaneous
    See also :func:`create_adof_conn()
    <sfepy.discrete.variables.create_adof_conn>`.
 
+#. Visualization of various FEM-related information.
+
+   - Quadrature rules::
+
+       python3 script/plot_quadratures.py
+
+   - Facet orientations::
+
+       python3 sfepy/postprocess/plot_facets.py
+
+   - Global and local numberings of mesh topological entities (cells, faces,
+     edges, vertices)::
+
+       python3 script/plot_mesh.py meshes/elements/2_4_2.mesh
+
+     The global numbers serve as indices into connectivities. In the plot, the
+     global numbers are on the entities, the cell-local ones are inside the
+     cells next to each entity towards the cell centroids.
+
 #.  How to work with solvers/preconditioners?
 
     See :ref:`multi_physics-biot_short_syntax` (user-defined preconditioners)
