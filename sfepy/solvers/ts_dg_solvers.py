@@ -5,6 +5,7 @@ import numpy as nm
 import numpy.linalg as nla
 
 # sfepy imports
+from limiters import ComposedLimiter, IdentityLimiter
 from sfepy.base.base import get_default, output
 from sfepy.solvers import TimeSteppingSolver
 from sfepy.solvers.solvers import SolverMeta
@@ -54,10 +55,16 @@ class DGMultiStageTSS(TimeSteppingSolver):
         limiters = {}
         if self.conf.limiters is not None:
             limiters = self.conf.limiters
-        # what if we have more fields or limiters?
-        for field_name, limiter in limiters.items():
-            self.post_stage_hook = limiter(context.fields[field_name],
-                                           verbose=self.verbose)
+
+        # what if we have more fields or limiters? how to map limiters to fields, variables?
+        applied_limiters = []
+        for field_name, field in context.fields.items():
+            limiter_class = limiters.get(field_name, IdentityLimiter)
+            applied_limiters.append([field, limiter_class])
+
+        self.post_stage_hook = ComposedLimiter(*zip(*applied_limiters),
+                                               verbose=True)
+
 
     def solve_step0(self, nls, vec0):
         res = nls.fun(vec0)
@@ -205,9 +212,9 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
         vec_x1 = vec_x - ts.dt * (vec_dx - vec_x)
 
-        vec_e = mtx_a * vec_dx - vec_r
-        lerr = nla.norm(vec_e)
         if self.verbose:
+            vec_e = mtx_a * vec_dx - vec_r
+            lerr = nla.norm(vec_e)
             output(self.stage_format.format(1, lerr))
 
         vec_x1 = self.post_stage_hook(vec_x1)
@@ -221,9 +228,9 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
         vec_x2 = (3 * vec_x + vec_x1 - ts.dt * (vec_dx - vec_x1)) / 4
 
-        vec_e = mtx_a * vec_dx - vec_r
-        lerr = nla.norm(vec_e)
         if self.verbose:
+            vec_e = mtx_a * vec_dx - vec_r
+            lerr = nla.norm(vec_e)
             output(self.stage_format.format(2, lerr))
 
         vec_x2 = self.post_stage_hook(vec_x2)
@@ -239,9 +246,9 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
         vec_x3 = (vec_x + 2 * vec_x2 - 2 * ts.dt * (vec_dx - vec_x2)) / 3
 
-        vec_e = mtx_a * vec_dx - vec_r
-        lerr = nla.norm(vec_e)
         if self.verbose:
+            vec_e = mtx_a * vec_dx - vec_r
+            lerr = nla.norm(vec_e)
             output(self.stage_format.format(3, lerr))
 
         vec_x3 = self.post_stage_hook(vec_x3)
