@@ -5,7 +5,7 @@ import numpy as nm
 import numpy.linalg as nla
 
 # sfepy imports
-from limiters import ComposedLimiter, IdentityLimiter
+from sfepy.discrete.dg.limiters import ComposedLimiter, IdentityLimiter
 from sfepy.base.base import get_default, output
 from sfepy.solvers import TimeSteppingSolver
 from sfepy.solvers.solvers import SolverMeta
@@ -63,7 +63,7 @@ class DGMultiStageTSS(TimeSteppingSolver):
             applied_limiters.append([field, limiter_class])
 
         self.post_stage_hook = ComposedLimiter(*zip(*applied_limiters),
-                                               verbose=True)
+                                               verbose=self.verbose)
 
 
     def solve_step0(self, nls, vec0):
