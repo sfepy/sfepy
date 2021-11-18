@@ -10,11 +10,25 @@ Useful Code Snippets and FAQ
 Miscellaneous
 -------------
 
-#. No module named 'sfepy.discrete.common.extmods.mappings'.
+#. ``No module named 'sfepy.discrete.common.extmods.mappings'``.
 
    When installing SfePy from sources or using the git version, its extension
    modules have to be compiled before using the package, see
    :ref:`compilation`.
+
+#. The extension modules are compiled in place, but ``ModuleNotFoundError: No
+   module named 'sfepy'`` shows up when running some interactive
+   examples/scripts/modules from the SfePy source directory.
+
+   On some platforms the current directory is not in the ``sys.path`` directory
+   list. Add it using::
+
+     export PYTHONPATH=.
+
+   or add the following code prior to ``sfepy`` imports into the module::
+
+     import sys
+     sys.path.append('.')
 
 #. Finite element approximation (field) order and numerical quadrature order.
 
@@ -73,7 +87,9 @@ Miscellaneous
 
        python3 script/plot_quadratures.py
 
-   - Facet orientations::
+   - Facet orientations - run in the source code directory and make sure the
+     current directory is in the Python's path list (see
+     `Miscellaneous`_)::
 
        python3 sfepy/postprocess/plot_facets.py
 
