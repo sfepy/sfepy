@@ -10,11 +10,25 @@ Useful Code Snippets and FAQ
 Miscellaneous
 -------------
 
-#. No module named 'sfepy.discrete.common.extmods.mappings'.
+#. ``No module named 'sfepy.discrete.common.extmods.mappings'``.
 
    When installing SfePy from sources or using the git version, its extension
    modules have to be compiled before using the package, see
    :ref:`compilation`.
+
+#. The extension modules are compiled in place, but ``ModuleNotFoundError: No
+   module named 'sfepy'`` shows up when running some interactive
+   examples/scripts/modules from the SfePy source directory.
+
+   On some platforms the current directory is not in the ``sys.path`` directory
+   list. Add it using::
+
+     export PYTHONPATH=.
+
+   or add the following code prior to ``sfepy`` imports into the module::
+
+     import sys
+     sys.path.append('.')
 
 #. Finite element approximation (field) order and numerical quadrature order.
 
@@ -66,6 +80,27 @@ Miscellaneous
 
    See also :func:`create_adof_conn()
    <sfepy.discrete.variables.create_adof_conn>`.
+
+#. Visualization of various FEM-related information.
+
+   - Quadrature rules::
+
+       python3 script/plot_quadratures.py
+
+   - Facet orientations - run in the source code directory and make sure the
+     current directory is in the Python's path list (see
+     `Miscellaneous`_)::
+
+       python3 sfepy/postprocess/plot_facets.py
+
+   - Global and local numberings of mesh topological entities (cells, faces,
+     edges, vertices)::
+
+       python3 script/plot_mesh.py meshes/elements/2_4_2.mesh
+
+     The global numbers serve as indices into connectivities. In the plot, the
+     global numbers are on the entities, the cell-local ones are inside the
+     cells next to each entity towards the cell centroids.
 
 #.  How to work with solvers/preconditioners?
 
@@ -134,6 +169,38 @@ Mesh-Related Tasks
       gmsh -2 cylinder.geo -o cylinder.msh -format msh22
 
    ``msh22`` seems to be more reliable and foolproof when converting.
+
+
+Regions
+-------
+
+#. How to define a region using a function of coordinates in the interactive mode
+   (imperative API)?
+
+   Examples:
+
+   -  A facet region defined using a function of mesh vertex coordinates::
+
+       from sfepy.discrete import Function, Functions
+
+       def _get_region(coors, domain=None):
+           ii = np.nonzero(coors[:,0] < 0.5)[0]
+           return ii
+
+       get_region = Function('get_region', _get_region)
+       region = domain.create_region(
+           'Region', 'vertices by get_region', 'facet',
+           functions=Functions([get_region]),
+       )
+
+   - Analogously a cell region defined using the coordinates of cell centroids::
+
+       # ...
+       region = domain.create_region(
+           'Region', 'cells by get_region', 'cell',
+           functions=Functions([get_region]),
+       )
+
 
 Material Parameters
 -------------------
