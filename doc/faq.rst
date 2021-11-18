@@ -181,7 +181,7 @@ Regions
 
        # ...
        region = domain.create_region(
-           'Region', 'cells by get_region', 'facet',
+           'Region', 'cells by get_region', 'cell',
            functions=Functions([get_region]),
        )
 
