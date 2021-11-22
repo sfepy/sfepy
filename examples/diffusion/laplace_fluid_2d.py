@@ -43,21 +43,22 @@ Generating the mesh
 
 The mesh can be generated with::
     gmsh -2 -f msh22 meshes/2d/citroen.geo -o meshes/2d/citroen.msh
-    python script/convert_mesh.py --2d meshes/2d/citroen.msh \
-        meshes/2d/citroen.h5
+    python script/convert_mesh.py --2d meshes/2d/citroen.msh meshes/2d/citroen.h5
+
 """
+import numpy as nm
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/2d/citroen.h5'
 
-v0 = np.array([1, 0.25])
+v0 = nm.array([1, 0.25])
 
 materials = {
     'm': ({'sigma': 1.0},),
-    'f': ({'left': np.dot(v0.T, np.array([-1, 0])),
-           'right': np.dot(v0.T, np.array([1, 0])),
-           'top': np.dot(v0.T, np.array([0, 1])),
-           'bottom': np.dot(v0.T, np.array([0, -1]))},),
+    'f': ({'left': nm.dot(v0.T, nm.array([-1, 0])),
+           'right': nm.dot(v0.T, nm.array([1, 0])),
+           'top': nm.dot(v0.T, nm.array([0, 1])),
+           'bottom': nm.dot(v0.T, nm.array([0, -1]))},),
 }
 
 regions = {
@@ -88,10 +89,12 @@ integrals = {
 }
 
 equations = {
-    'Laplace equation':
-        """dw_laplace.i.Omega( m.sigma, psi, phi )
-         = dw_integrate.i.Gamma_Left(f.left, psi)
-         + dw_integrate.i.Gamma_Right(f.right, psi)"""
+    'Laplace equation' :
+    """dw_laplace.i.Omega( m.sigma, psi, phi )
+     = dw_integrate.i.Gamma_Left(f.left, psi)
+     + dw_integrate.i.Gamma_Right(f.right, psi)
+     + dw_integrate.i.Gamma_Top(f.top, psi)
+     + dw_integrate.i.Gamma_Bottom(f.bottom, psi)"""
 }
 
 solvers = {
