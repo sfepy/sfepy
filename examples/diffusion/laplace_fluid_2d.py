@@ -6,7 +6,7 @@ shaped like a Citroen CX.
 Description
 -----------
 
-As discussed e.g. in the Feynman lectures in Section 12-5 of Volume 2
+As discussed e.g. in the Feynman lectures Section 12-5 of Volume 2
 (https://www.feynmanlectures.caltech.edu/II_12.html#Ch12-S5),
 the flow of an irrotational and incompressible fluid can be modelled with a
 potential :math:`\ul{v} = \ul{grad}(\phi)` that obeys
@@ -16,7 +16,8 @@ potential :math:`\ul{v} = \ul{grad}(\phi)` that obeys
 
 The weak formulation for this problem is to find :math:`\phi` such that:
 
-\int_{\Omega} \nabla \psi \cdot \nabla \phi
+.. math::
+    \int_{\Omega} \nabla \psi \cdot \nabla \phi
     = \int_{\Gamma_{left}} \ul{v}_0 \cdot n  \, \psi
     + \int_{\Gamma_{right}} \ul{v}_0 \cdot n  \, \psi
     + \int_{\Gamma_{top}} \ul{v}_0 \cdot n \,\psi
@@ -27,12 +28,12 @@ where :math:`\ul{v}_0` is the 2D vector defining the far field velocity that
 generates the incompressible flow.
 
 Since the value of the potential is defined up to a constant value, a Dirichlet
-boundary condition is set on one edge to avoid having a singular problem.
+boundary condition is set at a single vertex to avoid having a singular matrix.
 
 Usage examples
 --------------
 
-Run with simple.py script::
+This example can be run with the ``simple.py`` script with the following::
 
     python3 simple.py examples/diffusion/laplace_fluid_2d.py
     python3 resview.py citroen.vtk
@@ -42,8 +43,9 @@ Generating the mesh
 -------------------
 
 The mesh can be generated with::
+
     gmsh -2 -f msh22 meshes/2d/citroen.geo -o meshes/2d/citroen.msh
-    python script/convert_mesh.py --2d meshes/2d/citroen.msh meshes/2d/citroen.h5
+    python3 script/convert_mesh.py --2d meshes/2d/citroen.msh meshes/2d/citroen.h5
 
 """
 import numpy as nm
@@ -54,11 +56,7 @@ filename_mesh = data_dir + '/meshes/2d/citroen.h5'
 v0 = nm.array([1, 0.25])
 
 materials = {
-    'm': ({'sigma': 1.0},),
-    'f': ({'left': nm.dot(v0.T, nm.array([-1, 0])),
-           'right': nm.dot(v0.T, nm.array([1, 0])),
-           'top': nm.dot(v0.T, nm.array([0, 1])),
-           'bottom': nm.dot(v0.T, nm.array([0, -1]))},),
+    'm': ({'v0': v0.reshape(-1, 1)},),
 }
 
 regions = {
@@ -79,7 +77,7 @@ variables = {
     'psi': ('test field', 'u', 'phi'),
 }
 
-# these EBCS prevent the matrix from being singular
+# these EBCS prevent the matrix from being singular, see description
 ebcs = {
     'fix': ('Vertex', {'phi.0': 0.0}),
 }
@@ -89,12 +87,12 @@ integrals = {
 }
 
 equations = {
-    'Laplace equation' :
-    """dw_laplace.i.Omega( m.sigma, psi, phi )
-     = dw_integrate.i.Gamma_Left(f.left, psi)
-     + dw_integrate.i.Gamma_Right(f.right, psi)
-     + dw_integrate.i.Gamma_Top(f.top, psi)
-     + dw_integrate.i.Gamma_Bottom(f.bottom, psi)"""
+    'Laplace equation':
+        """dw_laplace.i.Omega( psi, phi )
+         = dw_surface_ndot.i.Gamma_Left( m.v0, psi )
+         + dw_surface_ndot.i.Gamma_Right( m.v0, psi )
+         + dw_surface_ndot.i.Gamma_Top( m.v0, psi )
+         + dw_surface_ndot.i.Gamma_Bottom( m.v0, psi )"""
 }
 
 solvers = {
