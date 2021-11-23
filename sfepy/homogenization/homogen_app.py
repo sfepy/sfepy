@@ -203,7 +203,9 @@ class HomogenizationApp(HomogenizationEngine):
 
         ret_all = get_default(ret_all, opts.return_all)
 
-        if not hasattr(self, 'he'):
+        force_init_he = hasattr(self.problem, 'force_init_he')\
+            and self.problem.force_init_he
+        if not hasattr(self, 'he') or force_init_he:
             volumes = {}
             if hasattr(opts, 'volumes') and (opts.volumes is not None):
                 volumes.update(opts.volumes)
