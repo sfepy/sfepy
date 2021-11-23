@@ -17,11 +17,13 @@ class AutoFallbackSolver(Solver):
         ----------
         conf : dict
             The solver configuration.
+        **kwargs : keyword arguments
+            Additional solver options, see the particular __init__() methods.
         """
         ls_solvers = [(ls, Struct(**_conf) + Struct(kind=ls))
                       for ls, _conf in cls._ls_solvers]
 
-        return use_first_available(ls_solvers)
+        return use_first_available(ls_solvers, **kwargs)
 
 
 class AutoDirect(AutoFallbackSolver):

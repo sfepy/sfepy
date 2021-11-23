@@ -62,7 +62,7 @@ def make_option_docstring(name, kind, default, required, doc):
     return entry
 
 
-def use_first_available(solver_list, context=None):
+def use_first_available(solver_list, context=None, **kwargs):
     """
     Use the first available solver from `solver_list`.
 
@@ -72,6 +72,8 @@ def use_first_available(solver_list, context=None):
         The list of solver names or configuration objects.
     context : object, optional
         An optional solver context to pass to the solver.
+    **kwargs : keyword arguments
+        Additional solver options, see the particular __init__() methods.
 
     Returns
     -------
@@ -88,9 +90,9 @@ def use_first_available(solver_list, context=None):
             _conf = conf.copy()
             _conf.__dict__.pop('fallback', None)
             if isinstance(solver, str):
-                out = Solver.any_from_conf(_conf, context=context)
+                out = Solver.any_from_conf(_conf, context=context, **kwargs)
             else:
-                out = solver(_conf, contex=context)
+                out = solver(_conf, contex=context, **kwargs)
 
             output("using '%s' solver" % name)
             break
