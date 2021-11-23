@@ -20,7 +20,9 @@ class AutoFallbackSolver(Solver):
         **kwargs : keyword arguments
             Additional solver options, see the particular __init__() methods.
         """
-        ls_solvers = [(ls, Struct(**_conf) + Struct(kind=ls))
+        dconf = conf.to_dict()
+        dconf.pop('kind')
+        ls_solvers = [(ls, Struct(**_conf) + Struct(kind=ls) + Struct(**dconf))
                       for ls, _conf in cls._ls_solvers]
 
         return use_first_available(ls_solvers, **kwargs)
