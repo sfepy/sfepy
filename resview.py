@@ -407,23 +407,41 @@ def pv_plot(filenames, options, plotter=None, step=None,
         if opts.get('l', options.outline):  # outline
             plotter.add_mesh(pipe[-1].outline(), color='k')
 
-        if field is not None and len(pipe[-1][field].shape) > 1:  # vector field
+        scalar = field
+        is_vector_field = field is not None and len(pipe[-1][field].shape) > 1
+        if is_vector_field:
             field_data = pipe[-1][field]
             scalar = field + '_magnitude'
             pipe[-1][scalar] = nm.linalg.norm(field_data, axis=1)
-            if 'g' in opts:  # glyphs
-                pipe[-1][field] *= factor
-                pipe[-1].set_active_vectors(field)
-                pipe.append(pipe[-1].arrows)
-                style = ''
-                plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
+
+        if 'g' in opts and is_vector_field:  # glyphs
+            pipe[-1][field] *= factor
+            pipe[-1].set_active_vectors(field)
+            pipe.append(pipe[-1].arrows)
+            style = ''
+            plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
+        elif 'c' in opts and is_vector_field:  # select field component
+            comp = opts['c']
+            scalar = field + '_%d' % comp
+            pipe[-1][scalar] = field_data[:, comp]
+        elif 't' in opts:  # streamlines
+            npts = opts.get('t')
+            if npts is True:
+                npts = 20
+
+            if is_vector_field:
+                sl_vector = field
+                sl_pipe = pipe[-1]
             else:
-                if 'c' in opts:  # select field component
-                    comp = opts['c']
-                    scalar = field + '_%d' % comp
-                    pipe[-1][scalar] = field_data[:, comp]
-        else:
-            scalar = field
+                sl_vector = 'gradient'
+                sl_pipe = pipe[-1].compute_derivative(scalars=field)
+
+            cmin, cmax = sl_pipe.bounds[::2], sl_pipe.bounds[1::2]
+            streamlines = sl_pipe.streamlines(vectors='gradient',
+                                              pointa=cmin, pointb=cmax,
+                                              n_points=npts,
+                                              max_time=1e12)
+            pipe.append(streamlines)
 
         plotter.add_mesh(pipe[-1], scalars=scalar, color=color,
                          style=style, show_edges=show_edges,
@@ -517,6 +535,7 @@ helps = {
         '"e" - print edges; '
         '"fX" - scale factor for warp/glyphs, see --factor option; '
         '"g - glyphs (for vector fields only), scale by factor; '
+        '"tX" - plot X streamlines, gradient employed for scalar fields; '
         '"mX" - plot cells with mat_id=X; '
         '"oX" - set opacity to X; '
         '"pX" - plot in slot X; '
