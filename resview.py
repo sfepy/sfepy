@@ -584,6 +584,8 @@ helps = {
         'define position of plot labels [default: "225,75,0.9"]',
     'step':
         'select data in a given time step',
+    'xy_view':
+        'view the XY plane',
 }
 
 
@@ -652,6 +654,9 @@ def main():
     parser.add_argument('--off-screen',
                         action='store_true', dest='off_screen',
                         default=False, help=helps['off_screen'])
+    parser.add_argument('-x', '--xy-view',
+                        action='store_true', dest='xy_view',
+                        default=False, help=helps['xy_view'])
 
     parser.add_argument('filenames', nargs='+')
     options = parser.parse_args()
@@ -708,13 +713,6 @@ def main():
         plotter = pv_plot(options.filenames, options, plotter=plotter)
         if options.axes_visibility:
             plotter.add_axes(**dict(options.axes_options))
-        if options.camera:
-            zoom = options.camera[2] if len(options.camera) > 2 else 1.
-            cpos = get_camera_position(plotter.bounds,
-                                       options.camera[0], options.camera[1],
-                                       zoom=zoom)
-        else:
-            cpos = None
 
         plotter.add_key_event(
             'Prior', lambda: pv_plot(options.filenames,
@@ -730,7 +728,21 @@ def main():
                                     step_inc=1,
                                     plotter=plotter)
         )
-        plotter.show(cpos=cpos, screenshot=options.screenshot)
+
+        if options.xy_view:
+            plotter.view_xy()
+            plotter.show(screenshot=options.screenshot)
+        else:
+            if options.camera:
+                zoom = options.camera[2] if len(options.camera) > 2 else 1.
+                cpos = get_camera_position(plotter.bounds,
+                                           options.camera[0],
+                                           options.camera[1],
+                                           zoom=zoom)
+            else:
+                cpos = None
+
+            plotter.show(cpos=cpos, screenshot=options.screenshot)
 
 
 if __name__ == '__main__':
