@@ -584,8 +584,8 @@ helps = {
         'define position of plot labels [default: "225,75,0.9"]',
     'step':
         'select data in a given time step',
-    'xy_view':
-        'view the XY plane',
+    '2d_view':
+        '2d view of XY plane',
 }
 
 
@@ -654,9 +654,9 @@ def main():
     parser.add_argument('--off-screen',
                         action='store_true', dest='off_screen',
                         default=False, help=helps['off_screen'])
-    parser.add_argument('-x', '--xy-view',
-                        action='store_true', dest='xy_view',
-                        default=False, help=helps['xy_view'])
+    parser.add_argument('-2', '--2d-view',
+                        action='store_true', dest='view_2d',
+                        default=False, help=helps['2d_view'])
 
     parser.add_argument('filenames', nargs='+')
     options = parser.parse_args()
@@ -729,7 +729,7 @@ def main():
                                     plotter=plotter)
         )
 
-        if options.xy_view:
+        if options.view_2d:
             plotter.view_xy()
             plotter.show(screenshot=options.screenshot)
         else:
