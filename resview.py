@@ -407,23 +407,41 @@ def pv_plot(filenames, options, plotter=None, step=None,
         if opts.get('l', options.outline):  # outline
             plotter.add_mesh(pipe[-1].outline(), color='k')
 
-        if field is not None and len(pipe[-1][field].shape) > 1:  # vector field
+        scalar = field
+        is_vector_field = field is not None and len(pipe[-1][field].shape) > 1
+        if is_vector_field:
             field_data = pipe[-1][field]
             scalar = field + '_magnitude'
             pipe[-1][scalar] = nm.linalg.norm(field_data, axis=1)
-            if 'g' in opts:  # glyphs
-                pipe[-1][field] *= factor
-                pipe[-1].set_active_vectors(field)
-                pipe.append(pipe[-1].arrows)
-                style = ''
-                plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
+
+        if 'g' in opts and is_vector_field:  # glyphs
+            pipe[-1][field] *= factor
+            pipe[-1].set_active_vectors(field)
+            pipe.append(pipe[-1].arrows)
+            style = ''
+            plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
+        elif 'c' in opts and is_vector_field:  # select field component
+            comp = opts['c']
+            scalar = field + '_%d' % comp
+            pipe[-1][scalar] = field_data[:, comp]
+        elif 't' in opts:  # streamlines
+            npts = opts.get('t')
+            if npts is True:
+                npts = 20
+
+            if is_vector_field:
+                sl_vector = field
+                sl_pipe = pipe[-1]
             else:
-                if 'c' in opts:  # select field component
-                    comp = opts['c']
-                    scalar = field + '_%d' % comp
-                    pipe[-1][scalar] = field_data[:, comp]
-        else:
-            scalar = field
+                sl_vector = 'gradient'
+                sl_pipe = pipe[-1].compute_derivative(scalars=field)
+
+            cmin, cmax = sl_pipe.bounds[::2], sl_pipe.bounds[1::2]
+            streamlines = sl_pipe.streamlines(vectors='gradient',
+                                              pointa=cmin, pointb=cmax,
+                                              n_points=npts,
+                                              max_time=1e12)
+            pipe.append(streamlines)
 
         plotter.add_mesh(pipe[-1], scalars=scalar, color=color,
                          style=style, show_edges=show_edges,
@@ -517,6 +535,7 @@ helps = {
         '"e" - print edges; '
         '"fX" - scale factor for warp/glyphs, see --factor option; '
         '"g - glyphs (for vector fields only), scale by factor; '
+        '"tX" - plot X streamlines, gradient employed for scalar fields; '
         '"mX" - plot cells with mat_id=X; '
         '"oX" - set opacity to X; '
         '"pX" - plot in slot X; '
@@ -565,6 +584,8 @@ helps = {
         'define position of plot labels [default: "225,75,0.9"]',
     'step':
         'select data in a given time step',
+    '2d_view':
+        '2d view of XY plane',
 }
 
 
@@ -633,6 +654,9 @@ def main():
     parser.add_argument('--off-screen',
                         action='store_true', dest='off_screen',
                         default=False, help=helps['off_screen'])
+    parser.add_argument('-2', '--2d-view',
+                        action='store_true', dest='view_2d',
+                        default=False, help=helps['2d_view'])
 
     parser.add_argument('filenames', nargs='+')
     options = parser.parse_args()
@@ -689,13 +713,6 @@ def main():
         plotter = pv_plot(options.filenames, options, plotter=plotter)
         if options.axes_visibility:
             plotter.add_axes(**dict(options.axes_options))
-        if options.camera:
-            zoom = options.camera[2] if len(options.camera) > 2 else 1.
-            cpos = get_camera_position(plotter.bounds,
-                                       options.camera[0], options.camera[1],
-                                       zoom=zoom)
-        else:
-            cpos = None
 
         plotter.add_key_event(
             'Prior', lambda: pv_plot(options.filenames,
@@ -711,7 +728,21 @@ def main():
                                     step_inc=1,
                                     plotter=plotter)
         )
-        plotter.show(cpos=cpos, screenshot=options.screenshot)
+
+        if options.view_2d:
+            plotter.view_xy()
+            plotter.show(screenshot=options.screenshot)
+        else:
+            if options.camera:
+                zoom = options.camera[2] if len(options.camera) > 2 else 1.
+                cpos = get_camera_position(plotter.bounds,
+                                           options.camera[0],
+                                           options.camera[1],
+                                           zoom=zoom)
+            else:
+                cpos = None
+
+            plotter.show(cpos=cpos, screenshot=options.screenshot)
 
 
 if __name__ == '__main__':
