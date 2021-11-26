@@ -11,6 +11,7 @@ from sfepy.base.base import output
 MACHINE_EPS = 1e-30
 
 
+
 def minmod(a, b, c):
     """Minmod function of three variables, returns:
 
@@ -75,8 +76,9 @@ class DGLimiter:
         self.unravel = get_unraveler(self.n_el_nod, self.n_cell)
         self.verbose = verbose
 
-        output("Setting up limiter: {} for {}.".format(self.name,
-                                                       self.field.family_name))
+        output("Setting up limiter: {} for {} field {}.".format(self.name,
+                                                       self.field.family_name,
+                                                       self.field.name))
 
     def __call__(self, u):
         raise NotImplementedError("Called abstract limiter")
@@ -127,8 +129,8 @@ class MomentLimiter1D(DGLimiter):
             idx = idx[nm.where(abs(tilu[idx] - nu[ll, 1:-1][idx])
                                > MACHINE_EPS)[0]]
             if self.verbose:
-                output("{} limiting in {} cells out of {} :".
-                       format(self.name, len(idx_bc), self.n_cell))
+                output("{} limiting in {} cells out of {} field {}:".
+                       format(self.name, len(idx_bc), self.n_cell, self.field.name))
                 output(idx_bc)
             if len(idx_bc) == 0:
                 break
@@ -194,8 +196,8 @@ class MomentLimiter2D(DGLimiter):
             tilu[idx] = minmod_seq(minmod_args)
             idx = idx[nm.where(abs(tilu[idx] - nu[ii, jj, idx]) > MACHINE_EPS)[0]]
             if self.verbose:
-                output("{} limiting {} in {} cells out of {} :".
-                       format(self.name, (ii, jj), len(idx), self.n_cell))
+                output("{} limiting {} in {} cells out of {} field {}:".
+                       format(self.name, (ii, jj), len(idx), self.n_cell, self.field))
                 output(idx)
             if len(idx) == 0:
                 break
@@ -207,3 +209,23 @@ class MomentLimiter2D(DGLimiter):
             resu[ll] = nu[ii, jj]
 
         return self.ravel(resu.swapaxes(0, 1))[:, 0]
+
+
+class ComposedLimiter:
+
+    def __init__(self, fields, limiters, verbose=False):
+        self.fields = fields
+        self.limiters = [limiter(field, verbose=verbose) for field, limiter in zip(fields, limiters)]
+        self.limiter_slices = []
+        start = 0
+        for field in self.fields:
+            self.limiter_slices.append((start, start + field.n_bubble_dof))
+            start += field.n_bubble_dof
+
+
+    def __call__(self, u):
+        lu = nm.zeros(u.shape, dtype=u.dtype)
+
+        for lslice, limiter in zip(self.limiter_slices, self.limiters):
+            lu[lslice[0]:lslice[1]] = limiter(u[lslice[0]:lslice[1]])
+        return lu
