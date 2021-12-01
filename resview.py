@@ -89,7 +89,10 @@ def parse_options(opts, separator=':'):
         elif v[-1] == '%':
             val = ('%', float(v[1:-1]))
         else:
-            val = literal_eval(v[1:])
+            try:
+                val = literal_eval(v[1:])
+            except ValueError:
+                val = v[1:]
 
         out[v[0]] = val
 
@@ -122,13 +125,14 @@ def add_mat_id_to_grid(grid, cell_groups):
     grid.GetCellData().AddArray(val)
     return grid
 
-def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
+def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
+              use_cache=True):
     _, ext = osp.splitext(filenames[0])
     if ext in ['.vtk', '.vtu']:
         fstep = 0 if step is None else step
         fname = filenames[fstep]
         key = (fname, fstep)
-        if key not in cache:
+        if key not in cache or not use_cache:
             cache[key] = pv.UnstructuredGrid(fname)
         mesh = cache[key]
         cache['n_steps'] = len(filenames)
@@ -273,7 +277,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
 
 def pv_plot(filenames, options, plotter=None, step=None,
             scalar_bar_limits=None, ret_scalar_bar_limits=False,
-            step_inc=None):
+            step_inc=None, use_cache=True):
     plots = {}
     color = None
 
@@ -290,7 +294,8 @@ def pv_plot(filenames, options, plotter=None, step=None,
         if fstep >= plotter.resview_n_steps:
             fstep = plotter.resview_n_steps - 1
 
-    mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True)
+    mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True,
+                              use_cache=use_cache)
     steps = {fstep: mesh}
 
     bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
@@ -345,7 +350,8 @@ def pv_plot(filenames, options, plotter=None, step=None,
             fstep = opts['s']
 
         if fstep not in steps:
-            steps[fstep] = read_mesh(filenames, step=fstep)
+            steps[fstep] = read_mesh(filenames, step=fstep,
+                                     use_cache=use_cache)
 
         pipe = [steps[fstep].copy()]
 
