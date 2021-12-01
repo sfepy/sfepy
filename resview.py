@@ -293,9 +293,10 @@ def pv_plot(filenames, options, plotter=None, step=None,
     mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True)
     steps = {fstep: mesh}
 
+    bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
+    ii = nm.where(bbox_sizes > 0)[0]
+    tdim = len(ii)
     if options.position_vector is None:
-        bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
-        ii = nm.where(bbox_sizes > 0)[0]
         if len(ii):
             ipv = ii[-1]
 
@@ -437,10 +438,19 @@ def pv_plot(filenames, options, plotter=None, step=None,
                 sl_pipe = pipe[-1].compute_derivative(scalars=field)
 
             cmin, cmax = sl_pipe.bounds[::2], sl_pipe.bounds[1::2]
-            streamlines = sl_pipe.streamlines(vectors='gradient',
-                                              pointa=cmin, pointb=cmax,
-                                              n_points=npts,
-                                              max_time=1e12)
+            if tdim == 2:
+                streamlines = sl_pipe.streamlines(vectors=sl_vector,
+                                                  pointa=cmin, pointb=cmax,
+                                                  n_points=npts,
+                                                  max_time=1e12)
+
+            else:
+                radius = 0.5 * nm.linalg.norm(nm.array(cmax) - nm.array(cmin))
+                streamlines = sl_pipe.streamlines(vectors=sl_vector,
+                                                  source_radius=radius,
+                                                  n_points=npts,
+                                                  max_time=1e12)
+
             pipe.append(streamlines)
 
         plotter.add_mesh(pipe[-1], scalars=scalar, color=color,
