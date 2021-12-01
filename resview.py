@@ -327,7 +327,19 @@ def pv_plot(filenames, options, plotter=None, step=None,
             if field in ['node_groups', 'mat_id']:
                 continue
 
-            fields.append((field, 'p%d' % position))
+            fval = steps[fstep][field]
+            bnds = steps[fstep].bounds
+            mesh_size = (nm.array(bnds[1::2]) - nm.array(bnds[::2])).max()
+            is_vector_field = len(fval.shape) > 1
+            is_point_field = fval.shape[0] == steps[fstep].n_points
+            if is_vector_field and is_point_field:
+                scale = mesh_size * 0.15 / nm.linalg.norm(fval, axis=1).max()
+                fields.append((field, 'vw:p%d' % position))
+                fields.append((field, 'vs:o.4:p%d' % position))
+                fields.append((field, 'g:f%e:p%d' % (scale, position)))
+            else:
+                fields.append((field, 'p%d' % position))
+
             position += 1
 
         if len(fields) == 0:
@@ -345,6 +357,10 @@ def pv_plot(filenames, options, plotter=None, step=None,
         if field == '0':
             field = None
             color = 'white'
+
+        if field == '1':
+            field = None
+            color = 'black'
 
         if 's' in opts and step is None:  # plot data from a given step
             fstep = opts['s']
@@ -418,13 +434,15 @@ def pv_plot(filenames, options, plotter=None, step=None,
         scalar = field
         scalar_label = scalar
         is_vector_field = field is not None and len(pipe[-1][field].shape) > 1
+        is_point_field = (field is not None and
+                          pipe[-1][field].shape[0] == pipe[-1].n_points)
         if is_vector_field:
             field_data = pipe[-1][field]
             scalar = field + '_magnitude'
             scalar_label = f'|{field}|'
             pipe[-1][scalar] = nm.linalg.norm(field_data, axis=1)
 
-        if 'g' in opts and is_vector_field:  # glyphs
+        if 'g' in opts and is_vector_field and is_point_field:  # glyphs
             pipe[-1][field] *= factor
             pipe[-1].set_active_vectors(field)
             pipe.append(pipe[-1].arrows)
