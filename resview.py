@@ -98,6 +98,7 @@ def parse_options(opts, separator=':'):
 
     return out
 
+
 def make_cells_from_conn(conns, convert_to_vtk_type):
     cells, cell_type, offset = [], [], []
     _offset = 0
@@ -119,11 +120,13 @@ def make_cells_from_conn(conns, convert_to_vtk_type):
 
     return cells, cell_type, offset
 
+
 def add_mat_id_to_grid(grid, cell_groups):
     val = numpy_to_vtk(cell_groups)
     val.SetName('mat_id')
     grid.GetCellData().AddArray(val)
     return grid
+
 
 def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
               use_cache=True):
@@ -152,7 +155,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
             points = nm.asarray(points)
             if points.shape[1] < 3:
                 points = nm.pad(points, [(0, 0), (0, 3 - points.shape[1])])
-            _dcells = {ct.type : ct.data for ct in _cells}
+            _dcells = {ct.type: ct.data for ct in _cells}
 
             cells, cell_type, offset = make_cells_from_conn(
                 _dcells, meshio_to_vtk_type,
@@ -191,8 +194,8 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
         mesh = cache[key]
 
     elif ext in ['.h5', '.h5x']:
-        vtk_cell_types = {'1_1' : 1, '1_2' : 3, '2_2' : 3, '3_2' : 3,
-                          '2_3' : 5, '2_4' : 9, '3_4' : 10, '3_8' : 12}
+        vtk_cell_types = {'1_1': 1, '1_2': 3, '2_2': 3, '3_2': 3,
+                          '2_3': 5, '2_4': 9, '3_4': 10, '3_8': 12}
         # Custom sfepy format.
         fname = filenames[0]
         key = (fname, step)
@@ -207,7 +210,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
 
             points = nm.c_[mesh.coors, nm.zeros((nv, 3 - dim))]
             cells, cell_type, offset = make_cells_from_conn(
-                {desc : mesh.get_conn(desc)}, vtk_cell_types,
+                {desc: mesh.get_conn(desc)}, vtk_cell_types,
             )
 
             steps, times, nts = io.read_times()
@@ -555,6 +558,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
 class OptsToListAction(Action):
     separator = '='
+
     def __call__(self, parser, namespace, values, option_string=None):
         out = []
         for item in values:
