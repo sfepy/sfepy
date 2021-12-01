@@ -437,7 +437,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                 sl_pipe = pipe[-1].compute_derivative(scalars=field)
 
             cmin, cmax = sl_pipe.bounds[::2], sl_pipe.bounds[1::2]
-            streamlines = sl_pipe.streamlines(vectors='gradient',
+            streamlines = sl_pipe.streamlines(vectors=sl_vector,
                                               pointa=cmin, pointb=cmax,
                                               n_points=npts,
                                               max_time=1e12)
