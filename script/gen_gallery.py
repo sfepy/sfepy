@@ -306,7 +306,8 @@ def generate_images(images_dir, examples_dir):
     ensure_path(images_dir + os.path.sep)
 
     for ex_filename in locate_files('*.py', examples_dir):
-        if _omit(ex_filename): continue
+        if _omit(ex_filename):
+            continue
 
         output.level = 0
         output.prefix = prefix
@@ -365,6 +366,7 @@ def generate_images(images_dir, examples_dir):
 
         output('...done')
 
+
 def generate_thumbnails(thumbnails_dir, images_dir, scale=0.3):
     """
     Generate thumbnails into `thumbnails_dir` corresponding to images in
@@ -384,6 +386,7 @@ def generate_thumbnails(thumbnails_dir, images_dir, scale=0.3):
         image.thumbnail(fig_filename, thumb_filename, scale=scale)
 
     output('...done')
+
 
 _index = """\
 .. _%s-index:
@@ -416,6 +419,7 @@ _include = """\
 
 """
 
+
 def generate_rst_files(rst_dir, examples_dir, images_dir):
     """
     Generate Sphinx rst files for examples in `examples_dir` with images
@@ -432,7 +436,8 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
     dir_map = {}
     for ex_filename in locate_files('*.py', examples_dir):
-        if _omit(ex_filename): continue
+        if _omit(ex_filename):
+            continue
 
         ebase = ex_filename.replace(examples_dir, '')[1:]
         base_dir = os.path.dirname(ebase)
@@ -473,7 +478,6 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
                 else:
                     output('   warning: figure "%s" not found' % fig_filename)
 
-
             # Example rst file.
             fd = open(full_rst_filename, 'w')
             fd.write(_include % (rst_base, ebase, '=' * len(ebase),
@@ -491,6 +495,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
     output('...done')
 
     return dir_map
+
 
 _rst_empty_item = """\
         - ..
@@ -545,9 +550,9 @@ def generate_gallery(examples_dir, output_filename, doc_dir,
     lines = [_gallery_head]
 
     for dirname, filenames in ordered_iteritems(dir_map):
-        title= ['   %s' % dirname.title().replace('_', ' '),
-                '   ' + len(dirname) * '^' + '',
-                _gallery_table]
+        title = ['   %s' % dirname.title().replace('_', ' '),
+                 '   ' + len(dirname) * '^' + '',
+                 _gallery_table]
 
         llines = []
         icol = 0
@@ -591,11 +596,13 @@ def generate_gallery(examples_dir, output_filename, doc_dir,
 
     output('...done')
 
+
 helps = {
     'doc_dir': 'top level directory of gallery files',
     'no_images': 'do not (re)generate images and thumbnails',
     'output_filename': 'output file name [default: %(default)s]',
 }
+
 
 def main():
     parser = ArgumentParser(description=__doc__,
