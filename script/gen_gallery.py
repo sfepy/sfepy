@@ -34,7 +34,8 @@ from sfepy.base.base import (get_default, ordered_iteritems,
                              import_file, output, Struct)
 from sfepy.base.ioutils import (ensure_path, locate_files, remove_files,
                                 edit_filename)
-from sfepy.postprocess.domain_specific import DomainSpecificPlot
+from resview import pv_plot, get_camera_position
+import pyvista as pv
 
 omits = [
     'vibro_acoustic3d_mid.py',
@@ -48,227 +49,150 @@ omit_dirs = [
 ]
 
 custom = {
-    'acoustics/acoustics3d.py' : {
-        '_p_1' : {
-            'is_scalar_bar' : True,
-            'view' : (44, 57, 0.24, [-0.004, -0.007, 0.09]),
-            'roll' : 0,
+    'acoustics/vibro_acoustic3d.py': {
+        '_g0': {'view_2d': True},
+        '_w': {
+            'fields': ['real.w:p0', 'imag.w:p1'],
+            'view_2d': True,
         },
-        '_p_2' : {
-            'is_scalar_bar' : True,
-            'view' : (-99, 120, 0.4, [0.0, 0.0, 0.07]),
-            'roll' : 141,
+        '_p1': {'camera': [45, 55, 0.8]},
+        '_p2': {'camera': [45, 55, 0.8]},
+    },
+    'acoustics/acoustics3d.py': {
+        '_p_1': {
+            'camera': [75, 135, 1],
+            'position_vector': [1.2, 0, 0],
+        },
+        '_p_2': {
+            'camera': [75, 135, 1],
+            'position_vector': [1.2, 0, 0],
         },
     },
-    'acoustics/vibro_acoustic3d.py' : {
-        '_p1' : {
-            'is_scalar_bar' : True,
-            'view' : (45.0, 54.7, 1.47, [0.0, 0.0, 0.05]),
-            'roll' : -120,
-        },
-        '_p2' : {
-            'is_scalar_bar' : True,
-            'view' : (45.0, 54.7, 1.47, [0.0, 0.0, 0.15]),
-            'roll' : -120,
-        },
-        '_w' : {
-            'is_scalar_bar' : True,
-            'view' : (0.0, 0.0, 0.86, [0.0, 0.0, 0.1]),
-            'roll' : 0,
-        },
-        '_g0' : {
-            'is_scalar_bar' : True,
-            'view' : (0.0, 0.0, 0.86, [0.0, 0.0, 0.1]),
-            'roll' : 0,
+    'diffusion/cube.py': {
+        '': {'camera': [225, 55, 0.7]},
+    },
+    'diffusion/laplace_time_ebcs.py': {
+        '': {'camera': [225, 55, 0.7]},
+    },
+    'diffusion/laplace_fluid_2d.py': {
+        '': {'fields': ['phi:p0', 'phi:t50:p0']},
+    },
+    'diffusion/laplace_1d.py': {
+        '': {'fields': ['t:wt:p0', 't:p0']},
+    },
+    'diffusion/laplace_coupling_lcbcs.py': {
+        '': {
+            'fields': ['u1:wu1:p0', 'u1:vw:p0',
+                       'u2:wu2:p1', 'u2:vw:p1'],
+            'force_view_3d': True,
         },
     },
-    'diffusion/laplace_1d.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'domain_specific' : {
-                't' : DomainSpecificPlot('plot_warp_scalar',
-                                          ['rel_scaling=1']),
-            },
-            'view' : (-90, 90, 1.5, [0,  0, 0]),
-            'roll' : 0,
-            'opacity' : {'wireframe' : 0.3},
+    'diffusion/poisson_iga.py': {
+        '': {
+            'fields': ['t:wt:p0', 't:vw:o0.4:p0'],
+            'force_view_3d': True,
+            'camera': [30, 60, 1.],
         },
     },
-    'diffusion/laplace_coupling_lcbcs.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'domain_specific' : {
-                'u1' : DomainSpecificPlot('plot_warp_scalar',
-                                          ['rel_scaling=1']),
-                'u2' : DomainSpecificPlot('plot_warp_scalar',
-                                          ['rel_scaling=1']),
-            },
-            'view' : (-82, 50, 3.6, [-0.43, -0.55, 0.4]),
-            'roll' : -23,
-            'opacity' : {'wireframe' : 0.3},
+    'diffusion/sinbc.py': {
+        '_t': {
+            'fields': ['t:wt:p0', '1:vw:p0'],
+            'force_view_3d': True,
+            'camera': [0, -45, 1.],
+        },
+        '_grad': {
+            'fields': ['grad:g:f0.01:p0', '1:vw:p0'],
+            'force_view_3d': True,
+            'camera': [0, -45, 1.],
         },
     },
-    'diffusion/poisson_iga.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'domain_specific' : {
-                't' : DomainSpecificPlot('plot_warp_scalar',
-                                         ['rel_scaling=1']),
-            },
-            'view' : (55, 39, 6.6, [-0.35, -0.29, 0.35]),
-            'roll' : 15,
-            'opacity' : {'wireframe' : 0.3},
+    'linear_elasticity/elastic_contact_planes.py': {
+        '': {
+            'fields': ['u:wu:p0', '1:vw:p0'],
+            'camera': [225, 55, 0.7],
         },
     },
-    'diffusion/sinbc.py' : {
-        '_t' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'domain_specific' : {
-                't' : DomainSpecificPlot('plot_warp_scalar',
-                                         ['rel_scaling=1']),
-            },
-            'view' : (-170, 30, 4.7, [0.34, 0.23, -0.26]),
-            'roll' : 71,
-            'opacity' : {'wireframe' : 0.3},
-        },
-        '_grad' : {
-            'is_scalar_bar' : True,
-            'opacity' : {'surface' : 0.3},
-            'view' : (-170, 30, 4.7, [0.34, 0.23, -0.26]),
-            'roll' : 71,
+    'linear_elasticity/elastic_contact_sphere.py': {
+        '': {
+            'fields': ['u:wu:p0', '1:vw:p0'],
+            'camera': [225, 55, 0.7],
         },
     },
-    'linear_elasticity/elastic_contact_planes.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'domain_specific' : {
-                'u' : DomainSpecificPlot('plot_displacements',
-                                         ['rel_scaling=1']),
-            },
-            'view' : (-82, 47, 3.4, [-0.5, -0.24, -0.2]),
-            'roll' : -8.4,
-            'opacity' : {'wireframe' : 0.3},
+    'linear_elasticity/elastic_shifted_periodic.py': {
+        '': {'fields': ['von_mises_stress:r:wu:p0', '1:vw:p0']},
+    },
+    'linear_elasticity/linear_elastic_iga.py': {
+        '': {
+            'fields': ['u:wu:p0', '1:vw:p0'],
+            'camera': [-45, 55, 1],
         },
     },
-    'linear_elasticity/elastic_contact_sphere.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'domain_specific' : {
-                'u' : DomainSpecificPlot('plot_displacements',
-                                         ['rel_scaling=1']),
-            },
-            'view' : (-82, 47, 3.4, [-0.5, -0.24, -0.2]),
-            'roll' : -8.4,
-            'opacity' : {'wireframe' : 0.3},
+    'linear_elasticity/shell10x_cantilever.py': {
+        '': {
+            'fields': ['u_disp:wu_disp:p0', '1:vw:p0',
+                       'u_rot:p1', '1:vw:p1'],
+            'camera': [-45, 75, 1],
+            'position_vector': [1, 0, 0],
         },
     },
-    'linear_elasticity/elastic_shifted_periodic.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'only_names' : ['u'],
-            'domain_specific' : {
-                'u' : DomainSpecificPlot('plot_displacements',
-                                         ['rel_scaling=1',
-                                          'color_kind="scalars"',
-                                          'color_name="von_mises_stress"']),
-            },
-            'view' : (142, 39, 16, [-4.7, -2.1, -1.9]),
-            'roll' : 8.4,
-            'opacity' : {'wireframe' : 0.3},
+    'navier_stokes/stokes_slip_bc.py': {
+        '': {
+            'fields': ['u:g:f.25:p0', 'u:o.4:p0', 'p:p1'],
+            'camera': [-45, 55, 1],
+            'position_vector': [0, 1.2, 0]
         },
     },
-    'linear_elasticity/linear_elastic_iga.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'domain_specific' : {
-                'u' : DomainSpecificPlot('plot_displacements',
-                                         ['rel_scaling=1']),
-            },
-            'view' : (-37, 51, 1.5, [-0.28, -0.29, 0.0]),
-            'roll' : -51.5,
-            'opacity' : {'wireframe' : 0.2},
+    'multi_physics/thermo_elasticity_ess.py': {
+        '': {
+            'fields': ['T:wu:f1e3:p0', '1:vw:p0'],
+            'camera': [-45, 75, 1],
         },
     },
-    'linear_elasticity/shell10x_cantilever.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'domain_specific' : {
-                'u_disp' : DomainSpecificPlot('plot_displacements',
-                                              ['rel_scaling=1']),
-            },
-            'view' : (-45, 81, 0.59, [-0.075,  0.023,  0.093]),
-            'roll' : -75.0,
-            'opacity' : {'wireframe' : 0.5},
+    'multi_physics/piezo_elasticity.py': {
+        '': {
+            'fields': ['u:p0', 'cauchy_strain:p1',
+                       'elastic_stress:p2', 'piezo_stress:p3',
+                       'piezo_strain:p4', 'total_stress:p5'],
+            'position_vector': [1.2, 1.2, 0],
         },
     },
-    'navier_stokes/stokes_slip_bc.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'view' : (-63, 52, 5.2, [-1.5, -0.65, 0.12]),
-            'roll' : -32,
-            'resolution' : (800, 600),
-            'layout' : 'col',
-            'rel_scaling' : 0.1,
-        },
+    'quantum/boron.py': {
+        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
     },
-    'multi_physics/thermo_elasticity_ess.py' : {
-        '' : {
-            'is_scalar_bar' : True,
-            'is_wireframe' : True,
-            'only_names' : ['u'],
-            'domain_specific' : {
-                'u' : DomainSpecificPlot('plot_displacements',
-                                         ['rel_scaling=1000',
-                                          'color_kind="scalars"',
-                                          'color_name="T"']),
-            },
-            'view' : (-51, 71, 12.9, [-2.3, -2.4, -0.2]),
-            'roll' : -65,
-            'opacity' : {'wireframe' : 0.3},
-        },
+    'quantum/hydrogen.py': {
+        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
     },
-    'quantum/boron.py' : {
-        '' : {
-            'is_scalar_bar' : False,
-            'only_names' : ['Psi000', 'Psi001', 'Psi002'],
-            'view' : (0.0, 0.0, 200.0, [-25., -25.,   0.]),
-            'roll' : 0.0,
-        },
+    'quantum/oscillator.py': {
+        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
     },
-    'quantum/hydrogen.py' : {
-        '' : {
-            'is_scalar_bar' : False,
-            'only_names' : ['Psi000', 'Psi001', 'Psi002'],
-            'view' : (0.0, 0.0, 200.0, [-25., -25.,   0.]),
-            'roll' : 0.0,
-        },
-    },
-    'quantum/oscillator.py' : {
-        '' : {
-            'is_scalar_bar' : False,
-            'only_names' : ['Psi000', 'Psi001', 'Psi002'],
-            'view' : (0.0, 0.0, 200.0, [-25., -25.,   0.]),
-            'roll' : 0.0,
-        },
-    },
-    'quantum/well.py' : {
-        '' : {
-            'is_scalar_bar' : False,
-            'only_names' : ['Psi000', 'Psi001', 'Psi002'],
-            'view' : (0.0, 0.0, 200.0, [-25., -25.,   0.]),
-            'roll' : 0.0,
-        },
+    'quantum/well.py': {
+        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
     },
 }
+
+
+def resview_plot(filename, filename_out, options):
+    pv.set_plot_theme("document")
+    plotter = pv.Plotter(off_screen=True)
+
+    plotter = pv_plot([filename], options, plotter=plotter, use_cache=False)
+    if options.axes_visibility:
+        plotter.add_axes(**dict(options.axes_options))
+
+    if options.view_2d:
+        plotter.view_xy()
+        plotter.show(screenshot=filename_out)
+    else:
+        if options.camera:
+            zoom = options.camera[2] if len(options.camera) > 2 else 1.
+            cpos = get_camera_position(plotter.bounds,
+                                       options.camera[0], options.camera[1],
+                                       zoom=zoom)
+        else:
+            cpos = None
+
+        plotter.show(cpos=cpos, screenshot=filename_out)
+
 
 def _omit(filename):
     omit = False
@@ -318,6 +242,24 @@ def _make_sphinx_path(path, relative=False):
 
     return sphinx_path
 
+
+def apply_view_options(views, default):
+    out = {}
+    for kview, view in views.items():
+        ov = default.copy()
+        for k, v in view.items():
+            if k == 'fields':
+                fv = [k.split(':') for k in v]
+                fv = [(k[0], ':'.join(k[1:])) for k in fv]
+                setattr(ov, k, fv)
+            else:
+                setattr(ov, k, v)
+
+        out[kview] = ov
+
+    return out
+
+
 def generate_images(images_dir, examples_dir):
     """
     Generate images from results of running examples found in
@@ -326,8 +268,6 @@ def generate_images(images_dir, examples_dir):
     The generated images are stored to `images_dir`,
     """
     from sfepy.applications import solve_pde
-    from sfepy.postprocess.viewer import Viewer
-    from sfepy.postprocess.utils import mlab
     from sfepy.solvers.ts_solvers import StationarySolver
 
     prefix = output.prefix
@@ -342,11 +282,28 @@ def generate_images(images_dir, examples_dir):
                      save_field_meshes=False,
                      save_regions_as_groups=False,
                      solve_not=False)
-    default_views = {'' : {'is_scalar_bar' : True}}
+
+    view_options = Struct(step=0,
+                          fields=[], fields_map=[],
+                          outline=False,
+                          show_edges=False,
+                          warp=None,
+                          factor=1.,
+                          opacity=1.,
+                          color_map='viridis',
+                          axes_options=[],
+                          axes_visibility=False,
+                          position_vector=None,
+                          show_labels=False,
+                          label_position=[-1, -1, 0, 0.2],
+                          scalar_bar_size=[0.15, 0.06],
+                          scalar_bar_position=[0.04, 0.92, 0, -1.5],
+                          show_scalar_bars=True,
+                          camera=[225, 75, 1],
+                          view_2d=False,
+                          force_view_3d=False)
 
     ensure_path(images_dir + os.path.sep)
-
-    view = Viewer('', offscreen=False)
 
     for ex_filename in locate_files('*.py', examples_dir):
         if _omit(ex_filename): continue
@@ -368,10 +325,9 @@ def generate_images(images_dir, examples_dir):
 
         if problem is not None:
             if ebase in custom:
-                views = custom[ebase]
-
+                views = apply_view_options(custom[ebase], view_options)
             else:
-                views = default_views
+                views = {'': view_options.copy()}
 
             try:
                 tsolver = problem.get_solver()
@@ -388,6 +344,12 @@ def generate_images(images_dir, examples_dir):
 
             filename = problem.get_output_name(suffix=suffix)
             for suffix, kwargs in six.iteritems(views):
+                if problem.get_dim() == 2 and not kwargs.force_view_3d:
+                    kwargs.view_2d = True
+                    kwargs.scalar_bar_position = [0.04, 0.92, 1.7, 0]
+                    if kwargs.position_vector is None:
+                        kwargs.position_vector = [1.2, 0, 0]
+
                 fig_filename = _get_fig_filename(ebase, images_dir, suffix)
 
                 fname = edit_filename(filename, suffix=suffix)
@@ -395,10 +357,7 @@ def generate_images(images_dir, examples_dir):
                 disp_name = fig_filename.replace(sfepy.data_dir, '')
                 output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
-                view.filename = fname
-                view(scene=view.scene, show=False, colormap='viridis', **kwargs)
-                view.save_image(fig_filename)
-                mlab.clf()
+                resview_plot(fname, fig_filename, kwargs)
 
                 output('...done')
 
