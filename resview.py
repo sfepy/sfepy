@@ -755,7 +755,7 @@ def main():
         plotter.show(auto_close=False)
 
         for k in scalar_bar_limits.keys():
-            lims = scalar_bars[k]
+            lims = scalar_bar_limits[k]
             clim = (nm.min([v[0] for v in lims]),
                     nm.max([v[1] for v in lims]))
             scalar_bar_limits[k] = clim
