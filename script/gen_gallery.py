@@ -479,7 +479,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
                     output('   warning: figure "%s" not found' % fig_filename)
 
             # Example rst file.
-            fd = open(full_rst_filename, 'w')
+            fd = open(full_rst_filename, 'w', encoding='utf-8')
             fd.write(_include % (rst_base, ebase, '=' * len(ebase),
                                  docstring,
                                  fig_include,

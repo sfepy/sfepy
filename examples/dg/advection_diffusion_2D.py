@@ -6,7 +6,7 @@ Static advection-diffusion equation in 2D solved by discontinous Galerkin method
 Based on
 
 Antonietti, P., & Quarteroni, A. (2013). Numerical performance of discontinuous
-    and stabilized continuous Galerkin methods for convection–diffusion problems.
+    and stabilized continuous Galerkin methods for convection-diffusion problems.
 
 
 Usage Examples
