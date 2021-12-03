@@ -149,12 +149,8 @@ custom = {
         },
     },
     'multi_physics/piezo_elasticity.py': {
-        '': {
-            'fields': ['u:p0', 'cauchy_strain:p1',
-                       'elastic_stress:p2', 'piezo_stress:p3',
-                       'piezo_strain:p4', 'total_stress:p5'],
-            'position_vector': [1.2, 1.2, 0],
-        },
+        '': {'fields': ['u:p0', 'cauchy_strain:p1',
+             'elastic_stress:p2', 'piezo_stress:p3']},
     },
     'quantum/boron.py': {
         '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
