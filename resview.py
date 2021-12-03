@@ -89,11 +89,15 @@ def parse_options(opts, separator=':'):
         elif v[-1] == '%':
             val = ('%', float(v[1:-1]))
         else:
-            val = literal_eval(v[1:])
+            try:
+                val = literal_eval(v[1:])
+            except ValueError:
+                val = v[1:]
 
         out[v[0]] = val
 
     return out
+
 
 def make_cells_from_conn(conns, convert_to_vtk_type):
     cells, cell_type, offset = [], [], []
@@ -116,19 +120,22 @@ def make_cells_from_conn(conns, convert_to_vtk_type):
 
     return cells, cell_type, offset
 
+
 def add_mat_id_to_grid(grid, cell_groups):
     val = numpy_to_vtk(cell_groups)
     val.SetName('mat_id')
     grid.GetCellData().AddArray(val)
     return grid
 
-def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
+
+def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
+              use_cache=True):
     _, ext = osp.splitext(filenames[0])
     if ext in ['.vtk', '.vtu']:
         fstep = 0 if step is None else step
         fname = filenames[fstep]
         key = (fname, fstep)
-        if key not in cache:
+        if key not in cache or not use_cache:
             cache[key] = pv.UnstructuredGrid(fname)
         mesh = cache[key]
         cache['n_steps'] = len(filenames)
@@ -148,7 +155,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
             points = nm.asarray(points)
             if points.shape[1] < 3:
                 points = nm.pad(points, [(0, 0), (0, 3 - points.shape[1])])
-            _dcells = {ct.type : ct.data for ct in _cells}
+            _dcells = {ct.type: ct.data for ct in _cells}
 
             cells, cell_type, offset = make_cells_from_conn(
                 _dcells, meshio_to_vtk_type,
@@ -187,8 +194,8 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
         mesh = cache[key]
 
     elif ext in ['.h5', '.h5x']:
-        vtk_cell_types = {'1_1' : 1, '1_2' : 3, '2_2' : 3, '3_2' : 3,
-                          '2_3' : 5, '2_4' : 9, '3_4' : 10, '3_8' : 12}
+        vtk_cell_types = {'1_1': 1, '1_2': 3, '2_2': 3, '3_2': 3,
+                          '2_3': 5, '2_4': 9, '3_4': 10, '3_8': 12}
         # Custom sfepy format.
         fname = filenames[0]
         key = (fname, step)
@@ -203,7 +210,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
 
             points = nm.c_[mesh.coors, nm.zeros((nv, 3 - dim))]
             cells, cell_type, offset = make_cells_from_conn(
-                {desc : mesh.get_conn(desc)}, vtk_cell_types,
+                {desc: mesh.get_conn(desc)}, vtk_cell_types,
             )
 
             steps, times, nts = io.read_times()
@@ -272,8 +279,8 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
 
 
 def pv_plot(filenames, options, plotter=None, step=None,
-            scalar_bars=None, ret_scalar_bars=False, step_inc=None):
-    _scalar_bars = {}
+            scalar_bar_limits=None, ret_scalar_bar_limits=False,
+            step_inc=None, use_cache=True):
     plots = {}
     color = None
 
@@ -290,7 +297,8 @@ def pv_plot(filenames, options, plotter=None, step=None,
         if fstep >= plotter.resview_n_steps:
             fstep = plotter.resview_n_steps - 1
 
-    mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True)
+    mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True,
+                              use_cache=use_cache)
     steps = {fstep: mesh}
 
     bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
@@ -322,7 +330,19 @@ def pv_plot(filenames, options, plotter=None, step=None,
             if field in ['node_groups', 'mat_id']:
                 continue
 
-            fields.append((field, 'p%d' % position))
+            fval = steps[fstep][field]
+            bnds = steps[fstep].bounds
+            mesh_size = (nm.array(bnds[1::2]) - nm.array(bnds[::2])).max()
+            is_vector_field = len(fval.shape) > 1
+            is_point_field = fval.shape[0] == steps[fstep].n_points
+            if is_vector_field and is_point_field:
+                scale = mesh_size * 0.15 / nm.linalg.norm(fval, axis=1).max()
+                fields.append((field, 'vw:p%d' % position))
+                fields.append((field, 'vs:o.4:p%d' % position))
+                fields.append((field, 'g:f%e:p%d' % (scale, position)))
+            else:
+                fields.append((field, 'p%d' % position))
+
             position += 1
 
         if len(fields) == 0:
@@ -332,6 +352,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
     plot_id = 0
 
+    scalar_bars = {}
     for field, fopts in fields:
         opts = parse_options(fopts)
         plot_info = []
@@ -340,11 +361,16 @@ def pv_plot(filenames, options, plotter=None, step=None,
             field = None
             color = 'white'
 
+        if field == '1':
+            field = None
+            color = 'black'
+
         if 's' in opts and step is None:  # plot data from a given step
             fstep = opts['s']
 
         if fstep not in steps:
-            steps[fstep] = read_mesh(filenames, step=fstep)
+            steps[fstep] = read_mesh(filenames, step=fstep,
+                                     use_cache=use_cache)
 
         pipe = [steps[fstep].copy()]
 
@@ -409,13 +435,17 @@ def pv_plot(filenames, options, plotter=None, step=None,
             plotter.add_mesh(pipe[-1].outline(), color='k')
 
         scalar = field
+        scalar_label = scalar
         is_vector_field = field is not None and len(pipe[-1][field].shape) > 1
+        is_point_field = (field is not None and
+                          pipe[-1][field].shape[0] == pipe[-1].n_points)
         if is_vector_field:
             field_data = pipe[-1][field]
             scalar = field + '_magnitude'
+            scalar_label = f'|{field}|'
             pipe[-1][scalar] = nm.linalg.norm(field_data, axis=1)
 
-        if 'g' in opts and is_vector_field:  # glyphs
+        if 'g' in opts and is_vector_field and is_point_field:  # glyphs
             pipe[-1][field] *= factor
             pipe[-1].set_active_vectors(field)
             pipe.append(pipe[-1].arrows)
@@ -457,7 +487,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                          style=style, show_edges=show_edges,
                          opacity=opacity,
                          cmap=options.color_map,
-                         show_scalar_bar=False, label=scalar)
+                         show_scalar_bar=False, label=scalar_label)
 
         bnds = pipe[-1].bounds
         if position not in plots:
@@ -468,34 +498,42 @@ def pv_plot(filenames, options, plotter=None, step=None,
         plots[position].append(((bnds[::2], bnds[1::2]), plot_info))
 
         if options.show_scalar_bars and scalar:
-            if scalar not in _scalar_bars:
-                _scalar_bars[scalar] = []
+            if scalar not in scalar_bars:
+                scalar_bars[scalar_label] = []
 
             field_data = pipe[-1][scalar]
             limits = (nm.min(field_data), nm.max(field_data))
-            _scalar_bars[scalar].append((limits, plotter.mapper, position))
+            scalar_bars[scalar_label].append((limits, plotter.mapper,
+                                              position))
 
         plot_id += 1
 
     if options.show_scalar_bars:
-        if scalar_bars is None:
-            scalar_bars = {}
-            for ii, (k, v) in enumerate(_scalar_bars.items()):
-                limits = (nm.min([iv[0][0] for iv in v]),
-                          nm.max([iv[0][1] for iv in v]))
-                scalar_bars[k] = (limits, ii)
+        if scalar_bar_limits is None:
+            scalar_bar_limits = {}
+            for k, vs in scalar_bars.items():
+                limits = (nm.min([v[0] for v, _, _ in vs]),
+                          nm.max([v[1] for v, _, _ in vs]))
+                scalar_bar_limits[k] = limits
 
-        mappers = {k: [iv[1] for iv in v] for k, v in _scalar_bars.items()}
-
-        for k, v in scalar_bars.items():
-            clim = v[0][:]
-            y_pos = 0.02 + v[1] * 0.05 * 1.5
-            for mapper in mappers[k]:
+        width, height = options.scalar_bar_size
+        position_x, position_y, shift_x, shift_y = options.scalar_bar_position
+        nslots = len(scalar_bars)
+        for k, vs in scalar_bars.items():
+            clim = scalar_bar_limits[k]
+            for _, mapper, _ in vs:
                 mapper.scalar_range = clim
+            _, mapper, slot = vs[0]
+
+            slot_x = (nslots - slot - 1) if shift_x < 0 else slot
+            x_pos = position_x + slot_x * width * shift_x
+            slot_y = (nslots - slot - 1) if shift_y < 0 else slot
+            y_pos = position_y + slot_y * height * shift_y
+
             plotter.add_scalar_bar(title=k,
-                                   position_x=0.82, position_y=y_pos,
-                                   width=0.15, height=0.05, n_labels=2,
-                                   mapper=mapper)
+                                   position_x=x_pos, position_y=y_pos,
+                                   width=width, height=height,
+                                   n_labels=2, mapper=mapper)
 
     if options.show_labels and len(plots) > 1:
         labels, points = [], []
@@ -512,14 +550,15 @@ def pv_plot(filenames, options, plotter=None, step=None,
     for k, v in plots.items():
         print('plot %d: %s' % (k, '; '.join(iv[1] for iv in v)))
 
-    if ret_scalar_bars:
-        return plotter, scalar_bars
+    if ret_scalar_bar_limits:
+        return plotter, scalar_bar_limits
     else:
         return plotter
 
 
 class OptsToListAction(Action):
     separator = '='
+
     def __call__(self, parser, namespace, values, option_string=None):
         out = []
         for item in values:
@@ -576,7 +615,7 @@ helps = {
     'no_scalar_bars':
         'hide scalar bars',
     'position_vector':
-        'define positions of plots [default: "0,0,1.6"]',
+        'define positions of plots [default: "0, 0, 1.6"]',
     'view':
         'camera azimuth, elevation angles, and optionally zoom factor'
         ' [default: "225,75,0.9"]',
@@ -591,7 +630,11 @@ helps = {
     'no_labels':
         'hide plot labels',
     'label_position':
-        'define position of plot labels [default: "225,75,0.9"]',
+        'define position of plot labels [default: "-1, -1, 0, 0.2"]',
+    'scalar_bar_size':
+        'define size of scalar bars [default: "0.15, 0.05"]',
+    'scalar_bar_position':
+        'define position of scalar bars [default: "0.8, 0.02, 0, 1.5"]',
     'step':
         'select data in a given time step',
     '2d_view':
@@ -649,6 +692,14 @@ def main():
     parser.add_argument('--no-scalar-bars',
                         action='store_false', dest='show_scalar_bars',
                         default=True, help=helps['no_scalar_bars'])
+    parser.add_argument('--scalar-bar-size', metavar='size',
+                        action=StoreNumberAction, dest='scalar_bar_size',
+                        default=[0.15, 0.05],
+                        help=helps['scalar_bar_size'])
+    parser.add_argument('--scalar-bar-position', metavar='position',
+                        action=StoreNumberAction, dest='scalar_bar_position',
+                        default=[0.8, 0.02, 0, 1.5],
+                        help=helps['scalar_bar_position'])
     parser.add_argument('-v', '--view', metavar='position',
                         action=StoreNumberAction, dest='camera',
                         default=[225, 75, 0.9], help=helps['view'])
@@ -677,17 +728,18 @@ def main():
     if options.anim_output_file:
         _, n_steps = read_mesh(options.filenames, ret_n_steps=True)
         # dry run
-        scalar_bars = {}
+        scalar_bar_limits = None
         if options.axes_visibility:
             plotter.add_axes(**dict(options.axes_options))
         for step in range(n_steps):
-            plotter, _scalar_bars = pv_plot(options.filenames, options,
-                                            plotter=plotter, step=step,
-                                            ret_scalar_bars=True)
-            for k, v in _scalar_bars.items():
-                if k not in scalar_bars:
-                    scalar_bars[k] = []
-                scalar_bars[k].append(v)
+            plotter, sb_limits = pv_plot(options.filenames, options,
+                                         plotter=plotter, step=step,
+                                         ret_scalar_bar_limits=True)
+            if scalar_bar_limits is None:
+                scalar_bar_limits = {k: [] for k in sb_limits.keys()}
+
+            for k, v in sb_limits.items():
+                scalar_bar_limits[k].append(v)
 
         if options.camera:
             zoom = options.camera[2] if len(options.camera) > 2 else 1.
@@ -702,17 +754,17 @@ def main():
         plotter.open_movie(anim_filename, options.framerate)
         plotter.show(auto_close=False)
 
-        for k in scalar_bars.keys():
-            v = scalar_bars[k]
-            clim = (nm.min([iv[0][0] for iv in v]),
-                    nm.max([iv[0][1] for iv in v]))
-            scalar_bars[k] = (clim, v[0][1])
+        for k in scalar_bar_limits.keys():
+            lims = scalar_bar_limits[k]
+            clim = (nm.min([v[0] for v in lims]),
+                    nm.max([v[1] for v in lims]))
+            scalar_bar_limits[k] = clim
 
         # plot frames
         for step in range(n_steps):
             plotter.clear()
             plotter = pv_plot(options.filenames, options, plotter=plotter,
-                              step=step, scalar_bars=scalar_bars)
+                              step=step, scalar_bar_limits=scalar_bar_limits)
             if options.axes_visibility:
                 plotter.add_axes(**dict(options.axes_options))
 
