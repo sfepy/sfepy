@@ -60,7 +60,7 @@ custom = {
     },
     'acoustics/acoustics3d.py': {
         '_p_1': {
-            'camera': [75, 135, 1],
+            'camera': [75, 135, 1.4],
             'position_vector': [1.2, 0, 0],
         },
         '_p_2': {
@@ -103,7 +103,7 @@ custom = {
         '_grad': {
             'fields': ['grad:g:f0.01:p0', '1:vw:p0'],
             'force_view_3d': True,
-            'camera': [0, -45, 1.],
+            'camera': [0, -45, 1.5],
         },
     },
     'linear_elasticity/elastic_contact_planes.py': {
@@ -127,6 +127,9 @@ custom = {
             'camera': [-45, 55, 1],
         },
     },
+    'linear_elasticity/linear_viscoelastic.py': {
+        '': {'camera': [225, 75, 0.88]}
+    },
     'linear_elasticity/shell10x_cantilever.py': {
         '': {
             'fields': ['u_disp:wu_disp:p0', '1:vw:p0',
@@ -147,6 +150,9 @@ custom = {
             'fields': ['T:wu:f1e3:p0', '1:vw:p0'],
             'camera': [-45, 75, 1],
         },
+    },
+    'multi_physics/thermo_elasticity.py': {
+        '': {'camera': [225, 75, 0.9]}
     },
     'multi_physics/piezo_elasticity.py': {
         '': {'fields': ['u:p0', 'cauchy_strain:p1',
