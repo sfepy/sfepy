@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **29.09.2020** Version 2020.3 released (new script for visualizations based
+  on pyvista, generalized Yeoh hyperelastic term + example, etc.), see
+  :ref:`release notes <2020.2-2020.3>`.
+
 * **30.06.2020** Version 2020.2 released (discontinuous Galerkin method
   implementation and examples, new website look, memory usage
   improvements, etc.), see :ref:`release notes <2020.1-2020.2>`.

@@ -1,5 +1,114 @@
 # created: 20.07.2007 (-1)
 
+.. _2021.3-2021.4:
+
+from 2021.3 to 2021.4
+=====================
+
+- merge pull request #729 from brylie/patch-1
+
+  - Include example Docker compose file for simplicity
+  - Use `code/` subdirectory inside of container
+
+- merge pull request #735 from burnpanck/patch-1
+
+  - Clarify orientation of geometry elements
+  - Added a note clarifying that the figure showing geometry elements applies
+    to right-handed coordinate systems.
+
+- merge pull request #738 from rc/fix-plot-condition-numbers
+
+  - script/plot_condition_numbers.py: fix division in main()
+  - script/plot_condition_numbers.py: resolve numpy warning in main()
+
+- merge pull request #741 from rc/plot-mass-condition-numbers
+
+  - script/plot_condition_numbers.py: add smass, vmass types to --matrix option
+
+    - use choices in --matrix
+    - remove useless dw_laplace coefficient in main()
+
+  - script/plot_condition_numbers.py: remove order_fix in main()
+  - script/plot_condition_numbers.py: new --output-dir, --no-show options
+  - script/plot_condition_numbers.py: tweak plot parameters in main()
+
+- merge pull request #734 from rc/resview-sfepy-h5-no-steps
+
+  - support sfepy HDF5 meshes with no time steps in read_mesh() - new
+    add_mat_id_to_grid()
+  - update XDMF support in read_mesh() for current meshio, fix 2D meshes
+  - change add_mat_id_to_grid() argument to cell_groups, update read_mesh()
+  - determine default --position-vector from mesh bounding box in pv_plot()
+
+    - set --position-vector default to None in main()
+    - fixes placement of plots for non-3D meshes
+
+- merge pull request #742 from rc/create-faq, closes #413, #706
+
+  - new doc/faq.rst
+  - docs: link faq.rst in index.rst
+  - docs: add faq.rst to documentation.rst contents
+
+- merge pull request #744 from vlukes/update_faq
+
+  - new advice: use msh22 instead of msh4
+
+- merge pull request #747 from rc/fix-plot-mesh-3d
+
+  - script/plot_mesh.py: do not scale axis in 3D - fixes main() for current
+    matplotlib (3.4.3)
+
+- merge pull request #750 from vlukes/multiproc_recovery
+
+  - update multiproc_proc module: import Pool
+  - new parallel recovery of multiple microstructures
+
+- merge pull request #748 from rc/update-faq
+
+  - docs: add examples of regions by functions (imperative API) into FAQ
+  - docs: add visualization of various FEM-related information into FAQ
+  - docs: fix cell region definition in FAQ
+  - docs: add PYTHONPATH setting for inplace builds into FAQ
+
+- merge pull request #751 from flothesof/master
+
+  - "dry water" flow example
+
+- merge pull request #752 from vlukes/reinit_homogenization_engine
+
+  - allow to reinitialize the homogenization engine
+
+- merge pull request #753 from rc/pass-kwargs-conf-to-auto-solver
+
+  - respect keyword arguments in 'auto' solvers - pass kwargs from
+    AutoFallbackSolver.__new__() to use_first_available()
+  - fix AutoFallbackSolver.__new__() to use the original solver configuration
+
+- merge pull request #754 from vlukes/resview_streamlines
+
+  - new streamlines plotting
+  - new option for the XY plane view
+  - update visualization parameters in docstring
+  - relabel option
+
+- merge pull request #749 from zitkat/dg-multiple-limiters
+
+  - Allow multiple limiters for multiple fields.
+  - Fix sfepy imports and remove hardcoded verbose flag.
+
+- merge pull request #755 from rc/resview-fix-streamlines
+
+  - resview.py: fix streamline vectors name in pv_plot()
+  - resview.py: use sphere streamlines source in 3D in pv_plot()
+
+- merge pull request #756 from vlukes/resview_gallery
+
+  - update scalar bars positioning and range
+  - update files caching
+  - default glyphs for vector fields, new empty black field
+  - use resview for gallery generation
+  - adjustment of some gallery plots
+
 .. _2021.2-2021.3:
 
 from 2021.2 to 2021.3
