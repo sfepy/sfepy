@@ -134,6 +134,9 @@ class Newton(NonlinearSolver):
          """If not None, the linear system solution tolerances are set in each
             nonlinear iteration relative to the current residual norm by the
             `lin_precision` factor. Ignored for direct linear solvers."""),
+        ('step_red', '0.0 < float <= 1.0', 1.0, False,
+         """Step reduction factor. Equivalent to the mixing parameter :math:`a`:
+            :math:`(1 - a) x + a (x + dx) = x + a dx`"""),
         ('ls_on', 'float', 0.99999, False,
          """Start the backtracking line-search by reducing the step, if
             :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
@@ -365,7 +368,7 @@ class Newton(NonlinearSolver):
                 output('then the value set in solver options! (err = %e < %e)'
                        % (lerr, lin_red))
 
-            vec_x -= vec_dx
+            vec_x -= conf.step_red * vec_dx
             it += 1
 
         if status is not None:
