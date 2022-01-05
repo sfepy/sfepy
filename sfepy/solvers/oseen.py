@@ -40,8 +40,8 @@ class StabilizationFunction(Struct):
         # Indices to the state vector.
         ii = {}
         ii['u'] = variables.get_indx(ns['u'])
-        ii['us'] = variables.get_indx(ns['u'], stripped=True)
-        ii['ps'] = variables.get_indx(ns['p'], stripped=True)
+        ii['us'] = variables.get_indx(ns['u'], reduced=True)
+        ii['ps'] = variables.get_indx(ns['p'], reduced=True)
         self.indices = ii
 
         materials = problem.get_materials()

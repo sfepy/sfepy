@@ -277,7 +277,7 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
 
     if mode == 'weak':
         if dw_mode == 'vector':
-            asm_obj = equations.create_stripped_state_vector()
+            asm_obj = equations.create_reduced_state_vector()
 
         else:
             asm_obj = equations.create_matrix_graph(active_only=active_only,
@@ -412,8 +412,8 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         else:
             problem.time_update(ebcs=ebcs, epbcs=epbcs)
 
-        ir = indx( var_names[0], stripped = True, allow_dual = True )
-        ic = indx( var_names[1], stripped = True, allow_dual = True )
+        ir = indx(var_names[0], reduced=True, allow_dual=True)
+        ic = indx(var_names[1], reduced=True, allow_dual=True)
 
         problem.update_materials()
         mtx = problem.evaluate(mtx_term, auto_init=True,

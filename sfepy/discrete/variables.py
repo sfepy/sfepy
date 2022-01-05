@@ -501,7 +501,7 @@ class Variables(Container):
         vec = nm.zeros((self.di.ptr[-1],), dtype=self.dtype)
         return vec
 
-    def create_stripped_state_vector(self):
+    def create_reduced_state_vector(self):
         vec = nm.zeros((self.adi.ptr[-1],), dtype=self.dtype)
         return vec
 
@@ -521,7 +521,7 @@ class Variables(Container):
         for var in self.iter_state():
             var.apply_ic(vec, self.di.indx[var.name].start, force_values)
 
-    def strip_state_vector(self, vec, follow_epbc=False, svec=None):
+    def reduce_vec(self, vec, follow_epbc=False, svec=None):
         """
         Get the reduced DOF vector, with EBC and PBC DOFs removed.
 
@@ -559,7 +559,7 @@ class Variables(Container):
         vec : array
             The full DOF vector.
         """
-        self.check_vector_size(svec, stripped=True)
+        self.check_vector_size(svec, reduced=True)
 
         if self.has_lcbc:
             if self.has_lcbc_rhs:
@@ -597,7 +597,7 @@ class Variables(Container):
                 return False
         return True
 
-    def get_indx(self, var_name, stripped=False, allow_dual=False):
+    def get_indx(self, var_name, reduced=False, allow_dual=False):
         var = self[var_name]
 
         if not var.is_state():
@@ -607,12 +607,12 @@ class Variables(Container):
                 msg = '%s is not a state part' % var_name
                 raise IndexError(msg)
 
-        if stripped:
+        if reduced:
             return self.adi.indx[var_name]
         else:
             return self.di.indx[var_name]
 
-    def check_vector_size(self, vec, stripped=False):
+    def check_vector_size(self, vec, reduced=False):
         """
         Check whether the shape of the DOF vector corresponds to the
         total number of DOFs of the state variables.
@@ -621,11 +621,11 @@ class Variables(Container):
         ----------
         vec : array
             The vector of DOF values.
-        stripped : bool
+        reduced : bool
             If True, the size of the DOF vector should be reduced,
             i.e. without DOFs fixed by boundary conditions.
         """
-        if not stripped:
+        if not reduced:
             n_dof = self.di.get_n_dof_total()
 
             if vec.size != n_dof:
@@ -647,13 +647,13 @@ class Variables(Container):
                       % (n_dof, vec.size)
                 raise ValueError(msg)
 
-    def get_state_part_view(self, state, var_name, stripped=False):
-        self.check_vector_size(state, stripped=stripped)
-        return state[self.get_indx(var_name, stripped)]
+    def get_state_part_view(self, state, var_name, reduced=False):
+        self.check_vector_size(state, reduced=reduced)
+        return state[self.get_indx(var_name, reduced)]
 
-    def set_state_part(self, state, part, var_name, stripped=False):
-        self.check_vector_size(state, stripped=stripped)
-        state[self.get_indx(var_name, stripped)] = part
+    def set_state_part(self, state, part, var_name, reduced=False):
+        self.check_vector_size(state, reduced=reduced)
+        state[self.get_indx(var_name, reduced)] = part
 
     def get_state_parts(self, vec=None):
         """

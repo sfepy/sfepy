@@ -508,12 +508,12 @@ class Equations(Container):
     def create_state_vector(self):
         return self.variables.create_state_vector()
 
-    def create_stripped_state_vector(self):
-        return self.variables.create_stripped_state_vector()
+    def create_reduced_state_vector(self):
+        return self.variables.create_reduced_state_vector()
 
-    def strip_state_vector(self, vec, follow_epbc=False):
+    def reduce_vec(self, vec, follow_epbc=False):
         """
-        Strip a full vector by removing EBC dofs.
+        Get the reduced DOF vector, with EBC and PBC DOFs removed.
 
         Notes
         -----
@@ -522,7 +522,7 @@ class Equations(Container):
         assembling. For vectors with state (unknown) variables it should be set
         to False, for assembled vectors it should be set to True.
         """
-        return self.variables.strip_state_vector(vec, follow_epbc=follow_epbc)
+        return self.variables.reduce_vec(vec, follow_epbc=follow_epbc)
 
     def make_full_vec(self, svec, force_value=None):
         """
@@ -691,15 +691,15 @@ class Equations(Container):
                 key, rname, cname = [aux.strip()
                                      for aux in name.split(',')]
 
-                ir = get_indx(rname, stripped=True, allow_dual=True)
+                ir = get_indx(rname, reduced=True, allow_dual=True)
 
-                residual = self.create_stripped_state_vector()
+                residual = self.create_reduced_state_vector()
                 eq.evaluate(mode='weak', dw_mode='vector', asm_obj=residual)
 
                 out[key] = residual[ir]
 
         else:
-            out = self.create_stripped_state_vector()
+            out = self.create_reduced_state_vector()
 
             self.evaluate(mode='weak', dw_mode='vector', asm_obj=out)
 
@@ -746,8 +746,8 @@ class Equations(Container):
                 key, rname, cname = [aux.strip()
                                      for aux in eq.name.split(',')]
 
-                ir = get_indx(rname, stripped=True, allow_dual=True)
-                ic = get_indx(cname, stripped=True, allow_dual=True)
+                ir = get_indx(rname, reduced=True, allow_dual=True)
+                ic = get_indx(cname, reduced=True, allow_dual=True)
 
                 tangent_matrix.data[:] = 0.0
                 aux = eq.evaluate(mode='weak', dw_mode='matrix',

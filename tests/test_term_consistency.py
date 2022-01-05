@@ -190,7 +190,7 @@ class Test(TestCommon):
         aux2g = mtx * state()
         problem.time_update(ebcs=self.conf.ebcs,
                             epbcs=self.conf.epbcs)
-        aux2 = problem.equations.strip_state_vector(aux2g, follow_epbc=True)
+        aux2 = problem.equations.reduce_vec(aux2g, follow_epbc=True)
 
         ret = self.compare_vectors(aux1, aux2,
                                    label1='vector mode',

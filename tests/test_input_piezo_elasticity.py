@@ -26,9 +26,9 @@ class Test( TestInput ):
         svec_phi = nm.empty( (vvs.adi.n_dof['phi'],), dtype = nm.float64 )
         svec_phi.fill( 2.0 )
 
-        svec = vvs.create_stripped_state_vector()
-        setv( svec, svec_u, 'u', stripped = True )
-        setv( svec, svec_phi, 'phi', stripped = True )
+        svec = vvs.create_reduced_state_vector()
+        setv(svec, svec_u, 'u', reduced=True)
+        setv(svec, svec_phi, 'phi', reduced=True)
 
         vec = make_full( svec )
 
