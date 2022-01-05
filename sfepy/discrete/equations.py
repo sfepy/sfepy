@@ -578,17 +578,21 @@ class Equations(Container):
         self.variables.set_data(data, step=step,
                                 ignore_unknown=ignore_unknown)
 
-    def apply_ebc(self, vec, force_values=None):
-        """
-        Apply essential (Dirichlet) boundary conditions to a state vector.
-        """
-        self.variables.apply_ebc(vec, force_values=force_values)
+    def init_state(self, vec=None, active_only=True):
+        self.variables.init_state(vec=vec, active_only=active_only)
 
-    def apply_ic(self, vec, force_values=None):
+    def apply_ebc(self, vec=None, force_values=None):
         """
-        Apply initial conditions to a state vector.
+        Apply essential (Dirichlet) boundary conditions to equations' variables,
+        or a given vector.
         """
-        self.variables.apply_ic(vec, force_values=force_values)
+        self.variables.apply_ebc(vec=vec, force_values=force_values)
+
+    def apply_ic(self, vec=None, force_values=None):
+        """
+        Apply initial conditions to equations' variables, or a given vector.
+        """
+        self.variables.apply_ic(vec=vec, force_values=force_values)
 
     def state_to_output(self, vec, fill_value=None, var_info=None,
                         extend=True):
