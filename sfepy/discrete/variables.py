@@ -180,6 +180,8 @@ class Variables(Container):
 
     def __init__(self, variables=None):
         Container.__init__(self, OneTypeList(Variable),
+                           vec=None,
+                           r_vec=None,
                            state=set(),
                            virtual=set(),
                            parameter=set(),
@@ -505,19 +507,38 @@ class Variables(Container):
         vec = nm.zeros((self.adi.ptr[-1],), dtype=self.dtype)
         return vec
 
-    def apply_ebc(self, vec, force_values=None):
+    def init_state(self, vec=None, active_only=True):
+        self.init_history()
+
+        if vec is None:
+            if active_only:
+                vec = self.create_state_vector()
+
+            else:
+                vec = self.create_reduced_state_vector()
+
+        self.set_data(vec)
+        self.vec = vec
+
+    def apply_ebc(self, vec=None, force_values=None):
         """
         Apply essential (Dirichlet) and periodic boundary conditions
-        defined for the state variables to vector `vec`.
+        to state all variables or the given vector `vec`.
         """
+        if vec is None:
+            vec = self.vec
+
         for var in self.iter_state():
             var.apply_ebc(vec, self.di.indx[var.name].start, force_values)
 
-    def apply_ic(self, vec, force_values=None):
+    def apply_ic(self, vec=None, force_values=None):
         """
-        Apply initial conditions defined for the state variables to
+        Apply initial conditions to all state variables or the given
         vector `vec`.
         """
+        if vec is None:
+            vec = self.vec
+
         for var in self.iter_state():
             var.apply_ic(vec, self.di.indx[var.name].start, force_values)
 
@@ -577,7 +598,10 @@ class Variables(Container):
 
         return vec
 
-    def has_ebc(self, vec, force_values=None):
+    def has_ebc(self, vec=None, force_values=None):
+        if vec is None:
+            vec = self.vec
+
         for var_name in self.di.var_names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
