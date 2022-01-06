@@ -215,7 +215,6 @@ class Oseen(NonlinearSolver):
         ns, ii = stabil.function.function.get_maps()
 
         variables = problem.get_variables()
-        update_var = variables.set_from_state
         make_full_vec = variables.make_full_vec
 
         output('problem size:')
@@ -233,7 +232,7 @@ class Oseen(NonlinearSolver):
         it = 0
         while 1:
             vec_x_prev_f = make_full_vec(vec_x_prev)
-            update_var(ns['b'], vec_x_prev_f, ns['u'])
+            variables[ns['b']].set_data(vec_x_prev_f, variables[ns['u']].indx)
 
             vec_b = vec_x_prev_f[ii['u']]
             b_norm = nla.norm(vec_b, nm.inf)

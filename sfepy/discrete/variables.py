@@ -8,7 +8,7 @@ from collections import deque
 import numpy as nm
 
 from sfepy.base.base import (real_types, complex_types, assert_, get_default,
-                             output, OneTypeList, Container, Struct, basestr,
+                             output, OneTypeList, Container, Struct,
                              iter_dict_of_lists)
 from sfepy.base.timing import Timer
 import sfepy.linalg as la
@@ -753,27 +753,6 @@ class Variables(Container):
 
         else:
             raise ValueError('unknown data class! (%s)' % data.__class__)
-
-    def set_from_state(self, var_names, state, var_names_state):
-        """
-        Set variables with names in `var_names` from state variables with names
-        in `var_names_state` using DOF values in the state vector `state`.
-        """
-        self.check_vector_size(state)
-
-        if isinstance(var_names, basestr):
-            var_names = [var_names]
-            var_names_state = [var_names_state]
-
-        for ii, var_name in enumerate(var_names):
-            var_name_state = var_names_state[ii]
-
-            if self[var_name_state].is_state():
-                self[var_name].set_data(state, self.di.indx[var_name_state])
-
-            else:
-                msg = '%s is not a state part' % var_name_state
-                raise IndexError(msg)
 
     def state_to_output(self, vec, fill_value=None, var_info=None,
                         extend=True, linearization=None):
