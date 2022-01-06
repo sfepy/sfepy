@@ -170,7 +170,7 @@ class CorrMiniApp(MiniAppBase):
                    variables=None, var_map=None):
         if variables is None:
             variables = self.problem.get_variables()
-        to_output = variables.state_to_output
+        to_output = variables.create_output
 
         if is_dump:
             extend = False

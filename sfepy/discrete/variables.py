@@ -755,8 +755,8 @@ class Variables(Container):
         else:
             raise ValueError('unknown data class! (%s)' % data.__class__)
 
-    def state_to_output(self, vec, fill_value=None, var_info=None,
-                        extend=True, linearization=None):
+    def create_output(self, vec, fill_value=None, var_info=None,
+                      extend=True, linearization=None):
         """
         Convert a state vector to a dictionary of output data usable by
         Mesh.write().
