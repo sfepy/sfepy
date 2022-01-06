@@ -120,7 +120,7 @@ class Test( TestCommon ):
         region_names = ['Gamma']
 
         variables = problem.get_variables()
-        get_state = variables.get_state_part_view
+        get_state = variables.get_vec_part
         state = self.state.copy(deep=True)
 
         problem.time_update(ebcs={}, epbcs={})

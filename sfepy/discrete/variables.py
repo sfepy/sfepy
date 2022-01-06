@@ -598,6 +598,14 @@ class Variables(Container):
 
         return vec
 
+    def set_vec_part(self, vec, var_name, part, reduced=False):
+        self.check_vec_size(vec, reduced=reduced)
+        vec[self.get_indx(var_name, reduced)] = part
+
+    def get_vec_part(self, vec, var_name, reduced=False):
+        self.check_vec_size(vec, reduced=reduced)
+        return vec[self.get_indx(var_name, reduced)]
+
     def has_ebc(self, vec=None, force_values=None):
         if vec is None:
             vec = self.vec
@@ -671,13 +679,6 @@ class Variables(Container):
                       % (n_dof, vec.size)
                 raise ValueError(msg)
 
-    def get_state_part_view(self, state, var_name, reduced=False):
-        self.check_vector_size(state, reduced=reduced)
-        return state[self.get_indx(var_name, reduced)]
-
-    def set_state_part(self, state, part, var_name, reduced=False):
-        self.check_vector_size(state, reduced=reduced)
-        state[self.get_indx(var_name, reduced)] = part
 
     def get_state_parts(self, vec=None):
         """

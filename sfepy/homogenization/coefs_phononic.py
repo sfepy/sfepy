@@ -666,11 +666,11 @@ class SchurEVP(SimpleEVP):
 
         mtx_s_phi_schur = - sc.dot(mtx_dib, mtx_s_phi)
         aux = nm.empty((variables.adi.ptr[-1],), dtype=nm.float64)
-        set = variables.set_state_part
+        setv = variables.set_vec_part
         for ii in range(n_eigs):
-            set(aux, mtx_s_phi[:,ii], primary_var, stripped=True)
-            set(aux, mtx_s_phi_schur[:,ii], eliminated_var,
-                stripped=True)
+            setv(aux, primary_var, mtx_s_phi[:,ii], stripped=True)
+            setv(aux, eliminated_var, mtx_s_phi_schur[:,ii],
+                 stripped=True)
 
             mtx_phi[:,ii] = make_full(aux)
 
