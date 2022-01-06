@@ -594,13 +594,6 @@ class Equations(Container):
         """
         self.variables.apply_ic(vec=vec, force_values=force_values)
 
-    def state_to_output(self, vec, fill_value=None, var_info=None,
-                        extend=True):
-        return self.variables.state_to_output(vec,
-                                              fill_value=fill_value,
-                                              var_info=var_info,
-                                              extend=extend)
-
     def get_lcbc_operator(self):
         return self.variables.get_lcbc_operator()
 
