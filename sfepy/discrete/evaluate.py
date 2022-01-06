@@ -277,7 +277,7 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
 
     if mode == 'weak':
         if dw_mode == 'vector':
-            asm_obj = equations.create_reduced_state_vector()
+            asm_obj = equations.create_reduced_vec()
 
         else:
             asm_obj = equations.create_matrix_graph(active_only=active_only,

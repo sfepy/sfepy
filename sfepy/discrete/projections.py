@@ -31,7 +31,7 @@ def create_mass_matrix(field):
     eqs = Equations([eq])
     eqs.time_update(None)
 
-    dummy = eqs.create_state_vector()
+    dummy = eqs.create_vec()
 
     mtx = eqs.create_matrix_graph()
     mtx = eqs.eval_tangent_matrices(dummy, mtx)

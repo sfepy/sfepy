@@ -499,11 +499,11 @@ class Variables(Container):
                 if var is not None:
                     var.adof_conns[key] = val
 
-    def create_state_vector(self):
+    def create_vec(self):
         vec = nm.zeros((self.di.ptr[-1],), dtype=self.dtype)
         return vec
 
-    def create_reduced_state_vector(self):
+    def create_reduced_vec(self):
         vec = nm.zeros((self.adi.ptr[-1],), dtype=self.dtype)
         return vec
 
@@ -590,7 +590,7 @@ class Variables(Container):
                 svec = self.mtx_lcbc * svec
 
         if vec is None:
-            vec = self.create_state_vector()
+            vec = self.create_vec()
         for var in self.iter_state():
             indx = self.di.indx[var.name]
             aindx = self.adi.indx[var.name]

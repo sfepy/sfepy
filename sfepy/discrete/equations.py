@@ -505,11 +505,11 @@ class Equations(Container):
 
     ##
     # Interface to self.variables.
-    def create_state_vector(self):
-        return self.variables.create_state_vector()
+    def create_vec(self):
+        return self.variables.create_vec()
 
-    def create_reduced_state_vector(self):
-        return self.variables.create_reduced_state_vector()
+    def create_reduced_vec(self):
+        return self.variables.create_reduced_vec()
 
     def reduce_vec(self, vec, follow_epbc=False):
         """
@@ -690,13 +690,13 @@ class Equations(Container):
 
                 ir = get_indx(rname, reduced=True, allow_dual=True)
 
-                residual = self.create_reduced_state_vector()
+                residual = self.create_reduced_vec()
                 eq.evaluate(mode='weak', dw_mode='vector', asm_obj=residual)
 
                 out[key] = residual[ir]
 
         else:
-            out = self.create_reduced_state_vector()
+            out = self.create_reduced_vec()
 
             self.evaluate(mode='weak', dw_mode='vector', asm_obj=out)
 
