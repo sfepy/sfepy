@@ -1516,7 +1516,7 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
 
 - compute stress and strain given the displacements (variable `u`)::
 
-    def post_process(out, problem, state, extend=False):
+    def post_process(out, problem, variables, extend=False):
         """
         This will be called after the problem is solved.
 
@@ -1527,7 +1527,7 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
             data.
         problem : Problem instance
             The current Problem instance.
-        state : State instance
+        variables : Variables instance
             The computed state, containing FE coefficients of all the unknown
             variables.
         extend : bool
