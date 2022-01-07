@@ -91,7 +91,6 @@ from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import sys
 sys.path.append('.')
-import csv
 
 import numpy as nm
 
@@ -101,7 +100,7 @@ from sfepy.base.timing import Timer
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.common.region import Region
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
-                            Equation, Equations, Problem, State)
+                            Equation, Equations, Problem)
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.terms import Term
 from sfepy.solvers.ls import PETScKrylovSolver
@@ -262,11 +261,10 @@ def solve_problem(mesh_filename, options, comm):
 
     pb = create_local_problem(omega_gi, [order_u, order_p])
 
-    variables = pb.get_variables()
+    variables = pb.get_initial_state()
 
-    state = State(variables)
-    state.fill(0.0)
-    state.apply_ebc()
+    variables.fill_state(0.0)
+    variables.apply_ebc()
 
     stats.t_create_local_problem = timer.stop()
     output('...done in', timer.dt)
@@ -316,10 +314,9 @@ def solve_problem(mesh_filename, options, comm):
     output('solving...')
     timer.start()
 
-    state = pb.create_state()
-    state.apply_ebc()
+    variables.apply_ebc()
 
-    ev.psol_i[...] = state()
+    ev.psol_i[...] = variables()
     ev.gather(psol, ev.psol_i)
 
     psol = nls(psol)
@@ -333,8 +330,8 @@ def solve_problem(mesh_filename, options, comm):
     output('saving solution...')
     timer.start()
 
-    state.set_full(sol0_i)
-    out = state.create_output_dict()
+    variables.set_state(sol0_i)
+    out = variables.create_output()
 
     filename = os.path.join(options.output_dir, 'sol_%02d.h5' % comm.rank)
     pb.domain.mesh.write(filename, io='auto', out=out)

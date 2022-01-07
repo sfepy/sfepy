@@ -36,7 +36,7 @@ def post_process(out, pb, state, extend=False):
     rreg = pb.domain.regions['Recovery']
     dim = rreg.dim
 
-    state_dict = state.get_parts()
+    state_dict = state.get_state_parts()
     displ = state_dict['u']
     strain_qp = pb.evaluate('ev_cauchy_strain.i2.Omega(u)', mode='qp')
 

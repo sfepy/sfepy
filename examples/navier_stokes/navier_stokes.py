@@ -173,9 +173,9 @@ def verify_incompressibility( out, problem, state, extend = False ):
     incompressibility condition."""
     from sfepy.base.base import nm, output, assert_
 
-    vv = problem.get_variables()
+    vv = state
     one = nm.ones( (vv['p'].field.n_nod,), dtype = nm.float64 )
-    vv['p'].set_data(one)
+    vv.set_state_parts({'p' : one})
     zero = problem.evaluate('dw_stokes.i1.Omega( u, p )', p=one, u=vv['u']())
     output('div( u ) = %.3e' % zero)
 
