@@ -884,7 +884,7 @@ class Variable(Struct):
 
     def __init__(self, name, kind, order=None, primary_var_name=None,
                  special=None, flags=None, **kwargs):
-        Struct.__init__(self, name=name, **kwargs)
+        Struct.__init__(self, name=name, locked=False, **kwargs)
 
         self.flags = set()
         if flags is not None:
@@ -1135,6 +1135,17 @@ class Variable(Struct):
         preserve_caches : bool
             If True, do not invalidate evaluate caches of the variable.
         """
+        if not self.is_state_or_parameter():
+            raise ValueError(
+                'Only state or parameter variables can have values!'
+            )
+
+        if self.locked:
+            raise ValueError(
+                f'Variable {self.name} is locked! It can be set only using'
+                ' the state manipulation functions of Variables.'
+            )
+
         data = data.ravel()
 
         if indx is None:
