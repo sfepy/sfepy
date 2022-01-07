@@ -30,6 +30,7 @@ def create_mass_matrix(field):
     eq = Equation('aux', term)
     eqs = Equations([eq])
     eqs.time_update(None)
+    eqs.init_state()
 
     dummy = eqs.create_vec()
 

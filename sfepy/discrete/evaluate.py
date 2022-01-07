@@ -45,7 +45,7 @@ class Evaluator(Struct):
     @staticmethod
     def new_ulf_iteration(problem, nls, vec, it, err, err0):
         vec = problem.equations.make_full_vec(vec)
-        problem.equations.set_variables_from_state(vec)
+        problem.equations.set_state(vec)
 
         upd_vars = problem.conf.options.get('mesh_update_variables', None)
         for varname in upd_vars:

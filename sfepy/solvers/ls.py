@@ -956,7 +956,6 @@ class MultiProblem(ScipyDirect):
         ScipyDirect.__init__(self, conf, context=context, **kwargs)
 
     def init_subproblems(self, conf, **kwargs):
-        from sfepy.discrete.state import State
         from sfepy.discrete import Problem
         from sfepy.base.conf import ProblemConf, get_standard_keywords
         from scipy.spatial import cKDTree as KDTree
@@ -993,10 +992,10 @@ class MultiProblem(ScipyDirect):
             confi = ProblemConf.from_file(ifname, required, other,
                                           define_args=kwargs)
             pbi = Problem.from_conf(confi, init_equations=True)
-            sti = State(pbi.equations.variables)
             pbi.equations.set_data(None, ignore_unknown=True)
             pbi.time_update()
             pbi.update_materials()
+            sti = pbi.get_initial_state()
             sti.apply_ebc()
             pbi_vars = pbi.get_variables()
             output.set_output_prefix(master_prefix)
@@ -1129,7 +1128,7 @@ class MultiProblem(ScipyDirect):
         # copy "slave" (sub)matricies
         mtxs = []
         for kk, (pbi, sti0, _) in enumerate(self.subpb[:-1]):
-            x0i = sti0.get_reduced()
+            x0i = sti0.get_state(pbi.active_only)
             evi = pbi.get_evaluator()
             mtxi = evi.eval_tangent_matrix(x0i, mtx=pbi.mtx_a)
             rhsi = evi.eval_residual(x0i)
@@ -1204,7 +1203,7 @@ class MultiProblem(ScipyDirect):
 
             if sti0 is not None:
                 sti = sti0.copy()
-                sti.set_reduced(-resi)
+                sti.set_state(-resi, pbi.active_only)
                 pbi.setup_default_output()
                 pbi.save_state(pbi.get_output_name(), sti)
                 self.subpb[kk][-1] = sti

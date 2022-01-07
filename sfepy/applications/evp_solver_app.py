@@ -136,12 +136,13 @@ class EVPSolverApp(PDESolverApp):
                          lambda out, *args, **kwargs: out)
 
             out = get_default(out, {})
-            state = pb.create_state()
+            variables = pb.get_variables()
+            variables.init_state()
             for ii in range(eigs.shape[0]):
-                state.set_full(vecs[:, ii])
-                aux = state.create_output_dict()
+                variables.set_state(vecs[:, ii])
+                aux = variables.create_output()
                 aux2 = {}
-                pp(aux2, pb, state)
+                pp(aux2, pb, variables)
                 aux.update(convert_complex_output(aux2))
                 out.update({key + '%03d' % ii : aux[key] for key in aux})
 
