@@ -608,11 +608,12 @@ class SimpleEVP(CorrMiniApp):
         n_eigs = eigs.shape[0]
 
         out = {}
-        state = problem.create_state()
+        variables = problem.get_variables()
+        variables.init_state()
         for ii in range(n_eigs):
             if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
-            state.set_full(mtx_phi[:,ii], force=True)
-            aux = state.create_output_dict()
+            variables.set_state(mtx_phi[:,ii], force=True)
+            aux = variables.create_output()
             for name, val in six.iteritems(aux):
                 out[name+'%03d' % ii] = val
 
