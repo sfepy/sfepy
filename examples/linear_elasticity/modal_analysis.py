@@ -284,10 +284,10 @@ def main():
 
     # Save the eigenvectors.
     out = {}
-    state = pb.create_state()
+    variables.init_state()
     for ii in range(eigs.shape[0]):
-        state.set_full(vecs[:, ii])
-        aux = state.create_output_dict()
+        variables.set_state(vecs[:, ii])
+        aux = variables.create_output()
         strain = pb.evaluate('ev_cauchy_strain.i.Omega(u)',
                              integrals=Integrals([integral]),
                              mode='el_avg', verbose=False)
