@@ -121,7 +121,7 @@ class Test( TestCommon ):
 
         variables = problem.get_variables()
         get_state = variables.get_vec_part
-        state = self.state.copy(deep=True)
+        state = self.state.copy()
 
         problem.time_update(ebcs={}, epbcs={})
         ## problem.save_ebc( 'aux.vtk' )

@@ -225,10 +225,10 @@ class Test(TestCommon):
                 fname = op.join(self.options.out_dir, self.conf.output_name)
                 out = {}
                 astate = state.copy()
-                astate.set_full(ana_sol)
-                aux = astate.create_output_dict()
+                astate.set_state(ana_sol)
+                aux = astate.create_output()
                 out['ana_t'] = aux['t']
-                aux = state.create_output_dict()
+                aux = state.create_output()
                 out['num_t'] = aux['t']
 
                 problem.domain.mesh.write(fname % '_'.join((sol_name, eq_name)),

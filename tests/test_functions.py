@@ -199,7 +199,7 @@ class Test( TestCommon ):
         ok = True
         domain = problem.domain
 
-        vecs = state.get_parts()
+        vecs = state.get_state_parts()
         vec = vecs['p']
 
         iv = domain.regions['Left'].vertices
