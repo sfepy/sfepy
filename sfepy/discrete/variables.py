@@ -1793,7 +1793,7 @@ class FieldVariable(Variable):
         mesh = self.field.create_mesh(extra_nodes=False)
         vec = self()
 
-        n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.n_components
+        n_dof, dpn = self.n_dof, self.n_components
         aux = nm.reshape(vec, (n_dof // dpn, dpn))
 
         ext = self.field.extend_dofs(aux, 0.0)
