@@ -3,7 +3,6 @@ Classes of variables for equations/terms.
 """
 from __future__ import print_function
 from __future__ import absolute_import
-from collections import deque
 
 import numpy as nm
 
@@ -904,7 +903,7 @@ class Variable(Struct):
             self.data = None
 
         else:
-            self.data = deque()
+            self.data = []
             self.data.append(None)
 
         self._set_kind(kind, order, primary_var_name, special=special)
@@ -1061,7 +1060,7 @@ class Variable(Struct):
         """Initialize data of variables with history."""
         if self.history is None: return
 
-        self.data = deque((self.history + 1) * [None])
+        self.data = (self.history + 1) * [None]
         self.step = 0
 
     def time_update(self, ts, functions):
@@ -1080,13 +1079,13 @@ class Variable(Struct):
         if self.history > 0:
             # Copy the current step data to the history data, shift history,
             # initialize if needed. The current step data are left intact.
-            # Note: cannot use self.data.rotate() due to data sharing with
-            # State.
-            for ii in range(self.history, 0, -1):
+            # Note: self.data can point into Variables.vec.
+            for ii in range(1, self.history + 1):
                 if self.data[ii] is None:
-                    self.data[ii] = nm.empty_like(self.data[0])
+                    self.data[ii] = self.data[ii-1].copy()
 
-                self.data[ii][:] = self.data[ii - 1]
+            for ii in range(self.history, 0, -1):
+                self.data[ii][self.indx] = self.data[ii - 1][self.indx]
 
             # Advance evaluate cache.
             for step_cache in six.itervalues(self.evaluate_cache):
