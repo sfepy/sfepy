@@ -1109,16 +1109,15 @@ class Variable(Struct):
         Initialize the dof vector data of time step `step` to zeros.
         """
         if self.is_state_or_parameter():
-            data = nm.zeros((self.n_dof,), dtype=self.dtype)
-            self.set_data(data, step=step)
+            self.set_constant(val=0.0, step=step)
 
-    def set_constant(self, val):
+    def set_constant(self, val=0.0, step=0):
         """
-        Set the variable to a constant value.
+        Set the variable dof vector data of time step `step` to a scalar `val`.
         """
         data = nm.empty((self.n_dof,), dtype=self.dtype)
         data.fill(val)
-        self.set_data(data)
+        self.set_data(data, step=step)
 
     def set_data(self, data=None, indx=None, step=0,
                  preserve_caches=False):
