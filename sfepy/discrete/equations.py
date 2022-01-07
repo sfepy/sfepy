@@ -531,44 +531,13 @@ class Equations(Container):
         """
         return self.variables.make_full_vec(svec, force_value)
 
-    def set_variables_from_state(self, vec, step=0):
-        """
-        Set data (vectors of DOF values) of variables.
-
-        Parameters
-        ----------
-        data : array
-            The state vector.
-        step : int
-            The time history step, 0 (default) = current.
-        """
-        self.variables.set_data(vec, step=step)
-
-    def get_state_parts(self, vec=None):
-        """
-        Return parts of a state vector corresponding to individual state
-        variables.
-
-        Parameters
-        ----------
-        vec : array, optional
-            The state vector. If not given, then the data stored in the
-            variables are returned instead.
-
-        Returns
-        -------
-        out : dict
-            The dictionary of the state parts.
-        """
-        return self.variables.get_state_parts(vec)
-
     def set_data(self, data, step=0, ignore_unknown=False):
         """
         Set data (vectors of DOF values) of variables.
 
         Parameters
         ----------
-        data : array
+        data : dict
             The dictionary of {variable_name : data vector}.
         step : int, optional
             The time history step, 0 (default) = current.
@@ -578,8 +547,8 @@ class Equations(Container):
         self.variables.set_data(data, step=step,
                                 ignore_unknown=ignore_unknown)
 
-    def init_state(self, vec=None, active_only=True):
-        self.variables.init_state(vec=vec, active_only=active_only)
+    def init_state(self, vec=None):
+        self.variables.init_state(vec=vec)
 
     def apply_ebc(self, vec=None, force_values=None):
         """
@@ -593,6 +562,10 @@ class Equations(Container):
         Apply initial conditions to equations' variables, or a given vector.
         """
         self.variables.apply_ic(vec=vec, force_values=force_values)
+
+    def set_state(self, vec, reduced=False, force=False, preserve_caches=False):
+        self.variables.set_state(vec, reduced=reduced, force=force,
+                                 preserve_caches=preserve_caches)
 
     def get_lcbc_operator(self):
         return self.variables.get_lcbc_operator()
@@ -675,7 +648,7 @@ class Equations(Container):
             dictionary is returned instead, with keys given by
             `block_name` part of the individual equation names.
         """
-        self.set_variables_from_state(state)
+        self.set_state(state, force=True)
 
         if by_blocks:
             names = get_default(names, self.names)
@@ -730,7 +703,7 @@ class Equations(Container):
             is returned instead, with keys given by `block_name` part
             of the individual equation names.
         """
-        self.set_variables_from_state(state)
+        self.set_state(state, force=True)
 
         if by_blocks:
             names = get_default(names, self.names)
