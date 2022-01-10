@@ -321,16 +321,16 @@ issue the following commands:
 
     In [1]: from sfepy.applications import solve_pde
 
-    In [2]: pb, state = solve_pde('its2D_2.py')
+    In [2]: pb, variables = solve_pde('its2D_2.py')
 
 The problem is solved and the problem definition and solution are
-provided in the `pb` and `state` variables respectively. The solution,
+provided in the `pb` and `variables` variables respectively. The solution,
 or in this case, the global displacement vector :math:`u`, contains the x- and
 y-displacements at the nodes in the 2D model:
 
 .. sourcecode:: ipython
 
-    In [3]: u = state()
+    In [3]: u = variables()
 
     In [4]: u
     Out[4]:
@@ -357,7 +357,7 @@ variable (`u`). In general, the following can be used:
 
 .. sourcecode:: ipython
 
-    In [8]: u = state.get_parts()['u']
+    In [8]: u = variables.get_state_parts()['u']
 
     In [9]: u
     Out[9]:
@@ -369,8 +369,11 @@ variable (`u`). In general, the following can be used:
            [ 0.27741356, -0.19923848],
            [ 0.08820237, -0.11201528]])
 
-Both `state()` and `state.get_parts()` return a view of the DOF vector,
-that is why in Out[8] the vector is reshaped according to Out[6].
+Both `variables()` and `variables.get_state_parts()` return a view of the DOF
+vector, that is why in Out[8] the vector is reshaped according to Out[6]. It is
+thus possible to set the values of state variables by manipulating the state
+vector, but shape changes such as the one above are not advised (see ``In
+[15]`` below) - work on a copy instead.
 
 From the above it can be seen that *u* holds the displacements at the 55
 nodes in the model and that the displacement at node 2 (on which the
@@ -386,7 +389,7 @@ matrix is saved in `pb` as a `sparse matrix`_:
     <94x94 sparse matrix of type '<type 'numpy.float64'>'
             with 1070 stored elements in Compressed Sparse Row format>
 
-    In [12]: print K
+    In [12]: print(K)
       (0, 0)        2443.95959851
       (0, 7)        -2110.99917491
       (0, 14)       -332.960423597
@@ -458,11 +461,25 @@ Now we can calculate the force vector :math:`f`:
 
     In [15]: f = pb.evaluator.eval_residual(u)
 
-    In [16]: f.shape
-    Out[16]: (110,)
+This leads to::
 
-    In [17]: f
-    Out[17]:
+  ValueError: shape mismatch: value array of shape (55,2) could not be broadcast to indexing result of shape (110,)
+
+- the original shape of the DOF vector needs to be restored:
+
+.. sourcecode:: ipython
+
+    In [16]: variables.vec.shape = (110,)
+
+    In [17]: f = pb.evaluator.eval_residual(u)
+
+
+
+    In [18]: f.shape
+    Out[18]: (110,)
+
+    In [19]: f
+    Out[19]:
     array([ -4.73618436e+01,   1.42752386e+02,   1.56921124e-13, ...,
             -2.06057393e-13,   2.13162821e-14,  -2.84217094e-14])
 
@@ -471,17 +488,17 @@ in step [14]:
 
 .. sourcecode:: ipython
 
-    In [18]: pb.time_update()
+    In [20]: pb.time_update()
 
 To view the residual force vector, we can save it to a VTK file. This
-requires creating a state and set its DOF vector to `f` as follows:
+requires setting `f`  to (a copy of) the variables as follows:
 
 .. sourcecode:: ipython
 
-    In [19]: state = pb.create_state()
-    In [20]: state.set_full(f)
-    In [21]: out = state.create_output_dict()
-    In [22]: pb.save_state('file.vtk', out=out)
+    In [21]: fvars = variables.copy()
+    In [22]: fvars.set_state(f, reduced=False)
+    In [23]: out = variables.create_output()
+    In [24]: pb.save_state('file.vtk', out=out)
 
 Running the `postproc.py` script on ``file.vtk`` displays the average nodal
 forces as shown below:
@@ -493,8 +510,9 @@ The forces in the x- and y-directions at node 2 are:
 
 .. sourcecode:: ipython
 
-    In [23]: f.shape = (55, 2)
-    In [24]: array([  6.20373272e+02,  -1.13686838e-13])
+    In [25]: f.shape = (55, 2)
+    In [26]: f[2]
+    Out[26]: array([  6.20373272e+02,  -1.13686838e-13])
 
 Great, we have an almost zero residual vertical load or force apparent
 at node 2 i.e. -1.13686838e-13 Newton. Let us now check the stress at
@@ -558,10 +576,13 @@ file, namely lines 25, 26::
     refinement_level = 0
     filename_mesh = refine_mesh(filename_mesh, refinement_level)
 
-The above computation could also be done in the customized IPython shell:
+The above computation could also be done in the IPython shell:
 
 .. sourcecode:: ipython
 
+    In [23]: from sfepy.applications import solve_pde
+    In [24]: from sfepy.discrete import (Field, FieldVariable, Material,
+                                         Integral, Integrals)
     In [25]: from sfepy.discrete.fem.geometry_element import geometry_data
 
     In [26]: gdata = geometry_data['2_3']
@@ -569,28 +590,28 @@ The above computation could also be done in the customized IPython shell:
     In [28]: ivn = Integral('ivn', order=-1,
        ....:                coors=gdata.coors, weights=[gdata.volume / nc] * nc)
 
-    In [29]: pb, state = solve_pde('examples/linear_elasticity/its2D_2.py')
+    In [29]: pb, variables = solve_pde('examples/linear_elasticity/its2D_2.py')
 
     In [30]: stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D,u)',
        ....:                      mode='qp', integrals=Integrals([ivn]))
-    In [31]: sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
+    In [31]: sfield = Field.from_args('stress', nm.float64, (3,), pb.domain.regions['Omega'])
     In [32]: svar = FieldVariable('sigma', 'parameter', sfield,
        ....:                      primary_var_name='(set-to-None)')
     In [33]: svar.set_from_qp(stress, ivn)
 
-    In [34]: print 'Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0])
+    In [34]: print('Horizontal tensile stress = %.5e MPa/mm' % (svar()[0]))
     Horizontal tensile stress = 7.57220e+00 MPa/mm
-    In [35]: print 'Vertical compressive stress = %.5e MPa/mm' % (-svar()[0][1])
+    In [35]: print('Vertical compressive stress = %.5e MPa/mm' % (-svar()[1]))
     Vertical compressive stress = 2.58660e+01 MPa/mm
 
     In [36]: mat = pb.get_materials()['Load']
-    In [37]: P = 2.0 * mat.get_data('special', None, 'val')[1]
+    In [37]: P = 2.0 * mat.get_data('special', 'val')[1]
     In [38]: P
     Out[38]: -2000.0
 
-    In [39]: print 'Horizontal tensile stress = %.5e MPa/mm' % (-2.*P/(nm.pi*150.))
+    In [39]: print('Horizontal tensile stress = %.5e MPa/mm' % (-2.*P/(nm.pi*150.)))
     Horizontal tensile stress = 8.48826e+00 MPa/mm
-    In [40]: print 'Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.))
+    In [40]: print('Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.)))
     Vertical compressive stress = 2.54648e+01 MPa/mm
 
 To wrap this tutorial up let's explore *SfePy*'s probing functions.
