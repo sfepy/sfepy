@@ -1046,7 +1046,10 @@ def is_integer(var):
 ##
 # 23.01.2006, c
 def is_sequence(var):
-    from collections import Sequence
+    try:
+        from collections.abc import Sequence
+    except ImportError:
+        from collections import Sequence
     if isinstance(var, basestr):
         return False
     return isinstance(var, Sequence)
