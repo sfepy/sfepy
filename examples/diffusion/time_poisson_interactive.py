@@ -192,8 +192,8 @@ def main():
     pb.set_bcs(ebcs=Conditions([ebc1, ebc2]))
     pb.set_ics(Conditions([ic]))
 
-    state0 = pb.get_initial_state()
-    init_fun, prestep_fun, _poststep_fun = pb.get_tss_functions(state0)
+    variables = pb.get_initial_state()
+    init_fun, prestep_fun, _poststep_fun = pb.get_tss_functions()
 
     ls = ScipyDirect({})
     nls_status = IndexedStruct()
@@ -254,14 +254,14 @@ def main():
         poststep_fun = _poststep_fun
 
     pb.time_update(tss.ts)
-    state0.apply_ebc()
+    variables.apply_ebc()
 
     # This is required if {'is_linear' : True} is passed to Newton.
-    mtx = prepare_matrix(pb, state0)
+    mtx = prepare_matrix(pb, variables)
     pb.try_presolve(mtx)
 
     tss_status = IndexedStruct()
-    tss(state0.get_vec(pb.active_only),
+    tss(variables.get_state(pb.active_only, force=True),
         init_fun=init_fun, prestep_fun=prestep_fun, poststep_fun=poststep_fun,
         status=tss_status)
 

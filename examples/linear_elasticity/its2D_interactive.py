@@ -43,7 +43,6 @@ from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.solvers.auto_fallback import AutoDirect
-from sfepy.solvers.ls import ScipyDirect, ScipySuperLU, ScipyUmfpack, MUMPSSolver
 from sfepy.solvers.nls import Newton
 from sfepy.discrete.fem.geometry_element import geometry_data
 from sfepy.discrete.probes import LineProbe
@@ -225,12 +224,12 @@ def main():
     pb.set_solver(nls)
 
     # Solve the problem.
-    state = pb.solve()
+    variables = pb.solve()
     output(nls_status)
 
     # Postprocess the solution.
-    out = state.create_output_dict()
-    out = stress_strain(out, pb, state, extend=True)
+    out = variables.create_output()
+    out = stress_strain(out, pb, variables, extend=True)
     pb.save_state('its2D_interactive.vtk', out=out)
 
     gdata = geometry_data['2_3']
@@ -239,7 +238,7 @@ def main():
     integral_vn = Integral('ivn', coors=gdata.coors,
                           weights=[gdata.volume / nc] * nc)
 
-    nodal_stress(out, pb, state, integrals=Integrals([integral_vn]))
+    nodal_stress(out, pb, variables, integrals=Integrals([integral_vn]))
 
     if options.probe:
         # Probe the solution.
