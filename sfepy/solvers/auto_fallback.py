@@ -15,13 +15,18 @@ class AutoFallbackSolver(Solver):
 
         Parameters
         ----------
-        conf : dict
+        conf : dict or Struct
             The solver configuration.
         **kwargs : keyword arguments
             Additional solver options, see the particular __init__() methods.
         """
-        dconf = conf.to_dict()
-        dconf.pop('kind')
+        if isinstance(conf, Struct):
+            dconf = conf.to_dict()
+
+        else:
+            dconf = conf
+
+        dconf.pop('kind', None)
         ls_solvers = [(ls, Struct(**_conf) + Struct(kind=ls) + Struct(**dconf))
                       for ls, _conf in cls._ls_solvers]
 
