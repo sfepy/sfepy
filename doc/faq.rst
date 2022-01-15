@@ -113,8 +113,8 @@ Miscellaneous
    tangent matrix ``K``, the imperative API can be used as follows::
 
      # pb is a Problem instance,
-     pb.set_bcs(ebcs=Conditions([...])) #
-     pb.set_ics(Conditions([...])) # Initial condition (if any).
+     pb.set_bcs(ebcs=Conditions([...])) # Set Dirichlet boundary conditions.
+     pb.set_ics(Conditions([...])) # Set initial conditions (if any).
      variables = pb.get_initial_state()
      pb.time_update()
      variables.apply_ebc()
