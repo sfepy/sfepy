@@ -167,17 +167,16 @@ solver_1 = {
     'delta'     : 1e-6,
 }
 
-def verify_incompressibility( out, problem, state, extend = False ):
+def verify_incompressibility(out, problem, variables, extend=False):
     """This hook is normally used for post-processing (additional results can
     be inserted into `out` dictionary), but here we just verify the weak
     incompressibility condition."""
     from sfepy.base.base import nm, output, assert_
 
-    vv = state
-    one = nm.ones( (vv['p'].field.n_nod,), dtype = nm.float64 )
-    vv.set_state_parts({'p' : one})
-    zero = problem.evaluate('dw_stokes.i1.Omega( u, p )', p=one, u=vv['u']())
-    output('div( u ) = %.3e' % zero)
+    one = nm.ones((variables['p'].field.n_nod,), dtype=nm.float64)
+    variables.set_state_parts({'p' : one})
+    zero = problem.evaluate('dw_stokes.i1.Omega(u, p)')
+    output('div(u) = %.3e' % zero)
 
     assert_(abs(zero) < 1e-14)
 
