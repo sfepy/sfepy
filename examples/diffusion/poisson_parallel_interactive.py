@@ -339,8 +339,7 @@ def solve_problem(mesh_filename, options, comm):
     output('saving solution...')
     timer.start()
 
-    u_i.locked = False
-    u_i.set_data(sol0_i)
+    variables.set_state(sol0_i)
     out = u_i.create_output()
 
     filename = os.path.join(options.output_dir, 'sol_%02d.h5' % comm.rank)
