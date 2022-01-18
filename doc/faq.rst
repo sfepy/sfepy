@@ -113,11 +113,13 @@ Miscellaneous
    tangent matrix ``K``, the imperative API can be used as follows::
 
      # pb is a Problem instance,
+     pb.set_bcs(ebcs=Conditions([...])) # Set Dirichlet boundary conditions.
+     pb.set_ics(Conditions([...])) # Set initial conditions (if any).
+     variables = pb.get_initial_state()
      pb.time_update()
-     state = pb.create_state()
-     state.apply_ebc()
-     r = pb.equations.eval_residuals(state())
-     K = pb.equations.eval_tangent_matrices(state(), pb.mtx_a)
+     variables.apply_ebc()
+     r = pb.equations.eval_residuals(variables())
+     K = pb.equations.eval_tangent_matrices(variables(), pb.mtx_a)
 
    See also :ref:`diffusion-poisson_parallel_interactive`.
 

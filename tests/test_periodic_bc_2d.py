@@ -127,6 +127,6 @@ class Test( TestCommon ):
 
         variables = Variables.from_conf(conf.variables, problem.fields)
         variables.equation_mapping(ebcs, epbcs, None, problem.functions)
-        state = variables.create_state_vector()
+        state = variables.create_vec()
         variables.apply_ebc(state)
         return variables.has_ebc(state)

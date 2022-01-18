@@ -608,11 +608,12 @@ class SimpleEVP(CorrMiniApp):
         n_eigs = eigs.shape[0]
 
         out = {}
-        state = problem.create_state()
+        variables = problem.get_variables()
+        variables.init_state()
         for ii in range(n_eigs):
             if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
-            state.set_full(mtx_phi[:,ii], force=True)
-            aux = state.create_output_dict()
+            variables.set_state(mtx_phi[:,ii], force=True)
+            aux = variables.create_output()
             for name, val in six.iteritems(aux):
                 out[name+'%03d' % ii] = val
 
@@ -666,11 +667,11 @@ class SchurEVP(SimpleEVP):
 
         mtx_s_phi_schur = - sc.dot(mtx_dib, mtx_s_phi)
         aux = nm.empty((variables.adi.ptr[-1],), dtype=nm.float64)
-        set = variables.set_state_part
+        setv = variables.set_vec_part
         for ii in range(n_eigs):
-            set(aux, mtx_s_phi[:,ii], primary_var, stripped=True)
-            set(aux, mtx_s_phi_schur[:,ii], eliminated_var,
-                stripped=True)
+            setv(aux, primary_var, mtx_s_phi[:,ii], reduced=True)
+            setv(aux, eliminated_var, mtx_s_phi_schur[:,ii],
+                 reduced=True)
 
             mtx_phi[:,ii] = make_full(aux)
 

@@ -56,7 +56,7 @@ class Test(TestCommon):
             converged = status.nls_status.condition == 0
             ok = ok and converged
 
-            solutions[hp] = state.get_parts()['u']
+            solutions[hp] = state.get_state_parts()['u']
             self.report('%s solved' % input_name)
 
         rerr = 1.0e-3

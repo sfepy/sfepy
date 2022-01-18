@@ -148,7 +148,7 @@ class Test( TestCommon ):
         for var_name, expression in six.iteritems(sol):
             coor = variables[var_name].field.get_coor()
             ana_sol = self.eval_coor_expression( expression, coor )
-            num_sol = variables.get_state_part_view( vec, var_name )
+            num_sol = variables.get_vec_part(vec, var_name)
             ret = self.compare_vectors( ana_sol, num_sol,
                                        label1 = 'analytical %s' % var_name,
                                        label2 = 'numerical %s' % var_name )
@@ -172,8 +172,8 @@ class Test( TestCommon ):
         values = [5.0, -5.0, 0.0]
 
         variables = problem.get_variables()
-        get_state = variables.get_state_part_view
-        state = self.state.copy(deep=True)
+        get_state = variables.get_vec_part
+        state = self.state.copy()
 
         problem.time_update(ebcs={}, epbcs={})
 #        problem.save_ebc( 'aux.vtk' )

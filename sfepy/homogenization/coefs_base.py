@@ -170,7 +170,7 @@ class CorrMiniApp(MiniAppBase):
                    variables=None, var_map=None):
         if variables is None:
             variables = self.problem.get_variables()
-        to_output = variables.state_to_output
+        to_output = variables.create_output
 
         if is_dump:
             extend = False
@@ -379,7 +379,7 @@ class CorrNN(CorrMiniApp):
 
                 state = problem.solve(update_materials=False)
                 assert_(state.has_ebc())
-                states[ir,ic] = state.get_parts()
+                states[ir,ic] = state.get_state_parts()
 
                 clist.append((ir, ic))
 
@@ -428,7 +428,7 @@ class CorrN(CorrMiniApp):
                 self.set_variables(variables, ir, **data)
             state = problem.solve()
             assert_(state.has_ebc())
-            states[ir] = state.get_parts()
+            states[ir] = state.get_state_parts()
 
             clist.append((ir,))
 
@@ -479,7 +479,7 @@ class CorrOne(CorrMiniApp):
         assert_(state.has_ebc())
 
         corr_sol = CorrSolution(name=self.name,
-                                state=state.get_parts())
+                                state=state.get_state_parts())
 
         self.save(corr_sol, problem)
 
@@ -490,7 +490,6 @@ class CorrSetBCS(CorrMiniApp):
     def __call__(self, problem=None, data=None):
         from sfepy.base.base import select_by_names
         from sfepy.discrete.variables import Variables
-        from sfepy.discrete.state import State
         from sfepy.discrete.conditions import Conditions
 
         problem = get_default(problem, self.problem)
@@ -503,12 +502,12 @@ class CorrSetBCS(CorrMiniApp):
         conf_variables = select_by_names(problem.conf.variables, self.variable)
         variables = Variables.from_conf(conf_variables, problem.fields)
         variables.equation_mapping(ebcs, epbcs, problem.ts, problem.functions)
-        state = State(variables)
-        state.fill(0.0)
-        state.apply_ebc()
+        variables.init_state()
+        variables.fill_state(0.0)
+        variables.apply_ebc()
 
         corr_sol = CorrSolution(name=self.name,
-                                state=state.get_parts())
+                                state=variables.get_state_parts())
 
         self.save(corr_sol, problem, variables=variables)
 
@@ -565,7 +564,7 @@ class CorrEqPar(CorrOne):
             state = problem.solve()
             assert_(state.has_ebc())
 
-            states[ir] = state.get_parts()
+            states[ir] = state.get_state_parts()
             clist.append((ir,))
 
         corr_sol = CorrSolution(name=self.name,

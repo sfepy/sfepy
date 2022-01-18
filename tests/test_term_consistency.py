@@ -134,7 +134,7 @@ class Test(TestCommon):
                                   var_dict=variables.as_dict(),
                                   ret_variables=True)
 
-            pvec = vv.get_state_part_view(vec, dw_vars[2])
+            pvec = vv.get_vec_part(vec, dw_vars[2])
             val2 = nm.dot(variables[par_name](), pvec)
             self.report('%s: %s' % (term2, val2))
 
@@ -190,7 +190,7 @@ class Test(TestCommon):
         aux2g = mtx * state()
         problem.time_update(ebcs=self.conf.ebcs,
                             epbcs=self.conf.epbcs)
-        aux2 = problem.equations.strip_state_vector(aux2g, follow_epbc=True)
+        aux2 = problem.equations.reduce_vec(aux2g, follow_epbc=True)
 
         ret = self.compare_vectors(aux1, aux2,
                                    label1='vector mode',

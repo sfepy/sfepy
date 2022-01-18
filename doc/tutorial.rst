@@ -598,12 +598,12 @@ automatically.
     In [40]: pb.set_solver(nls)
 
     In [41]: status = IndexedStruct()
-    In [42]: vec = pb.solve(status=status)
+    In [42]: variables = pb.solve(status=status)
 
     In [43]: print('Nonlinear solver status:\n', nls_status)
     In [44]: print('Stationary solver status:\n', status)
 
-    In [45]: pb.save_state('linear_elasticity.vtk', vec)
+    In [45]: pb.save_state('linear_elasticity.vtk', variables)
     In [46]: view = Viewer('linear_elasticity.vtk')
     In [47]: view()
 

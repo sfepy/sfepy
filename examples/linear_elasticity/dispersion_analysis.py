@@ -316,17 +316,17 @@ def save_eigenvectors(filename, svecs, wmag, wdir, pb):
 
     # Save the eigenvectors.
     out = {}
-    state = pb.create_state()
+    variables.init_state()
 
     pp_name = pb.conf.options.get('post_process_hook')
     pp = getattr(pb.conf.funmod, pp_name if pp_name is not None else '',
                  lambda out, *args, **kwargs: out)
 
     for ii in range(svecs.shape[1]):
-        state.set_full(vecs[:, ii])
-        aux = state.create_output_dict()
+        variables.set_state(vecs[:, ii])
+        aux = variables.create_output()
         aux2 = {}
-        pp(aux2, pb, state, wmag=wmag, wdir=wdir)
+        pp(aux2, pb, variables, wmag=wmag, wdir=wdir)
         aux.update(convert_complex_output(aux2))
         out.update({key + '%03d' % ii : aux[key] for key in aux})
 

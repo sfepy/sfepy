@@ -120,8 +120,8 @@ class Test( TestCommon ):
         region_names = ['Gamma']
 
         variables = problem.get_variables()
-        get_state = variables.get_state_part_view
-        state = self.state.copy(deep=True)
+        get_state = variables.get_vec_part
+        state = self.state.copy()
 
         problem.time_update(ebcs={}, epbcs={})
         ## problem.save_ebc( 'aux.vtk' )

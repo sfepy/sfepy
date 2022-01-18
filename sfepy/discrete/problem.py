@@ -21,7 +21,6 @@ from .variables import Variables, Variable
 from .materials import Materials, Material
 from .equations import Equations
 from .integrals import Integrals
-from sfepy.discrete.state import State
 from sfepy.discrete.conditions import Conditions
 from sfepy.discrete.evaluate import create_evaluable, eval_equations
 from sfepy.solvers.ts import TimeStepper
@@ -274,6 +273,8 @@ class Problem(Struct):
         self.equations = equations
         self.fields = fields
         self.domain = domain
+        if auto_conf:
+            self.set_ics(self.conf.ics)
 
         self.setup_output()
 
@@ -371,6 +372,7 @@ class Problem(Struct):
         subeqs = self.equations.create_subequations(var_names,
                                                     known_var_names)
         subpb.set_equations_instance(subeqs, keep_solvers=True)
+        subpb.set_ics(self.ics)
 
         return subpb
 
@@ -536,6 +538,7 @@ class Problem(Struct):
                                         eterm_options=eterm_options)
 
         self.equations = equations
+        self.set_ics(self.conf.ics)
 
         if not keep_solvers:
             self.solver = None
@@ -699,15 +702,6 @@ class Problem(Struct):
             conf_ics = get_default(ics, self.conf.ics)
             self.ics = Conditions.from_conf(conf_ics, self.domain.regions)
 
-    def setup_ics(self, ics=None, functions=None):
-        """
-        Setup the initial conditions for use.
-        """
-        self.set_ics(get_default(ics, self.ics))
-
-        functions = get_default(functions, self.functions)
-        self.equations.setup_initial_conditions(self.ics, functions)
-
     def select_bcs(self, ebc_names=None, epbc_names=None,
                    lcbc_names=None, create_matrix=False):
 
@@ -731,7 +725,7 @@ class Problem(Struct):
                               self.functions, create_matrix)
 
     def create_state(self):
-        return State(self.equations.variables)
+        return self.get_initial_state()
 
     def get_mesh_coors(self, actual=False):
         return self.domain.get_mesh_coors(actual=actual)
@@ -821,9 +815,9 @@ class Problem(Struct):
 
         extend = not file_per_var
         if (out is None) and (state is not None):
-            out = state.create_output_dict(fill_value=fill_value,
-                                           extend=extend,
-                                           linearization=linearization)
+            out = state.create_output(fill_value=fill_value,
+                                      extend=extend,
+                                      linearization=linearization)
 
             if post_process_hook is not None:
                 out = post_process_hook(out, self, state, extend=extend)
@@ -915,20 +909,20 @@ class Problem(Struct):
             output('cannot make equation mapping!')
             raise
 
-        state = State(variables)
-        state.fill(default)
+        variables.init_state()
+        variables.fill_state(default)
 
         if force:
             vals = dict_from_keys_init(variables.state)
             for ii, key in enumerate(six.iterkeys(vals)):
                 vals[key] = ii + 1
 
-            state.apply_ebc(force_values=vals)
+            variables.apply_ebc(force_values=vals)
 
         else:
-            state.apply_ebc()
+            variables.apply_ebc()
 
-        out = state.create_output_dict(extend=True)
+        out = variables.create_output(extend=True)
         self.save_state(filename, out=out, fill_value=default)
         output('...done')
 
@@ -1197,7 +1191,7 @@ class Problem(Struct):
         tss = get_default(None, self.solver, 'solver is not set!')
         return tss
 
-    def get_tss_functions(self, state0, update_bcs=True, update_materials=True,
+    def get_tss_functions(self, update_bcs=True, update_materials=True,
                           save_results=True,
                           step_hook=None, post_process_hook=None):
         """
@@ -1206,8 +1200,6 @@ class Problem(Struct):
 
         Parameters
         ----------
-        state0 : State
-            The state holding the problem variables.
         update_bcs : bool, optional
             If True, update the boundary conditions in each `prestep_fun` call.
         update_materials : bool, optional
@@ -1242,33 +1234,32 @@ class Problem(Struct):
 
             restart_filename = self.conf.options.get('load_restart', None)
             if restart_filename is not None:
-                self.load_restart(restart_filename, state=state0, ts=ts)
+                variables = self.load_restart(restart_filename, ts=ts)
                 self.advance(ts)
                 ts.advance()
-                state = self.create_state()
-                vec0 = state.get_vec(self.active_only)
+                vec0 = variables.get_state(self.active_only)
 
             return vec0
 
         def prestep_fun(ts, vec):
             if update_bcs:
                 self.time_update(ts)
-                state = state0.copy()
-                state.set_vec(vec, self.active_only)
-                state.apply_ebc()
+                variables = self.equations.variables
+                variables.set_state(vec, self.active_only)
+                variables.apply_ebc()
 
             if update_materials:
                 self.update_materials(verbose=self.conf.get('verbose', True))
 
         def poststep_fun(ts, vec):
-            state = state0.copy(preserve_caches=True)
-            state.set_vec(vec, self.active_only)
+            variables = self.equations.variables
+            variables.set_state(vec, self.active_only, preserve_caches=True)
             if step_hook is not None:
-                step_hook(self, ts, state)
+                step_hook(self, ts, variables)
 
             restart_filename = self.get_restart_filename(ts=ts)
             if restart_filename is not None:
-                self.save_restart(restart_filename, state, ts=ts)
+                self.save_restart(restart_filename, ts=ts)
 
             if save_results and is_save(ts):
                 if not isinstance(self.get_solver(), StationarySolver):
@@ -1278,7 +1269,7 @@ class Problem(Struct):
                     suffix = None
 
                 filename = self.get_output_name(suffix=suffix)
-                self.save_state(filename, state,
+                self.save_state(filename, variables,
                                 post_process_hook=post_process_hook,
                                 file_per_var=None,
                                 ts=ts,
@@ -1323,19 +1314,15 @@ class Problem(Struct):
         nls = self.get_nls()
         nls.conf.is_linear = is_linear
 
-    def get_initial_state(self):
+    def get_initial_state(self, vec=None):
         """
-        Create a zero state vector and apply initial conditions.
+        Create a zero state and apply initial conditions.
         """
-        state = self.create_state()
+        self.equations.setup_initial_conditions(self.ics, self.functions)
+        self.equations.init_state(vec=vec)
+        self.equations.apply_ic()
 
-        self.setup_ics()
-        state.apply_ic()
-
-        # Initialize variables with history.
-        state.init_history()
-
-        return state
+        return self.equations.variables
 
     def solve(self, state0=None, status=None, force_values=None,
               var_data=None, update_bcs=True, update_materials=True,
@@ -1352,7 +1339,7 @@ class Problem(Struct):
 
         Parameters
         ----------
-        state0 : State or array, optional
+        state0 : array, optional
             If given, the initial state satisfying the initial conditions. By
             default, it is created and the initial conditions are applied
             automatically.
@@ -1387,8 +1374,8 @@ class Problem(Struct):
 
         Returns
         -------
-        state : State
-            The final state.
+        variables : Variables
+            The variables with the final time step state.
         """
         if status is None:
             status = IndexedStruct()
@@ -1400,36 +1387,29 @@ class Problem(Struct):
 
         self.equations.set_data(var_data, ignore_unknown=True)
 
-        if state0 is None:
-            state0 = self.get_initial_state()
-
-        else:
-            if isinstance(state0, nm.ndarray):
-                state0 = State(self.equations.variables, vec=state0)
-
         if self.conf.options.get('block_solve', False):
-            state = self.block_solve(state0, status=status,
-                                     save_results=save_results,
-                                     step_hook=step_hook,
-                                     post_process_hook=post_process_hook,
-                                     verbose=verbose)
+            variables = self.block_solve(state0, status=status,
+                                         save_results=save_results,
+                                         step_hook=step_hook,
+                                         post_process_hook=post_process_hook,
+                                         verbose=verbose)
 
         else:
+            variables = self.get_initial_state(vec=state0)
             self.time_update(tss.ts)
 
-            state0.apply_ebc(force_values=force_values)
+            variables.apply_ebc(force_values=force_values)
 
             if self.is_linear():
-                mtx = prepare_matrix(self, state0) # Updates materials.
+                mtx = prepare_matrix(self, variables) # Updates materials.
                 self.try_presolve(mtx)
 
             init_fun, prestep_fun, poststep_fun = self.get_tss_functions(
-                state0,
                 update_bcs=update_bcs, update_materials=update_materials,
                 save_results=save_results,
                 step_hook=step_hook, post_process_hook=post_process_hook)
 
-            vec = tss(state0.get_vec(self.active_only),
+            vec = tss(variables.get_state(self.active_only, force=True),
                       init_fun=init_fun,
                       prestep_fun=prestep_fun,
                       poststep_fun=poststep_fun,
@@ -1437,13 +1417,12 @@ class Problem(Struct):
             output('solved in %d steps in %.2f seconds'
                    % (status['n_step'], status['time']), verbose=verbose)
 
-            state = state0.copy()
-            state.set_vec(vec, self.active_only)
+            variables.set_state(vec, self.active_only)
 
         if post_process_hook_final is not None: # User postprocessing.
-            post_process_hook_final(self, state)
+            post_process_hook_final(self, variables)
 
-        return state
+        return variables
 
     def block_solve(self, state0=None, status=None, save_results=True,
                     step_hook=None, post_process_hook=None,
@@ -1467,10 +1446,8 @@ class Problem(Struct):
 
             return out
 
-        if state0 is None:
-            state0 = self.get_initial_state()
+        variables = self.get_initial_state(vec=state0)
 
-        variables = self.get_variables()
         vtos = variables.get_dual_names()
         vdeps = self.equations.get_variable_dependencies()
         sdeps = replace_virtuals(vdeps, vtos)
@@ -1480,8 +1457,7 @@ class Problem(Struct):
         stov = invert_dict(vtos)
         vorder = [[stov[ii] for ii in block] for block in sorder]
 
-        parts0 = state0.get_parts()
-        state = state0.copy()
+        parts = variables.get_state_parts()
         solved = []
         for ib, block in enumerate(vorder):
             output('solving for %s...' % sorder[ib], verbose=verbose)
@@ -1491,30 +1467,30 @@ class Problem(Struct):
 
             subpb.equations.print_terms()
 
-            substate0 = subpb.create_state()
+            subvars0 = subpb.get_initial_state()
 
-            vals = get_subdict(parts0, block)
-            substate0.set_parts(vals)
+            vals = get_subdict(parts, block)
+            subvars0.set_state_parts(vals)
 
-            substate = subpb.solve(state0=substate0, status=status,
-                                   save_results=False, step_hook=step_hook,
-                                   post_process_hook=post_process_hook,
-                                   verbose=verbose)
+            subvars = subpb.solve(state0=subvars0(), status=status,
+                                  save_results=False, step_hook=step_hook,
+                                  post_process_hook=post_process_hook,
+                                  verbose=verbose)
 
-            state.set_parts(substate.get_parts())
+            variables.set_state_parts(subvars.get_state_parts())
 
             solved.extend(sorder[ib])
             output('...done', verbose=verbose)
 
         if step_hook is not None:
-            step_hook(self, None, state)
+            step_hook(self, None, variables)
 
         if save_results:
-            self.save_state(self.get_output_name(), state,
+            self.save_state(self.get_output_name(), variables,
                             post_process_hook=post_process_hook,
                             file_per_var=None)
 
-        return state
+        return variables
 
     def create_evaluable(self, expression, try_equations=True, auto_init=False,
                          preserve_caches=False, copy_materials=True,
@@ -1900,7 +1876,7 @@ class Problem(Struct):
 
         return restart_filename
 
-    def save_restart(self, filename, state=None, ts=None):
+    def save_restart(self, filename, ts=None):
         """
         Save the current state and time step to a restart file.
 
@@ -1908,9 +1884,6 @@ class Problem(Struct):
         ----------
         filename : str
             The restart file name.
-        state : State instance, optional
-            The state instance. If not given, a new state is created using the
-            variables in problem equations.
         ts : TimeStepper instance, optional
             The time stepper. If not given, a default one is created.
 
@@ -1919,9 +1892,6 @@ class Problem(Struct):
         Does not support terms with internal state.
         """
         import tables as pt
-
-        if state is None:
-            state = self.create_state()
 
         if ts is None:
             ts = self.get_default_ts()
@@ -1932,10 +1902,11 @@ class Problem(Struct):
         for key, val in six.iteritems(ts.get_state()):
             fd.create_array(tgroup, key, val, key)
 
-        if state.r_vec is not None:
-            fd.create_array('/', 'r_vec', state.r_vec, 'reduced state vector')
+        variables = self.get_variables()
+        if variables.r_vec is not None:
+            fd.create_array('/', 'r_vec', variables.r_vec,
+                            'reduced state vector')
 
-        variables = state.variables
         for var in variables.iter_state():
             vgroup = fd.create_group('/', var.name, var.name)
 
@@ -1961,7 +1932,7 @@ class Problem(Struct):
 
         self._restart_filenames.append(filename)
 
-    def load_restart(self, filename, state=None, ts=None):
+    def load_restart(self, filename, ts=None):
         """
         Load the current state and time step from a restart file.
 
@@ -1975,28 +1946,21 @@ class Problem(Struct):
         ----------
         filename : str
             The restart file name.
-        state : State instance, optional
-            The state instance. If not given, a new state is created using the
-            variables in problem equations. Otherwise, its variables are
-            modified in place.
         ts : TimeStepper instance, optional
             The time stepper. If not given, a default one is created.
             Otherwise, it is modified in place.
 
         Returns
         -------
-        new_state : State instance
-            The loaded state.
+        variables : Variables instance
+            The loaded variables.
         """
         import tables as pt
-
-        if state is None:
-            state = self.create_state()
 
         if ts is None:
             ts = self.get_default_ts()
 
-        variables = state.variables
+        variables = self.get_variables()
 
         output('loading restart file "%s"...' % filename)
 
@@ -2009,19 +1973,24 @@ class Problem(Struct):
 
             ts.set_state(**ts_state)
 
+            vec = variables.create_vec()
             for var in variables.iter_state():
                 vgroup = fd.root._f_get_child(var.name)
 
                 history_length = vgroup.history_length.read()
                 for ii in range(0, history_length):
                     data = vgroup._f_get_child('data_%d' % ii).read()
+                    var.locked = False
                     var.set_data(data, step=-ii)
+                    var.locked = True
+                    if ii == 0:
+                        variables.set_vec_part(vec, var.name, data)
 
-            new_state = State.from_variables(variables)
+            variables.init_state(vec=vec)
 
             if '/r_vec' in fd:
                 r_vec = fd.root.r_vec.read()
-                state.r_vec = r_vec
+                variables.r_vec = r_vec
 
             fd.close()
 
@@ -2036,11 +2005,13 @@ class Problem(Struct):
 
             out = io.read_data(step=ts.step)
 
+            vec = variables.create_vec()
             for var in variables.iter_state():
                 val = out[var.name]
                 var.set_from_mesh_vertices(val.data)
+                variables.set_vec_part(vec, var.name, var())
 
-            new_state = State.from_variables(variables)
+            variables.init_state(vec=vec)
 
         else:
             raise IOError('unknown file type! ("%s" in ("%s", "%s"))'
@@ -2049,4 +2020,4 @@ class Problem(Struct):
 
         output('...done')
 
-        return new_state
+        return variables

@@ -1164,7 +1164,6 @@ This package implements various PDE discretization schemes (FEM or IGA).
    src/sfepy/discrete/projections
    src/sfepy/discrete/quadratures
    src/sfepy/discrete/simplex_cubature
-   src/sfepy/discrete/state
    src/sfepy/discrete/variables
 
 sfepy.discrete.common sub-package

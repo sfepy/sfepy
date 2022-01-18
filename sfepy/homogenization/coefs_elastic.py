@@ -8,7 +8,7 @@ from sfepy.solvers.ts import TimeStepper
 from six.moves import range
 
 class PressureRHSVector( CorrMiniApp ):
-    
+
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
@@ -21,8 +21,7 @@ class PressureRHSVector( CorrMiniApp ):
         state.apply_ebc()
 
         eqs = problem.equations
-        eqs.set_variables_from_state(state.vec)
-        vec = eqs.create_stripped_state_vector()
+        vec = eqs.create_reduced_vec()
         eqs.time_update_materials(problem.get_timestepper())
         eqs.evaluate(mode='weak', dw_mode='vector', asm_obj=vec)
 

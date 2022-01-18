@@ -19,18 +19,16 @@ class Test( TestInput ):
         pb.time_update()
 
         vvs = pb.get_variables()
-        setv = vvs.set_state_part
-        make_full = vvs.make_full_vec
 
         svec_u = nm.ones( (vvs.adi.n_dof['u'],), dtype = nm.float64 )
         svec_phi = nm.empty( (vvs.adi.n_dof['phi'],), dtype = nm.float64 )
         svec_phi.fill( 2.0 )
 
-        svec = vvs.create_stripped_state_vector()
-        setv( svec, svec_u, 'u', stripped = True )
-        setv( svec, svec_phi, 'phi', stripped = True )
+        svec = vvs.create_reduced_vec()
+        vvs.set_vec_part(svec, 'u', svec_u, reduced=True)
+        vvs.set_vec_part(svec, 'phi', svec_phi, reduced=True)
 
-        vec = make_full( svec )
+        vec = vvs.make_full_vec(svec)
 
         ii_u = vvs.di.indx['u'].start + vvs['u'].eq_map.eqi
         ii_phi = vvs.di.indx['phi'].start + vvs['phi'].eq_map.eqi

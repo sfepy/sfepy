@@ -41,7 +41,7 @@ def par_fun(idx):
 
 # Define the function post_process, that will be called after the problem is
 # solved.
-def post_process(out, problem, state, extend=False):
+def post_process(out, problem, variables, extend=False):
     """
     This will be called after the problem is solved.
 
@@ -51,7 +51,7 @@ def post_process(out, problem, state, extend=False):
         The output dictionary, where this function will store additional data.
     problem : Problem instance
         The current Problem instance.
-    state : State instance
+    variables : Variables instance
         The computed state, containing FE coefficients of all the unknown
         variables.
     extend : bool

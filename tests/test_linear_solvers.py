@@ -241,14 +241,13 @@ class Test(TestCommon):
     def test_ls_reuse(self):
         import numpy as nm
         from sfepy.solvers import Solver
-        from sfepy.discrete.state import State
 
         self.problem.init_solvers(ls_conf=self.problem.solver_confs['d00'])
         nls = self.problem.get_nls()
 
-        state0 = State(self.problem.equations.variables)
+        state0 = self.problem.get_initial_state()
         state0.apply_ebc()
-        vec0 = state0.get_reduced()
+        vec0 = state0.get_state(self.problem.active_only)
 
         self.problem.update_materials()
 

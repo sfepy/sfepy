@@ -76,7 +76,7 @@ from sfepy.base.timing import Timer
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.common.region import Region
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
-                            Equation, Equations, Problem, State)
+                            Equation, Equations, Problem)
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.discrete.evaluate import apply_ebc_to_matrix
 from sfepy.terms import Term
@@ -251,7 +251,7 @@ def solve_problem(mesh_filename, options, comm):
 
     pb = create_local_problem(omega_gi, order)
 
-    variables = pb.get_variables()
+    variables = pb.get_initial_state()
     eqs = pb.equations
 
     u_i = variables['u_i']
@@ -285,13 +285,12 @@ def solve_problem(mesh_filename, options, comm):
     output('evaluating local problem...')
     timer.start()
 
-    state = State(variables)
-    state.fill(0.0)
-    state.apply_ebc()
+    variables.fill_state(0.0)
+    variables.apply_ebc()
 
-    rhs_i = eqs.eval_residuals(state())
+    rhs_i = eqs.eval_residuals(variables())
     # This must be after pl.create_petsc_system() call!
-    mtx_i = eqs.eval_tangent_matrices(state(), pb.mtx_a)
+    mtx_i = eqs.eval_tangent_matrices(variables(), pb.mtx_a)
 
     stats.t_evaluate_local_problem = timer.stop()
     output('...done in', timer.dt)
@@ -329,7 +328,7 @@ def solve_problem(mesh_filename, options, comm):
 
     scatter(psol_i, psol)
 
-    sol0_i = state() - psol_i[...]
+    sol0_i = variables() - psol_i[...]
     psol_i[...] = sol0_i
 
     gather(psol, psol_i)
@@ -340,7 +339,7 @@ def solve_problem(mesh_filename, options, comm):
     output('saving solution...')
     timer.start()
 
-    u_i.set_data(sol0_i)
+    variables.set_state(sol0_i)
     out = u_i.create_output()
 
     filename = os.path.join(options.output_dir, 'sol_%02d.h5' % comm.rank)

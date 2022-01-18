@@ -3,12 +3,11 @@ Classes of variables for equations/terms.
 """
 from __future__ import print_function
 from __future__ import absolute_import
-from collections import deque
 
 import numpy as nm
 
 from sfepy.base.base import (real_types, complex_types, assert_, get_default,
-                             output, OneTypeList, Container, Struct, basestr,
+                             output, OneTypeList, Container, Struct,
                              iter_dict_of_lists)
 from sfepy.base.timing import Timer
 import sfepy.linalg as la
@@ -180,6 +179,8 @@ class Variables(Container):
 
     def __init__(self, variables=None):
         Container.__init__(self, OneTypeList(Variable),
+                           vec=None,
+                           r_vec=None,
                            state=set(),
                            virtual=set(),
                            parameter=set(),
@@ -452,6 +453,21 @@ class Variables(Container):
 
         return active_bcs
 
+    def get_indx(self, var_name, reduced=False, allow_dual=False):
+        var = self[var_name]
+
+        if not var.is_state():
+            if allow_dual and var.is_virtual():
+                var_name = var.primary_var_name
+            else:
+                msg = '%s is not a state part' % var_name
+                raise IndexError(msg)
+
+        if reduced:
+            return self.adi.indx[var_name]
+        else:
+            return self.di.indx[var_name]
+
     def get_matrix_shape(self):
         if not self.has_eq_map:
             raise ValueError('call equation_mapping() first!')
@@ -497,31 +513,50 @@ class Variables(Container):
                 if var is not None:
                     var.adof_conns[key] = val
 
-    def create_state_vector(self):
+    def create_vec(self):
         vec = nm.zeros((self.di.ptr[-1],), dtype=self.dtype)
         return vec
 
-    def create_stripped_state_vector(self):
+    def create_reduced_vec(self):
         vec = nm.zeros((self.adi.ptr[-1],), dtype=self.dtype)
         return vec
 
-    def apply_ebc(self, vec, force_values=None):
+    def check_vec_size(self, vec, reduced=False):
         """
-        Apply essential (Dirichlet) and periodic boundary conditions
-        defined for the state variables to vector `vec`.
-        """
-        for var in self.iter_state():
-            var.apply_ebc(vec, self.di.indx[var.name].start, force_values)
+        Check whether the shape of the DOF vector corresponds to the
+        total number of DOFs of the state variables.
 
-    def apply_ic(self, vec, force_values=None):
+        Parameters
+        ----------
+        vec : array
+            The vector of DOF values.
+        reduced : bool
+            If True, the size of the DOF vector should be reduced,
+            i.e. without DOFs fixed by boundary conditions.
         """
-        Apply initial conditions defined for the state variables to
-        vector `vec`.
-        """
-        for var in self.iter_state():
-            var.apply_ic(vec, self.di.indx[var.name].start, force_values)
+        if not reduced:
+            n_dof = self.di.get_n_dof_total()
 
-    def strip_state_vector(self, vec, follow_epbc=False, svec=None):
+            if vec.size != n_dof:
+                msg = 'incompatible data size!' \
+                      ' (%d (variables) == %d (DOF vector))' \
+                      % (n_dof, vec.size)
+                raise ValueError(msg)
+
+        else:
+            if self.has_lcbc:
+                n_dof = self.lcdi.get_n_dof_total()
+
+            else:
+                n_dof = self.adi.get_n_dof_total()
+
+            if vec.size != n_dof:
+                msg = 'incompatible data size!' \
+                      ' (%d (active variables) == %d (reduced DOF vector))' \
+                      % (n_dof, vec.size)
+                raise ValueError(msg)
+
+    def reduce_vec(self, vec, follow_epbc=False, svec=None):
         """
         Get the reduced DOF vector, with EBC and PBC DOFs removed.
 
@@ -559,7 +594,7 @@ class Variables(Container):
         vec : array
             The full DOF vector.
         """
-        self.check_vector_size(svec, stripped=True)
+        self.check_vec_size(svec, reduced=True)
 
         if self.has_lcbc:
             if self.has_lcbc_rhs:
@@ -569,7 +604,7 @@ class Variables(Container):
                 svec = self.mtx_lcbc * svec
 
         if vec is None:
-            vec = self.create_state_vector()
+            vec = self.create_vec()
         for var in self.iter_state():
             indx = self.di.indx[var.name]
             aindx = self.adi.indx[var.name]
@@ -577,7 +612,72 @@ class Variables(Container):
 
         return vec
 
-    def has_ebc(self, vec, force_values=None):
+    def set_vec_part(self, vec, var_name, part, reduced=False):
+        self.check_vec_size(vec, reduced=reduced)
+        vec[self.get_indx(var_name, reduced)] = part
+
+    def get_vec_part(self, vec, var_name, reduced=False):
+        self.check_vec_size(vec, reduced=reduced)
+        return vec[self.get_indx(var_name, reduced)]
+
+    def invalidate_evaluate_caches(self, step=0):
+        for var in self.iter_state():
+            var.invalidate_evaluate_cache(step=step)
+
+    def init_state(self, vec=None):
+        self.init_history()
+
+        if vec is None:
+            vec = self.create_vec()
+
+        for var in self.iter_state():
+            var.locked = False
+
+        self.set_data(vec)
+
+        for var in self.iter_state():
+            var.locked = True
+
+        self.vec = vec
+
+    def fill_state(self, value):
+        """
+        Fill the DOF vector with given value.
+        """
+        if self.r_vec is not None:
+            self.r_vec.fill(value)
+
+        self.vec.fill(value)
+        self.invalidate_evaluate_caches(step=0)
+
+    def apply_ebc(self, vec=None, force_values=None):
+        """
+        Apply essential (Dirichlet) and periodic boundary conditions
+        to state all variables or the given vector `vec`.
+        """
+        if vec is None:
+            vec = self.vec
+            self.invalidate_evaluate_caches(step=0)
+
+        for var in self.iter_state():
+            var.apply_ebc(vec, self.di.indx[var.name].start, force_values)
+
+    def apply_ic(self, vec=None, force_values=None):
+        """
+        Apply initial conditions to all state variables or the given
+        vector `vec`.
+        """
+        if vec is None:
+            vec = self.vec
+            self.invalidate_evaluate_caches(step=0)
+
+        for var in self.iter_state():
+            var.apply_ic(vec, self.di.indx[var.name].start, force_values)
+
+    def has_ebc(self, vec=None, force_values=None):
+        if vec is None:
+            vec = self.vec
+
         for var_name in self.di.var_names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
@@ -596,93 +696,6 @@ class Variables(Container):
             if not nm.allclose(vec[i0+eq_map.master], vec[i0+eq_map.slave]):
                 return False
         return True
-
-    def get_indx(self, var_name, stripped=False, allow_dual=False):
-        var = self[var_name]
-
-        if not var.is_state():
-            if allow_dual and var.is_virtual():
-                var_name = var.primary_var_name
-            else:
-                msg = '%s is not a state part' % var_name
-                raise IndexError(msg)
-
-        if stripped:
-            return self.adi.indx[var_name]
-        else:
-            return self.di.indx[var_name]
-
-    def check_vector_size(self, vec, stripped=False):
-        """
-        Check whether the shape of the DOF vector corresponds to the
-        total number of DOFs of the state variables.
-
-        Parameters
-        ----------
-        vec : array
-            The vector of DOF values.
-        stripped : bool
-            If True, the size of the DOF vector should be reduced,
-            i.e. without DOFs fixed by boundary conditions.
-        """
-        if not stripped:
-            n_dof = self.di.get_n_dof_total()
-
-            if vec.size != n_dof:
-                msg = 'incompatible data size!' \
-                      ' (%d (variables) == %d (DOF vector))' \
-                      % (n_dof, vec.size)
-                raise ValueError(msg)
-
-        else:
-            if self.has_lcbc:
-                n_dof = self.lcdi.get_n_dof_total()
-
-            else:
-                n_dof = self.adi.get_n_dof_total()
-
-            if vec.size != n_dof:
-                msg = 'incompatible data size!' \
-                      ' (%d (active variables) == %d (reduced DOF vector))' \
-                      % (n_dof, vec.size)
-                raise ValueError(msg)
-
-    def get_state_part_view(self, state, var_name, stripped=False):
-        self.check_vector_size(state, stripped=stripped)
-        return state[self.get_indx(var_name, stripped)]
-
-    def set_state_part(self, state, part, var_name, stripped=False):
-        self.check_vector_size(state, stripped=stripped)
-        state[self.get_indx(var_name, stripped)] = part
-
-    def get_state_parts(self, vec=None):
-        """
-        Return parts of a state vector corresponding to individual state
-        variables.
-
-        Parameters
-        ----------
-        vec : array, optional
-            The state vector. If not given, then the data stored in the
-            variables are returned instead.
-
-        Returns
-        -------
-        out : dict
-            The dictionary of the state parts.
-        """
-        if vec is not None:
-            self.check_vector_size(vec)
-
-        out = {}
-        for var in self.iter_state():
-            if vec is None:
-                out[var.name] = var()
-
-            else:
-                out[var.name] = vec[self.di.indx[var.name]]
-
-        return out
 
     def set_data(self, data, step=0, ignore_unknown=False,
                  preserve_caches=False):
@@ -720,7 +733,7 @@ class Variables(Container):
                                  preserve_caches=preserve_caches)
 
         elif isinstance(data, nm.ndarray):
-            self.check_vector_size(data)
+            self.check_vec_size(data)
 
             for ii in self.state:
                 var = self[ii]
@@ -730,37 +743,166 @@ class Variables(Container):
         else:
             raise ValueError('unknown data class! (%s)' % data.__class__)
 
-    def set_from_state(self, var_names, state, var_names_state):
+    def set_reduced_state(self, r_vec, preserve_caches=False):
         """
-        Set variables with names in `var_names` from state variables with names
-        in `var_names_state` using DOF values in the state vector `state`.
+        Set the reduced DOF vector, with EBC and PBC DOFs removed.
+
+        Parameters
+        ----------
+        r_vec : array
+            The reduced DOF vector corresponding to the variables.
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of variables.
         """
-        self.check_vector_size(state)
+        self.vec[:] = self.make_full_vec(r_vec)
 
-        if isinstance(var_names, basestr):
-            var_names = [var_names]
-            var_names_state = [var_names_state]
+        if self.has_lcbc:
+            self.r_vec = r_vec
 
-        for ii, var_name in enumerate(var_names):
-            var_name_state = var_names_state[ii]
+        if not preserve_caches:
+            self.invalidate_evaluate_caches(step=0)
 
-            if self[var_name_state].is_state():
-                self[var_name].set_data(state, self.di.indx[var_name_state])
+    def get_reduced_state(self, follow_epbc=False, force=False):
+        """
+        Get the reduced DOF vector, with EBC and PBC DOFs removed.
+        """
+        if self.has_lcbc:
+            if self.r_vec is None:
+                if force:
+                    r_vec = self.reduce_vec(self.vec, follow_epbc=follow_epbc)
+                    # This just sets the correct vector size (wrong values)!
+                    r_vec = self.mtx_lcbc.T * r_vec
+
+                else:
+                    raise ValueError('Reduced state DOFs are not available!')
 
             else:
-                msg = '%s is not a state part' % var_name_state
-                raise IndexError(msg)
+                r_vec = self.r_vec
 
-    def state_to_output(self, vec, fill_value=None, var_info=None,
-                        extend=True, linearization=None):
+        else:
+            r_vec = self.reduce_vec(self.vec, follow_epbc=follow_epbc)
+
+        return r_vec
+
+    def set_full_state(self, vec, force=False, preserve_caches=False):
         """
-        Convert a state vector to a dictionary of output data usable by
-        Mesh.write().
+        Set the full DOF vector (including EBC and PBC DOFs). If
+        `var_name` is given, set only the DOF sub-vector corresponding
+        to the given variable. If `force` is True, setting variables
+        with LCBC DOFs is allowed.
         """
+        if self.has_lcbc:
+            if not force:
+                raise ValueError('cannot set full DOF vector with LCBCs!')
+
+            else:
+                self.r_vec = None
+
+        self.vec[:] = vec
+        if not preserve_caches:
+            self.invalidate_evaluate_caches(step=0)
+
+    def __call__(self, var_name=None):
+        """
+        Get the full DOF vector (including EBC and PBC DOFs). If
+        `var_name` is given, return only the DOF vector corresponding to
+        the given variable.
+        """
+        if var_name is None:
+            out = self.vec
+
+        else:
+            out = self.vec[self.di.indx[var_name]]
+
+        return out
+
+    def set_state(self, vec, reduced=False, force=False, preserve_caches=False):
+        if reduced:
+            self.set_reduced_state(vec, preserve_caches=preserve_caches)
+
+        else:
+            self.set_full_state(vec, force=force,
+                                preserve_caches=preserve_caches)
+
+    def get_state(self, reduced=False, follow_epbc=False, force=False):
+        if reduced:
+            vec = self.get_reduced_state(follow_epbc=follow_epbc, force=force)
+
+        else:
+            vec = self()
+
+        return vec
+
+    def set_state_parts(self, parts, vec=None, force=False):
+        """
+        Set parts of the DOF vector corresponding to individual state
+        variables.
+
+        Parameters
+        ----------
+        parts : dict
+            The dictionary of the DOF vector parts.
+        force : bool
+            If True, proceed even with LCBCs present.
+        """
+        if self.has_lcbc and not force:
+            raise ValueError('cannot set full DOF vector with LCBCs!')
+
+        if vec is None:
+            vec = self.vec
+            self.invalidate_evaluate_caches(step=0)
+
+        else:
+            self.check_vec_size(vec, reduced=False)
+
+        for key, part in parts.items():
+            vec[self.di.indx[key]] = part
+
+    def get_state_parts(self, vec=None):
+        """
+        Return parts of a state vector corresponding to individual state
+        variables.
+
+        Parameters
+        ----------
+        vec : array, optional
+            The state vector. If not given, then the data stored in the
+            variables are returned instead.
+
+        Returns
+        -------
+        out : dict
+            The dictionary of the state parts.
+        """
+        if vec is None:
+            vec = self.vec
+
+        else:
+            self.check_vec_size(vec, reduced=False)
+
+        out = {}
+        for var in self.iter_state():
+            out[var.name] = vec[self.di.indx[var.name]]
+
+        return out
+
+    def create_output(self, vec=None, fill_value=None, var_info=None,
+                      extend=True, linearization=None):
+        """
+        Creates an output dictionary with state variables data, that can be
+        passed as 'out' kwarg to :func:`Mesh.write()`.
+
+        Then the dictionary entries are formed by components of the
+        state vector corresponding to unknown variables according to
+        kind of linearization given by `linearization`.
+        """
+        if vec is None:
+            vec = self.vec
+
         di = self.di
 
         if var_info is None:
-            self.check_vector_size(vec)
+            self.check_vec_size(vec)
 
             var_info = {}
             for name in di.var_names:
@@ -881,7 +1023,7 @@ class Variable(Struct):
 
     def __init__(self, name, kind, order=None, primary_var_name=None,
                  special=None, flags=None, **kwargs):
-        Struct.__init__(self, name=name, **kwargs)
+        Struct.__init__(self, name=name, locked=False, **kwargs)
 
         self.flags = set()
         if flags is not None:
@@ -900,7 +1042,7 @@ class Variable(Struct):
             self.data = None
 
         else:
-            self.data = deque()
+            self.data = []
             self.data.append(None)
 
         self._set_kind(kind, order, primary_var_name, special=special)
@@ -1057,7 +1199,7 @@ class Variable(Struct):
         """Initialize data of variables with history."""
         if self.history is None: return
 
-        self.data = deque((self.history + 1) * [None])
+        self.data = (self.history + 1) * [None]
         self.step = 0
 
     def time_update(self, ts, functions):
@@ -1076,13 +1218,13 @@ class Variable(Struct):
         if self.history > 0:
             # Copy the current step data to the history data, shift history,
             # initialize if needed. The current step data are left intact.
-            # Note: cannot use self.data.rotate() due to data sharing with
-            # State.
-            for ii in range(self.history, 0, -1):
+            # Note: self.data can point into Variables.vec.
+            for ii in range(1, self.history + 1):
                 if self.data[ii] is None:
-                    self.data[ii] = nm.empty_like(self.data[0])
+                    self.data[ii] = self.data[ii-1].copy()
 
-                self.data[ii][:] = self.data[ii - 1]
+            for ii in range(self.history, 0, -1):
+                self.data[ii][self.indx] = self.data[ii - 1][self.indx]
 
             # Advance evaluate cache.
             for step_cache in six.itervalues(self.evaluate_cache):
@@ -1106,16 +1248,15 @@ class Variable(Struct):
         Initialize the dof vector data of time step `step` to zeros.
         """
         if self.is_state_or_parameter():
-            data = nm.zeros((self.n_dof,), dtype=self.dtype)
-            self.set_data(data, step=step)
+            self.set_constant(val=0.0, step=step)
 
-    def set_constant(self, val):
+    def set_constant(self, val=0.0, step=0):
         """
-        Set the variable to a constant value.
+        Set the variable dof vector data of time step `step` to a scalar `val`.
         """
         data = nm.empty((self.n_dof,), dtype=self.dtype)
         data.fill(val)
-        self.set_data(data)
+        self.set_data(data, step=step)
 
     def set_data(self, data=None, indx=None, step=0,
                  preserve_caches=False):
@@ -1133,6 +1274,17 @@ class Variable(Struct):
         preserve_caches : bool
             If True, do not invalidate evaluate caches of the variable.
         """
+        if not self.is_state_or_parameter():
+            raise ValueError(
+                'Only state or parameter variables can have values!'
+            )
+
+        if self.locked:
+            raise ValueError(
+                f'Variable {self.name} is locked! It can be set only using'
+                ' the state manipulation functions of Variables.'
+            )
+
         data = data.ravel()
 
         if indx is None:
@@ -1789,7 +1941,7 @@ class FieldVariable(Variable):
         mesh = self.field.create_mesh(extra_nodes=False)
         vec = self()
 
-        n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.n_components
+        n_dof, dpn = self.n_dof, self.n_components
         aux = nm.reshape(vec, (n_dof // dpn, dpn))
 
         ext = self.field.extend_dofs(aux, 0.0)

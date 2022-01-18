@@ -21,7 +21,7 @@ def optimization_hook(pb):
     out = []
     yield pb, out
 
-    state = out[-1][1].get_parts()
+    state = out[-1][1].get_state_parts()
     coors = pb.domain.cmesh.coors
     displ = state['u'].reshape((coors.shape[0],3))
     # elongation

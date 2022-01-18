@@ -306,7 +306,7 @@ def recover_bones(problem, micro_problem, region, eps0,
     vdp = 'd' + vp
 
     variables = micro_problem.create_variables()
-    to_output = variables.state_to_output
+    to_output = variables.create_output
 
     micro_u, micro_p = variables[vu], variables[vp]
 
@@ -410,7 +410,7 @@ def recover_paraflow(problem, micro_problem, region,
     nodes_y1 = micro_problem.domain.regions['Y1'].vertices
     nodes_y2 = micro_problem.domain.regions['Y2'].vertices
 
-    to_output = micro_problem.variables.state_to_output
+    to_output = micro_problem.variables.create_output
 
     join = os.path.join
     format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]

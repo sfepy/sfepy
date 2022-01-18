@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
 from argparse import ArgumentParser
 import numpy as nm
 
@@ -90,12 +88,12 @@ def main():
     pb.set_solver(nls)
 
     status = IndexedStruct()
-    state = pb.solve(status=status)
+    variables = pb.solve(status=status)
 
     print('Nonlinear solver status:\n', nls_status)
     print('Stationary solver status:\n', status)
 
-    pb.save_state('linear_elasticity.vtk', state)
+    pb.save_state('linear_elasticity.vtk', variables)
 
     if options.show:
         view = Viewer('linear_elasticity.vtk')

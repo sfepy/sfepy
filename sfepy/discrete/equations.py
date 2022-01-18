@@ -505,15 +505,15 @@ class Equations(Container):
 
     ##
     # Interface to self.variables.
-    def create_state_vector(self):
-        return self.variables.create_state_vector()
+    def create_vec(self):
+        return self.variables.create_vec()
 
-    def create_stripped_state_vector(self):
-        return self.variables.create_stripped_state_vector()
+    def create_reduced_vec(self):
+        return self.variables.create_reduced_vec()
 
-    def strip_state_vector(self, vec, follow_epbc=False):
+    def reduce_vec(self, vec, follow_epbc=False):
         """
-        Strip a full vector by removing EBC dofs.
+        Get the reduced DOF vector, with EBC and PBC DOFs removed.
 
         Notes
         -----
@@ -522,7 +522,7 @@ class Equations(Container):
         assembling. For vectors with state (unknown) variables it should be set
         to False, for assembled vectors it should be set to True.
         """
-        return self.variables.strip_state_vector(vec, follow_epbc=follow_epbc)
+        return self.variables.reduce_vec(vec, follow_epbc=follow_epbc)
 
     def make_full_vec(self, svec, force_value=None):
         """
@@ -531,44 +531,13 @@ class Equations(Container):
         """
         return self.variables.make_full_vec(svec, force_value)
 
-    def set_variables_from_state(self, vec, step=0):
-        """
-        Set data (vectors of DOF values) of variables.
-
-        Parameters
-        ----------
-        data : array
-            The state vector.
-        step : int
-            The time history step, 0 (default) = current.
-        """
-        self.variables.set_data(vec, step=step)
-
-    def get_state_parts(self, vec=None):
-        """
-        Return parts of a state vector corresponding to individual state
-        variables.
-
-        Parameters
-        ----------
-        vec : array, optional
-            The state vector. If not given, then the data stored in the
-            variables are returned instead.
-
-        Returns
-        -------
-        out : dict
-            The dictionary of the state parts.
-        """
-        return self.variables.get_state_parts(vec)
-
     def set_data(self, data, step=0, ignore_unknown=False):
         """
         Set data (vectors of DOF values) of variables.
 
         Parameters
         ----------
-        data : array
+        data : dict
             The dictionary of {variable_name : data vector}.
         step : int, optional
             The time history step, 0 (default) = current.
@@ -578,24 +547,25 @@ class Equations(Container):
         self.variables.set_data(data, step=step,
                                 ignore_unknown=ignore_unknown)
 
-    def apply_ebc(self, vec, force_values=None):
-        """
-        Apply essential (Dirichlet) boundary conditions to a state vector.
-        """
-        self.variables.apply_ebc(vec, force_values=force_values)
+    def init_state(self, vec=None):
+        self.variables.init_state(vec=vec)
 
-    def apply_ic(self, vec, force_values=None):
+    def apply_ebc(self, vec=None, force_values=None):
         """
-        Apply initial conditions to a state vector.
+        Apply essential (Dirichlet) boundary conditions to equations' variables,
+        or a given vector.
         """
-        self.variables.apply_ic(vec, force_values=force_values)
+        self.variables.apply_ebc(vec=vec, force_values=force_values)
 
-    def state_to_output(self, vec, fill_value=None, var_info=None,
-                        extend=True):
-        return self.variables.state_to_output(vec,
-                                              fill_value=fill_value,
-                                              var_info=var_info,
-                                              extend=extend)
+    def apply_ic(self, vec=None, force_values=None):
+        """
+        Apply initial conditions to equations' variables, or a given vector.
+        """
+        self.variables.apply_ic(vec=vec, force_values=force_values)
+
+    def set_state(self, vec, reduced=False, force=False, preserve_caches=False):
+        self.variables.set_state(vec, reduced=reduced, force=force,
+                                 preserve_caches=preserve_caches)
 
     def get_lcbc_operator(self):
         return self.variables.get_lcbc_operator()
@@ -678,7 +648,7 @@ class Equations(Container):
             dictionary is returned instead, with keys given by
             `block_name` part of the individual equation names.
         """
-        self.set_variables_from_state(state)
+        self.set_state(state, force=True)
 
         if by_blocks:
             names = get_default(names, self.names)
@@ -691,15 +661,15 @@ class Equations(Container):
                 key, rname, cname = [aux.strip()
                                      for aux in name.split(',')]
 
-                ir = get_indx(rname, stripped=True, allow_dual=True)
+                ir = get_indx(rname, reduced=True, allow_dual=True)
 
-                residual = self.create_stripped_state_vector()
+                residual = self.create_reduced_vec()
                 eq.evaluate(mode='weak', dw_mode='vector', asm_obj=residual)
 
                 out[key] = residual[ir]
 
         else:
-            out = self.create_stripped_state_vector()
+            out = self.create_reduced_vec()
 
             self.evaluate(mode='weak', dw_mode='vector', asm_obj=out)
 
@@ -733,7 +703,7 @@ class Equations(Container):
             is returned instead, with keys given by `block_name` part
             of the individual equation names.
         """
-        self.set_variables_from_state(state)
+        self.set_state(state, force=True)
 
         if by_blocks:
             names = get_default(names, self.names)
@@ -746,8 +716,8 @@ class Equations(Container):
                 key, rname, cname = [aux.strip()
                                      for aux in eq.name.split(',')]
 
-                ir = get_indx(rname, stripped=True, allow_dual=True)
-                ic = get_indx(cname, stripped=True, allow_dual=True)
+                ir = get_indx(rname, reduced=True, allow_dual=True)
+                ic = get_indx(cname, reduced=True, allow_dual=True)
 
                 tangent_matrix.data[:] = 0.0
                 aux = eq.evaluate(mode='weak', dw_mode='matrix',
