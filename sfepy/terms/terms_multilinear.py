@@ -1,4 +1,5 @@
 import numpy as nm
+from sfepy.linalg import dot_sequences
 
 try:
     import dask.array as da
@@ -1606,6 +1607,86 @@ class ENonSymElasticTerm(ETermBase):
                      diff_var=None, **kwargs):
         fun = self.make_function(
             'IK,n(i:j)->I,n(k:l)->K', mat, virtual, state, diff_var=diff_var,
+        )
+
+        return fun
+
+
+def sym2nonsym(sym_obj, axes=[3]):
+    nonsym_tab = {
+        3: nm.array([0, 2, 2, 1]),
+        6: nm.array([0, 3, 4, 3, 1, 5, 4, 5, 2]),
+    }
+
+    if isinstance(axes, int):
+        axes = [axes]
+
+    sh = sym_obj.shape
+    sym = sh[axes[0]]
+    idxs = nonsym_tab[sym]
+    ix = (range(sh[k]) if k not in axes else idxs for k in range(len(sh)))
+
+    return sym_obj[nm.ix_(*ix)]
+
+
+def get_nonsym_grad_op(sgrad):
+    nel, nqp, dim, _ = sgrad.shape
+    grad_op = nm.zeros((nel, nqp, dim**2, dim**2), dtype=nm.float64)
+    if dim == 3:
+        grad_op[..., 0:3, 0:3] = sgrad
+        grad_op[..., 3:6, 3:6] = sgrad
+        grad_op[..., 6:9, 6:9] = sgrad
+    elif dim == 2:
+        grad_op[..., 0:2, 0:2] = sgrad
+        grad_op[..., 2:4, 2:4] = sgrad
+    else:
+        grad_op = sgrad
+
+    return grad_op
+
+
+class ESDLinearElasticTerm(ETermBase):
+    r"""
+    Sensitivity analysis of the linear elastic term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \hat{D}_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+
+    .. math::
+        \hat{D}_{ijkl} = D_{ijkl}(\nabla \cdot \ul{\Vcal})
+        - D_{ijkq}{\partial \Vcal_l \over \partial x_q}
+        - D_{iqkl}{\partial \Vcal_j \over \partial x_q}
+
+    :Arguments 1:
+        - material : :math:`\ull{D}`
+        - virtual/parameter_v : :math:`\ul{v}`
+        - state/parameter_s : :math:`\ul{u}`
+        - parameter_mv : :math:`\ul{\Vcal}`
+    """
+    name = 'de_sd_lin_elastic'
+    arg_types = (('material', 'virtual', 'state', 'parameter_mv'),
+                 ('material', 'parameter_1', 'parameter_2', 'parameter_mv'))
+    arg_shapes = {'material': 'S, S', 'virtual': ('D', 'state'),
+                  'state': 'D', 'parameter_1': 'D', 'parameter_2': 'D',
+                  'parameter_mv': 'D'}
+    modes = ('weak', 'eval')
+
+    def get_function(self, mat, vvar, svar, par_mv,
+                     mode=None, term_mode=None, diff_var=None, **kwargs):
+
+        grad_mv = self.get(par_mv, 'grad')
+        div_mv = nm.trace(grad_mv, axis1=2, axis2=3)[..., None, None]
+        grad_op = get_nonsym_grad_op(grad_mv)
+
+        mat_ns = sym2nonsym(mat, [2, 3])
+        aux = dot_sequences(mat_ns, grad_op, mode='AB')
+        mat_sd = mat_ns * div_mv - aux - aux.transpose((0, 1, 3, 2)) 
+
+        fun = self.make_function(
+            'IK,n(i:j)->I,n(k:l)->K', (mat_sd, 'material'), vvar, svar,
+            diff_var=diff_var,
         )
 
         return fun
