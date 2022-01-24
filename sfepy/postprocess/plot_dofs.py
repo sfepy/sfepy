@@ -44,7 +44,7 @@ def plot_points(ax, coors, vals=None, point_size=20,
 
     return ax
 
-def plot_mesh(ax, coors, conn, edges):
+def plot_mesh(ax, coors, conn, edges, color='k', **plot_kwargs):
     """
     Plot a finite element mesh as a wireframe.
     """
@@ -58,7 +58,7 @@ def plot_mesh(ax, coors, conn, edges):
         for ed in eds:
             cc = coors[ed]
 
-            ax.plot(*cc.T, color='k')
+            ax.plot(*cc.T, color=color, **plot_kwargs)
 
     return ax
 
