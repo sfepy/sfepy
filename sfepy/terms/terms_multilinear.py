@@ -1747,3 +1747,77 @@ class ESDPiezoCouplingTerm(ETermBase):
         )
 
         return fun
+
+
+class EDiffusionTerm(ETermBase):
+    r"""
+    General diffusion term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} K_{ij} \nabla_i q\, \nabla_j p
+
+    :Arguments:
+        - material: :math:`K_{ij}`
+        - virtual/parameter_v: :math:`q`
+        - state/parameter_s: :math:`p`
+    """
+    name = 'de_diffusion'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_v', 'parameter_s'))
+    arg_shapes = {'material' : 'D, D', 'virtual': (1, 'state'), 'state': 1,
+                  'parameter_v': 1, 'parameter_s': 1}
+    modes = ('weak', 'eval')
+
+    def get_function(self, mat, vvar, svar, par_mv,
+                     mode=None, term_mode=None, diff_var=None, **kwargs):
+
+        fun = self.make_function(
+            'ij,0.i,0.j', mat, vvar, svar, diff_var=diff_var
+        )
+
+        return fun
+
+
+class ESDDiffusionTerm(ETermBase):
+    r"""
+    Diffusion sensitivity analysis term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \hat{K}_{ij} \nabla_i q\, \nabla_j p
+
+    .. math::
+        \hat{K}_{ij} = K_{ij}\left(
+            \delta_{ik}\delta_{jl} \dvg \ul{\Vcal}
+          - \delta_{ik}{\partial \Vcal_j \over \partial x_l}
+          - \delta_{jl}{\partial \Vcal_i \over \partial x_k}\right)
+
+    :Arguments:
+        - material: :math:`K_{ij}`
+        - virtual/parameter_1: :math:`q`
+        - state/parameter_2: :math:`p`
+        - parameter_mv: :math:`\ul{\Vcal}`
+    """
+    name = 'de_sd_diffusion'
+    arg_types = (('material', 'virtual', 'state', 'parameter_mv'),
+                 ('material', 'parameter_1', 'parameter_2', 'parameter_mv'))
+    arg_shapes = {'material' : 'D, D', 'virtual': (1, 'state'), 'state': 1,
+                  'parameter_1': 1, 'parameter_2': 1, 'parameter_mv': 'D'}
+    modes = ('weak', 'eval')
+
+    def get_function(self, mat, vvar, svar, par_mv,
+                     mode=None, term_mode=None, diff_var=None, **kwargs):
+        grad_mv = self.get(par_mv, 'grad')
+        div_mv = nm.trace(grad_mv, axis1=2, axis2=3)[..., None, None]
+
+        aux = dot_sequences(mat, grad_mv, mode='AB')
+        mat_sd = mat * div_mv - aux - aux.transpose((0, 1, 3, 2))
+
+        fun = self.make_function(
+            'ij,0.i,0.j', (mat_sd, 'material'), vvar, svar, diff_var=diff_var
+        )
+
+        return fun
