@@ -1690,3 +1690,60 @@ class ESDLinearElasticTerm(ETermBase):
         )
 
         return fun
+
+
+class ESDPiezoCouplingTerm(ETermBase):
+    r"""
+    Sensitivity (shape derivative) of the piezoelectric coupling term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \hat{g}_{kij}\ e_{ij}(\ul{v}) \nabla_k p \mbox{ , }
+        \int_{\Omega} \hat{g}_{kij}\ e_{ij}(\ul{u}) \nabla_k q
+
+    .. math::
+        \hat{g}_{kij} = g_{kij}(\nabla \cdot \ul{\Vcal})
+        - g_{kil}{\partial \Vcal_j \over \partial x_l}
+        - g_{lij}{\partial \Vcal_k \over \partial x_l}
+
+    :Arguments 1:
+        - material    : :math:`g_{kij}`
+        - virtual/parameter_v : :math:`\ul{v}`
+        - state/parameter_s : :math:`p`
+        - parameter_mv : :math:`\ul{\Vcal}`
+
+    :Arguments 2:
+        - material : :math:`g_{kij}`
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`q`
+        - parameter_mv : :math:`\ul{\Vcal}`
+    """
+    name = 'de_sd_piezo_coupling'
+    arg_types = (('material', 'virtual', 'state', 'parameter_mv'),
+                 ('material', 'state', 'virtual', 'parameter_mv'),
+                 ('material', 'parameter_v', 'parameter_s', 'parameter_mv'))
+    arg_shapes = {'material' : 'D, S',
+                  'virtual/grad' : ('D', None), 'state/grad' : 1,
+                  'virtual/div' : (1, None), 'state/div' : 'D',
+                  'parameter_v' : 'D', 'parameter_s' : 1,
+                  'parameter_mv': 'D'}
+    modes = ('grad', 'div', 'eval')
+
+    def get_function(self, mat, vvar, svar, par_mv,
+                     mode=None, term_mode=None, diff_var=None, **kwargs):
+        grad_mv = self.get(par_mv, 'grad')
+        div_mv = nm.trace(grad_mv, axis1=2, axis2=3)[..., None, None]
+        grad_op = get_nonsym_grad_op(grad_mv)
+
+        mat_ns = sym2nonsym(mat, [3])
+        mat_sd = mat_ns * div_mv - dot_sequences(mat_ns, grad_op, mode='AB')\
+               - dot_sequences(grad_mv, mat_ns, mode='ATB')
+
+        expr = 'Ik,0.k,n(i:j)->I' if mode == 'div' else 'kI,n(i:j)->I,0.k'
+
+        fun = self.make_function(
+            expr, (mat_sd, 'material'), vvar, svar, diff_var=diff_var
+        )
+
+        return fun
