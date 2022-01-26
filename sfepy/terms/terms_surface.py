@@ -113,7 +113,7 @@ class SDLinearTractionTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n},
+        \int_{\Gamma} \ul{v} \cdot (\ull{\sigma}\, \ul{n}),
         \int_{\Gamma} \ul{v} \cdot \ul{n},
 
     :Arguments:
