@@ -101,10 +101,10 @@ class SDDiffusionTerm(Term):
     """
     name = 'ev_sd_diffusion'
     arg_types = ('material', 'parameter_q', 'parameter_p',
-                 'parameter_mesh_velocity')
+                 'parameter_mv')
     arg_shapes = {'material' : 'D, D',
                   'parameter_q' : 1, 'parameter_p' : 1,
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_diffusion)
 
