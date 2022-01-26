@@ -1173,18 +1173,13 @@ class ELaplaceTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} c \nabla q \cdot \nabla p \mbox{ , } \int_{\Omega}
-        c \nabla \bar{p} \cdot \nabla r
+        \int_{\Omega} \nabla q \cdot \nabla p \mbox{ , }
+        \int_{\Omega} c \nabla q \cdot \nabla p
 
-    :Arguments 1:
-        - material : :math:`c`
-        - virtual  : :math:`q`
-        - state    : :math:`p`
-
-    :Arguments 2:
-        - material    : :math:`c`
-        - parameter_1 : :math:`\bar{p}`
-        - parameter_2 : :math:`r`
+    :Arguments:
+        - material: :math:`c`
+        - virtual/parameter_1: :math:`q`
+        - state/parameter_2: :math:`p`
     """
     name = 'de_laplace'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1216,25 +1211,14 @@ class EDotTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\cal{D}} q p \mbox{ , } \int_{\cal{D}} \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_{\cal{D}} p r \mbox{ , } \int_{\cal{D}} \ul{u} \cdot \ul{w} \\
-        \int_{\cal{D}} c q p \mbox{ , } \int_{\cal{D}} c \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_{\cal{D}} c p r \mbox{ , } \int_{\cal{D}} c \ul{u} \cdot \ul{w} \\
-        \int_{\cal{D}} \ul{v} \cdot \ull{M} \cdot \ul{u}
-        \mbox{ , }
-        \int_{\cal{D}} \ul{u} \cdot \ull{M} \cdot \ul{w}
+        \int_{\cal{D}} q p \mbox{ , } \int_{\cal{D}} \ul{v} \cdot \ul{u}\\
+        \int_{\cal{D}} c q p \mbox{ , } \int_{\cal{D}} c \ul{v} \cdot \ul{u}\\
+        \int_{\cal{D}} \ul{v} \cdot (\ull{M}\, \ul{u})
 
-    :Arguments 1:
-        - material : :math:`c` or :math:`\ull{M}` (optional)
-        - virtual  : :math:`q` or :math:`\ul{v}`
-        - state    : :math:`p` or :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`c` or :math:`\ull{M}` (optional)
-        - parameter_1 : :math:`p` or :math:`\ul{u}`
-        - parameter_2 : :math:`r` or :math:`\ul{w}`
+    :Arguments:
+        - material: :math:`c` or :math:`\ull{M}` (optional)
+        - virtual/parameter_1: :math:`q` or :math:`\ul{v}`
+        - state/parameter_2: :math:`p` or :math:`\ul{u}`
     """
     name = 'de_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1342,20 +1326,13 @@ class EDivGradTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
-        \int_{\Omega} \nu\ \nabla \ul{u} : \nabla \ul{w} \\
         \int_{\Omega} \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
-        \int_{\Omega} \nabla \ul{u} : \nabla \ul{w}
+        \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}
 
-    :Arguments 1:
-        - material : :math:`\nu` (viscosity, optional)
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`\nu` (viscosity, optional)
-        - parameter_1 : :math:`\ul{u}`
-        - parameter_2 : :math:`\ul{w}`
+    :Arguments:
+        - material: :math:`\nu` (viscosity, optional)
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'de_div_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1386,17 +1363,11 @@ class EConvectTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v} \mbox{ , }
-        \int_{\Omega} ((\ul{w} \cdot \nabla) \ul{w}) \cdot \bar{\ul{u}}
+        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
 
-    :Arguments 1:
-        - virtual : :math:`\ul{v}`
-        - state   : :math:`\ul{u}`
-
-    :Arguments 2:
-        - parameter_1 : :math:`\bar{\ul{u}}`
-        - parameter_2 : :math:`\ul{w}`
-
+    :Arguments:
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'de_convect'
     arg_types = (('virtual', 'state'),
@@ -1418,18 +1389,12 @@ class EDivTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} \nabla \cdot \ul{v} \mbox { , } \int_{\Omega} \nabla
-        \cdot \ul{u} \\
-        \int_{\Omega} c \nabla \cdot \ul{v} \mbox { , } \int_{\Omega} c \nabla
-        \cdot \ul{u}
+        \int_{\Omega} \nabla \cdot \ul{v} \mbox { , }
+        \int_{\Omega} c \nabla \cdot \ul{v}
 
-    :Arguments 1:
-        - material : :math:`c` (optional)
-        - virtual  : :math:`\ul{v}`
-
-    :Arguments 2:
-        - material  : :math:`c` (optional)
-        - parameter : :math:`\ul{u}`
+    :Arguments:
+        - material: :math:`c` (optional)
+        - virtual/parameter: :math:`\ul{v}`
     """
     name = 'de_div'
     arg_types = (('opt_material', 'virtual'),
@@ -1461,28 +1426,20 @@ class EStokesTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , }
-        \int_{\Omega} q\ \nabla \cdot \ul{u}
-        \mbox{ or }
-        \int_{\Omega} c\ p\ \nabla \cdot \ul{v} \mbox{ , }
-        \int_{\Omega} c\ q\ \nabla \cdot \ul{u} \\
-        \int_{\Omega} r\ \nabla \cdot \ul{w} \mbox{ , }
-        \int_{\Omega} c r\ \nabla \cdot \ul{w}
+        \int_{\Omega} p\, \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} q\, \nabla \cdot \ul{u}\\
+        \int_{\Omega} c\, p\, \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} c\, q\, \nabla \cdot \ul{u}
 
     :Arguments 1:
-        - material : :math:`c` (optional)
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`p`
+        - material: :math:`c` (optional)
+        - virtual/parameter_v: :math:`\ul{v}`
+        - state/parameter_s: :math:`p`
 
     :Arguments 2:
         - material : :math:`c` (optional)
         - state    : :math:`\ul{u}`
         - virtual  : :math:`q`
-
-    :Arguments 3:
-        - material    : :math:`c` (optional)
-        - parameter_v : :math:`\ul{u}`
-        - parameter_s : :math:`p`
     """
     name = 'de_stokes'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1520,18 +1477,11 @@ class ELinearElasticTerm(ETermBase):
 
     .. math::
         \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
-        \mbox{ , }
-        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{w}) e_{kl}(\ul{u})
 
-    :Arguments 1:
-        - material : :math:`D_{ijkl}`
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`D_{ijkl}`
-        - parameter_1 : :math:`\ul{w}`
-        - parameter_2 : :math:`\ul{u}`
+    :Arguments:
+        - material: :math:`D_{ijkl}`
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'de_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
@@ -1945,6 +1895,7 @@ class ESDDotTerm(ETermBase):
         - material: :math:`c` or :math:`\ull{M}` (optional)
         - virtual/parameter_1: :math:`q` or :math:`\ul{v}`
         - state/parameter_2: :math:`p` or :math:`\ul{u}`
+        - parameter_mv : :math:`\ul{\Vcal}`
     """
     name = 'de_sd_dot'
     arg_types = (('opt_material', 'virtual', 'state', 'parameter_mv'),
