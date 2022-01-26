@@ -1791,7 +1791,7 @@ class ESDDiffusionTerm(ETermBase):
 
     .. math::
         \hat{K}_{ij} = K_{ij}\left(
-            \delta_{ik}\delta_{jl} \dvg \ul{\Vcal}
+            \delta_{ik}\delta_{jl} \nabla \cdot \ul{\Vcal}
           - \delta_{ik}{\partial \Vcal_j \over \partial x_l}
           - \delta_{jl}{\partial \Vcal_i \over \partial x_k}\right)
 
@@ -1818,6 +1818,59 @@ class ESDDiffusionTerm(ETermBase):
 
         fun = self.make_function(
             'ij,0.i,0.j', (mat_sd, 'material'), vvar, svar, diff_var=diff_var
+        )
+
+        return fun
+
+
+class ESDStokesTerm(ETermBase):
+    r"""
+    Stokes problem coupling term. Corresponds to weak forms of gradient and
+    divergence terms.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} p\, I_{ij} {\partial v_i \over \partial x_j} \mbox{ , }
+        \int_{\Omega} q\, I_{ij} {\partial u_i \over \partial x_j}
+
+    .. math::
+        \hat{I}_{ij} = \delta_{ij} \nabla \cdot \Vcal
+          - {\partial \Vcal_j \over \partial x_i}
+
+    :Arguments 1:
+        - virtual/parameter_v: :math:`\ul{v}`
+        - state/parameter_s: :math:`p`
+        - parameter_mv: :math:`\ul{\Vcal}`
+
+    :Arguments 2:
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`q`
+        - parameter_mv: :math:`\ul{\Vcal}`
+    """
+    name = 'de_sd_stokes'
+    arg_types = (('opt_material', 'virtual', 'state', 'parameter_mv'),
+                 ('opt_material', 'state', 'virtual', 'parameter_mv'),
+                 ('opt_material', 'parameter_v', 'parameter_s', 'parameter_mv'))
+    arg_shapes = [{'opt_material': '1, 1',
+                   'virtual/grad': ('D', None), 'state/grad': 1,
+                   'virtual/div': (1, None), 'state/div': 'D',
+                   'parameter_v': 'D', 'parameter_s': 1, 'parameter_mv': 'D'},
+                  {'opt_material': None}]
+    modes = ('grad', 'div', 'eval')
+
+    def get_function(self, coef, vvar, svar, par_mv,
+                     mode=None, term_mode=None, diff_var=None, **kwargs):
+        grad_mv = self.get(par_mv, 'grad')
+        div_mv = nm.trace(grad_mv, axis1=2, axis2=3)[..., None, None]
+
+        mul = coef if coef is not None else 1.
+
+        dim = grad_mv.shape[-2]
+        mat_sd = (nm.eye(dim) * div_mv - grad_mv) * mul
+
+        fun = self.make_function(
+            'ij,i.j,0', (mat_sd, 'material'), vvar, svar, diff_var=diff_var
         )
 
         return fun

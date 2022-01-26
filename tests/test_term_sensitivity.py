@@ -60,6 +60,7 @@ test_terms = [
     ('ev_sd_diffusion', 'dw_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
     ('de_sd_diffusion', 'de_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
     ('ev_sd_div', 'dw_stokes', 'Omega', None, 'U1', 'P1'),
+    ('de_sd_stokes', 'de_stokes', 'Omega', None, 'U1', 'P1'),
     ('ev_sd_div_grad', 'dw_div_grad', 'Omega', 'mat.c', 'U1', 'U2'),
     ('ev_sd_piezo_coupling', 'dw_piezo_coupling', 'Omega', 'mat.g', 'U1', 'P1'),
     ('de_sd_piezo_coupling', 'dw_piezo_coupling', 'Omega', 'mat.g', 'U1', 'P1'),
