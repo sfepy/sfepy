@@ -1498,8 +1498,8 @@ class Problem(Struct):
                          ebcs=None, epbcs=None, lcbcs=None,
                          ts=None, functions=None,
                          mode='eval', var_dict=None, strip_variables=True,
-                         extra_args=None, active_only=True, verbose=True,
-                         **kwargs):
+                         extra_args=None, active_only=True,
+                         eterm_options=None, verbose=True, **kwargs):
         """
         Create evaluable object (equations and corresponding variables)
         from the `expression` string. Convenience function calling
@@ -1561,6 +1561,8 @@ class Problem(Struct):
         active_only : bool
             If True, in 'weak' mode, the (tangent) matrices and residual
             vectors (right-hand sides) contain only active DOFs.
+        eterm_options : dict, optional
+            The einsum-based terms evaluation options.
         verbose : bool
             If False, reduce verbosity.
         **kwargs : keyword arguments
@@ -1656,6 +1658,7 @@ class Problem(Struct):
                                auto_init=auto_init,
                                mode=mode, extra_args=extra_args,
                                active_only=active_only,
+                               eterm_options=eterm_options,
                                verbose=verbose,
                                kwargs=kwargs)
 
@@ -1676,7 +1679,8 @@ class Problem(Struct):
                  ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
                  var_dict=None, strip_variables=True, ret_variables=False,
-                 active_only=True, verbose=True, extra_args=None, **kwargs):
+                 active_only=True, eterm_options=None, verbose=True,
+                 extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         :func:`Problem.create_evaluable` and
@@ -1716,7 +1720,9 @@ class Problem(Struct):
                                     strip_variables=strip_variables,
                                     extra_args=extra_args,
                                     active_only=active_only,
-                                    verbose=verbose, **kwargs)
+                                    eterm_options=eterm_options,
+                                    verbose=verbose,
+                                    **kwargs)
         equations, variables = aux
 
         out = eval_equations(equations, variables,

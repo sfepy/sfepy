@@ -125,7 +125,8 @@ def create_evaluable(expression, fields, materials, variables, integrals,
                      ebcs=None, epbcs=None, lcbcs=None,
                      ts=None, functions=None,
                      auto_init=False, mode='eval', extra_args=None,
-                     active_only=True, verbose=True, kwargs=None):
+                     active_only=True, eterm_options=None, verbose=True,
+                     kwargs=None):
     """
     Create evaluable object (equations and corresponding variables)
     from the `expression` string.
@@ -171,6 +172,8 @@ def create_evaluable(expression, fields, materials, variables, integrals,
     active_only : bool
         If True, in 'weak' mode, the (tangent) matrices and residual
         vectors (right-hand sides) contain only active DOFs.
+    eterm_options : dict, optional
+        The einsum-based terms evaluation options.
     verbose : bool
         If False, reduce verbosity.
     kwargs : dict, optional
@@ -211,7 +214,9 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
     equations = Equations.from_conf({'tmp' : expression},
                                     aux_vars, regions, materials, integrals,
-                                    user=extra_args, verbose=verbose)
+                                    user=extra_args,
+                                    eterm_options=eterm_options,
+                                    verbose=verbose)
     equations.collect_conn_info()
 
     # The true variables used in the expression.
