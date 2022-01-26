@@ -1874,3 +1874,55 @@ class ESDStokesTerm(ETermBase):
         )
 
         return fun
+
+
+class ESDDivGradTerm(ETermBase):
+    r"""
+     Sensitivity (shape derivative) of diffusion term `de_div_grad`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \hat{I} \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
+        \int_{\Omega} \nu \hat{I}  \nabla \ul{v} : \nabla \ul{u}
+
+    .. math::
+        \hat{I}_{ijkl} =
+            \delta_{ik}\delta_{jl} \nabla \cdot \ul{\Vcal}
+          - \delta_{ik}\delta_{js} {\partial \Vcal_l \over \partial x_s}
+          - \delta_{is}\delta_{jl} {\partial \Vcal_k \over \partial x_s}
+
+    :Arguments:
+        - material: :math:`\nu` (viscosity, optional)
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
+        - parameter_mv: :math:`\ul{\Vcal}`
+    """
+    name = 'de_sd_div_grad'
+    arg_types = (('opt_material', 'virtual', 'state', 'parameter_mv'),
+                 ('opt_material', 'parameter_1', 'parameter_2',
+                  'parameter_mv'))
+    arg_shapes = [{'opt_material': '1, 1', 'virtual': ('D', 'state'),
+                   'state': 'D', 'parameter_1': 'D', 'parameter_2': 'D',
+                   'parameter_mv': 'D'},
+                  {'opt_material': None}]
+    modes = ('weak', 'eval')
+
+    def get_function(self, mat, vvar, svar, par_mv,
+                     mode=None, term_mode=None, diff_var=None, **kwargs):
+        grad_mv = self.get(par_mv, 'grad')
+        div_mv = nm.trace(grad_mv, axis1=2, axis2=3)[..., None, None]
+        grad_op = get_nonsym_grad_op(grad_mv)
+
+        mat_sd = nm.eye(grad_mv.shape[-2]**2) * div_mv\
+               - grad_op - grad_op.transpose((0, 1, 3, 2))
+
+        if mat is not None:
+            mat_sd *= mat
+
+        fun = self.make_function(
+            'IK,n(i:j)->I,n(k:l)->K', (mat_sd, 'material'), vvar, svar,
+            diff_var=diff_var,
+        )
+
+        return fun
