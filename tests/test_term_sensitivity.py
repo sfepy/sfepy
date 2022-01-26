@@ -57,6 +57,8 @@ test_terms = [
     ('ev_sd_lin_elastic', 'dw_lin_elastic', 'Omega', 'mat.D', 'U1', 'U2'),
     ('de_sd_lin_elastic', 'dw_lin_elastic', 'Omega', 'mat.D', 'U1', 'U2'),
     ('ev_sd_dot', 'dw_dot', 'Omega', None, 'U1', 'U2'),
+    ('de_sd_dot', 'de_dot', 'Omega', 'mat.K', 'U1', 'U2'),
+    ('de_sd_dot', 'de_dot', 'Omega', 'mat.c', 'P1', 'P2'),
     ('ev_sd_diffusion', 'dw_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
     ('de_sd_diffusion', 'de_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
     ('ev_sd_div', 'dw_stokes', 'Omega', None, 'U1', 'P1'),

@@ -1926,3 +1926,57 @@ class ESDDivGradTerm(ETermBase):
         )
 
         return fun
+
+
+class ESDDotTerm(ETermBase):
+    r"""
+    Sensitivity (shape derivative) of dot product of scalars or vectors.
+
+    :Definition:
+
+    .. math::
+        \int_{\cal{D}} q p (\nabla \cdot \ul{\Vcal}) \mbox{ , }
+        \int_{\cal{D}} (\ul{v} \cdot \ul{u}) (\nabla \cdot \ul{\Vcal})\\
+        \int_{\cal{D}} c q p (\nabla \cdot \ul{\Vcal}) \mbox{ , }
+        \int_{\cal{D}} c (\ul{v} \cdot \ul{u}) (\nabla \cdot \ul{\Vcal})\\
+        \int_{\cal{D}} \ul{v} \cdot (\ull{M}\, \ul{u}) (\nabla \cdot \ul{\Vcal})
+
+    :Arguments:
+        - material: :math:`c` or :math:`\ull{M}` (optional)
+        - virtual/parameter_1: :math:`q` or :math:`\ul{v}`
+        - state/parameter_2: :math:`p` or :math:`\ul{u}`
+    """
+    name = 'de_sd_dot'
+    arg_types = (('opt_material', 'virtual', 'state', 'parameter_mv'),
+                 ('opt_material', 'parameter_1', 'parameter_2',
+                  'parameter_mv'))
+    arg_shapes = [{'opt_material': '1, 1', 'virtual': (1, 'state'),
+                   'state' : 1, 'parameter_1': 1, 'parameter_2': 1,
+                   'parameter_mv': 'D'},
+                  {'opt_material': None},
+                  {'opt_material': '1, 1', 'virtual': ('D', 'state'),
+                   'state' : 'D', 'parameter_1': 'D', 'parameter_2': 'D',
+                   'parameter_mv': 'D'},
+                  {'opt_material': 'D, D'},
+                  {'opt_material': None}]
+    modes = ('weak', 'eval')
+    integration = 'by_region'
+
+    def get_function(self, mat, vvar, svar, par_mv, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        mat_sd = self.get(par_mv, 'div')
+
+        if mat is not None:
+            mat_sd = mat_sd * mat
+
+        if mat_sd.shape[-1] > 1:
+            fun = self.make_function(
+                'ij,i,j', (mat_sd, 'material'), vvar, svar, diff_var=diff_var,
+            )
+
+        else:
+            fun = self.make_function(
+                '00,i,i', (mat_sd, 'material'), vvar, svar, diff_var=diff_var,
+            )
+
+        return fun
