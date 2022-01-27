@@ -1931,3 +1931,139 @@ class ESDDotTerm(ETermBase):
             )
 
         return fun
+
+
+class ELinearTractionTerm(ETermBase):
+    r"""
+    Linear traction term. The material parameter can have one of the
+    following shapes:
+
+        - 1 or (1, 1) - a given scalar pressure
+        - (D, 1) - a traction vector
+        - (S, 1), (2D, 1) or (D, D) - a given stress in symmetric or
+          non-symmetric tensor storage (in symmetric storage indicies are order
+          as follows: 2D: [11, 22, 12], 3D: [11, 22, 33, 12, 13, 23])
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ul{v} \cdot \ul{n}
+            \mbox{ , }
+        \int_{\Gamma} c\, \ul{v} \cdot \ul{n}\\
+        \int_{\Gamma} \ul{v} \cdot (\ull{\sigma}\, \ul{n})
+            \mbox{ , }
+        \int_{\Gamma} \ul{v} \cdot \ul{f}
+
+    :Arguments:
+        - material: :math:`c`, :math:`\ul{f}`, :math:`\ul{\sigma}`
+          or :math:`\ull{\sigma}`
+        - virtual/parameter: :math:`\ul{v}`
+    """
+    name = 'de_surface_ltr'
+    arg_types = (('opt_material', 'virtual'),
+                 ('opt_material', 'parameter'))
+    arg_shapes = [{'opt_material': 'S, 1', 'virtual': ('D', None),
+                   'parameter': 'D'},
+                  {'opt_material': None}, {'opt_material': '1, 1'},
+                  {'opt_material': 'D, 1'}, {'opt_material': 'D, D'}]
+    modes = ('weak', 'eval')
+    integration = 'surface'
+
+    def get_function(self, traction, vvar, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(vvar)
+        nv = sg.normal
+        _, n_qp, dim, _ = nv.shape
+
+        tdim, tdim2 = (None, None) if traction is None else traction.shape[2:]
+ 
+        if tdim == dim and tdim2 == 1:  # force vector
+            force = traction
+        else:
+            sym = (dim + 1) * dim // 2
+
+            if tdim is None:
+                force = nv
+            elif tdim == 1:  # scalar value
+                force = traction * nv
+            elif tdim == dim and tdim2 == dim:  # traction tensor - full
+                force = dot_sequences(traction, nv, 'AB')
+            elif tdim == dim**2 and tdim2 == 1:  # traction tensor - full, vector
+                aux = traction.reshape((-1, n_qp, dim, dim))
+                force = dot_sequences(aux, nv, 'AB')
+            elif tdim == sym and tdim2 == 1:  # traction tensor - symetric
+                aux = sym2nonsym(traction, [2]).reshape((-1, n_qp, dim, dim))
+                force = dot_sequences(aux, nv, 'AB')
+            else:
+                raise NotImplemented
+
+        fun = self.make_function(
+            'i,i', (force[..., 0], 'opt_material'), vvar, diff_var=diff_var,
+        )
+
+        return fun
+
+
+class ESDLinearTractionTerm(ETermBase):
+    r"""
+    Sensitivity of the linear traction term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ul{v} \cdot \left[\left(\ull{\hat{\sigma}}\,
+        \nabla \cdot \ul{\cal{V}} - \ull{{\hat\sigma}}\, \nabla \ul{\cal{V}}
+        \right)\ul{n}\right]
+
+    .. math::
+        \ull{\hat\sigma} = \ull{I} \mbox{ , }
+        \ull{\hat\sigma} = c\,\ull{I} \mbox{ or }
+        \ull{\hat\sigma} = \ull{\sigma}
+
+    :Arguments:
+        - material: :math:`c`, :math:`\ul{\sigma}`, :math:`\ull{\sigma}`
+        - virtual/parameter: :math:`\ul{v}`
+        - parameter_mv: :math:`\ul{\Vcal}`
+    """
+    name = 'de_sd_surface_ltr'
+    arg_types = (('opt_material', 'virtual', 'parameter_mv'),
+                 ('opt_material', 'parameter', 'parameter_mv'))
+    arg_shapes = [{'opt_material': 'S, 1', 'virtual' : ('D', None),
+                   'parameter_mv': 'D', 'parameter': 'D'},
+                  {'opt_material': None}, {'opt_material': '1, 1'},
+                  {'opt_material': 'D, 1'}, {'opt_material': 'D, D'}]
+    modes = ('weak', 'eval')
+    integration = 'surface'
+
+    def get_function(self, traction, vvar, par_mv, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(vvar)
+        grad_mv = self.get(par_mv, 'grad', integration='surface_extra')
+        div_mv = nm.trace(grad_mv, axis1=2, axis2=3)[..., None, None]
+
+        _, n_qp, dim, _ = grad_mv.shape
+        sym = (dim + 1) * dim // 2
+
+        tdim, tdim2 = (None, None) if traction is None else traction.shape[2:]
+
+        if tdim is None:
+            trac = nm.tile(nm.eye(dim), (1, n_qp, 1, 1))
+        elif tdim == 1:  # scalar value
+            trac = nm.tile(nm.eye(dim), (1, n_qp, 1, 1)) * traction
+        elif tdim == dim and tdim2 == dim:  # traction tensor - full
+            trac = traction
+        elif tdim == dim**2 and tdim2 == 1:  # traction tensor - full, vector
+            trac = traction.reshape((-1, n_qp, dim, dim))
+        elif tdim == sym and tdim2 == 1:  # traction tensor - symetric
+            trac = sym2nonsym(traction, [2]).reshape((-1, n_qp, dim, dim))
+        else:
+            raise NotImplementedError
+
+        aux = trac * div_mv - dot_sequences(trac, grad_mv, 'AB')
+        mat_sd = dot_sequences(aux, sg.normal, 'AB')[..., 0]
+
+        fun = self.make_function(
+            'i,i', (mat_sd, 'opt_material'), vvar, diff_var=diff_var,
+        )
+
+        return fun

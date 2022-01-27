@@ -47,7 +47,7 @@ materials = {
         's': {
             'Omega1': nm.array([[1, 2, 3, 0, 0, 0]]).T,
             'Omega2': nm.array([[8, 4, 2, 0, 0, 0]]).T,
-        }
+        },
     },),
 }
 
@@ -69,6 +69,8 @@ test_terms = [
     ('de_sd_piezo_coupling', 'dw_piezo_coupling', 'Omega', 'mat.g', 'U1', 'P1'),
     ('ev_sd_convect', 'de_convect', 'Omega', None, 'U1', 'U2'),
     ('ev_sd_surface_ltr', 'dw_surface_ltr', 'Interface', 'mat.s', 'U1', None),
+    ('de_sd_surface_ltr', 'de_surface_ltr', 'Interface', 'mat.s', 'U1', None),
+    ('de_sd_surface_ltr', 'de_surface_ltr', 'Interface', 'mat.c', 'U1', None),
 ]
 
 
