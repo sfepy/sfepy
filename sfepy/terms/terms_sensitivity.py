@@ -46,6 +46,7 @@ class ESDLinearElasticTerm(ETermBase):
                   'state': 'D', 'parameter_1': 'D', 'parameter_2': 'D',
                   'parameter_mv': 'D'}
     modes = ('weak', 'eval')
+    geometries = ['2_3', '2_4', '3_4', '3_8']
 
     def get_function(self, mat, vvar, svar, par_mv,
                      mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -103,6 +104,7 @@ class ESDPiezoCouplingTerm(ETermBase):
                   'parameter_v' : 'D', 'parameter_s' : 1,
                   'parameter_mv': 'D'}
     modes = ('grad', 'div', 'eval')
+    geometries = ['2_3', '2_4', '3_4', '3_8']
 
     def get_function(self, mat, vvar, svar, par_mv,
                      mode=None, term_mode=None, diff_var=None, **kwargs):
