@@ -1139,7 +1139,7 @@ class EIntegrateOperatorTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_\Omega q \mbox{ or } \int_\Omega c q
+        \int_\cal{D} q \mbox{ or } \int_\cal{D} c q
 
     :Arguments:
         - material : :math:`c` (optional)
