@@ -352,10 +352,10 @@ class ESDLinearTractionTerm(ETermBase):
     name = 'de_sd_surface_ltr'
     arg_types = (('opt_material', 'virtual', 'parameter_mv'),
                  ('opt_material', 'parameter', 'parameter_mv'))
-    arg_shapes = [{'opt_material': 'S, 1', 'virtual' : ('D', None),
+    arg_shapes = [{'opt_material': 'S, 1', 'virtual': ('D', None),
                    'parameter_mv': 'D', 'parameter': 'D'},
                   {'opt_material': None}, {'opt_material': '1, 1'},
-                  {'opt_material': 'D, 1'}, {'opt_material': 'D, D'}]
+                  {'opt_material': 'D, D'}]
     modes = ('weak', 'eval')
     integration = 'surface'
 
