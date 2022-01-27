@@ -1590,17 +1590,17 @@ class EDiffusionTerm(ETermBase):
 
     :Arguments:
         - material: :math:`K_{ij}`
-        - virtual/parameter_v: :math:`q`
-        - state/parameter_s: :math:`p`
+        - virtual/parameter_1: :math:`q`
+        - state/parameter_2: :math:`p`
     """
     name = 'de_diffusion'
     arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'parameter_v', 'parameter_s'))
+                 ('material', 'parameter_1', 'parameter_2'))
     arg_shapes = {'material' : 'D, D', 'virtual': (1, 'state'), 'state': 1,
-                  'parameter_v': 1, 'parameter_s': 1}
+                  'parameter_1': 1, 'parameter_2': 1}
     modes = ('weak', 'eval')
 
-    def get_function(self, mat, vvar, svar, par_mv,
+    def get_function(self, mat, vvar, svar,
                      mode=None, term_mode=None, diff_var=None, **kwargs):
 
         fun = self.make_function(
