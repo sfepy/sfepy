@@ -280,11 +280,11 @@ class ESDDotTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\cal{D}} q p (\nabla \cdot \ul{\Vcal}) \mbox{ , }
-        \int_{\cal{D}} (\ul{v} \cdot \ul{u}) (\nabla \cdot \ul{\Vcal})\\
-        \int_{\cal{D}} c q p (\nabla \cdot \ul{\Vcal}) \mbox{ , }
-        \int_{\cal{D}} c (\ul{v} \cdot \ul{u}) (\nabla \cdot \ul{\Vcal})\\
-        \int_{\cal{D}} \ul{v} \cdot (\ull{M}\, \ul{u}) (\nabla \cdot \ul{\Vcal})
+        \int_\Omega q p (\nabla \cdot \ul{\Vcal}) \mbox{ , }
+        \int_\Omega (\ul{v} \cdot \ul{u}) (\nabla \cdot \ul{\Vcal})\\
+        \int_\Omega c q p (\nabla \cdot \ul{\Vcal}) \mbox{ , }
+        \int_\Omega c (\ul{v} \cdot \ul{u}) (\nabla \cdot \ul{\Vcal})\\
+        \int_\Omega \ul{v} \cdot (\ull{M}\, \ul{u}) (\nabla \cdot \ul{\Vcal})
 
     :Arguments:
         - material: :math:`c` or :math:`\ull{M}` (optional)
@@ -297,16 +297,15 @@ class ESDDotTerm(ETermBase):
                  ('opt_material', 'parameter_1', 'parameter_2',
                   'parameter_mv'))
     arg_shapes = [{'opt_material': '1, 1', 'virtual': (1, 'state'),
-                   'state' : 1, 'parameter_1': 1, 'parameter_2': 1,
+                   'state': 1, 'parameter_1': 1, 'parameter_2': 1,
                    'parameter_mv': 'D'},
                   {'opt_material': None},
                   {'opt_material': '1, 1', 'virtual': ('D', 'state'),
-                   'state' : 'D', 'parameter_1': 'D', 'parameter_2': 'D',
+                   'state': 'D', 'parameter_1': 'D', 'parameter_2': 'D',
                    'parameter_mv': 'D'},
                   {'opt_material': 'D, D'},
                   {'opt_material': None}]
     modes = ('weak', 'eval')
-    integration = 'by_region'
 
     def get_function(self, mat, vvar, svar, par_mv, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
