@@ -23,6 +23,7 @@ except ImportError:
 
 from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
                        Combine, alphas, alphanums, Literal)
+from functools import partial
 
 from sfepy.base.base import output, Struct
 from sfepy.base.timing import Timer
@@ -877,7 +878,7 @@ class ETermBase(Term):
                                             optimize=paths[ia])
 
         elif self.backend == 'jax':
-            @jax.partial(jax.jit, static_argnums=(0, 1, 2))
+            @partial(jax.jit, static_argnums=(0, 1, 2))
             def _eval_einsum(expressions, paths, n_add, operands):
                 val = jnp.einsum(expressions[0], *operands[0],
                                  optimize=paths[0])
