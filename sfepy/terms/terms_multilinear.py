@@ -1139,7 +1139,7 @@ class EIntegrateOperatorTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_\cal{D} q \mbox{ or } \int_\cal{D} c q
+        \int_{\cal{D}} q \mbox{ or } \int_{\cal{D}} c q
 
     :Arguments:
         - material : :math:`c` (optional)
@@ -1536,15 +1536,10 @@ class ENonSymElasticTerm(ETermBase):
     .. math::
         \int_{\Omega} \ull{D} \nabla \ul{v} : \nabla \ul{u}
 
-    :Arguments 1:
-        - material : :math:`\ull{D}`
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`\ull{D}`
-        - parameter_1 : :math:`\ul{w}`
-        - parameter_2 : :math:`\ul{u}`
+    :Arguments:
+        - material: :math:`\ull{D}`
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'de_nonsym_elastic'
     arg_types = (('material', 'virtual', 'state'),
@@ -1617,7 +1612,7 @@ class ELinearTractionTerm(ETermBase):
 
         - 1 or (1, 1) - a given scalar pressure
         - (D, 1) - a traction vector
-        - (S, 1), (2D, 1) or (D, D) - a given stress in symmetric or
+        - (S, 1) or (D, D) - a given stress in symmetric or
           non-symmetric tensor storage (in symmetric storage indicies are order
           as follows: 2D: [11, 22, 12], 3D: [11, 22, 33, 12, 13, 23])
 
@@ -1671,8 +1666,6 @@ class ELinearTractionTerm(ETermBase):
             elif tdim == sym and tdim2 == 1:  # traction tensor - symetric
                 aux = sym2nonsym(traction, [2]).reshape((-1, n_qp, dim, dim))
                 force = dot_sequences(aux, nv, 'AB')
-            else:
-                raise NotImplemented
 
         fun = self.make_function(
             'i,i', (force[..., 0], 'opt_material'), vvar, diff_var=diff_var,
