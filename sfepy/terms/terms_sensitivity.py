@@ -60,7 +60,7 @@ class ESDLinearElasticTerm(ETermBase):
         mat_sd = mat_ns * div_mv - aux - aux.transpose((0, 1, 3, 2)) 
 
         fun = self.make_function(
-            'IK,n(i:j)->I,n(k:l)->K', (mat_sd, 'material'), vvar, svar,
+            'IK,v(i:j)->I,v(k:l)->K', (mat_sd, 'material'), vvar, svar,
             diff_var=diff_var,
         )
 
@@ -116,7 +116,7 @@ class ESDPiezoCouplingTerm(ETermBase):
         mat_sd = mat_ns * div_mv - dot_sequences(mat_ns, grad_op, mode='AB')\
                - dot_sequences(grad_mv, mat_ns, mode='ATB')
 
-        expr = 'Ik,0.k,n(i:j)->I' if mode == 'div' else 'kI,n(i:j)->I,0.k'
+        expr = 'Ik,0.k,v(i:j)->I' if mode == 'div' else 'kI,v(i:j)->I,0.k'
 
         fun = self.make_function(
             expr, (mat_sd, 'material'), vvar, svar, diff_var=diff_var
@@ -266,7 +266,7 @@ class ESDDivGradTerm(ETermBase):
             mat_sd *= mat
 
         fun = self.make_function(
-            'IK,n(i:j)->I,n(k:l)->K', (mat_sd, 'material'), vvar, svar,
+            'IK,v(i:j)->I,v(k:l)->K', (mat_sd, 'material'), vvar, svar,
             diff_var=diff_var,
         )
 

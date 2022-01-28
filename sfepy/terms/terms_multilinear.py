@@ -60,7 +60,7 @@ def collect_modifiers(modifiers):
     return _collect_modifiers
 
 def parse_term_expression(texpr):
-    mods = 's', 'n'
+    mods = 's', 'v'
     lparen, rparen = map(Suppress, '()')
     simple_arg = Word(alphanums + '.:')
     arrow = Literal('->').suppress()
@@ -122,8 +122,8 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
             elif val_name == 'Psg':
                 op = ebuilder.make_psg(arg.dim)
 
-            elif val_name == 'Png':
-                op = ebuilder.make_png(arg.dim)
+            elif val_name == 'Pvg':
+                op = ebuilder.make_pvg(arg.dim)
 
             else:
                 op = dargs[arg_name].get(
@@ -286,23 +286,23 @@ class ExpressionBuilder(Struct):
 
         return psg
 
-    def make_png(self, dim):
-        key = 'Png{}'.format(dim)
-        png = self.cache.get(key)
-        if png is None:
-            png = nm.zeros((dim, dim, dim*dim))
+    def make_pvg(self, dim):
+        key = 'Pvg{}'.format(dim)
+        pvg = self.cache.get(key)
+        if pvg is None:
+            pvg = nm.zeros((dim, dim, dim*dim))
             if dim == 3:
-                png[0, [0, 1, 2], [0, 1, 2]] = 1
-                png[1, [0, 1, 2], [3, 4, 5]] = 1
-                png[2, [0, 1, 2], [6, 7, 8]] = 1
+                pvg[0, [0, 1, 2], [0, 1, 2]] = 1
+                pvg[1, [0, 1, 2], [3, 4, 5]] = 1
+                pvg[2, [0, 1, 2], [6, 7, 8]] = 1
 
             elif dim == 2:
-                png[0, [0, 1], [0, 1]] = 1
-                png[1, [0, 1], [2, 3]] = 1
+                pvg[0, [0, 1], [0, 1]] = 1
+                pvg[1, [0, 1], [2, 3]] = 1
 
-            self.cache[key] = png
+            self.cache[key] = pvg
 
-        return png
+        return pvg
 
     def add_constant(self, name, cname):
         append_all(self.subscripts, 'cq')
@@ -335,10 +335,10 @@ class ExpressionBuilder(Struct):
         append_all(self.operand_names, name + '.Psg', ii=iia)
         append_all(self.components, [])
 
-    def add_png(self, iic, ein, name, iia=None):
+    def add_pvg(self, iic, ein, name, iia=None):
         append_all(self.subscripts, '{}{}{}'.format(iic, ein[2], ein[0]),
                    ii=iia)
-        append_all(self.operand_names, name + '.Png', ii=iia)
+        append_all(self.operand_names, name + '.Pvg', ii=iia)
         append_all(self.components, [])
 
     def add_arg_dofs(self, iin, ein, name, n_components, iia=None):
@@ -374,8 +374,8 @@ class ExpressionBuilder(Struct):
                     self.add_psg(iic, ein, arg.name)
 
                 # nonsymmetric gradient
-                elif modifier[0][0] == 'n':  # vector storage
-                    self.add_png(iic, ein, arg.name)
+                elif modifier[0][0] == 'v':  # vector storage
+                    self.add_pvg(iic, ein, arg.name)
 
                 else:
                     raise ValueError('unknown argument modifier! ({})'
@@ -408,9 +408,9 @@ class ExpressionBuilder(Struct):
                     self.add_arg_dofs(iin, [iic], arg.name, arg.n_components)
 
                 # nonsymmetric gradient
-                elif modifier[0][0] == 'n':  # vector storage
+                elif modifier[0][0] == 'v':  # vector storage
                     iic = next(self.aux_letters)  # component
-                    self.add_png(iic, ein, arg.name)
+                    self.add_pvg(iic, ein, arg.name)
                     self.add_arg_dofs(iin, [iic], arg.name, arg.n_components)
 
                 else:
@@ -421,7 +421,7 @@ class ExpressionBuilder(Struct):
             if arg.n_components > 1:
                 iic = next(self.aux_letters) # component
                 if ':' in ein: # symmetric gradient
-                    if modifier[0][0] not in ['s', 'n']:  # vector storage
+                    if modifier[0][0] not in ['s', 'v']:  # vector storage
                         raise ValueError('unknown argument modifier! ({})'
                                          .format(modifier))
 
@@ -438,8 +438,8 @@ class ExpressionBuilder(Struct):
                     else:
                         if modifier[0][0] == 's':
                             self.add_psg(iic, ein, arg.name, iia)
-                        elif modifier[0][0] == 'n':
-                            self.add_png(iic, ein, arg.name, iia)
+                        elif modifier[0][0] == 'v':
+                            self.add_pvg(iic, ein, arg.name, iia)
 
             self.out_subscripts[self.ia] += out_letters
             self.ia += 1
@@ -556,7 +556,7 @@ class ExpressionBuilder(Struct):
                 elif val_name in ('bf', 'dofs'):
                     default = defaults[val_name][op.ndim - 2]
 
-                elif val_name in ('I', 'Psg', 'Png'):
+                elif val_name in ('I', 'Psg', 'Pvg'):
                     default = layout.replace('0', '') # -> Do nothing.
 
                 else:
@@ -1551,7 +1551,7 @@ class ENonSymElasticTerm(ETermBase):
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         fun = self.make_function(
-            'IK,n(i:j)->I,n(k:l)->K', mat, virtual, state, diff_var=diff_var,
+            'IK,v(i:j)->I,v(k:l)->K', mat, virtual, state, diff_var=diff_var,
         )
 
         return fun
