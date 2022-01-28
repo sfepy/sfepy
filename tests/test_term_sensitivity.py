@@ -1,11 +1,12 @@
 from __future__ import print_function
 from __future__ import absolute_import
+import gc
 import numpy as nm
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.base.testing import TestCommon
 from sfepy import data_dir
 
-filename_mesh = data_dir + '/meshes/3d/special/cube_cylinder.mesh'
+filename_mesh = data_dir + '/meshes/3d/special/cube_sphere.mesh'
 
 fields = {
     'scalar_field' : ('real', 'scalar', 'Omega', 1),
@@ -179,5 +180,7 @@ class Test(TestCommon):
                 _ok = err < tolerance
 
                 ok = ok and _ok
+
+                gc.collect()
 
         return ok
