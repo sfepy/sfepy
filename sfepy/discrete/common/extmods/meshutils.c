@@ -195,7 +195,7 @@ int32 mesh_graph(int32 *p_nnz, int32 **p_prow, int32 **p_icol,
                  int32 n_row, int32 n_col, int32 n_gr, int32 *n_el,
                  int32 *n_epr, int32 **conn_r, int32 *n_epc, int32 **conn_c)
 {
-  int32 in, ii, ip, ig, iel, iep, ir, ic, nn, np, pr,
+  int32 ret = RET_OK, in, ii, ip, ig, iel, iep, ir, ic, nn, np, pr,
     niec_max_r, n_ep_max_c, n_unique, iir, iic, found;
   int32 *niec, *pconn_r, *pconn_c, *eonlist, *nir, *nods, *icol;
 
@@ -203,6 +203,7 @@ int32 mesh_graph(int32 *p_nnz, int32 **p_prow, int32 **p_icol,
 
   /* Get niec (= nodes in elements count) for rows. */
   niec = alloc_mem(int32, n_row + 1);
+  ERR_CheckGo(ret);
   mesh_nod_in_el_count(&niec_max_r, niec, n_row, n_gr, n_el, n_epr, conn_r);
 /*   output("%d\n", niec_max_r); */
 
@@ -224,6 +225,7 @@ int32 mesh_graph(int32 *p_nnz, int32 **p_prow, int32 **p_icol,
 
   /* nir is just a buffer here. */
   nir = alloc_mem(int32, n_row + 1);
+  ERR_CheckGo(ret);
   memset(nir, 0, (n_row + 1) * sizeof(int32));
 
 /*    output("1\n"); */
@@ -296,6 +298,7 @@ int32 mesh_graph(int32 *p_nnz, int32 **p_prow, int32 **p_icol,
   *p_nnz = nn;
   *p_prow = niec;
   icol = *p_icol = alloc_mem(int32, nn);
+  ERR_CheckGo(ret);
 
   /* Fill in *p_prow. */
   niec[0] = 0;
@@ -338,6 +341,7 @@ int32 mesh_graph(int32 *p_nnz, int32 **p_prow, int32 **p_icol,
             } else {
               output("  %d %d\n", nir[iir], niec[iir+1] - pr);
               errput("ERR_VerificationFail\n");
+              ERR_CheckGo(ret);
             }
           }
         }
@@ -348,12 +352,13 @@ int32 mesh_graph(int32 *p_nnz, int32 **p_prow, int32 **p_icol,
   }
 
 /*   output("5\n"); */
+ end_label:
 
   free_mem(nods);
   free_mem(nir);
   free_mem(eonlist);
 
-  return(RET_OK);
+  return(ret);
 }
 
 /*!
