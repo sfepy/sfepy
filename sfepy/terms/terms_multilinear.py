@@ -365,21 +365,19 @@ class ExpressionBuilder(Struct):
 
         if arg.n_components > 1:
             iic = next(self.aux_letters) # component
-            if ':' not in ein:
-                self.add_eye(iic, ein, arg.name)
 
-            else:
-                # symmetric gradient
-                if modifier[0][0] == 's': # vector storage
+            if modifier is not None:
+                # symmetric gradient, vector storage
+                if ':' in ein and modifier[0][0] == 's':
                     self.add_psg(iic, ein, arg.name)
-
-                # nonsymmetric gradient
-                elif modifier[0][0] == 'v':  # vector storage
+                # nonsymmetric gradient, vector storage
+                elif modifier[0][0] == 'v':
                     self.add_pvg(iic, ein, arg.name)
-
                 else:
                     raise ValueError('unknown argument modifier! ({})'
                                      .format(modifier))
+            else:
+                self.add_eye(iic, ein, arg.name)
 
             out_letters = iic + out_letters
 
@@ -397,34 +395,26 @@ class ExpressionBuilder(Struct):
         out_letters = iin
 
         if (diff_var != arg.name):
-            if ':' not in ein:
-                self.add_arg_dofs(iin, ein, arg.name, arg.n_components)
-
-            else:
-                # symmetric gradient
-                if modifier[0][0] == 's': # vector storage
-                    iic = next(self.aux_letters) # component
+            if modifier is not None:
+                # symmetric gradient, vector storage
+                if ':' in ein and modifier[0][0] == 's':
+                    iic = next(self.aux_letters)  # component
                     self.add_psg(iic, ein, arg.name)
                     self.add_arg_dofs(iin, [iic], arg.name, arg.n_components)
-
-                # nonsymmetric gradient
-                elif modifier[0][0] == 'v':  # vector storage
+                # nonsymmetric gradient, vector storage
+                elif modifier[0][0] == 'v':
                     iic = next(self.aux_letters)  # component
                     self.add_pvg(iic, ein, arg.name)
                     self.add_arg_dofs(iin, [iic], arg.name, arg.n_components)
-
                 else:
                     raise ValueError('unknown argument modifier! ({})'
                                      .format(modifier))
+            else:
+                self.add_arg_dofs(iin, ein, arg.name, arg.n_components)
 
         else:
             if arg.n_components > 1:
-                iic = next(self.aux_letters) # component
-                if ':' in ein: # symmetric gradient
-                    if modifier[0][0] not in ['s', 'v']:  # vector storage
-                        raise ValueError('unknown argument modifier! ({})'
-                                         .format(modifier))
-
+                iic = next(self.aux_letters)  # component
                 out_letters = iic + out_letters
 
             for iia in range(self.n_add):
@@ -432,14 +422,16 @@ class ExpressionBuilder(Struct):
                     self.add_arg_dofs(iin, ein, arg.name, arg.n_components, iia)
 
                 elif arg.n_components > 1:
-                    if ':' not in ein:
-                        self.add_eye(iic, ein, arg.name, iia)
-
-                    else:
-                        if modifier[0][0] == 's':
+                    if modifier is not None:
+                        if ':' in ein and modifier[0][0] == 's':
                             self.add_psg(iic, ein, arg.name, iia)
                         elif modifier[0][0] == 'v':
                             self.add_pvg(iic, ein, arg.name, iia)
+                        else:
+                            raise ValueError('unknown argument modifier! ({})'
+                                             .format(modifier))
+                    else:
+                        self.add_eye(iic, ein, arg.name, iia)
 
             self.out_subscripts[self.ia] += out_letters
             self.ia += 1
@@ -1551,7 +1543,7 @@ class ENonSymElasticTerm(ETermBase):
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         fun = self.make_function(
-            'IK,v(i:j)->I,v(k:l)->K', mat, virtual, state, diff_var=diff_var,
+            'IK,v(i.j)->I,v(k.l)->K', mat, virtual, state, diff_var=diff_var,
         )
 
         return fun
