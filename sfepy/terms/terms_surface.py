@@ -113,7 +113,7 @@ class SDLinearTractionTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n},
+        \int_{\Gamma} \ul{v} \cdot (\ull{\sigma}\, \ul{n}),
         \int_{\Gamma} \ul{v} \cdot \ul{n},
 
     :Arguments:
@@ -553,11 +553,11 @@ class SDSufaceIntegrateTerm(Term):
 
     :Arguments:
         - parameter : :math:`p`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
     """
     name = 'ev_sd_surface_integrate'
-    arg_types = ('parameter', 'parameter_mesh_velocity')
-    arg_shapes = {'parameter' : 1, 'parameter_mesh_velocity' : 'D'}
+    arg_types = ('parameter', 'parameter_mv')
+    arg_shapes = {'parameter': 1, 'parameter_mv': 'D'}
     integration = 'surface'
 
     @staticmethod

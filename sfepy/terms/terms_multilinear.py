@@ -1,4 +1,5 @@
 import numpy as nm
+from sfepy.linalg import dot_sequences
 
 try:
     import dask.array as da
@@ -60,7 +61,7 @@ def collect_modifiers(modifiers):
     return _collect_modifiers
 
 def parse_term_expression(texpr):
-    mods = 's'
+    mods = 's', 'v'
     lparen, rparen = map(Suppress, '()')
     simple_arg = Word(alphanums + '.:')
     arrow = Literal('->').suppress()
@@ -121,6 +122,9 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
 
             elif val_name == 'Psg':
                 op = ebuilder.make_psg(arg.dim)
+
+            elif val_name == 'Pvg':
+                op = ebuilder.make_pvg(arg.dim)
 
             else:
                 op = dargs[arg_name].get(
@@ -283,6 +287,24 @@ class ExpressionBuilder(Struct):
 
         return psg
 
+    def make_pvg(self, dim):
+        key = 'Pvg{}'.format(dim)
+        pvg = self.cache.get(key)
+        if pvg is None:
+            pvg = nm.zeros((dim, dim, dim*dim))
+            if dim == 3:
+                pvg[0, [0, 1, 2], [0, 1, 2]] = 1
+                pvg[1, [0, 1, 2], [3, 4, 5]] = 1
+                pvg[2, [0, 1, 2], [6, 7, 8]] = 1
+
+            elif dim == 2:
+                pvg[0, [0, 1], [0, 1]] = 1
+                pvg[1, [0, 1], [2, 3]] = 1
+
+            self.cache[key] = pvg
+
+        return pvg
+
     def add_constant(self, name, cname):
         append_all(self.subscripts, 'cq')
         append_all(self.operand_names, '.'.join((name, cname)))
@@ -314,6 +336,12 @@ class ExpressionBuilder(Struct):
         append_all(self.operand_names, name + '.Psg', ii=iia)
         append_all(self.components, [])
 
+    def add_pvg(self, iic, ein, name, iia=None):
+        append_all(self.subscripts, '{}{}{}'.format(iic, ein[2], ein[0]),
+                   ii=iia)
+        append_all(self.operand_names, name + '.Pvg', ii=iia)
+        append_all(self.components, [])
+
     def add_arg_dofs(self, iin, ein, name, n_components, iia=None):
         if n_components > 1:
             #term = 'c{}{}'.format(iin, ein[0])
@@ -338,16 +366,19 @@ class ExpressionBuilder(Struct):
 
         if arg.n_components > 1:
             iic = next(self.aux_letters) # component
-            if ':' not in ein:
-                self.add_eye(iic, ein, arg.name)
 
-            else: # symmetric gradient
-                if modifier[0][0] == 's': # vector storage
+            if modifier is not None:
+                # symmetric gradient, vector storage
+                if ':' in ein and modifier[0][0] == 's':
                     self.add_psg(iic, ein, arg.name)
-
+                # nonsymmetric gradient, vector storage
+                elif modifier[0][0] == 'v':
+                    self.add_pvg(iic, ein, arg.name)
                 else:
                     raise ValueError('unknown argument modifier! ({})'
                                      .format(modifier))
+            else:
+                self.add_eye(iic, ein, arg.name)
 
             out_letters = iic + out_letters
 
@@ -365,27 +396,26 @@ class ExpressionBuilder(Struct):
         out_letters = iin
 
         if (diff_var != arg.name):
-            if ':' not in ein:
-                self.add_arg_dofs(iin, ein, arg.name, arg.n_components)
-
-            else: # symmetric gradient
-                if modifier[0][0] == 's': # vector storage
-                    iic = next(self.aux_letters) # component
+            if modifier is not None:
+                # symmetric gradient, vector storage
+                if ':' in ein and modifier[0][0] == 's':
+                    iic = next(self.aux_letters)  # component
                     self.add_psg(iic, ein, arg.name)
                     self.add_arg_dofs(iin, [iic], arg.name, arg.n_components)
-
+                # nonsymmetric gradient, vector storage
+                elif modifier[0][0] == 'v':
+                    iic = next(self.aux_letters)  # component
+                    self.add_pvg(iic, ein, arg.name)
+                    self.add_arg_dofs(iin, [iic], arg.name, arg.n_components)
                 else:
                     raise ValueError('unknown argument modifier! ({})'
                                      .format(modifier))
+            else:
+                self.add_arg_dofs(iin, ein, arg.name, arg.n_components)
 
         else:
             if arg.n_components > 1:
-                iic = next(self.aux_letters) # component
-                if ':' in ein: # symmetric gradient
-                    if modifier[0][0] != 's': # vector storage
-                        raise ValueError('unknown argument modifier! ({})'
-                                         .format(modifier))
-
+                iic = next(self.aux_letters)  # component
                 out_letters = iic + out_letters
 
             for iia in range(self.n_add):
@@ -393,11 +423,16 @@ class ExpressionBuilder(Struct):
                     self.add_arg_dofs(iin, ein, arg.name, arg.n_components, iia)
 
                 elif arg.n_components > 1:
-                    if ':' not in ein:
-                        self.add_eye(iic, ein, arg.name, iia)
-
+                    if modifier is not None:
+                        if ':' in ein and modifier[0][0] == 's':
+                            self.add_psg(iic, ein, arg.name, iia)
+                        elif modifier[0][0] == 'v':
+                            self.add_pvg(iic, ein, arg.name, iia)
+                        else:
+                            raise ValueError('unknown argument modifier! ({})'
+                                             .format(modifier))
                     else:
-                        self.add_psg(iic, ein, arg.name, iia)
+                        self.add_eye(iic, ein, arg.name, iia)
 
             self.out_subscripts[self.ia] += out_letters
             self.ia += 1
@@ -514,7 +549,7 @@ class ExpressionBuilder(Struct):
                 elif val_name in ('bf', 'dofs'):
                     default = defaults[val_name][op.ndim - 2]
 
-                elif val_name in ('I', 'Psg'):
+                elif val_name in ('I', 'Psg', 'Pvg'):
                     default = layout.replace('0', '') # -> Do nothing.
 
                 else:
@@ -1097,7 +1132,7 @@ class EIntegrateOperatorTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_\Omega q \mbox{ or } \int_\Omega c q
+        \int_{\cal{D}} q \mbox{ or } \int_{\cal{D}} c q
 
     :Arguments:
         - material : :math:`c` (optional)
@@ -1131,18 +1166,13 @@ class ELaplaceTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} c \nabla q \cdot \nabla p \mbox{ , } \int_{\Omega}
-        c \nabla \bar{p} \cdot \nabla r
+        \int_{\Omega} \nabla q \cdot \nabla p \mbox{ , }
+        \int_{\Omega} c \nabla q \cdot \nabla p
 
-    :Arguments 1:
-        - material : :math:`c`
-        - virtual  : :math:`q`
-        - state    : :math:`p`
-
-    :Arguments 2:
-        - material    : :math:`c`
-        - parameter_1 : :math:`\bar{p}`
-        - parameter_2 : :math:`r`
+    :Arguments:
+        - material: :math:`c`
+        - virtual/parameter_1: :math:`q`
+        - state/parameter_2: :math:`p`
     """
     name = 'de_laplace'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1174,25 +1204,14 @@ class EDotTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\cal{D}} q p \mbox{ , } \int_{\cal{D}} \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_{\cal{D}} p r \mbox{ , } \int_{\cal{D}} \ul{u} \cdot \ul{w} \\
-        \int_{\cal{D}} c q p \mbox{ , } \int_{\cal{D}} c \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_{\cal{D}} c p r \mbox{ , } \int_{\cal{D}} c \ul{u} \cdot \ul{w} \\
-        \int_{\cal{D}} \ul{v} \cdot \ull{M} \cdot \ul{u}
-        \mbox{ , }
-        \int_{\cal{D}} \ul{u} \cdot \ull{M} \cdot \ul{w}
+        \int_{\cal{D}} q p \mbox{ , } \int_{\cal{D}} \ul{v} \cdot \ul{u}\\
+        \int_{\cal{D}} c q p \mbox{ , } \int_{\cal{D}} c \ul{v} \cdot \ul{u}\\
+        \int_{\cal{D}} \ul{v} \cdot (\ull{M}\, \ul{u})
 
-    :Arguments 1:
-        - material : :math:`c` or :math:`\ull{M}` (optional)
-        - virtual  : :math:`q` or :math:`\ul{v}`
-        - state    : :math:`p` or :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`c` or :math:`\ull{M}` (optional)
-        - parameter_1 : :math:`p` or :math:`\ul{u}`
-        - parameter_2 : :math:`r` or :math:`\ul{w}`
+    :Arguments:
+        - material: :math:`c` or :math:`\ull{M}` (optional)
+        - virtual/parameter_1: :math:`q` or :math:`\ul{v}`
+        - state/parameter_2: :math:`p` or :math:`\ul{u}`
     """
     name = 'de_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1300,20 +1319,13 @@ class EDivGradTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
-        \int_{\Omega} \nu\ \nabla \ul{u} : \nabla \ul{w} \\
         \int_{\Omega} \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
-        \int_{\Omega} \nabla \ul{u} : \nabla \ul{w}
+        \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}
 
-    :Arguments 1:
-        - material : :math:`\nu` (viscosity, optional)
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`\nu` (viscosity, optional)
-        - parameter_1 : :math:`\ul{u}`
-        - parameter_2 : :math:`\ul{w}`
+    :Arguments:
+        - material: :math:`\nu` (viscosity, optional)
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'de_div_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1344,17 +1356,11 @@ class EConvectTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v} \mbox{ , }
-        \int_{\Omega} ((\ul{w} \cdot \nabla) \ul{w}) \cdot \bar{\ul{u}}
+        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
 
-    :Arguments 1:
-        - virtual : :math:`\ul{v}`
-        - state   : :math:`\ul{u}`
-
-    :Arguments 2:
-        - parameter_1 : :math:`\bar{\ul{u}}`
-        - parameter_2 : :math:`\ul{w}`
-
+    :Arguments:
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'de_convect'
     arg_types = (('virtual', 'state'),
@@ -1376,18 +1382,12 @@ class EDivTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} \nabla \cdot \ul{v} \mbox { , } \int_{\Omega} \nabla
-        \cdot \ul{u} \\
-        \int_{\Omega} c \nabla \cdot \ul{v} \mbox { , } \int_{\Omega} c \nabla
-        \cdot \ul{u}
+        \int_{\Omega} \nabla \cdot \ul{v} \mbox { , }
+        \int_{\Omega} c \nabla \cdot \ul{v}
 
-    :Arguments 1:
-        - material : :math:`c` (optional)
-        - virtual  : :math:`\ul{v}`
-
-    :Arguments 2:
-        - material  : :math:`c` (optional)
-        - parameter : :math:`\ul{u}`
+    :Arguments:
+        - material: :math:`c` (optional)
+        - virtual/parameter: :math:`\ul{v}`
     """
     name = 'de_div'
     arg_types = (('opt_material', 'virtual'),
@@ -1419,28 +1419,20 @@ class EStokesTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , }
-        \int_{\Omega} q\ \nabla \cdot \ul{u}
-        \mbox{ or }
-        \int_{\Omega} c\ p\ \nabla \cdot \ul{v} \mbox{ , }
-        \int_{\Omega} c\ q\ \nabla \cdot \ul{u} \\
-        \int_{\Omega} r\ \nabla \cdot \ul{w} \mbox{ , }
-        \int_{\Omega} c r\ \nabla \cdot \ul{w}
+        \int_{\Omega} p\, \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} q\, \nabla \cdot \ul{u}\\
+        \int_{\Omega} c\, p\, \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} c\, q\, \nabla \cdot \ul{u}
 
     :Arguments 1:
-        - material : :math:`c` (optional)
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`p`
+        - material: :math:`c` (optional)
+        - virtual/parameter_v: :math:`\ul{v}`
+        - state/parameter_s: :math:`p`
 
     :Arguments 2:
         - material : :math:`c` (optional)
         - state    : :math:`\ul{u}`
         - virtual  : :math:`q`
-
-    :Arguments 3:
-        - material    : :math:`c` (optional)
-        - parameter_v : :math:`\ul{u}`
-        - parameter_s : :math:`p`
     """
     name = 'de_stokes'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1478,18 +1470,11 @@ class ELinearElasticTerm(ETermBase):
 
     .. math::
         \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
-        \mbox{ , }
-        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{w}) e_{kl}(\ul{u})
 
-    :Arguments 1:
-        - material : :math:`D_{ijkl}`
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`D_{ijkl}`
-        - parameter_1 : :math:`\ul{w}`
-        - parameter_2 : :math:`\ul{u}`
+    :Arguments:
+        - material: :math:`D_{ijkl}`
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'de_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
@@ -1530,3 +1515,153 @@ class ECauchyStressTerm(ETermBase):
         return self.make_function(
             'IK,s(k:l)->K', mat, parameter, diff_var=diff_var,
         )
+
+
+class ENonSymElasticTerm(ETermBase):
+    r"""
+    Elasticity term with non-symmetric gradient. The indices of matrix
+    :math:`D_{ijkl}` are ordered as
+    :math:`[11, 12, 13, 21, 22, 23, 31, 32, 33]` in 3D and as
+    :math:`[11, 12, 21, 22]` in 2D.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \ull{D} \nabla \ul{v} : \nabla \ul{u}
+
+    :Arguments:
+        - material: :math:`\ull{D}`
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
+    """
+    name = 'de_nonsym_elastic'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material': 'D2, D2', 'virtual': ('D', 'state'),
+                  'state': 'D', 'parameter_1': 'D', 'parameter_2': 'D'}
+    modes = ('weak', 'eval')
+
+    def get_function(self, mat, virtual, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        fun = self.make_function(
+            'IK,v(i.j)->I,v(k.l)->K', mat, virtual, state, diff_var=diff_var,
+        )
+
+        return fun
+
+
+def sym2nonsym(sym_obj, axes=[3]):
+    nonsym_tab = {
+        3: nm.array([0, 2, 2, 1]),
+        6: nm.array([0, 3, 4, 3, 1, 5, 4, 5, 2]),
+    }
+
+    if isinstance(axes, int):
+        axes = [axes]
+
+    sh = sym_obj.shape
+    sym = sh[axes[0]]
+    idxs = nonsym_tab[sym]
+    ix = (range(sh[k]) if k not in axes else idxs for k in range(len(sh)))
+
+    return sym_obj[nm.ix_(*ix)]
+
+
+class EDiffusionTerm(ETermBase):
+    r"""
+    General diffusion term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} K_{ij} \nabla_i q\, \nabla_j p
+
+    :Arguments:
+        - material: :math:`K_{ij}`
+        - virtual/parameter_1: :math:`q`
+        - state/parameter_2: :math:`p`
+    """
+    name = 'de_diffusion'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material' : 'D, D', 'virtual': (1, 'state'), 'state': 1,
+                  'parameter_1': 1, 'parameter_2': 1}
+    modes = ('weak', 'eval')
+
+    def get_function(self, mat, vvar, svar,
+                     mode=None, term_mode=None, diff_var=None, **kwargs):
+
+        fun = self.make_function(
+            'ij,0.i,0.j', mat, vvar, svar, diff_var=diff_var
+        )
+
+        return fun
+
+
+class ELinearTractionTerm(ETermBase):
+    r"""
+    Linear traction term. The material parameter can have one of the
+    following shapes:
+
+        - 1 or (1, 1) - a given scalar pressure
+        - (D, 1) - a traction vector
+        - (S, 1) or (D, D) - a given stress in symmetric or
+          non-symmetric tensor storage (in symmetric storage indicies are order
+          as follows: 2D: [11, 22, 12], 3D: [11, 22, 33, 12, 13, 23])
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ul{v} \cdot \ul{n}
+            \mbox{ , }
+        \int_{\Gamma} c\, \ul{v} \cdot \ul{n}\\
+        \int_{\Gamma} \ul{v} \cdot (\ull{\sigma}\, \ul{n})
+            \mbox{ , }
+        \int_{\Gamma} \ul{v} \cdot \ul{f}
+
+    :Arguments:
+        - material: :math:`c`, :math:`\ul{f}`, :math:`\ul{\sigma}`
+          or :math:`\ull{\sigma}`
+        - virtual/parameter: :math:`\ul{v}`
+    """
+    name = 'de_surface_ltr'
+    arg_types = (('opt_material', 'virtual'),
+                 ('opt_material', 'parameter'))
+    arg_shapes = [{'opt_material': 'S, 1', 'virtual': ('D', None),
+                   'parameter': 'D'},
+                  {'opt_material': None}, {'opt_material': '1, 1'},
+                  {'opt_material': 'D, 1'}, {'opt_material': 'D, D'}]
+    modes = ('weak', 'eval')
+    integration = 'surface'
+
+    def get_function(self, traction, vvar, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(vvar)
+        nv = sg.normal
+        _, n_qp, dim, _ = nv.shape
+
+        tdim, tdim2 = (None, None) if traction is None else traction.shape[2:]
+ 
+        if tdim == dim and tdim2 == 1:  # force vector
+            force = traction
+        else:
+            sym = (dim + 1) * dim // 2
+
+            if tdim is None:
+                force = nv
+            elif tdim == 1:  # scalar value
+                force = traction * nv
+            elif tdim == dim and tdim2 == dim:  # traction tensor - full
+                force = dot_sequences(traction, nv, 'AB')
+            elif tdim == dim**2 and tdim2 == 1:  # traction tensor - full, vector
+                aux = traction.reshape((-1, n_qp, dim, dim))
+                force = dot_sequences(aux, nv, 'AB')
+            elif tdim == sym and tdim2 == 1:  # traction tensor - symetric
+                aux = sym2nonsym(traction, [2]).reshape((-1, n_qp, dim, dim))
+                force = dot_sequences(aux, nv, 'AB')
+
+        fun = self.make_function(
+            'i,i', (force[..., 0], 'opt_material'), vvar, diff_var=diff_var,
+        )
+
+        return fun

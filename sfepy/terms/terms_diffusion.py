@@ -85,22 +85,26 @@ class SDDiffusionTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} \left[ (\dvg \ul{\Vcal}) K_{ij} \nabla_i q\, \nabla_j p -
-        K_{ij} (\nabla_j \ul{\Vcal} \nabla q) \nabla_i p - K_{ij} \nabla_j q
-        (\nabla_i \ul{\Vcal} \nabla p)\right]
+        \int_{\Omega} \hat{K}_{ij} \nabla_i q\, \nabla_j p
+
+    .. math::
+        \hat{K}_{ij} = K_{ij}\left(
+            \delta_{ik}\delta_{jl} \nabla \cdot \ul{\Vcal}
+          - \delta_{ik}{\partial \Vcal_j \over \partial x_l}
+          - \delta_{jl}{\partial \Vcal_i \over \partial x_k}\right)
 
     :Arguments:
         - material:    :math:`K_{ij}`
         - parameter_q: :math:`q`
         - parameter_p: :math:`p`
-        - parameter_mesh_velocity: :math:`\ul{\Vcal}`
+        - parameter_mv: :math:`\ul{\Vcal}`
     """
     name = 'ev_sd_diffusion'
     arg_types = ('material', 'parameter_q', 'parameter_p',
-                 'parameter_mesh_velocity')
+                 'parameter_mv')
     arg_shapes = {'material' : 'D, D',
                   'parameter_q' : 1, 'parameter_p' : 1,
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_diffusion)
 

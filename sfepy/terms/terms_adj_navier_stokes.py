@@ -305,10 +305,14 @@ class SDDivGradTerm(Term):
     :Definition:
 
     .. math::
-        \nu \int_{\Omega} [ \pdiff{u_i}{x_k} \pdiff{w_i}{x_k}
-        (\nabla \cdot \ul{\Vcal})
-        - \pdiff{\Vcal_j}{x_k} \pdiff{u_i}{x_j} \pdiff{w_i}{x_k}
-        - \pdiff{u_i}{x_k} \pdiff{\Vcal_l}{x_k} \pdiff{w_i}{x_k} ]
+        \int_{\Omega} \hat{I} \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
+        \int_{\Omega} \nu \hat{I}  \nabla \ul{v} : \nabla \ul{u}
+
+    .. math::
+        \hat{I}_{ijkl} =
+            \delta_{ik}\delta_{jl} \nabla \cdot \ul{\Vcal}
+          - \delta_{ik}\delta_{js} {\partial \Vcal_l \over \partial x_s}
+          - \delta_{is}\delta_{jl} {\partial \Vcal_k \over \partial x_s}
 
     :Arguments:
         - material  : :math:`\nu` (viscosity, optional)

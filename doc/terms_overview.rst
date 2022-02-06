@@ -39,15 +39,15 @@ The following notation is used:
    * - :math:`\ul{n}`
      - unit outward normal
    * - :math:`q`, :math:`s`
-     - scalar test function
+     - scalar test or parameter function
    * - :math:`p`, :math:`r`
      - scalar unknown or parameter function
    * - :math:`\bar{p}`
      - scalar parameter function
    * - :math:`\ul{v}`
-     - vector test function
+     - vector test or parameter function
    * - :math:`\ul{w}`, :math:`\ul{u}`
-     -  vector unknown or parameter function
+     - vector unknown or parameter function
    * - :math:`\ul{b}`
      - vector parameter function
    * - :math:`\ull{e}(\ul{u})`

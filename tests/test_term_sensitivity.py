@@ -1,11 +1,12 @@
 from __future__ import print_function
 from __future__ import absolute_import
+import gc
 import numpy as nm
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.base.testing import TestCommon
 from sfepy import data_dir
 
-filename_mesh = data_dir + '/meshes/3d/special/cube_cylinder.mesh'
+filename_mesh = data_dir + '/meshes/3d/special/cube_sphere.mesh'
 
 fields = {
     'scalar_field' : ('real', 'scalar', 'Omega', 1),
@@ -47,7 +48,7 @@ materials = {
         's': {
             'Omega1': nm.array([[1, 2, 3, 0, 0, 0]]).T,
             'Omega2': nm.array([[8, 4, 2, 0, 0, 0]]).T,
-        }
+        },
     },),
 }
 
@@ -55,13 +56,22 @@ equations = {}
 
 test_terms = [
     ('ev_sd_lin_elastic', 'dw_lin_elastic', 'Omega', 'mat.D', 'U1', 'U2'),
+    ('de_sd_lin_elastic', 'dw_lin_elastic', 'Omega', 'mat.D', 'U1', 'U2'),
     ('ev_sd_dot', 'dw_dot', 'Omega', None, 'U1', 'U2'),
+    ('de_sd_dot', 'de_dot', 'Omega', 'mat.K', 'U1', 'U2'),
+    ('de_sd_dot', 'de_dot', 'Omega', 'mat.c', 'P1', 'P2'),
     ('ev_sd_diffusion', 'dw_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
+    ('de_sd_diffusion', 'de_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
     ('ev_sd_div', 'dw_stokes', 'Omega', None, 'U1', 'P1'),
+    ('de_sd_stokes', 'de_stokes', 'Omega', None, 'U1', 'P1'),
     ('ev_sd_div_grad', 'dw_div_grad', 'Omega', 'mat.c', 'U1', 'U2'),
+    ('de_sd_div_grad', 'de_div_grad', 'Omega', 'mat.c', 'U1', 'U2'),
     ('ev_sd_piezo_coupling', 'dw_piezo_coupling', 'Omega', 'mat.g', 'U1', 'P1'),
+    ('de_sd_piezo_coupling', 'dw_piezo_coupling', 'Omega', 'mat.g', 'U1', 'P1'),
     ('ev_sd_convect', 'de_convect', 'Omega', None, 'U1', 'U2'),
     ('ev_sd_surface_ltr', 'dw_surface_ltr', 'Interface', 'mat.s', 'U1', None),
+    ('de_sd_surface_ltr', 'de_surface_ltr', 'Interface', 'mat.s', 'U1', None),
+    ('de_sd_surface_ltr', 'de_surface_ltr', 'Interface', 'mat.c', 'U1', None),
 ]
 
 
@@ -170,5 +180,7 @@ class Test(TestCommon):
                 _ok = err < tolerance
 
                 ok = ok and _ok
+
+                gc.collect()
 
         return ok

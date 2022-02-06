@@ -122,9 +122,27 @@ def typeset_to_indent(txt, indent0, indent, width):
 
 def typeset_term_syntax(term_class):
     if ((len(term_class.arg_types) > 1) and not
-        isinstance(term_class.arg_types[0], str)):
+            isinstance(term_class.arg_types[0], str)):
+        is_param = len([arg for arg in term_class.arg_types[-1]
+                        if arg.startswith('parameter')]) > 0
+        is_vs = len([arg for arg in term_class.arg_types[0]
+                     if arg in ['virtual', 'state']]) > 0
+
+        arg_types_ = [list(k) for k in term_class.arg_types]
+
+        if is_param and is_vs:
+            at0 = arg_types_[0]
+            at1 = arg_types_[-1]
+            for k in range(len(at0)):
+                if (at0[k] in ['virtual', 'state'] and
+                        at1[k].startswith('parameter')):
+                    aux = at1[k].replace('parameter', 'param')
+                    at0[k] = at0[k] + '/' + aux
+
+            arg_types_ = arg_types_[:-1]
+
         arg_types = [', '.join(['``<%s>``' % arg for arg in arg_type])
-                     for arg_type in term_class.arg_types]
+                     for arg_type in arg_types_]
         text = '\n\n       '.join(arg_types)
     else:
         text = ', '.join(['``<%s>``' % arg for arg in term_class.arg_types])
