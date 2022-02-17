@@ -1059,6 +1059,8 @@ class BernsteinSimplexPolySpace(FEPolySpace):
             bdim = 1
 
         base = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+        if dim == 0:
+            return base
 
         bcoors = self._get_barycentric(coors)
 
