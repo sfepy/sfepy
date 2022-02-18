@@ -307,7 +307,7 @@ def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
 def save_eigenvectors(filename, svecs, wmag, wdir, pb):
     if svecs is None: return
 
-    variables = pb.get_variables()
+    variables = pb.set_default_state()
     # Make full eigenvectors (add DOFs fixed by boundary conditions).
     vecs = nm.empty((variables.di.ptr[-1], svecs.shape[1]),
                     dtype=svecs.dtype)
@@ -316,7 +316,6 @@ def save_eigenvectors(filename, svecs, wmag, wdir, pb):
 
     # Save the eigenvectors.
     out = {}
-    variables.init_state()
 
     pp_name = pb.conf.options.get('post_process_hook')
     pp = getattr(pb.conf.funmod, pp_name if pp_name is not None else '',
