@@ -1315,6 +1315,13 @@ class Problem(Struct):
         nls.conf.is_linear = is_linear
 
     def set_default_state(self, vec=None):
+        """
+        Return variables with an initialized state.
+
+        A convenience function that obtains the problem equations' variables,
+        initializes the state ones with zeros (default) or using `vec` and then
+        returns the variables.
+        """
         variables = self.get_variables()
         variables.init_state(vec=vec)
         return variables
