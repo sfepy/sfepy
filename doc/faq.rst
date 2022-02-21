@@ -123,6 +123,11 @@ Miscellaneous
 
    See also :ref:`diffusion-poisson_parallel_interactive`.
 
+#. What structural elements (beams, shells, etc.) are available in SfePy?
+
+   The code is currently focused on solid elements. The only supported
+   structural element is shell10x, see
+   :ref:`linear_elasticity-shell10x_cantilever`.
 
 Mesh-Related Tasks
 ------------------
