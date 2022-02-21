@@ -136,8 +136,7 @@ class EVPSolverApp(PDESolverApp):
                          lambda out, *args, **kwargs: out)
 
             out = get_default(out, {})
-            variables = pb.get_variables()
-            variables.init_state()
+            variables = pb.set_default_state()
             for ii in range(eigs.shape[0]):
                 variables.set_state(vecs[:, ii])
                 aux = variables.create_output()

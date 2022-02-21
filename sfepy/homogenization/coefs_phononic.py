@@ -608,8 +608,7 @@ class SimpleEVP(CorrMiniApp):
         n_eigs = eigs.shape[0]
 
         out = {}
-        variables = problem.get_variables()
-        variables.init_state()
+        variables = problem.set_default_state()
         for ii in range(n_eigs):
             if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
             variables.set_state(mtx_phi[:,ii], force=True)

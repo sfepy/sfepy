@@ -275,7 +275,7 @@ def main():
                % (ii + 1, eig, omegas[ii], freqs[ii]))
 
     # Make full eigenvectors (add DOFs fixed by boundary conditions).
-    variables = pb.get_variables()
+    variables = pb.set_default_state()
 
     vecs = nm.empty((variables.di.ptr[-1], svecs.shape[1]),
                     dtype=nm.float64)
@@ -284,7 +284,6 @@ def main():
 
     # Save the eigenvectors.
     out = {}
-    variables.init_state()
     for ii in range(eigs.shape[0]):
         variables.set_state(vecs[:, ii])
         aux = variables.create_output()

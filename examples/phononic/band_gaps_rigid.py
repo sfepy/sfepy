@@ -113,12 +113,10 @@ def _select_yr_circ(coors, domain=None, diameter=None):
     return select_yr_circ(coors, diameter=yr_diameter)
 
 def post_process(out, problem, mtx_phi):
-    variables = problem.get_variables()
-
     for key in list(out.keys()):
         ii = int(key[1:])
         vec = mtx_phi[:,ii].copy()
-        variables.init_state(vec)
+        problem.set_default_state(vec)
 
         strain = problem.evaluate('ev_cauchy_strain.i.Y_c(u)',
                                   verbose=False, mode='el_avg')

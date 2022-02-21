@@ -1314,6 +1314,18 @@ class Problem(Struct):
         nls = self.get_nls()
         nls.conf.is_linear = is_linear
 
+    def set_default_state(self, vec=None):
+        """
+        Return variables with an initialized state.
+
+        A convenience function that obtains the problem equations' variables,
+        initializes the state ones with zeros (default) or using `vec` and then
+        returns the variables.
+        """
+        variables = self.get_variables()
+        variables.init_state(vec=vec)
+        return variables
+
     def get_initial_state(self, vec=None):
         """
         Create a zero state and apply initial conditions.
@@ -1340,9 +1352,9 @@ class Problem(Struct):
         Parameters
         ----------
         state0 : array, optional
-            If given, the initial state satisfying the initial conditions. By
-            default, it is created and the initial conditions are applied
-            automatically.
+            If given, the initial state - then the initial conditions stored in
+            the Problem instance are ignored. By default, the initial state is
+            created and the initial conditions are applied automatically.
         status : dict-like, optional
             The user-supplied object to hold the solver convergence statistics.
         force_values : dict of floats or float, optional
@@ -1395,7 +1407,12 @@ class Problem(Struct):
                                          verbose=verbose)
 
         else:
-            variables = self.get_initial_state(vec=state0)
+            if state0 is not None:
+                variables = self.set_default_state(vec=state0)
+
+            else:
+                variables = self.get_initial_state()
+
             self.time_update(tss.ts)
 
             variables.apply_ebc(force_values=force_values)
@@ -1446,7 +1463,11 @@ class Problem(Struct):
 
             return out
 
-        variables = self.get_initial_state(vec=state0)
+        if state0 is not None:
+            variables = self.set_default_state(vec=state0)
+
+        else:
+            variables = self.get_initial_state()
 
         vtos = variables.get_dual_names()
         vdeps = self.equations.get_variable_dependencies()
