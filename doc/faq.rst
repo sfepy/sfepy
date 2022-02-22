@@ -102,10 +102,10 @@ Miscellaneous
      global numbers are on the entities, the cell-local ones are inside the
      cells next to each entity towards the cell centroids.
 
-#.  How to work with solvers/preconditioners?
+#. How to work with solvers/preconditioners?
 
-    See :ref:`multi_physics-biot_short_syntax` (user-defined preconditioners)
-    or :ref:`navier_stokes-stokes_slip_bc` (petsc solver setup).
+   See :ref:`multi_physics-biot_short_syntax` (user-defined preconditioners)
+   or :ref:`navier_stokes-stokes_slip_bc` (petsc solver setup).
 
 #. How to get the linear system components: the matrix and the right-hand side?
 
@@ -123,6 +123,11 @@ Miscellaneous
 
    See also :ref:`diffusion-poisson_parallel_interactive`.
 
+#. What structural elements (beams, shells, etc.) are available in SfePy?
+
+   The code is currently focused on solid elements. The only supported
+   structural element is shell10x, see
+   :ref:`linear_elasticity-shell10x_cantilever`.
 
 Mesh-Related Tasks
 ------------------
