@@ -1652,7 +1652,7 @@ class ELinearTractionTerm(ETermBase):
         _, n_qp, dim, _ = nv.shape
 
         tdim, tdim2 = (None, None) if traction is None else traction.shape[2:]
- 
+
         if tdim == dim and tdim2 == 1:  # force vector
             force = traction
         else:
