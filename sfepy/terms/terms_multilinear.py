@@ -780,6 +780,17 @@ class ETermBase(Term):
         if einfo.eval_einsum is not None:
             if self.verbosity:
                 output('einsum setup: {} s'.format(timer.stop()))
+
+            # Use actual material (ndarray) arguments.
+            for ii, (arg, earg) in enumerate(zip(args, einfo.eargs)):
+                if earg.kind == 'ndarray':
+                    if isinstance(arg, tuple):
+                        earg.arg = arg[0]
+                        earg.name = arg[1]
+
+                    else:
+                        earg.arg = arg
+
             return einfo.eval_einsum
 
         if einfo.eargs is None:
