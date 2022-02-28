@@ -543,6 +543,8 @@ The following steps summarize how to regenerate this documentation.
 
     firefox _build/html/index.html
 
+.. _how_to_implement_a_new_term:
+
 How to Implement a New Term
 ---------------------------
 

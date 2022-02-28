@@ -123,6 +123,15 @@ Miscellaneous
 
    See also :ref:`diffusion-poisson_parallel_interactive`.
 
+#. Where is the code that calculates the element (e.g. stiffness) matrix?
+
+   The code that computes the per element residuals and matrices is organized
+   in terms, see :ref:`term_overview` - click on the term class name and then
+   "source" link to see the code. The original terms are implemented in C,
+   newer terms tend to be implemented directly in Python. The structure and
+   attributes of a term class are described in
+   :ref:`how_to_implement_a_new_term`.
+
 #. What structural elements (beams, shells, etc.) are available in SfePy?
 
    The code is currently focused on solid elements. The only supported
