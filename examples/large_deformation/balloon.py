@@ -88,7 +88,6 @@ the default adaptivity function :func:`adapt_time_step()
 
   python script/plot_times.py unit_ball.h5
 """
-from __future__ import absolute_import
 import os
 import numpy as nm
 
@@ -163,7 +162,7 @@ def plot_radius(problem, state):
     p2 = get_balloon_pressure(L2, 1e-2, 1, 3e5, 3e4)
 
     plt.rcParams['lines.linewidth'] = 3
-    plt.rcParams['text.fontsize'] = 16
+    plt.rcParams['font.size'] = 16
 
     plt.plot(L2, p2, 'r', label='theory')
     plt.plot(L, p, 'b*', ms=12, label='FEM')
