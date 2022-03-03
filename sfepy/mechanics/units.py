@@ -11,7 +11,7 @@ except ImportError:
 
 import numpy as nm
 
-from sfepy.base.base import get_default, invert_dict, Struct
+from sfepy.base.base import get_default, invert_dict, is_sequence, Struct
 
 default_units_of_basic_quantities = {
     'length' : 'm',
@@ -287,8 +287,9 @@ def apply_unit_multipliers(values, unit_kinds, unit_multipliers):
         'compressibility' : 1.0 / ((b * a**2) / c),
         'energy' : 1.0 / (c * b**2 / a**2),
     }
-
-    new_values = [coefs[unit_kind] * values[ii]
+    avalues = [nm.asanyarray(val) if is_sequence(val) else val
+               for val in values]
+    new_values = [coefs[unit_kind] * avalues[ii]
                   for ii, unit_kind in enumerate(unit_kinds)]
     return new_values
 
