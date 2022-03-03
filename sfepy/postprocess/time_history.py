@@ -142,7 +142,7 @@ def extract_time_history(filename, extract, verbose=True):
         aux = chunk.strip().split()
         pes.append(Struct(var=aux[0],
                           mode=aux[1],
-                          indx=map(int, aux[2:])))
+                          indx=list(map(int, aux[2:]))))
 
     ##
     # Verify array limits.
