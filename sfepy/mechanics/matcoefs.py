@@ -146,9 +146,6 @@ def youngpoisson_from_stiffness(stiffness, plane='strain'):
 
     return young, poisson
 
-elastic_constants_relations = {
-}
-
 class ElasticConstants(Struct):
     r"""
     Conversion formulas for various groups of elastic constants. The elastic
