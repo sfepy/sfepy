@@ -337,6 +337,8 @@ def pv_plot(filenames, options, plotter=None, step=None,
             is_point_field = fval.shape[0] == steps[fstep].n_points
             if is_vector_field and is_point_field:
                 scale = mesh_size * 0.15 / nm.linalg.norm(fval, axis=1).max()
+                if not nm.isfinite(scale):
+                    scale = 1.0
                 fields.append((field, 'vw:p%d' % position))
                 fields.append((field, 'vs:o.4:p%d' % position))
                 fields.append((field, 'g:f%e:p%d' % (scale, position)))
