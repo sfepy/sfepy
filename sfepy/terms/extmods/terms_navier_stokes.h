@@ -11,7 +11,7 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "refmaps.h"
 
-int32 divgrad_build_gtg( FMField *out, FMField *gc );
+int32 divgrad_build_gtg( FMField *out, FMField *gcv, FMField *gcs );
 int32 divgrad_act_g_m( FMField *out, FMField *gc, FMField *mtx );
 int32 divgrad_act_gt_m( FMField *out, FMField *gc, FMField *mtx );
 int32 divgrad_act_bg_m( FMField *out, FMField *gc, FMField *mtx );
@@ -19,7 +19,7 @@ int32 convect_build_vtbg( FMField *out, FMField *gc, FMField *fv );
 int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv );
 
 int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
-			    FMField *viscosity, Mapping *vg,
+			    FMField *viscosity, Mapping *vgv, Mapping *vgs,
 			    int32 isDiff );
 
 int32 term_ns_asm_convect( FMField *out, FMField *grad, FMField *state,

@@ -34,7 +34,8 @@ class AdjDivGradTerm(Term):
 
     def get_fargs(self, mat1, mat2, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(state)
+        vgv, _ = self.get_mapping(virtual)
+        vgs, _ = self.get_mapping(state)
 
         if diff_var is None:
             grad = grad_as_vector(self.get(state, 'grad'))
@@ -44,7 +45,7 @@ class AdjDivGradTerm(Term):
             grad = nm.array([0], ndmin=4, dtype=nm.float64)
             fmode = 1
 
-        return grad, mat1 * mat2, vg, fmode
+        return grad, mat1 * mat2, vgv, vgs, fmode
 
 class AdjConvect1Term(Term):
     r"""

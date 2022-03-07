@@ -317,8 +317,8 @@ cdef extern from 'terms.h':
 
     cdef int32 _term_ns_asm_div_grad \
          'term_ns_asm_div_grad'(FMField *out, FMField *grad,
-                                FMField *viscosity, Mapping *vg,
-                                int32 isDiff)
+                                FMField *viscosity, Mapping *vgv,
+                                Mapping *vgs, int32 isDiff)
 
     cdef int32 _term_ns_asm_convect \
          'term_ns_asm_convect'(FMField *out, FMField *grad, FMField *state,
@@ -1586,7 +1586,8 @@ def dw_v_dot_grad_s_sw(np.ndarray out not None,
 def term_ns_asm_div_grad(np.ndarray out not None,
                          np.ndarray grad not None,
                          np.ndarray viscosity not None,
-                         CMapping cmap not None,
+                         CMapping cmap_v not None,
+                         CMapping cmap_s not None,
                          int32 is_diff):
     cdef int32 ret
     cdef FMField[1] _out, _grad, _viscosity
@@ -1595,7 +1596,8 @@ def term_ns_asm_div_grad(np.ndarray out not None,
     array2fmfield4(_grad, grad)
     array2fmfield4(_viscosity, viscosity)
 
-    ret = _term_ns_asm_div_grad(_out, _grad, _viscosity, cmap.geo, is_diff)
+    ret = _term_ns_asm_div_grad(_out, _grad, _viscosity,
+                                cmap_v.geo, cmap_s.geo, is_diff)
     return ret
 
 def term_ns_asm_convect(np.ndarray out not None,

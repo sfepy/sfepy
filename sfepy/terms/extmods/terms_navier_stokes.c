@@ -13,22 +13,25 @@
   - 26.10.2005, c
   - 24.05.2007
 */
-int32 divgrad_build_gtg( FMField *out, FMField *gc )
+int32 divgrad_build_gtg( FMField *out, FMField *gcv, FMField *gcs )
 {
-  int32 iqp, ir, ic, dim, nEP, nQP, nCol;
-  float64 *pout1, *pout2, *pout3, *pg1, *pg2, *pg3;
+  int32 iqp, ir, ic, dim, nEPv, nEPs, nQP, nCol;
+  float64 *pout1, *pout2, *pout3, *pg1v, *pg2v, *pg3v, *pg1s, *pg2s, *pg3s;
 
-  nEP = gc->nCol;
-  nQP = gc->nLev;
+  nEPv = gcv->nCol;
+  nEPs = gcs->nCol;
+  nQP = gcv->nLev;
   nCol = out->nCol;
-  dim = gc->nRow;
+  dim = gcv->nRow;
 
 #ifdef DEBUG_FMF
-  if ((out->nCol != (dim * nEP))
-       || (out->nRow != (dim * nEP)) || (out->nLev != gc->nLev)) {
-    errput( ErrHead "ERR_BadMatch: (%d %d %d), (%d %d %d)\n",
+  if ((out->nCol != (dim * nEPs))
+       || (out->nRow != (dim * nEPv)) || (out->nLev != gcv->nLev)
+       || (out->nLev != gcs->nLev)) {
+    errput( ErrHead "ERR_BadMatch: (%d %d %d), (%d %d %d), (%d %d %d)\n",
 	    out->nLev, out->nRow, out->nCol,
-	    gc->nLev, gc->nRow, gc->nCol );
+	    gcv->nLev, gcv->nRow, gcv->nCol );
+	    gcs->nLev, gcs->nRow, gcs->nCol );
   }
 #endif
 
@@ -36,53 +39,61 @@ int32 divgrad_build_gtg( FMField *out, FMField *gc )
   switch (dim) {
   case 3:
     for (iqp = 0; iqp < nQP; iqp++) {
-      pg1 = FMF_PtrLevel( gc, iqp );
-      pg2 = pg1 + nEP;
-      pg3 = pg2 + nEP;
+      pg1v = FMF_PtrLevel( gcv, iqp );
+      pg2v = pg1v + nEPv;
+      pg3v = pg2v + nEPv;
+
+      pg1s = FMF_PtrLevel( gcs, iqp );
+      pg2s = pg1s + nEPs;
+      pg3s = pg2s + nEPs;
 
       pout1 = FMF_PtrLevel( out, iqp );
-      pout2 = pout1 + (nCol + 1) * nEP;
-      pout3 = pout2 + (nCol + 1) * nEP;
+      pout2 = pout1 + (nCol + 1) * nEPs;
+      pout3 = pout2 + (nCol + 1) * nEPs;
 
-      for (ir = 0; ir < nEP; ir++) {
-	for (ic = 0; ic < nEP; ic++) {
-	  pout1[ic] = pout2[ic] = pout3[ic]
-	    = pg1[ir] * pg1[ic] + pg2[ir] * pg2[ic] + pg3[ir] * pg3[ic];
-	}
-	pout1 += nCol;
-	pout2 += nCol;
-	pout3 += nCol;
+      for (ir = 0; ir < nEPv; ir++) {
+        for (ic = 0; ic < nEPs; ic++) {
+          pout1[ic] = pout2[ic] = pout3[ic]
+            = pg1v[ir] * pg1s[ic] + pg2v[ir] * pg2s[ic] + pg3v[ir] * pg3s[ic];
+        }
+        pout1 += nCol;
+        pout2 += nCol;
+        pout3 += nCol;
       }
     }
     break;
     
   case 2:
     for (iqp = 0; iqp < nQP; iqp++) {
-      pg1 = FMF_PtrLevel( gc, iqp );
-      pg2 = pg1 + nEP;
+      pg1v = FMF_PtrLevel( gcv, iqp );
+      pg2v = pg1v + nEPv;
+
+      pg1s = FMF_PtrLevel( gcs, iqp );
+      pg2s = pg1s + nEPs;
 
       pout1 = FMF_PtrLevel( out, iqp );
-      pout2 = pout1 + (nCol + 1) * nEP;
+      pout2 = pout1 + (nCol + 1) * nEPs;
 
-      for (ir = 0; ir < nEP; ir++) {
-	for (ic = 0; ic < nEP; ic++) {
-	  pout1[ic] = pout2[ic]
-	    = pg1[ir] * pg1[ic] + pg2[ir] * pg2[ic];
-	}
-	pout1 += nCol;
-	pout2 += nCol;
+      for (ir = 0; ir < nEPv; ir++) {
+        for (ic = 0; ic < nEPs; ic++) {
+          pout1[ic] = pout2[ic]
+            = pg1v[ir] * pg1s[ic] + pg2v[ir] * pg2s[ic];
+        }
+        pout1 += nCol;
+        pout2 += nCol;
       }
     }
     break;
 
   case 1:
     for (iqp = 0; iqp < nQP; iqp++){
-      pg1 = FMF_PtrLevel(gc, iqp);
+      pg1v = FMF_PtrLevel(gcv, iqp);
+      pg1s = FMF_PtrLevel(gcs, iqp);
       pout1 = FMF_PtrLevel(out, iqp);
 
-      for (ir = 0; ir < nEP; ir++){
-        for (ic = 0; ic < nEP; ic++){
-          pout1[ic] = pg1[ir] * pg1[ic];
+      for (ir = 0; ir < nEPv; ir++){
+        for (ic = 0; ic < nEPs; ic++){
+          pout1[ic] = pg1v[ir] * pg1s[ic];
         }
         pout1 += nCol;
       }
@@ -564,37 +575,40 @@ int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv )
   - 14.12.2005
 */
 int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
-			    FMField *viscosity, Mapping *vg,
+			    FMField *viscosity, Mapping *vgv, Mapping *vgs,
 			    int32 isDiff )
 {
-  int32 ii, dim, nQP, nEP, ret = RET_OK;
+  int32 ii, dim, nQP, nEPv, nEPs, ret = RET_OK;
   FMField *gtg = 0, *gtgu = 0;
 
-  nQP = vg->bfGM->nLev;
-  nEP = vg->bfGM->nCol;
-  dim = vg->bfGM->nRow;
+  nQP = vgv->bfGM->nLev;
+  nEPv = vgv->bfGM->nCol;
+  nEPs = vgs->bfGM->nCol;
+  dim = vgv->bfGM->nRow;
 
   if (isDiff) {
-    fmf_createAlloc( &gtg, 1, nQP, dim * nEP, dim * nEP );
+    fmf_createAlloc( &gtg, 1, nQP, dim * nEPv, dim * nEPs );
   } else {
-    fmf_createAlloc( &gtgu, 1, nQP, dim * nEP, 1 );
+    fmf_createAlloc( &gtgu, 1, nQP, dim * nEPv, 1 );
   }
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCellX1( viscosity, ii );
-    FMF_SetCell( vg->bfGM, ii );
-    FMF_SetCell( vg->det, ii );
+    FMF_SetCell( vgv->bfGM, ii );
+    FMF_SetCell( vgv->det, ii );
 
     if (isDiff) {
-      divgrad_build_gtg( gtg, vg->bfGM );
+      FMF_SetCell( vgs->bfGM, ii );
+
+      divgrad_build_gtg( gtg, vgv->bfGM, vgs->bfGM );
       fmf_mul( gtg, viscosity->val );
-      fmf_sumLevelsMulF( out, gtg, vg->det->val );
+      fmf_sumLevelsMulF( out, gtg, vgv->det->val );
     } else {
       FMF_SetCell( grad, ii );
-      divgrad_act_gt_m( gtgu, vg->bfGM, grad );
+      divgrad_act_gt_m( gtgu, vgv->bfGM, grad );
       fmf_mul( gtgu, viscosity->val );
-      fmf_sumLevelsMulF( out, gtgu, vg->det->val );
+      fmf_sumLevelsMulF( out, gtgu, vgv->det->val );
     }
     ERR_CheckGo( ret );
   }
