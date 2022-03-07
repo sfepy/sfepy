@@ -38,6 +38,7 @@ class DivGradTerm(Term):
     def d_div_grad(self, out, grad1, grad2, mat, vg, fmode):
         sh = grad1.shape
         g1 = grad1.reshape((sh[0], sh[1], sh[2] * sh[3]))
+        sh = grad2.shape
         g2 = grad2.reshape((sh[0], sh[1], sh[2] * sh[3]))
         aux = mat * dot_sequences(g1[..., None], g2, 'ATB')[..., None]
 
@@ -52,7 +53,8 @@ class DivGradTerm(Term):
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(state)
+        vgs, _ = self.get_mapping(state)
+        vgv, _ = self.get_mapping(virtual)
 
         if mat is None:
             n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
@@ -69,14 +71,14 @@ class DivGradTerm(Term):
                 grad = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return grad, mat, vg, fmode
+            return grad, mat, vgv, vgs, fmode
 
         elif mode == 'eval':
             grad1 = self.get(virtual, 'grad')
             grad2 = self.get(state, 'grad')
             fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
-            return grad1, grad2, mat, vg, fmode
+            return grad1, grad2, mat, vgv, fmode
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
