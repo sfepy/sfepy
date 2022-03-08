@@ -48,8 +48,8 @@ int32 divgrad_build_gtg( FMField *out, FMField *gcv, FMField *gcs )
       pg3s = pg2s + nEPs;
 
       pout1 = FMF_PtrLevel( out, iqp );
-      pout2 = pout1 + (nCol + 1) * nEPs;
-      pout3 = pout2 + (nCol + 1) * nEPs;
+      pout2 = pout1 + (nCol + 1) * nEPv;
+      pout3 = pout2 + (nCol + 1) * nEPv;
 
       for (ir = 0; ir < nEPv; ir++) {
         for (ic = 0; ic < nEPs; ic++) {
@@ -72,7 +72,7 @@ int32 divgrad_build_gtg( FMField *out, FMField *gcv, FMField *gcs )
       pg2s = pg1s + nEPs;
 
       pout1 = FMF_PtrLevel( out, iqp );
-      pout2 = pout1 + (nCol + 1) * nEPs;
+      pout2 = pout1 + (nCol + 1) * nEPv;
 
       for (ir = 0; ir < nEPv; ir++) {
         for (ic = 0; ic < nEPs; ic++) {
