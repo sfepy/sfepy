@@ -55,7 +55,6 @@ def configuration(parent_package='', top_path=None):
     main_scripts = [
         'phonon.py',
         'extractor.py',
-        'homogen.py',
         'postproc.py',
         'probe.py',
         'run_tests.py',
