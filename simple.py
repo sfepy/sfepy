@@ -152,14 +152,17 @@ def main():
                       combined=options.log is not None)
 
     required, other = get_standard_keywords()
+    required.remove('equations')
     if options.solve_not:
-        required.remove('equations')
         required.remove('solver_[0-9]+|solvers')
         other.extend(['equations'])
 
     conf = ProblemConf.from_file_and_options(filename_in, options,
                                              required, other,
                                              define_args=options.define_args)
+    if conf.options.get('coefs') is None:
+        if conf.get('equations') is None:
+            ValueError('required missing: equations')
 
     opts = conf.options
     output_prefix = opts.get('output_prefix', 'sfepy:')
@@ -167,11 +170,16 @@ def main():
     opts.save_restart = options.save_restart
     opts.load_restart = options.load_restart
 
-    if conf.options.get('evps') is None:
-        app = PDESolverApp(conf, options, output_prefix)
+    if conf.options.get('coefs') is not None:
+        from sfepy.homogenization.homogen_app import HomogenizationApp
+
+        app = HomogenizationApp(conf, options, output_prefix)
+
+    elif conf.options.get('evps') is not None:
+        app = EVPSolverApp(conf, options, output_prefix)
 
     else:
-        app = EVPSolverApp(conf, options, output_prefix)
+        app = PDESolverApp(conf, options, output_prefix)
 
     if hasattr(opts, 'parametric_hook'): # Parametric study.
         parametric_hook = conf.get_function(opts.parametric_hook)
