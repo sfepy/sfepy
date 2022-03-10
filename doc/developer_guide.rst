@@ -1054,7 +1054,6 @@ Main scripts
    :maxdepth: 2
 
    src/extractor
-   src/homogen
    src/phonon
    src/postproc
    src/probe

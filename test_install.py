@@ -241,7 +241,7 @@ def main():
     out, err = check_output('%s ./simple.py examples/quantum/hydrogen.py' % cmd)
     eok += report(out, '...', -2, -2, '-0.01913506', eps=1e-4)
 
-    out, err = check_output('%s ./homogen.py examples/homogenization/perfusion_micro.py' % cmd)
+    out, err = check_output('%s ./simple.py examples/homogenization/perfusion_micro.py' % cmd)
     eok += report2(out, '...', ['computing EpA', 'computing PA_3',
                                 'computing GA', 'computing EmA',
                                 'computing KA'])
