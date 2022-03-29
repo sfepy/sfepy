@@ -53,12 +53,17 @@ _supported_formats = {
 }
 
 def update_supported_formats(formats):
-    from meshio._helpers import reader_map, _writer_map,\
-        extension_to_filetype
-
+    from meshio._helpers import reader_map, _writer_map
     f2e = {}
-    for k, v in extension_to_filetype.items():
-        f2e.setdefault(v, []).append(k)
+
+    try:
+        from meshio._helpers import extension_to_filetype
+        for k, v in extension_to_filetype.items():
+            f2e.setdefault(v, []).append(k)
+    except:
+        from meshio._helpers import extension_to_filetypes
+        for k, v in extension_to_filetypes.items():
+            f2e.setdefault(v[-1], []).append(k)
 
     out = {}
     for format, info in formats.items():
@@ -311,11 +316,15 @@ class MeshioLibIO(MeshIO):
 
     def __init__(self, filename, file_format=None, **kwargs):
         MeshIO.__init__(self, filename=filename, **kwargs)
-        from meshio._helpers import _filetype_from_path
         import pathlib
 
         if file_format is None:
-            file_format = _filetype_from_path(pathlib.Path(filename))
+            try:
+                from meshio._helpers import _filetype_from_path
+                file_format = _filetype_from_path(pathlib.Path(filename))
+            except:
+                from meshio._helpers import _filetypes_from_path
+                file_format = _filetypes_from_path(pathlib.Path(filename))[-1]
 
         self.file_format = file_format
 
@@ -474,8 +483,7 @@ class MeshioLibIO(MeshIO):
         cell_data = {k: [] for k in cell_data_keys}
         cell_sets = {str(k): [] for k in cgrps}
         for ii, desc in enumerate(descs):
-            cells.append(meshio_Cells(type=inv_cell_types[desc][0],
-                                      data=conns[ii]))
+            cells.append(meshio_Cells(inv_cell_types[desc][0], conns[ii]))
             cidxs = nm.where(cmesh.cell_types == cmesh.key_to_index[desc])
             cidxs = cidxs[0].astype(nm.uint32)
 
