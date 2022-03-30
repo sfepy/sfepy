@@ -52,13 +52,19 @@ _supported_formats = {
     'mesh3d': ('mesh3d', '.mesh3d', 'r'),
 }
 
-def update_supported_formats(formats):
-    from meshio._helpers import reader_map, _writer_map,\
-        extension_to_filetype
 
+def update_supported_formats(formats):
+    from meshio._helpers import reader_map, _writer_map
     f2e = {}
-    for k, v in extension_to_filetype.items():
-        f2e.setdefault(v, []).append(k)
+
+    try:
+        from meshio._helpers import extension_to_filetype
+        for k, v in extension_to_filetype.items():
+            f2e.setdefault(v, []).append(k)
+    except:
+        from meshio._helpers import extension_to_filetypes
+        for k, v in extension_to_filetypes.items():
+            f2e.setdefault(v[-1], []).append(k)
 
     out = {}
     for format, info in formats.items():
@@ -89,6 +95,7 @@ def update_supported_formats(formats):
 
     return out
 
+
 supported_formats = update_supported_formats(_supported_formats)
 del _supported_formats
 
@@ -97,7 +104,7 @@ def output_mesh_formats(mode='r'):
     for key, vals in ordered_iteritems(supported_formats):
         if mode in vals[2]:
             output('%s (%s)' % (key,
-                vals[1] if len(vals[1]) > 1 else vals[1][0]))
+                   vals[1] if len(vals[1]) > 1 else vals[1][0]))
 
 
 def split_conns_mat_ids(conns_in):
@@ -122,7 +129,7 @@ def convert_complex_output(out_in):
     out = {}
     for key, val in six.iteritems(out_in):
 
-        if val.data.dtype in  complex_types:
+        if val.data.dtype in complex_types:
             rval = copy(val)
             rval.data = val.data.real
             out['real.%s' % key] = rval
@@ -136,11 +143,13 @@ def convert_complex_output(out_in):
 
     return out
 
+
 def check_format_suffix(file_format, suffix):
     """
     Check compatibility of a mesh file format and a mesh file suffix.
     """
-    if file_format is None: return
+    if file_format is None:
+        return
 
     try:
         suffixes = supported_formats[file_format][1]
@@ -149,12 +158,14 @@ def check_format_suffix(file_format, suffix):
         raise ValueError('unknown file format! (%s)'
                          % file_format)
 
-    if suffix is None: return
+    if suffix is None:
+        return
 
     suffix = suffix if suffix.startswith('.') else '.' + suffix
     if suffix not in suffixes:
         raise ValueError('"%s" format is not compatible with "%s" suffix!'
                          % (file_format, suffix))
+
 
 class MeshIO(Struct):
     """
@@ -241,6 +252,7 @@ class MeshIO(Struct):
     def get_vector_format(self, dim):
         return ' '.join([self.float_format] * dim)
 
+
 class UserMeshIO(MeshIO):
     """
     Special MeshIO subclass that enables reading and writing a mesh using a
@@ -283,12 +295,14 @@ def _suppress_meshio_warnings(f):
 
     return __suppress_meshio_warnings
 
+
 def _decorate_all(module, decorator):
     import types
     for name in dir(module):
         obj = getattr(module, name)
         if isinstance(obj, types.FunctionType):
             setattr(module, name, decorator(obj))
+
 
 _decorate_all(meshiolib, _suppress_meshio_warnings)
 del _decorate_all, _suppress_meshio_warnings
@@ -311,11 +325,15 @@ class MeshioLibIO(MeshIO):
 
     def __init__(self, filename, file_format=None, **kwargs):
         MeshIO.__init__(self, filename=filename, **kwargs)
-        from meshio._helpers import _filetype_from_path
         import pathlib
 
         if file_format is None:
-            file_format = _filetype_from_path(pathlib.Path(filename))
+            try:
+                from meshio._helpers import _filetype_from_path
+                file_format = _filetype_from_path(pathlib.Path(filename))
+            except:
+                from meshio._helpers import _filetypes_from_path
+                file_format = _filetypes_from_path(pathlib.Path(filename))[-1]
 
         self.file_format = file_format
 
@@ -397,8 +415,8 @@ class MeshioLibIO(MeshIO):
 
         for ic, c in enumerate(m.cells):
             if (c.type, dim) not in self.cell_types:
-                output('warning: unknown cell type %s with dimension %d'\
-                    % (c.type, dim))
+                output('warning: unknown cell type %s with dimension %d'
+                       % (c.type, dim))
 
                 continue
 
@@ -425,7 +443,8 @@ class MeshioLibIO(MeshIO):
          point_data,
          point_sets,
          cell_data,
-         cell_sets) = self._create_out_data(mesh, out)
+         cell_sets) = self._create_out_data(mesh, out,
+                                            format=self.file_format)
 
         if LooseVersion(meshiolib.__version__) >= LooseVersion('4.0.3') and\
            ('-ascii' in self.file_format or '-binary' in self.file_format):
@@ -444,7 +463,7 @@ class MeshioLibIO(MeshIO):
             meshiolib.write_points_cells(filename, coors, cells,
                                          **args0)
 
-    def _create_out_data(self, mesh, out):
+    def _create_out_data(self, mesh, out, format=None):
         inv_cell_types = {v: k for k, v in self.cell_types.items()}
         coors, ngroups, conns, _, descs = mesh._get_io_data()
         out = {} if out is None else out
@@ -474,8 +493,7 @@ class MeshioLibIO(MeshIO):
         cell_data = {k: [] for k in cell_data_keys}
         cell_sets = {str(k): [] for k in cgrps}
         for ii, desc in enumerate(descs):
-            cells.append(meshio_Cells(type=inv_cell_types[desc][0],
-                                      data=conns[ii]))
+            cells.append(meshio_Cells(inv_cell_types[desc][0], conns[ii]))
             cidxs = nm.where(cmesh.cell_types == cmesh.key_to_index[desc])
             cidxs = cidxs[0].astype(nm.uint32)
 
@@ -488,7 +506,10 @@ class MeshioLibIO(MeshIO):
                 cell_sets[str(k)].append(cidxs[idxs])
         cell_data[cgkey] = cgroups
 
-        return  coors, cells, point_data, point_sets, cell_data, cell_sets
+        if format and format in ['vtk', 'vtu']:
+            point_sets, cell_sets = None, None
+
+        return coors, cells, point_data, point_sets, cell_data, cell_sets
 
     def read_data(self, step, filename=None, cache=None):
         """
@@ -537,6 +558,7 @@ class MeshioLibIO(MeshIO):
             out[key] = Struct(name=key, mode='cell', data=aux)
 
         return out
+
 
 class ComsolMeshIO(MeshIO):
     format = 'comsol'
@@ -598,13 +620,13 @@ class ComsolMeshIO(MeshIO):
                         is_conn = True
                     elif t_name == 'quad':
                         # Rearrange element node order to match SfePy.
-                        aux = aux[:,(0,1,3,2)]
+                        aux = aux[:, (0, 1, 3, 2)]
                         conns.append(aux)
                         descs.append('2_4')
                         is_conn = True
                     elif t_name == 'hex':
                         # Rearrange element node order to match SfePy.
-                        aux = aux[:,(0,1,3,2,4,5,7,6)]
+                        aux = aux[:, (0, 1, 3, 2, 4, 5, 7, 6)]
                         conns.append(aux)
                         descs.append('3_8')
                         is_conn = True
@@ -654,7 +676,7 @@ class ComsolMeshIO(MeshIO):
             fd.write("%d # number of elements\n" % conn.shape[0])
             fd.write("# Elements\n")
             for ii in range(conn.shape[0]):
-                nn = conn[ii] # Zero based
+                nn = conn[ii]  # Zero based
                 fd.write(format % tuple(nn[norder]))
             fd.write("\n%d # number of parameter values per element\n"
                      % nm_params)
@@ -697,7 +719,7 @@ class ComsolMeshIO(MeshIO):
         fd.write("1 # version\n")
         fd.write("%d # sdim\n" % dim)
         fd.write("%d # number of mesh points\n" % n_nod)
-        fd.write("0 # lowest mesh point index\n\n") # Always zero in SfePy
+        fd.write("0 # lowest mesh point index\n\n")  # Always zero in SfePy
 
         fd.write("# Mesh point coordinates\n")
 
@@ -912,11 +934,11 @@ class HDF5MeshIO(MeshIO):
 
         def get_data_dim(shape):
             if len(shape) == 4:
-               return shape[2]
+                return shape[2]
             if len(shape) == 2:
-               return shape[1]
+                return shape[1]
             else:
-               return 1
+                return 1
 
         def data_item(data):
             dtype = data.dtype
@@ -1006,9 +1028,9 @@ class HDF5MeshIO(MeshIO):
 
             steps = [k for k in root if k._v_name.startswith('step')]
             et_ts = et.SubElement(et_domain, 'Grid',
-                                    attrib={'Name': 'TimeSeries',
-                                            'GridType': 'Collection',
-                                            'CollectionType': 'Temporal'})
+                                  attrib={'Name': 'TimeSeries',
+                                          'GridType': 'Collection',
+                                          'CollectionType': 'Temporal'})
 
             for step in steps:
                 istep = int(step._v_name[4:])
@@ -1062,7 +1084,7 @@ class HDF5MeshIO(MeshIO):
                 if ts is not None:
                     ts_group = fd.create_group('/', 'ts', 'time stepper')
                     fd.create_array(ts_group, 't0', ts.t0, 'initial time')
-                    fd.create_array(ts_group, 't1', ts.t1, 'final time' )
+                    fd.create_array(ts_group, 't1', ts.t1, 'final time')
                     fd.create_array(ts_group, 'dt', ts.dt, 'time step')
                     fd.create_array(ts_group, 'n_step', ts.n_step, 'n_step')
 
@@ -1079,7 +1101,7 @@ class HDF5MeshIO(MeshIO):
 
         if out is not None:
             if ts is None:
-                step, time, nt  = 0, 0.0, 0.0
+                step, time, nt = 0, 0.0, 0.0
             else:
                 step, time, nt = ts.step, ts.time, ts.nt
 
@@ -1162,8 +1184,8 @@ class HDF5MeshIO(MeshIO):
 
         try:
             ts_group = fd.root.ts
-            out =  (ts_group.t0.read(), ts_group.t1.read(),
-                    ts_group.dt.read(), ts_group.n_step.read())
+            out = (ts_group.t0.read(), ts_group.t1.read(),
+                   ts_group.dt.read(), ts_group.n_step.read())
 
         except:
             raise ValueError('no time stepper found!')
@@ -1230,7 +1252,8 @@ class HDF5MeshIO(MeshIO):
 
     def read_data(self, step, filename=None, cache=None):
         fd, step_group = self._get_step_group(step, filename=filename)
-        if fd is None: return None
+        if fd is None:
+            return None
 
         out = {}
         for data_group in step_group:
@@ -1242,8 +1265,8 @@ class HDF5MeshIO(MeshIO):
 
             mode = dec(data_group.mode.read())
             if mode == 'custom':
-               out[key] = read_from_hdf5(fd, data_group.data, cache=cache)
-               continue
+                out[key] = read_from_hdf5(fd, data_group.data, cache=cache)
+                continue
 
             name = dec(data_group.name.read())
             data = data_group.data.read()
@@ -1272,7 +1295,8 @@ class HDF5MeshIO(MeshIO):
 
     def read_data_header(self, dname, step=None, filename=None):
         fd, step_group = self._get_step_group(step, filename=filename)
-        if fd is None: return None
+        if fd is None:
+            return None
 
         groups = step_group._v_groups
         for name, data_group in six.iteritems(groups):
@@ -1335,7 +1359,7 @@ class HDF5MeshIO(MeshIO):
 
 
 class HDF5XdmfMeshIO(HDF5MeshIO):
-    format="hdf5-xdmf"
+    format = "hdf5-xdmf"
 
     def write(self, filename, mesh, out=None, ts=None, cache=None, **kwargs):
         HDF5MeshIO.write(self, filename, mesh, out=out, ts=ts, cache=cache,
@@ -1378,7 +1402,7 @@ class Mesh3DMeshIO(MeshIO):
         Reads one non empty line (if it's a comment, it skips it).
         """
         l = f.readline().strip()
-        while l == "" or l[0] == "#": # comment or an empty line
+        while l == "" or l[0] == "#":  # comment or an empty line
             l = f.readline().strip()
         return l
 
@@ -1421,6 +1445,7 @@ class Mesh3DMeshIO(MeshIO):
             row = nm.fromstring(l, sep=" ", dtype=dtype)
             rows.append(row)
         return nm.array(rows)
+
 
 def mesh_from_groups(mesh, ids, coors, ngroups,
                      tris, mat_tris, quads, mat_quads,
@@ -1523,8 +1548,10 @@ class NEUMeshIO(MeshIO):
 
         row = fd.readline().split()
         while 1:
-            if not row: break
-            if len(row) == 0: continue
+            if not row:
+                break
+            if len(row) == 0:
+                continue
 
             if (row[0] == 'NUMNP'):
                 row = fd.readline().split()
@@ -1539,7 +1566,7 @@ class NEUMeshIO(MeshIO):
 
     def read(self, mesh, **kwargs):
 
-        el = {'3_8' : [], '3_4' : [], '2_4' : [], '2_3' : []}
+        el = {'3_8': [], '3_4': [], '2_4': [], '2_3': []}
         nod = []
 
         conns_in = []
@@ -1554,7 +1581,8 @@ class NEUMeshIO(MeshIO):
 
         row = fd.readline()
         while 1:
-            if not row: break
+            if not row:
+                break
             row = row.split()
 
             if len(row) == 0:
@@ -1645,12 +1673,14 @@ class NEUMeshIO(MeshIO):
         nod = nm.array(nod, nm.float64)
 
         conns, mat_ids = split_conns_mat_ids(conns_in)
-        mesh._set_io_data(nod, None, conns, mat_ids, descs, nodal_bcs=nodal_bcs)
+        mesh._set_io_data(nod, None, conns, mat_ids, descs,
+                          nodal_bcs=nodal_bcs)
 
         return mesh
 
     def write(self, filename, mesh, out=None, **kwargs):
         raise NotImplementedError
+
 
 class ANSYSCDBMeshIO(MeshIO):
     format = 'ansys_cdb'
@@ -1723,8 +1753,10 @@ class ANSYSCDBMeshIO(MeshIO):
 
         while True:
             row = fd.readline()
-            if not row: break
-            if len(row) == 0: continue
+            if not row:
+                break
+            if len(row) == 0:
+                continue
 
             row = row.split(',')
             kw = row[0].lower()
@@ -1773,7 +1805,7 @@ class ANSYSCDBMeshIO(MeshIO):
                     n_nod = int(row[inn0:inn1])
 
                     line.extend(int(row[i0:i1])
-                                for i0, i1 in idx[ic0 : ic0 + n_nod])
+                                for i0, i1 in idx[ic0:ic0 + n_nod])
                     if n_nod == 4:
                         tetras.append(line)
 
@@ -1797,7 +1829,7 @@ class ANSYSCDBMeshIO(MeshIO):
                                          % n_nod)
 
             elif kw == 'cmblock':
-                if row[2].lower() != 'node': # Only node sets support.
+                if row[2].lower() != 'node':  # Only node sets support.
                     continue
 
                 n_nod = int(row[3].split('!')[0])
@@ -1908,9 +1940,9 @@ class GmshIO(MeshioLibIO):
     """
     format = 'gmshio'
 
-    load_slices = {"all" : slice(0, None),
-                    "first": slice(0, 1),
-                    "last": slice(-1, None)}
+    load_slices = {"all": slice(0, None),
+                   "first": slice(0, 1),
+                   "last": slice(-1, None)}
 
     def __init__(self, filename, file_format=None, **kwargs):
         MeshioLibIO.__init__(self, filename=filename, file_format=None,
@@ -2094,7 +2126,7 @@ class GmshIO(MeshioLibIO):
 
                 n_el_nod = int(look_ahead_line(fd).split()[1])
                 # read data including indexing
-                data = read_array(fd, n_el, n_el_nod + 2 , nm.float64)
+                data = read_array(fd, n_el, n_el_nod + 2, nm.float64)
                 # strip indexing columns
                 data = data[:, 2:]
 
@@ -2246,6 +2278,7 @@ class GmshIO(MeshioLibIO):
                 self._write_elementnode_data(fd, out, ts)
         return
 
+
 class XYZMeshIO(MeshIO):
     """
     Trivial XYZ format working only with coordinates (in a .XYZ file) and the
@@ -2276,7 +2309,8 @@ class XYZMeshIO(MeshIO):
         coors = self._read_coors()
         bbox = nm.vstack((nm.amin(coors, 0), nm.amax(coors, 0)))
 
-        if ret_fd: fd = open(self.filename, 'r')
+        if ret_fd:
+            fd = open(self.filename, 'r')
         if ret_dim:
             dim = coors.shape[1]
             if ret_fd:
@@ -2329,6 +2363,7 @@ for key, var in var_dict:
         pass
 del var_dict
 
+
 def any_from_filename(filename, prefix_dir=None, file_format=None, mode='r'):
     """
     Create a MeshIO instance according to the kind of `filename`.
@@ -2367,7 +2402,7 @@ def any_from_filename(filename, prefix_dir=None, file_format=None, mode='r'):
             raise ValueError('unknown mesh format! (%s)' % file_format)
     else:
         ext2io = {e: (v[0], k) for k, v in supported_formats.items()
-            for e in v[1] if '*' not in v[2]}
+                  for e in v[1] if '*' not in v[2]}
         ext = op.splitext(filename)[1].lower()
         if ext in ext2io:
             io_class = ext2io[ext][0]
