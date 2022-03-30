@@ -1392,6 +1392,7 @@ sfepy.terms package
    src/sfepy/terms/terms_navier_stokes
    src/sfepy/terms/terms_piezo
    src/sfepy/terms/terms_point
+   src/sfepy/terms/terms_sensitivity.rst
    src/sfepy/terms/terms_shells
    src/sfepy/terms/terms_surface
    src/sfepy/terms/terms_th
