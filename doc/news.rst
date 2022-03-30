@@ -1,6 +1,11 @@
 News
 ====
 
+* **30.03.2022** Version 2022.1 released (new handling of state variables data
+  and State class removal, many new sensitivity analysis terms based on
+  multi-linear term implementation, etc.), see :ref:`release notes
+  <2021.4-2022.1>`.
+
 * **29.12.2021** Version 2021.4 released (improved pyvista-based visualization
   script resview.py, gallery images generated using resview.py, homogenization
   tools: new parallel recovery of multiple microstructures, new "dry water"
@@ -20,9 +25,5 @@ News
   Dirichlet and periodic boundary conditions in common nodes, terms in the term
   table document linked to examples, etc.), see :ref:`release notes
   <2020.4-2021.1>`.
-
-* **27.12.2020** Version 2020.4 released (Ogden hyperelastic term, serendipity
-  finite element basis of orders 1-3, etc.), see :ref:`release notes
-  <2020.3-2020.4>`.
 
 For historians: see :ref:`archived_news`.
