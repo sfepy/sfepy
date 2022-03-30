@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **27.12.2020** Version 2020.4 released (Ogden hyperelastic term, serendipity
+  finite element basis of orders 1-3, etc.), see :ref:`release notes
+  <2020.3-2020.4>`.
+
 * **29.09.2020** Version 2020.3 released (new script for visualizations based
   on pyvista, generalized Yeoh hyperelastic term + example, etc.), see
   :ref:`release notes <2020.2-2020.3>`.
