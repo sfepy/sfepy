@@ -434,7 +434,8 @@ class MeshioLibIO(MeshIO):
          point_data,
          point_sets,
          cell_data,
-         cell_sets) = self._create_out_data(mesh, out)
+         cell_sets) = self._create_out_data(mesh, out,
+                                            format=self.file_format)
 
         if LooseVersion(meshiolib.__version__) >= LooseVersion('4.0.3') and\
            ('-ascii' in self.file_format or '-binary' in self.file_format):
@@ -453,7 +454,7 @@ class MeshioLibIO(MeshIO):
             meshiolib.write_points_cells(filename, coors, cells,
                                          **args0)
 
-    def _create_out_data(self, mesh, out):
+    def _create_out_data(self, mesh, out, format=None):
         inv_cell_types = {v: k for k, v in self.cell_types.items()}
         coors, ngroups, conns, _, descs = mesh._get_io_data()
         out = {} if out is None else out
@@ -495,6 +496,9 @@ class MeshioLibIO(MeshIO):
                 idxs = nm.where(cell_groups[cidxs] == k)[0]
                 cell_sets[str(k)].append(cidxs[idxs])
         cell_data[cgkey] = cgroups
+
+        if format and format in ['vtk', 'vtu']:
+            point_sets, cell_sets = None, None
 
         return  coors, cells, point_data, point_sets, cell_data, cell_sets
 
