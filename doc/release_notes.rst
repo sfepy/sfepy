@@ -1,5 +1,227 @@
 # created: 20.07.2007 (-1)
 
+.. _2021.4-2022.1:
+
+from 2021.4 to 2022.1
+=====================
+
+- merge pull request #762 from rc/newton-step-reduction
+
+  - new step_red parameter of Newton solver, update .__call__()
+
+- merge pull request #765 from rmcgibbo/patch-1
+
+  - Fix for python3.10 collections.Sequence -> collections.abc.Sequence See for
+    example: https://github.com/wireservice/agate/pull/737/files
+
+- merge pull request #767 from rc/fix-auto-solver-dict-conf
+
+  - fix AutoFallbackSolver.__new__() for dict conf
+
+- merge pull request #768 from rc/fix-its2d_5-example
+
+  - fix stress_strain() in its2D_5.py example
+
+- merge pull request #764 from rc/move-state-into-variables, closes #378
+
+  - rename stripped -> reduced, strip -> reduce in DOF vector context
+
+    - rename Equations.create_stripped_state_vector() ->
+      .create_reduced_state_vector()
+    - rename Equations.strip_state_vector() -> .reduce_vec()
+    - rename Variables.create_stripped_state_vector() ->
+      .create_reduced_state_vector()
+    - rename Variables.strip_state_vector() -> .reduce_vec()
+    - update Variables.get_indx(), .check_vector_size(),
+      .get_state_part_view(), .set_state_part() argument names
+    - update affected code
+
+  - new Variables.vec, .rvec attributes to hold state vector, new .init_state()
+
+    - update .apply_ebc(), .apply_ic(), .has_ebc() - vec argument optional, use
+      self.vec by default
+
+  - new Equations.init_state(), update .apply_ebc(), .apply_ic()
+  - remove Variables.set_from_state(), update Oseen.__call__() (its only use)
+  - remove unused Equations.state_to_output()
+  - rename state_vector -> vec in DOF vector context
+
+    - rename Equations.create_state_vector() -> .create_vec(),
+      .create_reduced_state_vector() -> .create_reduced_vec()
+    - rename Variables.create_state_vector() -> .create_vec(),
+      .create_reduced_state_vector() -> .create_reduced_vec()
+    - update affected code
+
+  - rename state_part{_view} -> vec_part in DOF vector context
+
+    - rename Variables.get_state_part_view() -> .get_vec_part(),
+      .set_state_part() -> .set_vec_part()
+    - update affected code
+
+  - rename Variables.state_to_output() -> .create_output() - update affected code
+  - remove unused variable in FieldVariable.save_as_mesh()
+  - fix Variable.advance() for multi-variable problems - replace deque .data
+    attribute by list
+  - add step argument to Variable.set_constant(), use in .init_data()
+  - new .locked attribute of Variable, update .set_data()
+  - implement state handling in Variables, regroup/rename functions
+
+    - lock state variables in .init_state()
+    - new .fill_state(), .invalidate_evaluate_caches()
+    - invalidate caches in .apply_ebc(), .apply_ic()
+    - new .set_reduced_state(), .get_reduced_state(), .set_full_state(),
+      .set_state(), .get_state(), .set_state_parts()
+    - update .get_state_parts(), .create_output()
+    - rename .check_vector_size() -> .check_vec_size()
+
+  - update Equations for Variables.set_state()
+
+    - remove Equations.set_variables_from_state(), .get_state_parts()
+    - use new .set_state() in .eval_residuals(), .eval_tangent_matrices()
+    - update .init_state()
+
+  - update Problem for Variables replacing State
+
+    - initialize ics in .__init__(), .create_subproblem(), .set_equations()
+    - remove .setup_ics()
+    - update .create_state() to call .get_initial_state()
+    - update .save_state(), .save_ebc(), .get_tss_functions(),
+      .get_initial_state(), .solve(), .block_solve(), .save_restart(),
+      .load_restart()
+
+  - update affected code for Variables replacing State
+
+    - update EVPSolverApp.save_results()
+    - update Evaluator.new_ulf_iteration()
+    - update create_mass_matrix()
+    - update .__call__() of CorrNN, CorrN, CorrSetBCS, CorrEqPar,
+      PressureRHSVector
+    - update MultiProblem.init_subproblems(), .__call__()
+
+  - update tests for Variables replacing State
+  - update examples for Variables replacing State
+  - do not import State in sfepy/discrete/__init__.py
+  - docs: update users' guide
+  - update SimpleEVP.save() for Variables replacing State
+  - remove sfepy/discrete/state.py
+  - docs: sync module index of developer guide with current sources
+  - update yet more examples for Variables replacing State
+  - docs: update FAQ for Variables replacing State
+  - docs: update primer for Variables replacing State, Python 3 and current
+    code
+  - simplify and clean up verify_incompressibility()
+  - replace stripped -> reduced in SchurEVP.post_process()
+  - docs: update tutorial, sync it with linear_elastic_interactive.py example
+
+- merge pull request #772 from rc/plot-mesh-kwargs
+
+  - add color, **plot_kwargs arguments to plot_mesh()
+
+- merge pull request #775 from rc/pass-eterm-options
+
+  - add eterm_options argument to Problem.evaluate() - update
+    .create_evaluable(), create_evaluable()
+  - update ETermBase.make_function() for recent jax (0.2.21)
+
+- merge pull request #777 from rc/check-errors-in-mesh-graph
+
+  - check errors in mesh_graph(), exit early
+
+- merge pull request #774 from vlukes/new_sensitivity_terms
+
+  - new multilinear term: ENonSymElasticTerm - nonsymmetric gradient
+  - new multilinear sensitivity term: ESDLinearElasticTerm
+  - new multilinear sensitivity term: ESDPiezoCouplingTerm
+  - new multilinear terms: EDiffusionTerm, ESDDiffusionTerm
+  - new multilinear sensitivity term: ESDStokesTerm
+  - new multilinear sensitivity term: ESDDivGradTerm
+  - new multilinear sensitivity term: ESDDotTerm
+  - update docstrings of multilinear terms, see #773
+  - update docstrings of sensitivity terms, see #773
+  - update term notation table
+  - update term table generator - compact virtual/state/parameter arguments
+  - rename 'parameter_mesh_velocity' to 'parameter_mv'
+  - new multilinear terms: ELinearTractionTerm, ESDLinearTractionTerm
+  - fix term docstring: EIntegrateOperatorTerm
+  - move multilinear sensitivity terms to 'terms_senstitivity.py'
+  - update test_term_sensitivity: use smaller mesh and gc.collect()
+  - multilinear terms: small fixes
+  - multilinear terms: use `v()` for nonsymmetric vector storage
+  - use ':' only for symmetric gradient
+
+- merge pull request #779 from rc/fix-polyspace-for-0d
+
+  - fix shape check of quadrature coordinates in PolySpace.eval_base() for 0D -
+    fixes surface integrals in 1D
+  - fix BernsteinSimplexPolySpace._eval_base() for 0D
+
+- merge pull request #780 from rc/fix-problem-solve-initial-state-arg
+
+  - fix initial state argument handling in Problem.solve(), .block_solve() -
+    new .set_default_state()
+  - use Problem.set_default_state() where suitable
+  - add docstring to Problem.set_default_state()
+
+- merge pull request #781 from rc/update-faq-structural
+
+  - docs: update FAQ with structural elements entry
+  - docs: fix indentation in FAQ
+
+- merge pull request #783 from rc/multilinear-terms-use-actual-ndarray-args -
+  closes #782
+
+  - use actual ndarray arguments in ETermBase.make_function()
+  - clean up whitespace
+
+- merge pull request #784 from rc/update-faq-element-matrix
+
+  - docs: update FAQ with element matrix entry
+
+- merge pull request #786 from rc/fix-balloon-example
+
+  - fix extract_time_history() for Python 3
+  - update plot_radius() in balloon.py example for recent matplotlib
+
+- merge pull request #787 from rc/array-values-apply-unit-multipliers
+
+  - support array-like values in apply_unit_multipliers()
+  - remove unused elastic_constants_relations
+
+- merge pull request #788 from rc/fix-resview-inf-factor
+
+  - fix pv_plot() for data with zero norm
+
+- merge pull request #789 from vlukes/update_div_grad
+
+  - DivGradTerm: allow different aprroximations
+
+- merge pull request #791 from vlukes/fix_div_grad_term fix divgrad_build_gtg()
+
+  - fix divgrad_build_gtg()
+
+- merge pull request #790 from rc/multilinear-terms-use-actual-mapping-data
+
+  - use actual reference mapping data in get_einsum_ops()
+
+    - do not store the mapping data in ExpressionArg
+    - update ExpressionArg.from_term_arg(), .get_dofs()
+    - new ExpressionArg.get_bf()
+    - update ETermBase.make_function()
+
+- merge pull request #793 from rc/remove-homogen
+
+  - run HomogenizationApp from simple.py - update main()
+  - remove homogen.py
+  - update scripts for no homogen.py
+  - docs: update for no homogen.py
+  - new homogen.py proxy for compatibility, calls simple.py - re-add it to
+    setup.py
+
+- merge pull request #797 from vlukes/update_to_meshio5
+
+  - update fem/meshio.py to meshio5
+  - remove meshio version
+
 .. _2021.3-2021.4:
 
 from 2021.3 to 2021.4
