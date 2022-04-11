@@ -1,11 +1,10 @@
-from __future__ import absolute_import
 import os
 
 import numpy as nm
+import pytest
 
-from sfepy.base.testing import TestCommon
+import sfepy.base.testing as st
 from sfepy import data_dir
-from six.moves import range
 
 # n_vertex, n_edge, n_face, n_cell
 # d1 -> d2 : num, n_incident
@@ -87,140 +86,134 @@ expected = {
         }),
 }
 
-class Test(TestCommon):
+@pytest.fixture(scope='module')
+def filename_meshes():
+    meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
+              for geom in ['1_2', '2_3', '2_4', '3_4', '3_8']]
+    meshes.append(data_dir + '/meshes/2d/special/square_triquad.mesh')
+    return meshes
 
-    @staticmethod
-    def from_conf(conf, options):
-        filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
-                           for geom in ['1_2', '2_3', '2_4', '3_4', '3_8']]
-        filename_meshes.append(data_dir
-                               + '/meshes/2d/special/square_triquad.mesh')
+def test_cmesh_counts(filename_meshes):
+    from sfepy.discrete.fem import Mesh
+    from sfepy.discrete.fem.geometry_element import create_geometry_elements
+    from sfepy.discrete.common.extmods.cmesh import get_cmem_usage
 
-        test = Test(filename_meshes=filename_meshes,
-                    conf=conf, options=options)
-        return test
+    gels = create_geometry_elements()
 
-    def test_cmesh_counts(self):
-        from sfepy.discrete.fem import Mesh
-        from sfepy.discrete.fem.geometry_element import create_geometry_elements
-        from sfepy.discrete.common.extmods.cmesh import CMesh, get_cmem_usage
+    ok = True
 
-        gels = create_geometry_elements()
+    for filename in filename_meshes:
+        basename = os.path.basename(filename)
+        enum, esizes = expected[basename]
 
-        ok = True
+        st.report('mesh: %s' % basename)
 
-        for filename in self.filename_meshes:
-            basename = os.path.basename(filename)
-            enum, esizes = expected[basename]
+        mesh = Mesh.from_file(filename)
+        cmesh = mesh.cmesh
+        cmesh.set_local_entities(gels)
 
-            self.report('mesh: %s' % basename)
+        cmesh.setup_entities()
 
-            mesh = Mesh.from_file(filename)
-            cmesh = mesh.cmesh
-            cmesh.set_local_entities(gels)
+        st.report('dim:', cmesh.dim)
+        st.report('n_vertex: %d, n_edge: %d, n_face: %d, n_cell: %d' %
+                  tuple(cmesh.num))
 
-            cmesh.setup_entities()
+        _ok = (enum == cmesh.num).all()
+        if not _ok:
+            st.report('%s == %s failed!' % (enum, cmesh.num))
+        ok = ok and _ok
 
-            self.report('dim:', cmesh.dim)
-            self.report('n_vertex: %d, n_edge: %d, n_face: %d, n_cell: %d' %
-                        tuple(cmesh.num))
+        dim = cmesh.dim
+        for ir in range(dim + 1):
+            for ic in range(dim + 1):
+                cmesh.setup_connectivity(ir, ic)
+                mem_usage1 = get_cmem_usage()[0]
 
-            _ok = (enum == cmesh.num).all()
-            if not _ok:
-                self.report('%s == %s failed!' % (enum, cmesh.num))
-            ok = ok and _ok
+                if (ir == dim) and (ic == 0):
+                    continue
 
-            dim = cmesh.dim
-            for ir in range(dim + 1):
-                for ic in range(dim + 1):
-                    cmesh.setup_connectivity(ir, ic)
-                    mem_usage1 = get_cmem_usage()[0]
+                cmesh.free_connectivity(ir, ic)
+                mem_usage2 = get_cmem_usage()[0]
 
-                    if (ir == dim) and (ic == 0):
-                        continue
+                cmesh.setup_connectivity(ir, ic)
+                mem_usage3 = get_cmem_usage()[0]
 
-                    cmesh.free_connectivity(ir, ic)
-                    mem_usage2 = get_cmem_usage()[0]
+                conn = cmesh.get_conn(ir, ic)
 
-                    cmesh.setup_connectivity(ir, ic)
-                    mem_usage3 = get_cmem_usage()[0]
+                st.report('(%d, %d) : (%d, %d)'
+                          % (ir, ic, conn.num, conn.n_incident))
+                sizes = nm.array([conn.num, conn.n_incident])
 
-                    conn = cmesh.get_conn(ir, ic)
+                _ok = (esizes[ir, ic] == sizes).all()
+                if not _ok:
+                    st.report('%s == %s failed!' % (esizes, sizes))
+                ok = ok and _ok
 
-                    self.report('(%d, %d) : (%d, %d)'
-                                % (ir, ic, conn.num, conn.n_incident))
-                    sizes = nm.array([conn.num, conn.n_incident])
+                _ok1 = mem_usage3 == mem_usage1
+                _ok2 = mem_usage3 > mem_usage2
+                if not (_ok1 and _ok2):
+                    st.report('unexpected memory usage! (%s)'
+                              % ([mem_usage1, mem_usage2, mem_usage3],))
+                ok = ok and (_ok1 and _ok2)
 
-                    _ok = (esizes[ir, ic] == sizes).all()
-                    if not _ok:
-                        self.report('%s == %s failed!' % (esizes, sizes))
-                    ok = ok and _ok
+    return ok
 
-                    _ok1 = mem_usage3 == mem_usage1
-                    _ok2 = mem_usage3 > mem_usage2
-                    if not (_ok1 and _ok2):
-                        self.report('unexpected memory usage! (%s)'
-                                    % (mem_usage1, mem_usage2, mem_usage3))
-                    ok = ok and (_ok1 and _ok2)
+def test_entity_volumes():
+    import sfepy
+    from sfepy.discrete.fem import Mesh, FEDomain
+    from sfepy.discrete.common import Field
+    from sfepy.discrete import Integral
 
-        return ok
+    mesh = Mesh.from_file('meshes/3d/special/cross3d.mesh',
+                          prefix_dir=sfepy.data_dir)
+    domain = FEDomain('domain', mesh)
 
-    def test_entity_volumes(self):
-        import sfepy
-        from sfepy.discrete.fem import Mesh, FEDomain
-        from sfepy.discrete.common import Field
-        from sfepy.discrete import Integral
+    omega = domain.create_region('Omega', 'all')
+    gamma = domain.create_region('Gamma', 'vertices of surface', 'facet')
+    top = domain.create_region('Top', 'cell 2')
 
-        mesh = Mesh.from_file('meshes/3d/special/cross3d.mesh',
-                              prefix_dir=sfepy.data_dir)
-        domain = FEDomain('domain', mesh)
+    vfield = Field.from_args('v', nm.float64, 'scalar', omega,
+                             approx_order=1)
+    sfield = Field.from_args('s', nm.float64, 'scalar', gamma,
+                             approx_order=1)
 
-        omega = domain.create_region('Omega', 'all')
-        gamma = domain.create_region('Gamma', 'vertices of surface', 'facet')
-        top = domain.create_region('Top', 'cell 2')
+    integral = Integral('i', order=3)
+    vgeo, _ = vfield.get_mapping(omega, integral, 'volume')
+    domain.create_surface_group(gamma)
+    sgeo, _ = sfield.get_mapping(gamma, integral, 'surface')
 
-        vfield = Field.from_args('v', nm.float64, 'scalar', omega,
-                                 approx_order=1)
-        sfield = Field.from_args('s', nm.float64, 'scalar', gamma,
-                                 approx_order=1)
+    evols = mesh.cmesh.get_volumes(1)
+    fvols = mesh.cmesh.get_volumes(2) # Approximate for non-planar faces.
+    cvols = mesh.cmesh.get_volumes(3)
 
-        integral = Integral('i', order=3)
-        vgeo, _ = vfield.get_mapping(omega, integral, 'volume')
-        domain.create_surface_group(gamma)
-        sgeo, _ = sfield.get_mapping(gamma, integral, 'surface')
+    ok = True
+    _ok = abs(cvols.sum() - vgeo.volume.sum()) < 1e-15
+    st.report('total cell volume: %s (ok: %s)' % (cvols.sum(), _ok))
+    ok = _ok and ok
 
-        evols = mesh.cmesh.get_volumes(1)
-        fvols = mesh.cmesh.get_volumes(2) # Approximate for non-planar faces.
-        cvols = mesh.cmesh.get_volumes(3)
+    top_evols = nm.array([ 1.                ,  1.                ,
+                           1.                ,  1.                ,
+                           0.7211102550927979,  0.7211102550927979,
+                           0.7211102550927979,  0.7211102550927979,
+                           1.16619037896906  ,  1.16619037896906  ,
+                           1.16619037896906  ,  1.16619037896906  ])
 
-        ok = True
-        _ok = abs(cvols.sum() - vgeo.volume.sum()) < 1e-15
-        self.report('total cell volume: %s (ok: %s)' % (cvols.sum(), _ok))
-        ok = _ok and ok
+    _ok = nm.allclose(top_evols, evols[top.edges], rtol=0.0, atol=1e-15)
+    st.report('total top cell edge length: %s (ok: %s)'
+              % (evols[top.edges].sum(), _ok))
+    ok = _ok and ok
 
-        top_evols = nm.array([ 1.                ,  1.                ,
-                               1.                ,  1.                ,
-                               0.7211102550927979,  0.7211102550927979,
-                               0.7211102550927979,  0.7211102550927979,
-                               1.16619037896906  ,  1.16619037896906  ,
-                               1.16619037896906  ,  1.16619037896906  ])
+    i1 = [5, 6, 8, 9]
+    i2 = nm.setdiff1d(nm.arange(len(gamma.faces)), i1)
+    aux = fvols[gamma.faces] - sgeo.volume.ravel()
 
-        _ok = nm.allclose(top_evols, evols[top.edges], rtol=0.0, atol=1e-15)
-        self.report('total top cell edge length: %s (ok: %s)'
-                    % (evols[top.edges].sum(), _ok))
-        ok = _ok and ok
+    _ok = nm.allclose(aux[i1], 0.10560208437556773, rtol=0.0, atol=1e-15)
+    ok = _ok and ok
+    st.report('non-planar faces diff: %s (ok: %s)' % (aux[i1], _ok))
 
-        i1 = [5, 6, 8, 9]
-        i2 = nm.setdiff1d(nm.arange(len(gamma.faces)), i1)
-        aux = fvols[gamma.faces] - sgeo.volume.ravel()
+    _ok = (nm.abs(aux[i2]) < 1e-15).all()
+    st.report('max. planar faces diff: %s (ok: %s)'
+              % (nm.abs(aux[i2]).max(), _ok))
+    ok = _ok and ok
 
-        _ok = nm.allclose(aux[i1], 0.10560208437556773, rtol=0.0, atol=1e-15)
-        ok = _ok and ok
-        self.report('non-planar faces diff: %s (ok: %s)' % (aux[i1], _ok))
-
-        _ok = (nm.abs(aux[i2]) < 1e-15).all()
-        self.report('max. planar faces diff: %s (ok: %s)'
-                    % (nm.abs(aux[i2]).max(), _ok))
-        ok = _ok and ok
-
-        return ok
+    return ok
