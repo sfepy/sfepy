@@ -3,7 +3,7 @@ import os
 import numpy as nm
 import pytest
 
-import sfepy.base.testing as st
+import sfepy.base.testing as tst
 from sfepy import data_dir
 
 # n_vertex, n_edge, n_face, n_cell
@@ -106,7 +106,7 @@ def test_cmesh_counts(filename_meshes):
         basename = os.path.basename(filename)
         enum, esizes = expected[basename]
 
-        st.report('mesh: %s' % basename)
+        tst.report('mesh: %s' % basename)
 
         mesh = Mesh.from_file(filename)
         cmesh = mesh.cmesh
@@ -114,13 +114,13 @@ def test_cmesh_counts(filename_meshes):
 
         cmesh.setup_entities()
 
-        st.report('dim:', cmesh.dim)
-        st.report('n_vertex: %d, n_edge: %d, n_face: %d, n_cell: %d' %
-                  tuple(cmesh.num))
+        tst.report('dim:', cmesh.dim)
+        tst.report('n_vertex: %d, n_edge: %d, n_face: %d, n_cell: %d' %
+                   tuple(cmesh.num))
 
         _ok = (enum == cmesh.num).all()
         if not _ok:
-            st.report('%s == %s failed!' % (enum, cmesh.num))
+            tst.report('%s == %s failed!' % (enum, cmesh.num))
         ok = ok and _ok
 
         dim = cmesh.dim
@@ -140,20 +140,20 @@ def test_cmesh_counts(filename_meshes):
 
                 conn = cmesh.get_conn(ir, ic)
 
-                st.report('(%d, %d) : (%d, %d)'
-                          % (ir, ic, conn.num, conn.n_incident))
+                tst.report('(%d, %d) : (%d, %d)'
+                           % (ir, ic, conn.num, conn.n_incident))
                 sizes = nm.array([conn.num, conn.n_incident])
 
                 _ok = (esizes[ir, ic] == sizes).all()
                 if not _ok:
-                    st.report('%s == %s failed!' % (esizes, sizes))
+                    tst.report('%s == %s failed!' % (esizes, sizes))
                 ok = ok and _ok
 
                 _ok1 = mem_usage3 == mem_usage1
                 _ok2 = mem_usage3 > mem_usage2
                 if not (_ok1 and _ok2):
-                    st.report('unexpected memory usage! (%s)'
-                              % ([mem_usage1, mem_usage2, mem_usage3],))
+                    tst.report('unexpected memory usage! (%s)'
+                               % ([mem_usage1, mem_usage2, mem_usage3],))
                 ok = ok and (_ok1 and _ok2)
 
     return ok
@@ -188,7 +188,7 @@ def test_entity_volumes():
 
     ok = True
     _ok = abs(cvols.sum() - vgeo.volume.sum()) < 1e-15
-    st.report('total cell volume: %s (ok: %s)' % (cvols.sum(), _ok))
+    tst.report('total cell volume: %s (ok: %s)' % (cvols.sum(), _ok))
     ok = _ok and ok
 
     top_evols = nm.array([ 1.                ,  1.                ,
@@ -199,8 +199,8 @@ def test_entity_volumes():
                            1.16619037896906  ,  1.16619037896906  ])
 
     _ok = nm.allclose(top_evols, evols[top.edges], rtol=0.0, atol=1e-15)
-    st.report('total top cell edge length: %s (ok: %s)'
-              % (evols[top.edges].sum(), _ok))
+    tst.report('total top cell edge length: %s (ok: %s)'
+               % (evols[top.edges].sum(), _ok))
     ok = _ok and ok
 
     i1 = [5, 6, 8, 9]
@@ -209,11 +209,11 @@ def test_entity_volumes():
 
     _ok = nm.allclose(aux[i1], 0.10560208437556773, rtol=0.0, atol=1e-15)
     ok = _ok and ok
-    st.report('non-planar faces diff: %s (ok: %s)' % (aux[i1], _ok))
+    tst.report('non-planar faces diff: %s (ok: %s)' % (aux[i1], _ok))
 
     _ok = (nm.abs(aux[i2]) < 1e-15).all()
-    st.report('max. planar faces diff: %s (ok: %s)'
-              % (nm.abs(aux[i2]).max(), _ok))
+    tst.report('max. planar faces diff: %s (ok: %s)'
+               % (nm.abs(aux[i2]).max(), _ok))
     ok = _ok and ok
 
     return ok

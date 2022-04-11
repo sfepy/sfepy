@@ -2,7 +2,7 @@ import numpy as nm
 import scipy.sparse as sps
 import pytest
 
-import sfepy.base.testing as st
+import sfepy.base.testing as tst
 
 @pytest.fixture(scope='module')
 def data():
@@ -33,9 +33,9 @@ def test_assemble_vector(data):
 
     aux = nm.array([1, 1, 3, 2, 2], dtype=nm.float64)
 
-    st.report('assembled: %s' % vec)
-    st.report('expected: %s' % aux)
-    ok = st.compare_vectors(vec, aux, label1='assembled', label2='expected')
+    tst.report('assembled: %s' % vec)
+    tst.report('expected: %s' % aux)
+    ok = tst.compare_vectors(vec, aux, label1='assembled', label2='expected')
     return ok
 
 def test_assemble_vector_complex(data):
@@ -49,9 +49,9 @@ def test_assemble_vector_complex(data):
     aux = nm.array([2-3j, 2-3j, 6-9j, 4-6j, 4-6j],
                    dtype=nm.complex128)
 
-    st.report('assembled: %s' % vec)
-    st.report('expected: %s' % aux)
-    ok = st.compare_vectors(vec, aux, label1='assembled', label2='expected')
+    tst.report('assembled: %s' % vec)
+    tst.report('expected: %s' % aux)
+    ok = tst.compare_vectors(vec, aux, label1='assembled', label2='expected')
     return ok
 
 def test_assemble_matrix(data):
@@ -70,9 +70,9 @@ def test_assemble_matrix(data):
                     [0, 0, 2, 2, 2],
                     [0, 0, 2, 2, 2]], dtype=nm.float64)
 
-    st.report('assembled:\n%s' % mtx.toarray())
-    st.report('expected:\n%s' % aux)
-    ok = st.compare_vectors(mtx, aux, label1='assembled', label2='expected')
+    tst.report('assembled:\n%s' % mtx.toarray())
+    tst.report('expected:\n%s' % aux)
+    ok = tst.compare_vectors(mtx, aux, label1='assembled', label2='expected')
     return ok
 
 def test_assemble_matrix_complex(data):
@@ -92,7 +92,7 @@ def test_assemble_matrix_complex(data):
                     [0+0j, 0+0j, 4-6j, 4-6j, 4-6j],
                     [0+0j, 0+0j, 4-6j, 4-6j, 4-6j]], dtype=nm.complex128)
 
-    st.report('assembled:\n%s' % mtx.toarray())
-    st.report('expected:\n%s' % aux)
-    ok = st.compare_vectors(mtx, aux, label1='assembled', label2='expected')
+    tst.report('assembled:\n%s' % mtx.toarray())
+    tst.report('expected:\n%s' % aux)
+    ok = tst.compare_vectors(mtx, aux, label1='assembled', label2='expected')
     return ok
