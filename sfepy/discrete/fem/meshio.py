@@ -477,8 +477,8 @@ class MeshioLibIO(MeshIO):
                 ndim = 3 - ndim
                 coors = nm.hstack([coors,
                                    nm.zeros((nnd, ndim), dtype=nm.float64)])
+            ngroups = nm.asarray(ngroups, dtype=nm.int64)
         else:
-
             ngkey = '%s:ref' % self.file_format
             cgkey = '%s:ref' % self.file_format
         point_data[ngkey] = ngroups
@@ -504,10 +504,12 @@ class MeshioLibIO(MeshIO):
             for k in cgrps:
                 idxs = nm.where(cell_groups[cidxs] == k)[0]
                 cell_sets[str(k)].append(cidxs[idxs])
-        cell_data[cgkey] = cgroups
 
-        if format and format in ['vtk', 'vtu']:
+        if self.file_format in ['vtk', 'vtk-ascii', 'vtk-binary', 'vtu']:
             point_sets, cell_sets = None, None
+            cgroups = [nm.asarray(k, dtype=nm.int64) for k in cgroups]
+
+        cell_data[cgkey] = cgroups
 
         return coors, cells, point_data, point_sets, cell_data, cell_sets
 
