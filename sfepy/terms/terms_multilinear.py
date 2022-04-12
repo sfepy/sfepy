@@ -1421,6 +1421,44 @@ class EDivTerm(ETermBase):
 
         return fun
 
+
+class EGradTerm(ETermBase):
+    r"""
+    Weighted gradient term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \nabla \ul{v} \mbox { , }
+        \int_{\Omega} c \nabla \ul{v}
+
+    :Arguments:
+        - material: :math:`c` (optional)
+        - virtual/parameter: :math:`\ul{v}`
+    """
+    name = 'de_grad'
+    arg_types = (('opt_material', 'virtual'),
+                 ('opt_material', 'parameter'),)
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('N', None),
+                   'parameter' : 'N'},
+                  {'opt_material' : None}]
+    modes = ('weak', 'eval')
+
+    def get_function(self, mat, virtual, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        if mat is None:
+            fun = self.make_function(
+                'i.j', virtual, diff_var=diff_var,
+            )
+
+        else:
+            fun = self.make_function(
+                '00,i.j', mat, virtual, diff_var=diff_var,
+            )
+
+        return fun
+
+
 class EStokesTerm(ETermBase):
     r"""
     Stokes problem coupling term. Corresponds to weak forms of gradient and
