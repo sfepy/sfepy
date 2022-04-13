@@ -336,6 +336,8 @@ class GradTerm(Term):
 
     .. math::
         \int_{\cal{D}} \nabla p \mbox{ or } \int_{\cal{D}} \nabla \ul{w}
+        \mbox{ , }
+        \int_{\cal{D}} c \nabla p \mbox{ or } \int_{\cal{D}} c \nabla \ul{w}
 
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
@@ -349,23 +351,25 @@ class GradTerm(Term):
         - parameter : :math:`p` or :math:`\ul{w}`
     """
     name = 'ev_grad'
-    arg_types = ('parameter',)
-    arg_shapes = {'parameter' : 'N'}
+    arg_types = ('opt_material', 'parameter')
+    arg_shapes = [{'opt_material': '1, 1', 'parameter': 'N'},
+                  {'opt_material': None}]
     integration = 'by_region'
     surface_integration = 'surface_extra'
 
     @staticmethod
-    def function(out, grad, vg, fmode):
+    def function(out, mat, grad, vg, fmode):
         if fmode == 2:
-            out[:] = grad
+            out[:] = grad if mat is None else mat * grad
             status = 0
 
         else:
-            status = vg.integrate(out, grad, fmode)
+            status = vg.integrate(out, grad, fmode) if mat is None else\
+                     vg.integrate(out, mat * grad, fmode)
 
         return status
 
-    def get_fargs(self, parameter,
+    def get_fargs(self, mat, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
 
@@ -373,9 +377,9 @@ class GradTerm(Term):
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
-        return grad, vg, fmode
+        return mat, grad, vg, fmode
 
-    def get_eval_shape(self, parameter,
+    def get_eval_shape(self, mat, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
@@ -393,7 +397,8 @@ class DivTerm(Term):
     :Definition:
 
     .. math::
-         \int_{\cal{D}} \nabla \cdot \ul{u}
+         \int_{\cal{D}} \nabla \cdot \ul{u} \mbox { , }
+         \int_{\cal{D}} c \nabla \cdot \ul{u}
 
     .. math::
          \mbox{vector for } K \from \Ical_h:
@@ -406,23 +411,25 @@ class DivTerm(Term):
         - parameter : :math:`\ul{u}`
     """
     name = 'ev_div'
-    arg_types = ('parameter',)
-    arg_shapes = {'parameter' : 'D'}
+    arg_types = ('opt_material', 'parameter')
+    arg_shapes = [{'opt_material': '1, 1', 'parameter': 'D'},
+                  {'opt_material': None}]
     integration = 'by_region'
     surface_integration = 'surface_extra'
 
     @staticmethod
-    def function(out, div, vg, fmode):
+    def function(out, mat, div, vg, fmode):
         if fmode == 2:
-            out[:] = div
+            out[:] = div if mat is None else mat * div
             status = 0
 
         else:
-            status = vg.integrate(out, div, fmode)
+            status = vg.integrate(out, div, fmode) if mat is None else\
+                     vg.integrate(out, mat * div, fmode)
 
         return status
 
-    def get_fargs(self, parameter,
+    def get_fargs(self, mat, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
 
@@ -430,9 +437,9 @@ class DivTerm(Term):
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
-        return div, vg, fmode
+        return mat, div, vg, fmode
 
-    def get_eval_shape(self, parameter,
+    def get_eval_shape(self, mat, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
