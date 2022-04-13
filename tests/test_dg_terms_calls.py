@@ -2,15 +2,12 @@
 """
 Test all terms in terms_dg. Performs numerical test on simple mesh.
 """
-import functools
-import inspect
-
 import numpy as nm
 import numpy.testing as nmts
 import scipy.sparse as sp
+import pytest
 
 from sfepy.base.base import Struct
-from sfepy.base.testing import TestCommon
 from sfepy.discrete import DGFieldVariable, Material, Integral
 from sfepy.discrete import Variables
 from sfepy.discrete.common.dof_info import EquationMap
@@ -19,38 +16,6 @@ from sfepy.terms.terms_dg import AdvectionDGFluxTerm, \
     DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
 from test_dg_field import prepare_dgfield_1D, prepare_field_2D
 
-
-class Test(TestCommon):
-
-    def capture_assertion_decorator(self, method):
-
-        @functools.wraps(method)
-        def captured_assertion_method(_):
-            try:
-                method()
-            except AssertionError:
-                return False
-            return True
-
-        return captured_assertion_method.__get__(self, self.__class__)
-
-    @staticmethod
-    def from_conf(conf, options):
-        """
-        Filters out terms test classes and gathers their test methods in
-        resulting object.
-        """
-        term_test_classes = [(key, var) for key, var in dict(globals()).items()
-                   if (key.startswith("Test") and key.endswith("Term"))]
-
-        all_test = Test()
-        for cname, term_test_cls in term_test_classes:
-            term_test = term_test_cls()
-            methods = inspect.getmembers(term_test, inspect.ismethod)
-            all_test.update({"{}_{}".format(mname, cname[4:]):
-                             all_test.capture_assertion_decorator(meth)
-                         for mname, meth in methods})
-        return all_test
 
 class DGTermTestEnvornment:
     """
@@ -155,13 +120,17 @@ class DGTermTestEnvornment:
         return a, D, Cw
 
 
+@pytest.fixture(scope='module', params=[{'dim': 1, 'approx_order': 3}])
+def dg_test_env(request):
+    return DGTermTestEnvornment(**request.param)
+
 class TestAdvectDGFluxTerm:
 
-    def test_function_explicit_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_explicit_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = AdvectionDGFluxTerm("adv_stiff(a.val, u, v)",
-                                "a.val, u[-1], v",
+                                   "a.val, u[-1], v",
                                    te.integral, te.regions["omega"],
                                    u=te.u, v=te.v, a=te.a)
 
@@ -181,11 +150,11 @@ class TestAdvectDGFluxTerm:
 
         return True
 
-    def test_function_implicit_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_implicit_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = AdvectionDGFluxTerm("adv_stiff(a.val, u, v)",
-                                "a.val, u, v",
+                                   "a.val, u, v",
                                    te.integral, te.regions["omega"],
                                    u=te.u, v=te.v, a=te.a)
 
@@ -213,11 +182,11 @@ class TestAdvectDGFluxTerm:
 
 class TestNonlinearHyperDGFluxTerm:
 
-    def test_function_explicit_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_explicit_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = NonlinearHyperbolicDGFluxTerm("adv_stiff(f, df u, v)",
-                                        "nonlin.f, nonlin.df, u[-1], v",
+                                             "nonlin.f, nonlin.df, u[-1], v",
                                              te.integral, te.regions["omega"],
                                              u=te.u, v=te.v, nonlin=te.nonlin)
 
@@ -240,8 +209,8 @@ class TestNonlinearHyperDGFluxTerm:
 
 class TestDiffusionDGFluxTerm:
 
-    def test_function_explicit_right_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_explicit_right_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)",
                                    "D.val, v,  u[-1]",
@@ -264,8 +233,8 @@ class TestDiffusionDGFluxTerm:
         return True
 
 
-    def test_function_explicit_left_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_explicit_left_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, u, v)",
                                    "D.val,  u[-1], v",
@@ -288,8 +257,8 @@ class TestDiffusionDGFluxTerm:
         return True
 
 
-    def test_function_implicit_right_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_implicit_right_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)",
                                    "D.val, v,  u",
@@ -316,8 +285,8 @@ class TestDiffusionDGFluxTerm:
         return True
 
 
-    def test_function_implicit_left_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_implicit_left_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, u, v)",
                                    "D.val,  u[-1], v",
@@ -347,8 +316,8 @@ class TestDiffusionDGFluxTerm:
 
 class TestDiffusionInteriorPenaltyTerm:
 
-    def test_function_explicit_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_explicit_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = DiffusionInteriorPenaltyTerm("adv_stiff(Cw.val, u, v)",
                                             "Cw.val, u[-1], v",
@@ -373,8 +342,8 @@ class TestDiffusionInteriorPenaltyTerm:
         return True
 
 
-    def test_function_implicit_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_implicit_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = DiffusionInteriorPenaltyTerm("adv_stiff(D.val, a.val, u, v)",
                                             "Cw.val, u, v",
@@ -407,11 +376,11 @@ class TestDiffusionInteriorPenaltyTerm:
 
 class TestNonlinScalarDotGradTerm:
 
-    def test_function_explicit_1D(self):
-        te = DGTermTestEnvornment(dim=1, approx_order=3)
+    def test_function_explicit_1D(self, dg_test_env):
+        te = dg_test_env
 
         term = NonlinearScalarDotGradTerm("adv_stiff(f, df u, v)",
-                                       "nonlin.f, nonlin.df, u[-1], v",
+                                          "nonlin.f, nonlin.df, u[-1], v",
                                           te.integral, te.regions["omega"],
                                           u=te.u, v=te.v, nonlin=te.nonlin)
         term.setup()
@@ -433,8 +402,3 @@ class TestNonlinScalarDotGradTerm:
         nmts.assert_almost_equal(out, expected)
 
         return True
-
-
-if __name__ == '__main__':
-    t = Test()
-    t.test_dg_term_calls()
