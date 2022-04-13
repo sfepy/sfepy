@@ -1,19 +1,10 @@
-import functools
-import inspect
-
 import numpy as nm
 import numpy.testing as nmts
 
 from sfepy.base.base import Struct
-from sfepy.base.testing import TestCommon
-from sfepy.discrete import (FieldVariable, Material, Integral, Function,
-                            Equation, Equations, Problem)
-from sfepy.discrete.fem import Mesh, FEDomain
+from sfepy.discrete.fem import FEDomain
 from sfepy.mesh.mesh_generators import gen_block_mesh
-
 from sfepy.discrete.dg.poly_spaces import get_n_el_nod
-
-
 from sfepy.discrete.dg.fields import DGField
 
 
@@ -56,39 +47,6 @@ def prepare_dgfield(approx_order, mesh):
 def prepare_dgfield_1D(approx_order):
     mesh = gen_block_mesh((1,), (4,), (.5,))
     return prepare_dgfield(approx_order, mesh), mesh
-
-
-class Test(TestCommon):
-
-    def capture_assertion_decorator(self, method):
-
-        @functools.wraps(method)
-        def captured_assertion_method(_):
-            try:
-                method()
-            except AssertionError:
-                return False
-            return True
-
-        return captured_assertion_method.__get__(self, self.__class__)
-
-    @staticmethod
-    def from_conf(conf, options):
-        """
-        Filters out terms test classes and gathers their test methods in
-        resulting object.
-        """
-        term_test_classes = [(key, var) for key, var in dict(globals()).items()
-                   if (key.startswith("Test") and key.endswith("Field"))]
-
-        all_test = Test()
-        for cname, term_test_cls in term_test_classes:
-            term_test = term_test_cls()
-            methods = inspect.getmembers(term_test, inspect.ismethod)
-            all_test.update({"{}_{}".format(mname, cname[4:]):
-                             all_test.capture_assertion_decorator(meth)
-                         for mname, meth in methods})
-        return all_test
 
 
 def prepare_field_2D(approx_order):
