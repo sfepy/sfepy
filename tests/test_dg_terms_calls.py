@@ -148,8 +148,6 @@ class TestAdvectDGFluxTerm:
 
         nmts.assert_almost_equal(out, result)
 
-        return True
-
     def test_function_implicit_1D(self, dg_test_env):
         te = dg_test_env
 
@@ -176,9 +174,6 @@ class TestAdvectDGFluxTerm:
 
         assert expected.shape == out.shape
 
-        return True
-
-
 
 class TestNonlinearHyperDGFluxTerm:
 
@@ -202,9 +197,6 @@ class TestNonlinearHyperDGFluxTerm:
                                )
 
         nmts.assert_almost_equal(out, result)
-
-        return True
-
 
 
 class TestDiffusionDGFluxTerm:
@@ -230,8 +222,6 @@ class TestDiffusionDGFluxTerm:
 
         nmts.assert_almost_equal(out, result)
 
-        return True
-
 
     def test_function_explicit_left_1D(self, dg_test_env):
         te = dg_test_env
@@ -253,8 +243,6 @@ class TestDiffusionDGFluxTerm:
                                )
 
         nmts.assert_almost_equal(out, result)
-
-        return True
 
 
     def test_function_implicit_right_1D(self, dg_test_env):
@@ -282,8 +270,6 @@ class TestDiffusionDGFluxTerm:
 
         assert expected.shape == out.shape
 
-        return True
-
 
     def test_function_implicit_left_1D(self, dg_test_env):
         te = dg_test_env
@@ -310,9 +296,6 @@ class TestDiffusionDGFluxTerm:
 
         assert expected.shape == out.shape
 
-        return True
-
-
 
 class TestDiffusionInteriorPenaltyTerm:
 
@@ -338,8 +321,6 @@ class TestDiffusionInteriorPenaltyTerm:
                                )
 
         nmts.assert_almost_equal(out, result)
-
-        return True
 
 
     def test_function_implicit_1D(self, dg_test_env):
@@ -370,9 +351,6 @@ class TestDiffusionInteriorPenaltyTerm:
                             shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
         assert expected.shape == out.shape
 
-        return True
-
-
 
 class TestNonlinScalarDotGradTerm:
 
@@ -400,5 +378,3 @@ class TestNonlinScalarDotGradTerm:
         out = term.function(*fargs)
 
         nmts.assert_almost_equal(out, expected)
-
-        return True
