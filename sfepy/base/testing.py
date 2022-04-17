@@ -1,9 +1,10 @@
+import os.path as op
 import inspect
 
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import Struct, output, assert_
+from sfepy.base.base import Struct, assert_, IndexedStruct
 
 def report(*argc):
     """All tests should print via this function."""
@@ -97,3 +98,43 @@ def assert_equal(a, b, msg='assertion of equality failed!'):
 
         assert_dict(ad, bd)
 
+class NLSStatus(IndexedStruct):
+    """
+    Custom nonlinear solver status storing stopping condition of all
+    time steps.
+    """
+    def __setitem__(self, key, val):
+        IndexedStruct.__setitem__(self, key, val)
+        if key == 'condition':
+            self.conditions.append(val)
+
+def check_conditions(conditions):
+    ok = (conditions == 0).all()
+    if not ok:
+        report('nls stopping conditions:')
+        report(conditions)
+    return ok
+
+def run_declaratice_example(ex_filename, output_dir, ext='.vtk'):
+    import sfepy
+    from sfepy.applications import solve_pde
+
+    report('solving %s...' % ex_filename)
+
+    output_name = op.splitext(ex_filename.replace('/', '-'))[0]
+    filename = op.join(sfepy.data_dir, ex_filename)
+    name = op.splitext(op.split(output_name)[1])[0]
+    fmt = ext.replace('.', '')
+    options = Struct(output_filename_trunk=name,
+                     output_format=fmt if fmt != '' else 'vtk',
+                     save_ebc=False, save_ebc_nodes=False,
+                     save_regions=False,
+                     save_regions_as_groups=False,
+                     save_field_meshes=False,
+                     solve_not=False)
+    status = IndexedStruct(nls_status=NLSStatus(conditions=[]))
+
+    solve_pde(filename, options=options, status=status, output_dir=output_dir)
+    report('%s solved' % ex_filename)
+
+    return nm.array(status.nls_status.conditions)
