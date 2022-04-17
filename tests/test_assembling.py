@@ -36,7 +36,7 @@ def test_assemble_vector(data):
     tst.report('assembled: %s' % vec)
     tst.report('expected: %s' % aux)
     ok = tst.compare_vectors(vec, aux, label1='assembled', label2='expected')
-    return ok
+    assert ok
 
 def test_assemble_vector_complex(data):
     from sfepy.discrete.common.extmods.assemble import assemble_vector_complex
@@ -52,7 +52,7 @@ def test_assemble_vector_complex(data):
     tst.report('assembled: %s' % vec)
     tst.report('expected: %s' % aux)
     ok = tst.compare_vectors(vec, aux, label1='assembled', label2='expected')
-    return ok
+    assert ok
 
 def test_assemble_matrix(data):
     from sfepy.discrete.common.extmods.assemble import assemble_matrix
@@ -73,7 +73,7 @@ def test_assemble_matrix(data):
     tst.report('assembled:\n%s' % mtx.toarray())
     tst.report('expected:\n%s' % aux)
     ok = tst.compare_vectors(mtx, aux, label1='assembled', label2='expected')
-    return ok
+    assert ok
 
 def test_assemble_matrix_complex(data):
     from sfepy.discrete.common.extmods.assemble import assemble_matrix_complex
@@ -95,4 +95,4 @@ def test_assemble_matrix_complex(data):
     tst.report('assembled:\n%s' % mtx.toarray())
     tst.report('expected:\n%s' % aux)
     ok = tst.compare_vectors(mtx, aux, label1='assembled', label2='expected')
-    return ok
+    assert ok

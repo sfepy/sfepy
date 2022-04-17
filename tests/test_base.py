@@ -27,8 +27,6 @@ def test_struct_add():
     assert_(a.f3.ff == a0.f3.ff)
     assert_(a.f4 == a0.f4)
 
-    return True
-
 def test_struct_i_add():
     from sfepy.base.base import Struct
 
@@ -46,8 +44,6 @@ def test_struct_i_add():
     assert_(a.f3.ff == 'abc')
     assert_(a.f3.gg == 123)
     assert_(a.f4 == 'new one')
-
-    return True
 
 def test_container_add():
     from sfepy.base.base import Struct, Container
@@ -68,8 +64,6 @@ def test_container_add():
 
     c2 += c2
     assert_(c2.names == 4 * ['a', 'b'])
-
-    return True
 
 def test_verbose_output():
     from io import StringIO
@@ -93,7 +87,7 @@ def test_verbose_output():
 
     ok = _ok1 and _ok2
 
-    return ok
+    assert_(ok)
 
 def test_resolve_deps():
     from sfepy.base.resolve_deps import resolve
@@ -118,7 +112,7 @@ def test_resolve_deps():
     order = resolve(deps)
     ok2 = order == [['a', 'b', 'c']]
 
-    return ok1 and ok2
+    assert_(ok1 and ok2)
 
 def test_parse_conf():
     from sfepy.base.parse_conf import list_dict
@@ -149,5 +143,3 @@ def test_parse_conf():
     assert_(parse('[[[]]]')==([[[[]]]],{}))
     assert_(parse('a,{},[],None,True,False,"False"') ==
                      (['a',{},[],None,True,False,"False"],{}))
-
-    return True

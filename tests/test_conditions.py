@@ -108,7 +108,7 @@ def test_ics(data):
 
         ok = check_vec(vec, ii, ok, ics, variables)
 
-    return ok
+    assert ok
 
 def test_ebcs(data):
     from sfepy.discrete.conditions import Conditions, EssentialBC
@@ -142,7 +142,7 @@ def test_ebcs(data):
 
         ok = check_vec(vec, ii, ok, ebcs, variables)
 
-    return ok
+    assert ok
 
 def test_epbcs(data):
     from sfepy.discrete import Function, Functions
@@ -202,7 +202,7 @@ def test_epbcs(data):
                    % (vec[off + eq0], vec[off + eq0]))
     ok = ok and _ok
 
-    return ok
+    assert ok
 
 def test_save_ebc(data, output_dir):
     from sfepy.discrete import (FieldVariable, Integral,
@@ -249,4 +249,4 @@ def test_save_ebc(data, output_dir):
     pb.save_ebc(name + '_ebcs_f.vtk', ebcs=ebcs, force=True)
     pb.save_ebc(name + '_ebcs.vtk', ebcs=ebcs, default=-1, force=False)
 
-    return True
+    assert True

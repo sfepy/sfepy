@@ -156,7 +156,7 @@ def test_cmesh_counts(filename_meshes):
                                % ([mem_usage1, mem_usage2, mem_usage3],))
                 ok = ok and (_ok1 and _ok2)
 
-    return ok
+    assert ok
 
 def test_entity_volumes():
     import sfepy
@@ -216,4 +216,4 @@ def test_entity_volumes():
                % (nm.abs(aux[i2]).max(), _ok))
     ok = _ok and ok
 
-    return ok
+    assert ok
