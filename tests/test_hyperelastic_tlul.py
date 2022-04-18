@@ -1,76 +1,57 @@
-from __future__ import absolute_import
-import six
-input_names = {'TL': '../examples/large_deformation/hyperelastic.py',
-               'UL': '../examples/large_deformation/hyperelastic_ul.py',
-               'ULM': '../examples/large_deformation/hyperelastic_ul_up.py'}
+import sfepy.base.testing as tst
+
+input_names = {'TL': 'examples/large_deformation/hyperelastic.py',
+               'UL': 'examples/large_deformation/hyperelastic_ul.py',
+               'ULM': 'examples/large_deformation/hyperelastic_ul_up.py'}
 output_name_trunk = 'test_hyperelastic_'
 
-from sfepy.base.testing import TestCommon
-from tests_basic import NLSStatus
+def test_solution(output_dir):
+    import sfepy
+    from sfepy.base.base import IndexedStruct, Struct
+    from sfepy.applications import solve_pde
+    import numpy as nm
+    import os.path as op
 
-class Test(TestCommon):
+    solutions = {}
+    ok = True
 
-    @staticmethod
-    def from_conf(conf, options):
-        return Test(conf = conf, options = options)
+    for hp, pb_filename in input_names.items():
 
-    def test_solution(self):
+        input_name = op.join(sfepy.data_dir, pb_filename)
 
-        from sfepy.base.base import Struct
-        from sfepy.base.conf import ProblemConf, get_standard_keywords
-        from sfepy.applications import solve_pde, assign_standard_hooks
-        import numpy as nm
-        import os.path as op
+        name = output_name_trunk + hp
+        solver_options = Struct(output_filename_trunk=name,
+                                output_format='vtk',
+                                save_ebc=False, save_ebc_nodes=False,
+                                save_regions=False,
+                                save_regions_as_groups=False,
+                                save_field_meshes=False,
+                                solve_not=False)
 
-        solutions = {}
-        ok = True
+        tst.report('hyperelastic formulation: %s' % hp)
 
-        for hp, pb_filename in six.iteritems(input_names):
+        status = IndexedStruct(nls_status=tst.NLSStatus(conditions=[]))
 
-            required, other = get_standard_keywords()
-            input_name = op.join(op.dirname(__file__), pb_filename)
-            test_conf = ProblemConf.from_file(input_name, required, other)
+        pb, state = solve_pde(input_name, solver_options, status=status,
+                              output_dir=output_dir)
+        converged = status.nls_status.condition == 0
+        ok = ok and converged
 
-            name = output_name_trunk + hp
-            solver_options = Struct(output_filename_trunk=name,
-                                    output_format='vtk',
-                                    save_ebc=False, save_ebc_nodes=False,
-                                    save_regions=False,
-                                    save_regions_as_groups=False,
-                                    save_field_meshes=False,
-                                    solve_not=False)
-            assign_standard_hooks(self, test_conf.options.get, test_conf)
+        solutions[hp] = state.get_state_parts()['u']
+        tst.report('%s solved' % input_name)
 
-            self.report( 'hyperelastic formulation: %s' % (hp, ) )
+    rerr = 1.0e-3
+    aerr = nm.linalg.norm(solutions['TL'], ord=None) * rerr
 
-            status = NLSStatus(conditions=[])
+    tst.report('allowed error: rel = %e, abs = %e' % (rerr, aerr))
+    ok = ok and tst.compare_vectors(solutions['TL'], solutions['UL'],
+                                    label1='TLF',
+                                    label2='ULF',
+                                    allowed_error=rerr)
 
-            pb, state = solve_pde(test_conf,
-                                  solver_options,
-                                  status=status,
-                                  output_dir=self.options.out_dir,
-                                  step_hook=self.step_hook,
-                                  post_process_hook=self.post_process_hook,
-                                  post_process_hook_final=self.post_process_hook_final)
+    ok = ok and tst.compare_vectors(solutions['UL'], solutions['ULM'],
+                                    label1='ULF',
+                                    label2='ULF_mixed',
+                                    allowed_error=rerr)
 
-            converged = status.nls_status.condition == 0
-            ok = ok and converged
-
-            solutions[hp] = state.get_state_parts()['u']
-            self.report('%s solved' % input_name)
-
-        rerr = 1.0e-3
-        aerr = nm.linalg.norm(solutions['TL'], ord=None) * rerr
-
-        self.report('allowed error: rel = %e, abs = %e' % (rerr, aerr))
-        ok = ok and self.compare_vectors(solutions['TL'], solutions['UL'],
-                                         label1='TLF',
-                                         label2='ULF',
-                                         allowed_error=rerr)
-
-        ok = ok and self.compare_vectors(solutions['UL'], solutions['ULM'],
-                                         label1='ULF',
-                                         label2='ULF_mixed',
-                                         allowed_error=rerr)
-
-        return ok
+    assert ok
