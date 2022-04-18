@@ -1,8 +1,8 @@
-# 10.07.2007, c
-# last revision: 25.03.2008
-from __future__ import absolute_import
+import pytest
+
 from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_lame
+import sfepy.base.testing as tst
 
 filename_meshes = ['/meshes/3d/cube_medium_tetra.mesh',
                    '/meshes/3d/cube_medium_tetra.mesh',
@@ -120,88 +120,81 @@ solver_1 = {
     'eps_a'      : 1e-10,
 }
 
-from sfepy.base.testing import TestCommon
+@pytest.fixture(scope='module')
+def solutions(output_dir):
+    import sys
+    from sfepy.applications import solve_pde
+    from sfepy.base.base import IndexedStruct, Struct
+    from sfepy.base.conf import ProblemConf
+    import os.path as op
 
-##
-# 10.07.2007, c
-class Test( TestCommon ):
-    tests = ['test_get_solution', 'test_linear_terms']
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
 
-    ##
-    # 10.07.2007, c
-    def from_conf( conf, options ):
-        return Test( conf = conf, options = options )
-    from_conf = staticmethod( from_conf )
+    solutions = []
+    for ii, approx_order in enumerate(all_your_bases):
+        sols = Struct()
 
-    ##
-    # c: 25.03.2008, r: 25.03.2008
-    def test_linear_terms( self ):
-        ok = True
-        for sols in self.solutions:
-            ok = ok and self.compare_vectors(sols[0], sols[1],
-                                             label1 = 'getpars',
-                                             label2 = 'matcoefs')
-            ok = ok and self.compare_vectors(sols[0], sols[2],
-                                             label1 = 'getpars',
-                                             label2 = 'iso')
-        return ok
+        fname = filename_meshes[ii]
 
-    ##
-    # c: 10.07.2007, r: 25.03.2008
-    def test_get_solution( self ):
-        from sfepy.applications import solve_pde
-        from sfepy.base.base import IndexedStruct
-        import os.path as op
+        conf.filename_mesh = fname
+        fields = {'field_1' : {
+                      'name' : '3_displacement',
+                      'dtype' : 'real',
+                      'shape' : (3,),
+                      'region' : 'Omega',
+                      'approx_order' : approx_order,
+                }
+        }
+        conf.edit('fields', fields)
+        tst.report('mesh: %s, base: %s' % (fname, approx_order))
+        status = IndexedStruct()
 
-        ok = True
-        self.solutions = []
-        for ii, approx_order in enumerate(all_your_bases):
-            fname = filename_meshes[ii]
+        tst.report('getpars')
+        conf.equations = conf.equations_getpars
+        problem, state1 = solve_pde(conf, status=status,
+                                    save_results=False)
+        converged = status.nls_status.condition == 0
+        sols.getpars = (converged, state1().copy())
+        tst.report('converged: %s' % converged)
 
-            self.conf.filename_mesh = fname
-            fields = {'field_1' : {
-                          'name' : '3_displacement',
-                          'dtype' : 'real',
-                          'shape' : (3,),
-                          'region' : 'Omega',
-                          'approx_order' : approx_order,
-                    }
-            }
-            self.conf.edit('fields', fields)
-            self.report('mesh: %s, base: %s' % (fname, approx_order))
-            status = IndexedStruct()
+        tst.report('matcoefs')
+        conf.equations = conf.equations_matcoefs
+        problem, state2 = solve_pde(conf, status=status,
+                                    save_results=False)
+        converged = status.nls_status.condition == 0
+        sols.matcoefs = (converged, state2().copy())
+        tst.report('converged: %s' % converged)
 
-            self.report('getpars')
-            self.conf.equations = self.conf.equations_getpars
-            problem, state1 = solve_pde(self.conf, status=status,
-                                        save_results=False)
-            converged = status.nls_status.condition == 0
-            ok = ok and converged
-            self.report('converged: %s' % converged)
+        tst.report('iso')
+        conf.equations = conf.equations_iso
+        problem, state3 = solve_pde(conf, status=status,
+                                    save_results=False)
+        converged = status.nls_status.condition == 0
+        sols.iso = (converged, state3().copy())
+        tst.report('converged: %s' % converged)
 
-            self.report('matcoefs')
-            self.conf.equations = self.conf.equations_matcoefs
-            problem, state2 = solve_pde(self.conf, status=status,
-                                        save_results=False)
-            converged = status.nls_status.condition == 0
-            ok = ok and converged
-            self.report('converged: %s' % converged)
+        solutions.append(sols)
 
-            self.report('iso')
-            self.conf.equations = self.conf.equations_iso
-            problem, state3 = solve_pde(self.conf, status=status,
-                                        save_results=False)
-            converged = status.nls_status.condition == 0
-            ok = ok and converged
-            self.report('converged: %s' % converged)
+        name = op.join(output_dir,
+                       '_'.join(('test_elasticity_small_strain',
+                                 op.splitext(op.basename(fname))[0],
+                                 '%d' % approx_order))
+                       + '.vtk')
+        problem.save_state(name, state1)
 
-            self.solutions.append((state1(), state2(), state3()))
+    return solutions
 
-            name = op.join(self.options.out_dir,
-                           '_'.join(('test_elasticity_small_strain',
-                                     op.splitext(op.basename(fname))[0],
-                                     '%d' % approx_order))
-                           + '.vtk')
-            problem.save_state(name, state1)
+def test_converged(solutions):
+    for sols in solutions:
+        assert sols.getpars[0]
+        assert sols.matcoefs[0]
+        assert sols.iso[0]
 
-        return ok
+def test_linear_terms(solutions):
+    for sols in solutions:
+        assert tst.compare_vectors(sols.getpars[1], sols.matcoefs[1],
+                                   label1='getpars',
+                                   label2='matcoefs')
+        assert tst.compare_vectors(sols.getpars[1], sols.iso[1],
+                                   label1='getpars',
+                                   label2='iso')
