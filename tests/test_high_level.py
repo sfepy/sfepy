@@ -1,205 +1,193 @@
-from __future__ import absolute_import
-import time
 import os.path as op
 import numpy as nm
+import pytest
 
-from sfepy.base.testing import TestCommon
+import sfepy.base.testing as tst
 
 def fix_u_fun(ts, coors, bc=None, problem=None, extra_arg=None):
     return nm.zeros_like(coors)
 
-class Test(TestCommon):
+@pytest.fixture(scope='module')
+def data():
+    import sfepy
+    from sfepy.base.base import Struct
+    from sfepy.discrete.fem import Mesh, FEDomain, Field
+    mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh',
+                          prefix_dir=sfepy.data_dir)
+    domain = FEDomain('domain', mesh)
+    dim = domain.shape.dim
 
-    @staticmethod
-    def from_conf(conf, options):
-        import sfepy
-        from sfepy.discrete.fem import Mesh, FEDomain, Field
-        mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh',
-                              prefix_dir=sfepy.data_dir)
-        domain = FEDomain('domain', mesh)
-        dim = domain.shape.dim
+    min_x, max_x = domain.get_mesh_bounding_box()[:,0]
+    eps = 1e-8 * (max_x - min_x)
 
-        min_x, max_x = domain.get_mesh_bounding_box()[:,0]
-        eps = 1e-8 * (max_x - min_x)
+    omega = domain.create_region('Omega', 'all')
+    gamma1 = domain.create_region('Gamma1',
+                                  'vertices in x < %.10f' % (min_x + eps),
+                                  'facet')
+    gamma2 = domain.create_region('Gamma2',
+                                  'vertices in x > %.10f' % (max_x - eps),
+                                  'facet')
 
-        omega = domain.create_region('Omega', 'all')
-        gamma1 = domain.create_region('Gamma1',
-                                      'vertices in x < %.10f' % (min_x + eps),
-                                      'facet')
-        gamma2 = domain.create_region('Gamma2',
-                                      'vertices in x > %.10f' % (max_x - eps),
-                                      'facet')
+    field = Field.from_args('fu', nm.float64, 'vector', omega,
+                            approx_order=2)
 
-        field = Field.from_args('fu', nm.float64, 'vector', omega,
-                                approx_order=2)
+    return Struct(dim=dim, omega=omega, gamma1=gamma1, gamma2=gamma2,
+                  field=field)
 
-        test = Test(conf=conf, options=options, dim=dim,
-                    omega=omega, gamma1=gamma1, gamma2=gamma2,
-                    field=field)
-        return test
+def test_term_evaluation(data):
+    from sfepy.discrete import Integral, FieldVariable
+    from sfepy.terms.terms import Term
 
-    def test_term_evaluation(self):
-        from sfepy.discrete import Integral, FieldVariable
-        from sfepy.terms.terms import Term
+    integral = Integral('i', order=3)
 
-        integral = Integral('i', order=3)
+    u = FieldVariable('u', 'parameter', data.field,
+                      primary_var_name='(set-to-None)')
 
-        u = FieldVariable('u', 'parameter', self.field,
-                          primary_var_name='(set-to-None)')
+    term = Term.new('ev_volume(u)', integral, data.omega, u=u)
+    term *= 10.0
 
-        term = Term.new('ev_volume(u)', integral, self.omega, u=u)
-        term *= 10.0
+    term.setup()
 
-        term.setup()
+    vol = term.evaluate()
 
-        vol = term.evaluate()
+    tst.report('volume: %.8f == 2000.0' % vol)
+    assert nm.allclose(vol, 2000.0, rtol=1e-15, atol=0)
 
-        self.report('volume: %.8f == 2000.0' % vol)
-        ok = nm.allclose(vol, 2000.0, rtol=1e-15, atol=0)
+def test_term_arithmetics(data):
+    from sfepy.discrete import FieldVariable, Integral
+    from sfepy.terms.terms import Term
 
-        ## vec = t1.evaluate() # Returns vector.
-        ## vec = t1.evaluate(u=u_vec) # Returns the same vector.
-        ## mtx = t1.evaluate(diff_var='u') # Returns matrix.
-        ## val = t1.evaluate(v=u_vec, u=u_vec) # Forbidden - virtual variable
-        ##                                     # cannot have value.
+    integral = Integral('i', order=3)
 
-        return ok
+    u = FieldVariable('u', 'parameter', data.field,
+                      primary_var_name='(set-to-None)')
 
-    def test_term_arithmetics(self):
-        from sfepy.discrete import FieldVariable, Integral
-        from sfepy.terms.terms import Term
+    t1 = Term.new('ev_volume(u)', integral, data.omega, u=u)
+    t2 = Term.new('ev_volume(u)', integral, data.gamma1, u=u)
 
-        integral = Integral('i', order=3)
+    expr = 2.2j * (t1 * 5.5 - 3j * t2) * 0.25
 
-        u = FieldVariable('u', 'parameter', self.field,
-                          primary_var_name='(set-to-None)')
+    ok = len(expr) == 2
+    if not ok:
+        tst.report('wrong expression length!')
 
-        t1 = Term.new('ev_volume(u)', integral, self.omega, u=u)
-        t2 = Term.new('ev_volume(u)', integral, self.gamma1, u=u)
+    _ok = nm.allclose(expr[0].sign, 3.025j, rtol=1e-15, atol=0)
+    if not _ok:
+        tst.report('wrong sign of the first term!')
+    ok = ok and _ok
 
-        expr = 2.2j * (t1 * 5.5 - 3j * t2) * 0.25
+    _ok = nm.allclose(expr[1].sign, 1.65, rtol=1e-15, atol=0)
+    if not _ok:
+        tst.report('wrong sign of the second term!')
+    ok = ok and _ok
 
-        ok = len(expr) == 2
-        if not ok:
-            self.report('wrong expression length!')
+    assert ok
 
-        _ok = nm.allclose(expr[0].sign, 3.025j, rtol=1e-15, atol=0)
-        if not _ok:
-            self.report('wrong sign of the first term!')
-        ok = ok and _ok
+def test_variables(data):
+    from sfepy.discrete import FieldVariable, Integral
 
-        _ok = nm.allclose(expr[1].sign, 1.65, rtol=1e-15, atol=0)
-        if not _ok:
-            self.report('wrong sign of the second term!')
-        ok = ok and _ok
+    ok = True
 
-        return ok
+    u = FieldVariable('u', 'parameter', data.field,
+                      primary_var_name='(set-to-None)')
+    u.set_constant(1.0)
+    vec = u() # Nodal values.
 
-    def test_variables(self):
-        from sfepy.discrete import FieldVariable, Integral
+    _ok = nm.allclose(vec, 1.0)
+    tst.report('set constant:', _ok)
+    ok = _ok and ok
 
-        ok = True
+    def fun(coors):
+        val = nm.empty_like(coors)
+        val[:, 0] = 2 * coors[:, 1] - coors[:, 0]
+        val[:, 1] = coors[:, 0] + 3 * coors[:, 1]
+        return val
+    u.set_from_function(fun)
 
-        u = FieldVariable('u', 'parameter', self.field,
-                          primary_var_name='(set-to-None)')
-        u.set_constant(1.0)
-        vec = u() # Nodal values.
+    coors = u.field.get_coor()
+    eu = u.evaluate_at(coors)
 
-        _ok = nm.allclose(vec, 1.0)
-        self.report('set constant:', _ok)
-        ok = _ok and ok
+    _ok = nm.allclose(eu, fun(coors), rtol=0.0, atol=1e-13)
+    tst.report('set from function:', _ok)
+    ok = _ok and ok
 
-        def fun(coors):
-            val = nm.empty_like(coors)
-            val[:, 0] = 2 * coors[:, 1] - coors[:, 0]
-            val[:, 1] = coors[:, 0] + 3 * coors[:, 1]
-            return val
-        u.set_from_function(fun)
+    integral = Integral('i', order=2)
+    gu_qp = u.evaluate(mode='grad', integral=integral)
 
-        coors = u.field.get_coor()
-        eu = u.evaluate_at(coors)
+    # du_i/dx_j, i = column, j = row.
+    gu = nm.array([[-1.,  1.],
+                   [ 2.,  3.]])
+    _ok = nm.allclose(gu_qp, gu[None, None, ...], rtol=0.0, atol=1e-13)
+    tst.report('set from function - gradient:', _ok)
+    ok = _ok and ok
 
-        _ok = nm.allclose(eu, fun(coors), rtol=0.0, atol=1e-13)
-        self.report('set from function:', _ok)
-        ok = _ok and ok
+    u_qp = gu_qp[..., :, :1]
+    u.set_from_qp(u_qp, integral)
+    vu = u()
 
-        integral = Integral('i', order=2)
-        gu_qp = u.evaluate(mode='grad', integral=integral)
+    _ok = (nm.allclose(vu[::2], -1, rtol=0.0, atol=1e-13) and
+           nm.allclose(vu[1::2], 2, rtol=0.0, atol=1e-13))
+    tst.report('set from qp:', _ok)
+    ok = _ok and ok
 
-        # du_i/dx_j, i = column, j = row.
-        gu = nm.array([[-1.,  1.],
-                       [ 2.,  3.]])
-        _ok = nm.allclose(gu_qp, gu[None, None, ...], rtol=0.0, atol=1e-13)
-        self.report('set from function - gradient:', _ok)
-        ok = _ok and ok
+    assert ok
 
-        u_qp = gu_qp[..., :, :1]
-        u.set_from_qp(u_qp, integral)
-        vu = u()
+def test_solving(data, output_dir):
+    from sfepy.base.base import IndexedStruct
+    from sfepy.discrete import (FieldVariable, Material, Problem, Function,
+                                Equation, Equations, Integral)
+    from sfepy.discrete.conditions import Conditions, EssentialBC
+    from sfepy.terms import Term
+    from sfepy.solvers.ls import ScipyDirect
+    from sfepy.solvers.nls import Newton
+    from sfepy.mechanics.matcoefs import stiffness_from_lame
 
-        _ok = (nm.allclose(vu[::2], -1, rtol=0.0, atol=1e-13) and
-               nm.allclose(vu[1::2], 2, rtol=0.0, atol=1e-13))
-        self.report('set from qp:', _ok)
-        ok = _ok and ok
+    u = FieldVariable('u', 'unknown', data.field)
+    v = FieldVariable('v', 'test', data.field, primary_var_name='u')
 
-        return ok
+    m = Material('m', D=stiffness_from_lame(data.dim, 1.0, 1.0))
+    f = Material('f', val=[[0.02], [0.01]])
 
-    def test_solving(self):
-        from sfepy.base.base import IndexedStruct
-        from sfepy.discrete import (FieldVariable, Material, Problem, Function,
-                                    Equation, Equations, Integral)
-        from sfepy.discrete.conditions import Conditions, EssentialBC
-        from sfepy.terms import Term
-        from sfepy.solvers.ls import ScipyDirect
-        from sfepy.solvers.nls import Newton
-        from sfepy.mechanics.matcoefs import stiffness_from_lame
+    bc_fun = Function('fix_u_fun', fix_u_fun,
+                      extra_args={'extra_arg' : 'hello'})
 
-        u = FieldVariable('u', 'unknown', self.field)
-        v = FieldVariable('v', 'test', self.field, primary_var_name='u')
+    fix_u = EssentialBC('fix_u', data.gamma1, {'u.all' : bc_fun})
+    shift_u = EssentialBC('shift_u', data.gamma2, {'u.0' : 0.1})
 
-        m = Material('m', D=stiffness_from_lame(self.dim, 1.0, 1.0))
-        f = Material('f', val=[[0.02], [0.01]])
+    integral = Integral('i', order=3)
 
-        bc_fun = Function('fix_u_fun', fix_u_fun,
-                          extra_args={'extra_arg' : 'hello'})
+    t1 = Term.new('dw_lin_elastic(m.D, v, u)',
+                  integral, data.omega, m=m, v=v, u=u)
 
-        fix_u = EssentialBC('fix_u', self.gamma1, {'u.all' : bc_fun})
-        shift_u = EssentialBC('shift_u', self.gamma2, {'u.0' : 0.1})
+    t2 = Term.new('dw_volume_lvf(f.val, v)', integral, data.omega, f=f, v=v)
 
-        integral = Integral('i', order=3)
+    eq = Equation('balance', t1 + t2)
+    eqs = Equations([eq])
 
-        t1 = Term.new('dw_lin_elastic(m.D, v, u)',
-                      integral, self.omega, m=m, v=v, u=u)
+    ls = ScipyDirect({})
 
-        t2 = Term.new('dw_volume_lvf(f.val, v)', integral, self.omega, f=f, v=v)
+    nls_status = IndexedStruct()
+    nls = Newton({}, lin_solver=ls, status=nls_status)
 
-        eq = Equation('balance', t1 + t2)
-        eqs = Equations([eq])
+    pb = Problem('elasticity', equations=eqs)
+    ## pb.save_regions_as_groups('regions')
 
-        ls = ScipyDirect({})
+    pb.set_bcs(ebcs=Conditions([fix_u, shift_u]))
+    pb.set_solver(nls)
 
-        nls_status = IndexedStruct()
-        nls = Newton({}, lin_solver=ls, status=nls_status)
+    state = pb.solve()
 
-        pb = Problem('elasticity', equations=eqs)
-        ## pb.save_regions_as_groups('regions')
+    name = op.join(output_dir, 'test_high_level_solving.vtk')
+    pb.save_state(name, state)
 
-        pb.set_bcs(ebcs=Conditions([fix_u, shift_u]))
-        pb.set_solver(nls)
+    ok = nls_status.condition == 0
+    if not ok:
+        tst.report('solver did not converge!')
 
-        state = pb.solve()
+    _ok = state.has_ebc()
+    if not _ok:
+        tst.report('EBCs violated!')
 
-        name = op.join(self.options.out_dir, 'test_high_level_solving.vtk')
-        pb.save_state(name, state)
+    ok = ok and _ok
 
-        ok = nls_status.condition == 0
-        if not ok:
-            self.report('solver did not converge!')
-
-        _ok = state.has_ebc()
-        if not _ok:
-            self.report('EBCs violated!')
-
-        ok = ok and _ok
-
-        return ok
+    assert ok
