@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-import os.path as op
 import numpy as nm
+import pytest
 
-import sfepy
-from sfepy.base.testing import TestCommon
-from six.moves import range
+import sfepy.base.testing as tst
 
 test_bases = {
     '2_3_P1'
@@ -38,8 +35,8 @@ test_bases = {
 
                 [[ 0.64,  0.16,  0.04,  0.16]]]),
     '2_4_Q1_grad'
-    : nm.array([[[-1. ,  1. ,  0. , -0. ],      
-                 [-1. , -0. ,  0. ,  1. ]],     
+    : nm.array([[[-1. ,  1. ,  0. , -0. ],
+                 [-1. , -0. ,  0. ,  1. ]],
 
                 [[-1. ,  1. ,  0. , -0. ],
                  [-0. , -1. ,  1. ,  0. ]],
@@ -58,7 +55,7 @@ test_bases = {
     '3_8_Q0_grad' : nm.zeros((9, 3, 1)),
     '3_8_Q1'
     : nm.array([[[ 1.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,
-                   0.   ]],       
+                   0.   ]],
 
                 [[ 0.   ,  1.   ,  0.   ,  0.   ,  0.   ,  0.   ,  0.   ,
                    0.   ]],
@@ -128,7 +125,7 @@ test_bases = {
 
                 [[-0.  , -0.  ,  1.  , -0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
                    0.  ]],
-                
+
                 [[-0.  , -0.  , -0.  ,  1.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
                    0.  ]],
 
@@ -158,7 +155,7 @@ test_bases = {
     '3_4_P2B'
     : nm.array([[[ 1.     , -0.     , -0.     , -0.     ,  0.     ,  0.     ,
                    0.     ,  0.     ,  0.     ,  0.     ,  0.     ]],
-             
+
                 [[-0.     ,  1.     , -0.     , -0.     ,  0.     ,  0.     ,
                   0.     ,  0.     ,  0.     ,  0.     ,  0.     ]],
 
@@ -172,14 +169,14 @@ test_bases = {
                   0.23808,  0.23808,  0.07808,  0.07808,  0.8192 ]]]),
     '3_4_P2B_grad'
     : nm.array([[[-3.    , -1.    ,  0.    ,  0.    ,  4.    ,  0.    ,  0.    ,
-                  0.    ,  0.    ,  0.    ,  0.    ],                          
+                  0.    ,  0.    ,  0.    ,  0.    ],
                  [-3.    ,  0.    , -1.    ,  0.    ,  0.    ,  0.    ,  4.    ,
-                  0.    ,  0.    ,  0.    ,  0.    ],                          
+                  0.    ,  0.    ,  0.    ,  0.    ],
                  [-3.    ,  0.    ,  0.    , -1.    ,  0.    ,  0.    ,  0.    ,
-                  4.    ,  0.    ,  0.    ,  0.    ]],                         
+                  4.    ,  0.    ,  0.    ,  0.    ]],
 
                 [[ 1.    ,  3.    ,  0.    ,  0.    , -4.    ,  0.    ,  0.    ,
-                   0.    ,  0.    ,  0.    ,  0.    ],                          
+                   0.    ,  0.    ,  0.    ,  0.    ],
                  [ 1.    ,  0.    , -1.    ,  0.    , -4.    ,  4.    ,  0.    ,
                    0.    ,  0.    ,  0.    ,  0.    ],
                  [ 1.    ,  0.    ,  0.    , -1.    , -4.    ,  0.    ,  0.    ,
@@ -207,83 +204,73 @@ test_bases = {
                   0.5952,  0.5952,  0.5952,  2.048 ]]]),
 }
 
-class Test(TestCommon):
+@pytest.fixture(scope='module')
+def gels():
+    from sfepy.discrete.fem.geometry_element import GeometryElement
 
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete.fem.geometry_element import GeometryElement
+    gels = {}
+    for key in ['2_3', '2_4', '3_4', '3_8']:
+        gel = GeometryElement(key)
+        gels[key] = gel
 
-        gels = {}
-        for key in ['2_3', '2_4', '3_4', '3_8']:
-            gel = GeometryElement(key)
-            gels[key] = gel
+    return gels
 
-        return Test(conf=conf, options=options, gels=gels)
+def test_base_functions_values(gels):
+    """
+    Compare base function values and their gradients with correct
+    data. Also test that sum of values over all element nodes gives one.
+    """
+    from sfepy.base.base import ordered_iteritems
+    from sfepy.discrete import PolySpace
 
-    def test_base_functions_values(self):
-        """
-        Compare base function values and their gradients with correct
-        data. Also test that sum of values over all element nodes gives one.
-        """
-        from sfepy.base.base import ordered_iteritems
-        from sfepy.discrete import PolySpace
+    ok = True
+    for key, val in ordered_iteritems(test_bases):
+        gel = gels[key[:3]]
+        diff = key[-4:] == 'grad'
+        order = int(key[5])
+        force_bubble = key[6:7] == 'B'
 
-        ok = True
+        ps = PolySpace.any_from_args('aux', gel, order,
+                                     base='lagrange',
+                                     force_bubble=force_bubble)
+        dim = ps.geometry.dim
+        coors = nm.r_[ps.geometry.coors, [[0.2] * dim]]
 
-        for key, val in ordered_iteritems(test_bases):
-            gel = self.gels[key[:3]]
-            diff = key[-4:] == 'grad'
-            order = int(key[5])
-            force_bubble = key[6:7] == 'B'
-            
+        bf = ps.eval_base(coors, diff=diff)
+        _ok = nm.allclose(val, bf, rtol=0.0, atol=1e-14)
+
+        if not diff:
+            _ok = _ok and nm.allclose(bf.sum(axis=2), 1.0,
+                                      rtol=0.0, atol=1e-14)
+
+        tst.report('%s: %s' % (key, _ok))
+
+        ok = ok and _ok
+
+    assert ok
+
+def test_base_functions_delta(gels):
+    """
+    Test :math:`\delta` property of base functions evaluated in the
+    reference element nodes.
+    """
+    from sfepy.base.base import ordered_iteritems
+    from sfepy.discrete import PolySpace
+
+    ok = True
+    for key, gel in ordered_iteritems(gels):
+        for order in range(11):
             ps = PolySpace.any_from_args('aux', gel, order,
                                          base='lagrange',
-                                         force_bubble=force_bubble)
-            dim = ps.geometry.dim
-            coors = nm.r_[ps.geometry.coors, [[0.2] * dim]]
+                                         force_bubble=False)
+            bf = ps.eval_base(ps.node_coors)
+            _ok = nm.allclose(nm.eye(ps.n_nod),
+                              bf.squeeze(),
+                              rtol=0.0, atol=(order + 1) * 1e-14)
 
-            bf = ps.eval_base(coors, diff=diff)
-            _ok = nm.allclose(val, bf, rtol=0.0, atol=1e-14)
-            ## if not _ok:
-            ##     nm.set_printoptions(threshold=1000000, linewidth=65)
-            ##     print bf.__repr__()
+            tst.report('%s order %d (n_nod: %d): %s'
+                       % (key, order, ps.n_nod, _ok))
 
-            if not diff:
-                _ok = _ok and nm.allclose(bf.sum(axis=2), 1.0,
-                                          rtol=0.0, atol=1e-14)
+        ok = ok and _ok
 
-            self.report('%s: %s' % (key, _ok))
-
-            ok = ok and _ok
-            
-        return ok
-
-    def test_base_functions_delta(self):
-        """
-        Test :math:`\delta` property of base functions evaluated in the
-        reference element nodes.
-        """
-        from sfepy.base.base import ordered_iteritems
-        from sfepy.discrete import PolySpace
-
-        ok = True
-
-        for key, gel in ordered_iteritems(self.gels):
-            for order in range(11):
-                ps = PolySpace.any_from_args('aux', gel, order,
-                                             base='lagrange',
-                                             force_bubble=False)
-                bf = ps.eval_base(ps.node_coors)
-                _ok = nm.allclose(nm.eye(ps.n_nod),
-                                  bf.squeeze(),
-                                  rtol=0.0, atol=(order + 1) * 1e-14)
-
-                self.report('%s order %d (n_nod: %d): %s'
-                            % (key, order, ps.n_nod, _ok))
-
-                if not _ok:
-                    import pdb; pdb.set_trace()
-
-            ok = ok and _ok
-
-        return ok
+    assert ok
