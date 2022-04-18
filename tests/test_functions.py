@@ -1,8 +1,9 @@
-# c: 14.04.2008, r: 14.04.2008
-from __future__ import absolute_import
 import numpy as nm
+import pytest
 
 from sfepy import data_dir
+from sfepy.base.base import assert_
+import sfepy.base.testing as tst
 
 filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
 
@@ -116,126 +117,116 @@ solver_1 = {
     'kind' : 'nls.newton',
 }
 
-from sfepy.base.base import assert_
-from sfepy.base.testing import TestCommon
+@pytest.fixture(scope='module')
+def problem():
+    import sys
+    from sfepy.discrete import Problem
+    from sfepy.base.conf import ProblemConf
 
-class Test( TestCommon ):
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
 
-    def from_conf( conf, options ):
-        from sfepy.discrete import Problem
+    problem = Problem.from_conf(conf)
+    return problem
 
-        problem = Problem.from_conf(conf)
-        test = Test(problem = problem, conf = conf, options = options)
-        return test
-    from_conf = staticmethod( from_conf )
+def test_material_functions(problem):
+    from sfepy.discrete import Material
+    from sfepy.base.conf import transform_variables
 
+    conf = problem.conf
 
-    def test_material_functions(self):
-        from sfepy.discrete import Material
-        from sfepy.base.conf import transform_variables
+    ts = problem.get_default_ts(step=0)
 
-        problem = self.problem
-        conf = problem.conf
+    conf_mat1 = conf.get_item_by_name('materials', 'mf1')
+    mat1 = Material.from_conf(conf_mat1, problem.functions)
+    mat1.time_update(ts, None, mode='normal', problem=problem)
 
-        ts = problem.get_default_ts(step=0)
+    coors = problem.domain.get_mesh_coors()
+    assert_(nm.all(coors[:,0] == mat1.get_data(None, 'x_0')))
 
-        conf_mat1 = conf.get_item_by_name('materials', 'mf1')
-        mat1 = Material.from_conf(conf_mat1, problem.functions)
-        mat1.time_update(ts, None, mode='normal', problem=problem)
+    conf_mat2 = conf.get_item_by_name('materials', 'mf2')
+    mat2 = Material.from_conf(conf_mat2, problem.functions)
+    mat2.time_update(ts, None, mode='normal', problem=problem)
 
-        coors = problem.domain.get_mesh_coors()
-        assert_(nm.all(coors[:,0] == mat1.get_data(None, 'x_0')))
+    assert_(nm.all(coors[:,1] == mat2.get_data(None, 'x_1')))
 
-        conf_mat2 = conf.get_item_by_name('materials', 'mf2')
-        mat2 = Material.from_conf(conf_mat2, problem.functions)
-        mat2.time_update(ts, None, mode='normal', problem=problem)
+    materials = problem.get_materials()
+    materials.time_update(ts, problem.equations, mode='normal',
+                          problem=problem)
+    mat3 = materials['mf3']
+    key = mat3.get_keys(region_name='Omega')[0]
 
-        assert_(nm.all(coors[:,1] == mat2.get_data(None, 'x_1')))
+    assert_(nm.all(mat3.get_data(key, 'a') == 10.0))
+    assert_(nm.all(mat3.get_data(key, 'b') == 2.0))
+    assert_(mat3.get_data(None, 'c') == 'ahoj')
 
-        materials = problem.get_materials()
-        materials.time_update(ts, problem.equations, mode='normal',
-                              problem=problem)
-        mat3 = materials['mf3']
-        key = mat3.get_keys(region_name='Omega')[0]
+    pb = problem.copy()
+    pb.set_variables(transform_variables(conf.variables2))
+    pb.set_equations(conf.equations2)
+    materials = pb.get_materials()
+    materials.time_update(ts, pb.equations, mode='normal', problem=pb)
 
-        assert_(nm.all(mat3.get_data(key, 'a') == 10.0))
-        assert_(nm.all(mat3.get_data(key, 'b') == 2.0))
-        assert_(mat3.get_data(None, 'c') == 'ahoj')
+    mat4 = materials['mf4']
+    key = mat4.get_keys(region_name='Omega')[0]
+    assert_(nm.all(mat4.get_data(key, 'a') == -2 + 1j))
 
-        pb = problem.copy()
-        pb.set_variables(transform_variables(conf.variables2))
-        pb.set_equations(conf.equations2)
-        materials = pb.get_materials()
-        materials.time_update(ts, pb.equations, mode='normal', problem=pb)
+    mat5 = materials['mf5']
+    key = mat5.get_keys(region_name='Omega')[0]
+    assert_(nm.all(mat5.get_data(key, 'a') == -2 - 1j))
 
-        mat4 = materials['mf4']
-        key = mat4.get_keys(region_name='Omega')[0]
-        assert_(nm.all(mat4.get_data(key, 'a') == -2 + 1j))
+    mat6 = materials['mf6']
+    key = mat6.get_keys(region_name='Circle')[0]
+    assert_(nm.all(mat6.get_data(key, 'a') == 1 + 1j))
+    key = mat6.get_keys(region_name='Rest')[0]
+    assert_(nm.all(mat6.get_data(key, 'a') == 3j))
 
-        mat5 = materials['mf5']
-        key = mat5.get_keys(region_name='Omega')[0]
-        assert_(nm.all(mat5.get_data(key, 'a') == -2 - 1j))
+def test_ebc_functions(problem, output_dir):
+    import os.path as op
 
-        mat6 = materials['mf6']
-        key = mat6.get_keys(region_name='Circle')[0]
-        assert_(nm.all(mat6.get_data(key, 'a') == 1 + 1j))
-        key = mat6.get_keys(region_name='Rest')[0]
-        assert_(nm.all(mat6.get_data(key, 'a') == 3j))
+    problem.set_equations(problem.conf.equations)
 
-        return True
+    problem.time_update()
+    state = problem.solve()
+    name = op.join(output_dir,
+                   op.splitext(op.basename(__file__))[0] + '_ebc.vtk')
+    problem.save_state(name, state)
 
-    def test_ebc_functions(self):
-        import os.path as op
-        problem = self.problem
+    ok = True
+    domain = problem.domain
 
-        problem.set_equations(self.conf.equations)
+    vecs = state.get_state_parts()
+    vec = vecs['p']
 
-        problem.time_update()
-        state = problem.solve()
-        name = op.join(self.options.out_dir,
-                       op.splitext(op.basename(__file__))[0] + '_ebc.vtk')
-        problem.save_state(name, state)
+    iv = domain.regions['Left'].vertices
+    coors = domain.get_mesh_coors()[iv]
+    _ok = tst.compare_vectors(vec[iv], nm.sin(nm.pi * coors[:,1]),
+                              label1='p_state_left',
+                              label2='p_bc_left')
+    ok = _ok and ok
 
-        ok = True
-        domain = problem.domain
+    iv = domain.regions['Right'].vertices
+    coors = domain.get_mesh_coors()[iv]
+    _ok = tst.compare_vectors(vec[iv], nm.cos(nm.pi * coors[:,1]),
+                              label1='p_state_right',
+                              label2='p_bc_right')
+    ok = _ok and ok
 
-        vecs = state.get_state_parts()
-        vec = vecs['p']
+    vec = vecs['u']
+    vec.shape = (-1, 2)
+    ok = tst.compare_vectors(vec[iv, 0], nm.zeros(len(iv)),
+                             label1='u_0_state_right',
+                             label2='u_0_bc_right')
+    ok = _ok and ok
 
-        iv = domain.regions['Left'].vertices
-        coors = domain.get_mesh_coors()[iv]
-        _ok = self.compare_vectors(vec[iv], nm.sin(nm.pi * coors[:,1]),
-                                   label1='p_state_left',
-                                   label2='p_bc_left')
-        ok = _ok and ok
+    ok = tst.compare_vectors(vec[iv, 1], nm.arange(len(iv)) + 1.0,
+                             label1='u_1_state_right',
+                             label2='u_1_bc_right')
+    ok = _ok and ok
 
-        iv = domain.regions['Right'].vertices
-        coors = domain.get_mesh_coors()[iv]
-        _ok = self.compare_vectors(vec[iv], nm.cos(nm.pi * coors[:,1]),
-                                   label1='p_state_right',
-                                   label2='p_bc_right')
-        ok = _ok and ok
+    assert ok
 
-        vec = vecs['u']
-        vec.shape = (-1, 2)
-        ok = self.compare_vectors(vec[iv, 0], nm.zeros(len(iv)),
-                                  label1='u_0_state_right',
-                                  label2='u_0_bc_right')
-        ok = _ok and ok
+def test_region_functions(problem, output_dir):
+    import os.path as op
 
-        ok = self.compare_vectors(vec[iv, 1], nm.arange(len(iv)) + 1.0,
-                                  label1='u_1_state_right',
-                                  label2='u_1_bc_right')
-        ok = _ok and ok
-
-        return ok
-
-    def test_region_functions(self):
-        import os.path as op
-        problem = self.problem
-
-        name = op.join(self.options.out_dir,
-                       op.splitext(op.basename(__file__))[0])
-        problem.save_regions(name, ['Circle'])
-
-        return True
+    name = op.join(output_dir,
+                   op.splitext(op.basename(__file__))[0])
+    problem.save_regions(name, ['Circle'])
