@@ -1,13 +1,11 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import os.path as op
 
 import numpy as nm
+import pytest
 
-from sfepy.base.testing import TestCommon
 from sfepy import data_dir
 from sfepy.discrete.fem import Mesh, FEDomain
-from six.moves import range
+import sfepy.base.testing as tst
 
 def refine(domain, out_dir, level=3):
     for ii in range(level):
@@ -112,71 +110,64 @@ def compare_mesh(geo_name, coors, conn):
 
     return ok
 
-class Test(TestCommon):
+@pytest.fixture(scope='module')
+def domain():
+    mesh = Mesh.from_file(data_dir + '/meshes/various_formats/small3d.mesh')
+    domain = FEDomain('domain', mesh)
+    return domain
 
-    @staticmethod
-    def from_conf(conf, options):
-        mesh = Mesh.from_file(data_dir + '/meshes/various_formats/small3d.mesh')
-        domain = FEDomain('domain', mesh)
+def test_facets(domain):
+    ok = True
+    cmesh = domain.cmesh
 
-        return Test(conf=conf, options=options, domain=domain)
+    _ok = cmesh.num[1] == 26
+    tst.report('unique edges: %s' % _ok)
+    ok = ok and _ok
 
-    def test_facets(self):
-        ok = True
-        cmesh = self.domain.cmesh
+    _ok = cmesh.num[2] == 30
+    tst.report('unique faces: %s' % _ok)
+    ok = ok and _ok
 
-        _ok = cmesh.num[1] == 26
-        self.report('unique edges: %s' % _ok)
-        ok = ok and _ok
+    assert ok
 
-        _ok = cmesh.num[2] == 30
-        self.report('unique faces: %s' % _ok)
-        ok = ok and _ok
+def test_refine_tetra(domain, output_dir):
+    refine(domain, output_dir)
 
-        return ok
+def test_refine_hexa(output_dir):
+    filename = data_dir + '/meshes/various_formats/abaqus_hex.inp'
+    mesh = Mesh.from_file(filename)
+    domain = FEDomain('domain', mesh)
 
-    def test_refine_tetra(self):
-        refine(self.domain, self.options.out_dir)
+    refine(domain, output_dir)
 
-        return True
+def test_refine_2_3(output_dir):
+    mesh = Mesh.from_file(data_dir + '/meshes/elements/2_3_1.mesh')
+    domain = refine(FEDomain('domain', mesh), output_dir, 1)
 
-    def test_refine_hexa(self):
-        filename = data_dir + '/meshes/various_formats/abaqus_hex.inp'
-        mesh = Mesh.from_file(filename)
-        domain = FEDomain('domain', mesh)
+    ok = compare_mesh('2_3', domain.mesh.coors, domain.mesh.get_conn('2_3'))
 
-        refine(domain, self.options.out_dir)
+    assert ok
 
-        return True
+def test_refine_2_4(output_dir):
+    mesh = Mesh.from_file(data_dir + '/meshes/elements/2_4_1.mesh')
+    domain = refine(FEDomain('domain', mesh), output_dir, 1)
 
-    def test_refine_2_3(self):
-        mesh = Mesh.from_file(data_dir + '/meshes/elements/2_3_1.mesh')
-        domain = refine(FEDomain('domain', mesh), self.options.out_dir, 1)
+    ok = compare_mesh('2_4', domain.mesh.coors, domain.mesh.get_conn('2_4'))
 
-        ok = compare_mesh('2_3', domain.mesh.coors, domain.mesh.get_conn('2_3'))
+    assert ok
 
-        return ok
+def test_refine_3_4(output_dir):
+    mesh = Mesh.from_file(data_dir + '/meshes/elements/3_4_1.mesh')
+    domain = refine(FEDomain('domain', mesh), output_dir, 1)
 
-    def test_refine_2_4(self):
-        mesh = Mesh.from_file(data_dir + '/meshes/elements/2_4_1.mesh')
-        domain = refine(FEDomain('domain', mesh), self.options.out_dir, 1)
+    ok = compare_mesh('3_4', domain.mesh.coors, domain.mesh.get_conn('3_4'))
 
-        ok = compare_mesh('2_4', domain.mesh.coors, domain.mesh.get_conn('2_4'))
+    assert ok
 
-        return ok
+def test_refine_3_8(output_dir):
+    mesh = Mesh.from_file(data_dir + '/meshes/elements/3_8_1.mesh')
+    domain = refine(FEDomain('domain', mesh), output_dir, 1)
 
-    def test_refine_3_4(self):
-        mesh = Mesh.from_file(data_dir + '/meshes/elements/3_4_1.mesh')
-        domain = refine(FEDomain('domain', mesh), self.options.out_dir, 1)
+    ok = compare_mesh('3_8', domain.mesh.coors, domain.mesh.get_conn('3_8'))
 
-        ok = compare_mesh('3_4', domain.mesh.coors, domain.mesh.get_conn('3_4'))
-
-        return ok
-
-    def test_refine_3_8(self):
-        mesh = Mesh.from_file(data_dir + '/meshes/elements/3_8_1.mesh')
-        domain = refine(FEDomain('domain', mesh), self.options.out_dir, 1)
-
-        ok = compare_mesh('3_8', domain.mesh.coors, domain.mesh.get_conn('3_8'))
-
-        return ok
+    assert ok
