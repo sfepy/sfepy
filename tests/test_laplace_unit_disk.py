@@ -1,7 +1,7 @@
-# 31.05.2007, c
-# last revision: 25.02.2008
-from __future__ import absolute_import
+import pytest
+
 from sfepy import data_dir
+import sfepy.base.testing as tst
 
 filename_mesh = data_dir + '/meshes/2d/circle_sym.mesh'
 
@@ -73,7 +73,7 @@ integral_1 = {
 }
 
 equations = {
-    'Temperature' : """dw_laplace.i.Omega( coef.val, s, t ) = 0"""
+    'Temperature' : """dw_laplace.i.Omega(coef.val, s, t) = 0"""
 }
 
 solution = {
@@ -93,62 +93,52 @@ solver_1 = {
     'eps_a'      : 1e-10,
 }
 
-from sfepy.base.testing import TestCommon
+@pytest.fixture(scope='module')
+def data():
+    import sys
+    from sfepy.applications import solve_pde
+    from sfepy.base.conf import ProblemConf
+    from sfepy.base.base import Struct
 
-##
-# 31.05.2007, c
-class Test( TestCommon ):
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
+    problem, state = solve_pde(conf, save_results=False)
 
-    ##
-    # 30.05.2007, c
-    def from_conf( conf, options ):
-        from sfepy.applications import solve_pde
+    return Struct(problem=problem, state=state)
 
-        problem, state = solve_pde(conf, save_results=False)
+def test_boundary_fluxes(data):
+    from sfepy.discrete import Material
+    problem = data.problem
 
-        test = Test(problem=problem, state=state, conf=conf, options=options)
-        return test
-    from_conf = staticmethod( from_conf )
+    region_names = ['Gamma']
 
-    ##
-    # 31.05.2007, c
-    # 02.10.2007
-    def test_boundary_fluxes( self ):
-        from sfepy.discrete import Material
-        problem = self.problem
+    variables = problem.get_variables()
+    get_state = variables.get_vec_part
+    state = data.state.copy()
 
-        region_names = ['Gamma']
+    problem.time_update(ebcs={}, epbcs={})
 
-        variables = problem.get_variables()
-        get_state = variables.get_vec_part
-        state = self.state.copy()
+    state.apply_ebc()
+    nls = problem.get_nls()
+    aux = nls.fun(state())
 
-        problem.time_update(ebcs={}, epbcs={})
-        ## problem.save_ebc( 'aux.vtk' )
+    field = variables['t'].field
 
-        state.apply_ebc()
-        nls = problem.get_nls()
-        aux = nls.fun(state())
+    conf_m = problem.conf.get_item_by_name('materials', 'm')
+    m = Material.from_conf(conf_m, problem.functions)
 
-        field = variables['t'].field
+    ok = True
+    for ii, region_name in enumerate(region_names):
+        flux_term = 'ev_surface_flux.1.%s(m.K, t)' % region_name
+        val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
 
-        conf_m = problem.conf.get_item_by_name('materials', 'm')
-        m = Material.from_conf(conf_m, problem.functions)
+        rvec = get_state(aux, 't', True)
+        reg = problem.domain.regions[region_name]
+        nods = field.get_dofs_in_region(reg, merge=True)
+        val2 = rvec[nods].sum() # Assume 1 dof per node.
 
-        ok = True
-        for ii, region_name in enumerate( region_names ):
-            flux_term = 'ev_surface_flux.1.%s( m.K, t )' % region_name
-            val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
+        eps = 1e-2
+        ok = ok and ((abs(val1 - val2) < eps))
+        tst.report('%d. %s: |%e - %e| = %e < %.2e'\
+                   % (ii, region_name, val1, val2, abs(val1 - val2), eps))
 
-            rvec = get_state( aux, 't', True )
-            reg = problem.domain.regions[region_name]
-            nods = field.get_dofs_in_region(reg, merge=True)
-            val2 = rvec[nods].sum() # Assume 1 dof per node.
-
-            eps = 1e-2
-            ok = ok and ((abs( val1 - val2 ) < eps))
-            self.report( '%d. %s: |%e - %e| = %e < %.2e'\
-                         % (ii, region_name, val1, val2, abs( val1 - val2 ),
-                            eps) )
-
-        return ok
+    assert ok
