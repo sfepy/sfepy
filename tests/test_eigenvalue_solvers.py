@@ -1,11 +1,10 @@
-from __future__ import absolute_import
-
 import numpy as nm
+import pytest
 
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.solvers import Solver
-import six
+import sfepy.base.testing as tst
 
 # Mesh dimensions.
 dims = nm.array([1, 1])
@@ -91,76 +90,76 @@ eigs_expected = [nm.array([0.04904454, 0.12170685, 0.12170685,
                            0.19257998, 0.24082108]),
                  []]
 
-from sfepy.base.testing import TestCommon
+can_fail = ['eig.slepc', 'eig.matlab']
+can_miss = ['evp0'] # Depending on scipy version, evp0 can miss an
+                    # eigenvalue.
 
-class Test(TestCommon):
-    can_fail = ['eig.slepc', 'eig.matlab']
-    can_miss = ['evp0'] # Depending on scipy version, evp0 can miss an
-                        # eigenvalue.
+@pytest.fixture(scope='module')
+def data():
+    import sys
+    from sfepy.base.base import Struct
+    from sfepy.discrete import Problem
+    from sfepy.base.conf import ProblemConf
 
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete import Problem
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
+    pb = Problem.from_conf(conf, init_solvers=False)
+    pb.time_update()
+    mtx = pb.equations.evaluate(mode='weak', dw_mode='matrix',
+                                asm_obj=pb.mtx_a)
 
-        pb = Problem.from_conf(conf, init_solvers=False)
-        pb.time_update()
-        mtx = pb.equations.evaluate(mode='weak', dw_mode='matrix',
-                                    asm_obj=pb.mtx_a)
+    return Struct(conf=conf, mtx=mtx)
 
-        test = Test(mtx=mtx, conf=conf, options=options)
-        return test
+def _list_eigenvalue_solvers(confs):
+    d = []
+    for key, val in confs.items():
+        if val.kind.find('eig.') == 0:
+            d.append(val)
+    d.sort(key=lambda a: a.name)
 
-    def _list_eigenvalue_solvers(self, confs):
-        d = []
-        for key, val in six.iteritems(confs):
-            if val.kind.find('eig.') == 0:
-                d.append(val)
-        d.sort(key=lambda a: a.name)
+    return d
 
-        return d
+def test_eigenvalue_solvers(data):
+    from sfepy.base.base import IndexedStruct
 
-    def test_eigenvalue_solvers(self):
-        from sfepy.base.base import IndexedStruct
+    eig_confs = _list_eigenvalue_solvers(data.conf.solvers)
 
-        eig_confs = self._list_eigenvalue_solvers(self.conf.solvers)
+    all_n_eigs = [5, 0]
 
-        all_n_eigs = [5, 0]
+    ok = True
+    tt = []
+    for ii, n_eigs in enumerate(all_n_eigs):
+        for eig_conf in eig_confs:
+            tst.report(eig_conf.name)
 
-        ok = True
-        tt = []
-        for ii, n_eigs in enumerate(all_n_eigs):
-            for eig_conf in eig_confs:
-                self.report(eig_conf.name)
+            try:
+                eig_solver = Solver.any_from_conf(eig_conf)
 
-                try:
-                    eig_solver = Solver.any_from_conf(eig_conf)
+            except (ValueError, ImportError):
+                if eig_conf.kind in can_fail:
+                    continue
 
-                except (ValueError, ImportError):
-                    if eig_conf.kind in self.can_fail:
-                        continue
+                else:
+                    raise
 
-                    else:
-                        raise
+            status = IndexedStruct()
+            eigs, vecs = eig_solver(data.mtx, n_eigs=n_eigs,
+                                    eigenvectors=True, status=status)
+            tt.append([' '.join((eig_conf.name, eig_conf.kind)),
+                       status.time, n_eigs])
 
-                status = IndexedStruct()
-                eigs, vecs = eig_solver(self.mtx, n_eigs=n_eigs,
-                                        eigenvectors=True, status=status)
-                tt.append([' '.join((eig_conf.name, eig_conf.kind)),
-                           status.time, n_eigs])
+            tst.report(eigs)
 
-                self.report(eigs)
+            _ok = nm.allclose(eigs.real, eigs_expected[ii],
+                              rtol=0.0, atol=1e-8)
+            tt[-1].append(_ok)
 
-                _ok = nm.allclose(eigs.real, eigs_expected[ii],
-                                  rtol=0.0, atol=1e-8)
-                tt[-1].append(_ok)
+            ok = ok and (_ok or (eig_conf.kind in can_fail)
+                         or (eig_conf.name in can_miss))
 
-                ok = ok and (_ok or (eig_conf.kind in self.can_fail)
-                             or (eig_conf.name in self.can_miss))
+    tt.sort(key=lambda x: x[1])
+    tst.report('solution times:')
+    for row in tt:
+        tst.report('%.2f [s] : %s (%d) (ok: %s)'
+                   % (row[1], row[0], row[2], row[3]))
 
-        tt.sort(key=lambda x: x[1])
-        self.report('solution times:')
-        for row in tt:
-            self.report('%.2f [s] : %s (%d) (ok: %s)'
-                        % (row[1], row[0], row[2], row[3]))
-
-        return ok
+    assert ok
