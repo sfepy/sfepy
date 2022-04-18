@@ -1,8 +1,7 @@
-# 30.05.2007, c
-# last revision: 25.02.2008
-from __future__ import absolute_import
+import pytest
+
 from sfepy import data_dir
-import six
+import sfepy.base.testing as tst
 
 filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
 
@@ -71,7 +70,6 @@ ebc_2 = {
     'region' : 'Right',
     'dofs' : {'t.0' : 0.0},
 }
-#    'Left' : ('T3', (30,), 'linear_y'),
 
 integral_1 = {
     'name' : 'i',
@@ -79,7 +77,7 @@ integral_1 = {
 }
 
 equations = {
-    'Temperature' : """dw_laplace.i.Omega( coef.val, s, t ) = 0"""
+    'Temperature' : """dw_laplace.i.Omega(coef.val, s, t) = 0"""
 }
 
 solution = {
@@ -101,122 +99,108 @@ solver_1 = {
 
 lin_min, lin_max = 0.0, 2.0
 
-##
-# 31.05.2007, c
-def linear( bc, ts, coor, which ):
+def linear(bc, ts, coor, which):
     vals = coor[:,which]
     min_val, max_val = vals.min(), vals.max()
     vals = (vals - min_val) / (max_val - min_val) * (lin_max - lin_min) + lin_min
     return vals
 
-##
-# 31.05.2007, c
-def linear_x( bc, ts, coor ):
-    return linear( bc, ts, coor, 0 )
-def linear_y( bc, ts, coor ):
-    return linear( bc, ts, coor, 1 )
-def linear_z( bc, ts, coor ):
-    return linear( bc, ts, coor, 2 )
+def linear_x(bc, ts, coor):
+    return linear(bc, ts, coor, 0)
+def linear_y(bc, ts, coor):
+    return linear(bc, ts, coor, 1)
+def linear_z(bc, ts, coor):
+    return linear(bc, ts, coor, 2)
 
-from sfepy.base.testing import TestCommon
+@pytest.fixture(scope='module')
+def data():
+    import sys
+    from sfepy.applications import solve_pde
+    from sfepy.base.conf import ProblemConf
+    from sfepy.base.base import Struct
 
-##
-# 30.05.2007, c
-class Test( TestCommon ):
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
+    problem, state = solve_pde(conf, save_results=False)
 
-    ##
-    # 30.05.2007, c
-    def from_conf( conf, options ):
-        from sfepy.applications import solve_pde
+    return Struct(problem=problem, state=state)
 
-        problem, state = solve_pde(conf, save_results=False)
+def test_solution(data):
+    problem = data.problem
+    sol = problem.conf.solution
+    vec = data.state()
 
-        test = Test(problem=problem, state=state, conf=conf, options=options)
-        return test
-    from_conf = staticmethod( from_conf )
+    variables = problem.get_variables()
 
-    ##
-    # 30.05.2007, c
-    def test_solution( self ):
-        sol = self.conf.solution
-        vec = self.state()
-        problem = self.problem
+    ok = True
+    for var_name, expression in sol.items():
+        coor = variables[var_name].field.get_coor()
+        ana_sol = tst.eval_coor_expression(expression, coor)
+        num_sol = variables.get_vec_part(vec, var_name)
+        ret = tst.compare_vectors(ana_sol, num_sol,
+                                  label1='analytical %s' % var_name,
+                                  label2='numerical %s' % var_name)
+        if not ret:
+            tst.report('variable %s: failed' % var_name)
 
-        variables = problem.get_variables()
+        ok = ok and ret
 
-        ok = True
-        for var_name, expression in six.iteritems(sol):
-            coor = variables[var_name].field.get_coor()
-            ana_sol = self.eval_coor_expression( expression, coor )
-            num_sol = variables.get_vec_part(vec, var_name)
-            ret = self.compare_vectors( ana_sol, num_sol,
-                                       label1 = 'analytical %s' % var_name,
-                                       label2 = 'numerical %s' % var_name )
-            if not ret:
-                self.report( 'variable %s: failed' % var_name )
+    assert ok
 
-            ok = ok and ret
+def test_boundary_fluxes(data, output_dir):
+    import os.path as op
+    from sfepy.linalg import rotation_matrix2d
+    from sfepy.discrete import Material
+    problem = data.problem
 
-        return ok
+    angles = [0, 30, 45]
+    region_names = ['Left', 'Right', 'Gamma']
+    values = [5.0, -5.0, 0.0]
 
-    ##
-    # c: 30.05.2007, r: 19.02.2008
-    def test_boundary_fluxes( self ):
-        import os.path as op
-        from sfepy.linalg import rotation_matrix2d
-        from sfepy.discrete import Material
-        problem = self.problem
+    variables = problem.get_variables()
+    get_state = variables.get_vec_part
+    state = data.state.copy()
 
-        angles = [0, 30, 45]
-        region_names = ['Left', 'Right', 'Gamma']
-        values = [5.0, -5.0, 0.0]
+    problem.time_update(ebcs={}, epbcs={})
 
-        variables = problem.get_variables()
-        get_state = variables.get_vec_part
-        state = self.state.copy()
+    state.apply_ebc()
+    nls = problem.get_nls()
+    aux = nls.fun(state())
 
-        problem.time_update(ebcs={}, epbcs={})
-#        problem.save_ebc( 'aux.vtk' )
+    field = variables['t'].field
 
-        state.apply_ebc()
-        nls = problem.get_nls()
-        aux = nls.fun(state())
+    conf_m = problem.conf.get_item_by_name('materials', 'm')
+    m = Material.from_conf(conf_m, problem.functions)
 
-        field = variables['t'].field
+    name = op.join(output_dir,
+                   op.split(problem.domain.mesh.name)[1] + '_%02d.mesh')
 
-        conf_m = problem.conf.get_item_by_name('materials', 'm')
-        m = Material.from_conf(conf_m, problem.functions)
-
-        name = op.join( self.options.out_dir,
-                        op.split( problem.domain.mesh.name )[1] + '_%02d.mesh' ) 
-
-        orig_coors = problem.get_mesh_coors().copy()
-        ok = True
-        for ia, angle in enumerate( angles ):
-            self.report( '%d: mesh rotation %d degrees' % (ia, angle) )
-            problem.domain.mesh.transform_coors( rotation_matrix2d( angle ),
-                                                 ref_coors = orig_coors )
-            problem.set_mesh_coors(problem.domain.mesh.coors,
-                                   update_fields=True)
-            problem.domain.mesh.write( name % angle, io = 'auto' )
-            for ii, region_name in enumerate( region_names ):
-                flux_term = 'ev_surface_flux.i.%s( m.K, t )' % region_name
-                val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
-
-                rvec = get_state( aux, 't', True )
-                reg = problem.domain.regions[region_name]
-                nods = field.get_dofs_in_region(reg, merge=True)
-                val2 = rvec[nods].sum() # Assume 1 dof per node.
-
-                ok = ok and ((abs( val1 - values[ii] ) < 1e-10) and
-                             (abs( val2 - values[ii] ) < 1e-10))
-                self.report( '  %d. %s: %e == %e == %e'\
-                             % (ii, region_name, val1, val2, values[ii]) )
-
-        # Restore original coordinates.
-        problem.domain.mesh.transform_coors(rotation_matrix2d(0),
-                                            ref_coors=orig_coors)
+    orig_coors = problem.get_mesh_coors().copy()
+    ok = True
+    for ia, angle in enumerate(angles):
+        tst.report('%d: mesh rotation %d degrees' % (ia, angle))
+        problem.domain.mesh.transform_coors(rotation_matrix2d(angle),
+                                             ref_coors = orig_coors)
         problem.set_mesh_coors(problem.domain.mesh.coors,
                                update_fields=True)
+        problem.domain.mesh.write(name % angle, io='auto')
+        for ii, region_name in enumerate(region_names):
+            flux_term = 'ev_surface_flux.i.%s(m.K, t)' % region_name
+            val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
 
-        return ok
+            rvec = get_state(aux, 't', True)
+            reg = problem.domain.regions[region_name]
+            nods = field.get_dofs_in_region(reg, merge=True)
+            val2 = rvec[nods].sum() # Assume 1 dof per node.
+
+            ok = ok and ((abs(val1 - values[ii]) < 1e-10) and
+                         (abs(val2 - values[ii]) < 1e-10))
+            tst.report('  %d. %s: %e == %e == %e'
+                       % (ii, region_name, val1, val2, values[ii]))
+
+    # Restore original coordinates.
+    problem.domain.mesh.transform_coors(rotation_matrix2d(0),
+                                        ref_coors=orig_coors)
+    problem.set_mesh_coors(problem.domain.mesh.coors,
+                           update_fields=True)
+
+    assert ok
