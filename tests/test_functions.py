@@ -185,9 +185,8 @@ def test_ebc_functions(problem, output_dir):
     problem.set_equations(problem.conf.equations)
 
     problem.time_update()
-    state = problem.solve()
-    name = op.join(output_dir,
-                   op.splitext(op.basename(__file__))[0] + '_ebc.vtk')
+    state = problem.solve(save_results=False)
+    name = op.join(output_dir, 'test_ebc_functions.vtk')
     problem.save_state(name, state)
 
     ok = True
@@ -227,6 +226,5 @@ def test_ebc_functions(problem, output_dir):
 def test_region_functions(problem, output_dir):
     import os.path as op
 
-    name = op.join(output_dir,
-                   op.splitext(op.basename(__file__))[0])
-    problem.save_regions(name, ['Circle'])
+    name = op.join(output_dir, 'test_region_functions.vtk')
+    problem.save_regions_as_groups(name, ['Circle'])
