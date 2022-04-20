@@ -16,12 +16,12 @@ The serendipity basis implementation is a pure python proof-of-concept. Its
 order in continuity tests is limited to 2 on 3_8 elements to decrease the tests
 run time.
 """
-from __future__ import absolute_import
 from itertools import product
 import numpy as nm
+import pytest
 
-from sfepy.base.testing import TestCommon
 from sfepy.base.base import assert_
+import sfepy.base.testing as tst
 
 rsels = {
     '2_3' : 'vertices in (y > -0.1) & (y < 0.1)',
@@ -80,7 +80,7 @@ def _get_possible_oris(geom):
 
     return set(oris)
 
-def _gen_common_data(orders, gels, report):
+def _gen_common_data(orders, gels):
     import sfepy
     from sfepy.base.base import Struct
     from sfepy.linalg import combine
@@ -98,8 +98,8 @@ def _gen_common_data(orders, gels, report):
         if (geom == '3_8') and (poly_space_base == 'serendipity'):
             order = 2
 
-        report('geometry: %s, base: %s, order: %d'
-               % (geom, poly_space_base, order))
+        tst.report('geometry: %s, base: %s, order: %d'
+                   % (geom, poly_space_base, order))
 
         integral = Integral('i', order=order)
 
@@ -132,8 +132,8 @@ def _gen_common_data(orders, gels, report):
         for (ir, pr), (ic, pc), (im, mesh0) in product(
                 enumerate(perms), enumerate(perms), enumerate(meshes),
         ):
-            report('im: %d, ir: %d, ic: %d' % (im, ir, ic))
-            report('pr: %s, pc: %s' % (pr, pc))
+            tst.report('im: %d, ir: %d, ic: %d' % (im, ir, ic))
+            tst.report('pr: %s, pc: %s' % (pr, pc))
 
             mesh = mesh0.copy()
             conn = mesh.cmesh.get_conn(mesh0.cmesh.tdim, 0).indices
@@ -162,7 +162,7 @@ def _gen_common_data(orders, gels, report):
                 break
 
             var = FieldVariable('u', 'unknown', field)
-            report('# dofs: %d' % var.n_dof)
+            tst.report('# dofs: %d' % var.n_dof)
 
             vec = nm.empty(var.n_dof, dtype=var.dtype)
 
@@ -181,218 +181,216 @@ def _gen_common_data(orders, gels, report):
                    field, ps, rrc, rcells[0], crc, ccells[0],
                    vec, edofs, fdofs)
 
-class Test(TestCommon):
+@pytest.fixture(scope='module')
+def gels():
+    from sfepy.discrete.fem.geometry_element import GeometryElement
 
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete.fem.geometry_element import GeometryElement
+    gels = {}
+    for key in ['2_3', '2_4', '3_4', '3_8']:
+        gel = GeometryElement(key)
+        gel.create_surface_facet()
+        gels[key] = gel
 
-        gels = {}
-        for key in ['2_3', '2_4', '3_4', '3_8']:
-            gel = GeometryElement(key)
-            gel.create_surface_facet()
-            gels[key] = gel
+    return gels
 
-        return Test(conf=conf, options=options, gels=gels)
+def test_partition_of_unity(gels):
+    from sfepy.linalg import combine
+    from sfepy.discrete import Integral, PolySpace
 
-    def test_partition_of_unity(self):
-        from sfepy.linalg import combine
-        from sfepy.discrete import Integral, PolySpace
+    ok = True
+    orders = {'2_3' : 5, '2_4' : 5, '3_4' : 5, '3_8' : 5}
+    bases = (
+        [ii for ii in combine([['2_4', '3_8'],
+                               ['lagrange', 'serendipity', 'bernstein']]
+        )]
+        + [ii for ii in combine([['2_3', '3_4'],
+                                 ['lagrange', 'bernstein']])]
+    )
 
-        ok = True
-        orders = {'2_3' : 5, '2_4' : 5, '3_4' : 5, '3_8' : 5}
-        bases = (
-            [ii for ii in combine([['2_4', '3_8'],
-                                   ['lagrange', 'serendipity', 'bernstein']]
-            )]
-            + [ii for ii in combine([['2_3', '3_4'],
-                                     ['lagrange', 'bernstein']])]
-        )
+    for geom, poly_space_base in bases:
+        max_order = orders[geom]
+        for order in range(max_order + 1):
+            if (poly_space_base == 'serendipity') and not (0 < order < 4):
+                continue
+            tst.report('geometry: %s, base: %s, order: %d'
+                       % (geom, poly_space_base, order))
 
-        for geom, poly_space_base in bases:
-            max_order = orders[geom]
-            for order in range(max_order + 1):
-                if (poly_space_base == 'serendipity') and not (0 < order < 4):
-                    continue
-                self.report('geometry: %s, base: %s, order: %d'
-                            % (geom, poly_space_base, order))
-
-                integral = Integral('i', order=2 * order)
-                coors, _ = integral.get_qp(geom)
-
-                ps = PolySpace.any_from_args('ps', self.gels[geom], order,
-                                             base=poly_space_base)
-                vals = ps.eval_base(coors)
-                _ok = nm.allclose(vals.sum(axis=-1), 1, atol=1e-14, rtol=0.0)
-                self.report('partition of unity:', _ok)
-                ok = ok and _ok
-
-        return ok
-
-    def test_continuity(self):
-        ok = True
-        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
-
-        bads = []
-        bad_families = set()
-        for (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
-             field, ps, rrc, rcell, crc, ccell, vec,
-             edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
-
-            if poly_space_base in ('lagrange', 'serendipity', 'bernstein'):
-                rbf = ps.eval_base(rrc)
-                cbf = ps.eval_base(crc)
-
-            else:
-                rbf = ps.eval_base(rrc, ori=field.ori[:1])
-                cbf = ps.eval_base(crc, ori=field.ori[1:])
-
-            dofs = nm.r_[edofs, fdofs]
-
-            res = nm.zeros((2, dofs.shape[0]), dtype=nm.int32)
-            res[0, :] = dofs
-            for ii, ip in enumerate(dofs):
-                vec.fill(0.0)
-                vec[ip] = 1.0
-
-                evec = vec[field.econn]
-
-                rvals = nm.dot(rbf, evec[rcell])
-                cvals = nm.dot(cbf, evec[ccell])
-
-                _ok = nm.allclose(rvals, cvals, atol=1e-14, rtol=0.0)
-                res[1, ii] = _ok
-                if not _ok:
-                    bads.append([geom, poly_space_base, im, ir, ic, ip])
-                    bad_families.add((geom, poly_space_base))
-
-                ok = ok and _ok
-
-            self.report('results (dofs, status: 1 ok, 0 failure):\n%s' % res)
-
-        if not ok:
-            self.report('continuity errors:\n', bads)
-            self.report('%d in total!' % len(bads))
-            self.report('continuity errors occurred in these spaces:\n',
-                        bad_families)
-
-        return ok
-
-    def test_gradients(self):
-        from sfepy.discrete.fem.mappings import VolumeMapping
-
-        ok = True
-        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
-
-        bads = []
-        bad_families = set()
-        for (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
-             field, ps, rrc, rcell, crc, ccell, vec,
-             edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
-            gel = self.gels[geom]
-            conn = mesh.get_conn(gel.name)
-
-            geo_ps = field.gel.poly_space
-            rmapping = VolumeMapping(mesh.coors, conn[rcell:rcell+1],
-                                     poly_space=geo_ps)
-            rori = field.ori[:1] if field.ori is not None else None
-            rvg = rmapping.get_mapping(rrc, qp_weights,
-                                       poly_space=ps, ori=rori)
-            rbfg = rvg.bfg
-
-            cmapping = VolumeMapping(mesh.coors, conn[ccell:ccell+1],
-                                     poly_space=geo_ps)
-            cori = field.ori[1:] if field.ori is not None else None
-            cvg = cmapping.get_mapping(crc, qp_weights,
-                                       poly_space=ps, ori=cori)
-            cbfg = cvg.bfg
-
-            dofs = nm.r_[edofs, fdofs]
-
-            res = nm.zeros((2, dofs.shape[0]), dtype=nm.int32)
-            res[0, :] = dofs
-            for ii, ip in enumerate(dofs):
-                vec.fill(0.0)
-                vec[ip] = 1.0
-
-                evec = vec[field.econn]
-
-                rvals = nm.dot(rbfg, evec[rcell])[0]
-                cvals = nm.dot(cbfg, evec[ccell])[0]
-
-                okx = nm.allclose(rvals[:, 0], cvals[:, 0],
-                                  atol=1e-12, rtol=0.0)
-                if gel.dim == 2:
-                    oky = nm.allclose(rvals[:, 1], -cvals[:, 1],
-                                      atol=1e-12, rtol=0.0)
-                    _ok = okx and oky
-
-                else:
-                    oky = nm.allclose(rvals[:, 1], cvals[:, 1],
-                                      atol=1e-12, rtol=0.0)
-                    okz = nm.allclose(rvals[:, 2], -cvals[:, 2],
-                                      atol=1e-12, rtol=0.0)
-                    _ok = okx and oky and okz
-
-                res[1, ii] = _ok
-                if not _ok:
-                    bads.append([geom, poly_space_base, im, ir, ic, ip])
-                    bad_families.add((geom, poly_space_base))
-
-                ok = ok and _ok
-
-            self.report('results (dofs, status: 1 ok, 0 failure):\n%s' % res)
-
-        if not ok:
-            self.report('gradient continuity errors:\n', bads)
-            self.report('%d in total!' % len(bads))
-            self.report('gradient continuity errors occurred in these'
-                        ' spaces:\n', bad_families)
-
-        return ok
-
-    def test_hessians(self):
-        """
-        Test the second partial derivatives of basis functions using finite
-        differences.
-        """
-        from sfepy.linalg import combine
-        from sfepy.discrete import Integral, PolySpace
-
-        ok = True
-        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
-        bases = ([ii for ii in combine([['2_3', '2_4', '3_4', '3_8'],
-                                        ['lagrange']])])
-
-        for geom, poly_space_base in bases:
-            self.report('geometry: %s, base: %s' % (geom, poly_space_base))
-            order = orders[geom]
-
-            integral = Integral('i', order=order)
+            integral = Integral('i', order=2 * order)
             coors, _ = integral.get_qp(geom)
 
-            ps = PolySpace.any_from_args('ps', self.gels[geom], order,
+            ps = PolySpace.any_from_args('ps', gels[geom], order,
                                          base=poly_space_base)
-
-            dim = coors.shape[1]
-            h1 = nm.zeros((coors.shape[0], dim, dim, ps.n_nod), nm.float64)
-            eps = 1e-8
-            for ir in range(dim):
-                cc = coors.copy()
-
-                cc[:, ir] -= eps
-                aux0 = ps.eval_base(cc, diff=1)
-
-                cc[:, ir] += 2 * eps
-                aux1 = ps.eval_base(cc, diff=1)
-
-                h1[:, :, ir, :] = 0.5 * (aux1 - aux0) / eps
-
-            h2 = ps.eval_base(coors, diff=2)
-
-            _ok = nm.allclose(h1, h2, rtol=0, atol=50*eps)
-            self.report('hessians: error: %.2e ok: %s'
-                        % (nm.abs(h1 - h2).max(), _ok))
+            vals = ps.eval_base(coors)
+            _ok = nm.allclose(vals.sum(axis=-1), 1, atol=1e-14, rtol=0.0)
+            tst.report('partition of unity:', _ok)
             ok = ok and _ok
 
-        return ok
+    assert_(ok)
+
+def test_continuity(gels):
+    ok = True
+    orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
+
+    bads = []
+    bad_families = set()
+    for (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
+         field, ps, rrc, rcell, crc, ccell, vec,
+         edofs, fdofs) in _gen_common_data(orders, gels):
+
+        if poly_space_base in ('lagrange', 'serendipity', 'bernstein'):
+            rbf = ps.eval_base(rrc)
+            cbf = ps.eval_base(crc)
+
+        else:
+            rbf = ps.eval_base(rrc, ori=field.ori[:1])
+            cbf = ps.eval_base(crc, ori=field.ori[1:])
+
+        dofs = nm.r_[edofs, fdofs]
+
+        res = nm.zeros((2, dofs.shape[0]), dtype=nm.int32)
+        res[0, :] = dofs
+        for ii, ip in enumerate(dofs):
+            vec.fill(0.0)
+            vec[ip] = 1.0
+
+            evec = vec[field.econn]
+
+            rvals = nm.dot(rbf, evec[rcell])
+            cvals = nm.dot(cbf, evec[ccell])
+
+            _ok = nm.allclose(rvals, cvals, atol=1e-14, rtol=0.0)
+            res[1, ii] = _ok
+            if not _ok:
+                bads.append([geom, poly_space_base, im, ir, ic, ip])
+                bad_families.add((geom, poly_space_base))
+
+            ok = ok and _ok
+
+        tst.report('results (dofs, status: 1 ok, 0 failure):\n%s' % res)
+
+    if not ok:
+        tst.report('continuity errors:\n', bads)
+        tst.report('%d in total!' % len(bads))
+        tst.report('continuity errors occurred in these spaces:\n',
+                   bad_families)
+
+    assert_(ok)
+
+def test_gradients(gels):
+    from sfepy.discrete.fem.mappings import VolumeMapping
+
+    ok = True
+    orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
+
+    bads = []
+    bad_families = set()
+    for (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
+         field, ps, rrc, rcell, crc, ccell, vec,
+         edofs, fdofs) in _gen_common_data(orders, gels):
+        gel = gels[geom]
+        conn = mesh.get_conn(gel.name)
+
+        geo_ps = field.gel.poly_space
+        rmapping = VolumeMapping(mesh.coors, conn[rcell:rcell+1],
+                                 poly_space=geo_ps)
+        rori = field.ori[:1] if field.ori is not None else None
+        rvg = rmapping.get_mapping(rrc, qp_weights,
+                                   poly_space=ps, ori=rori)
+        rbfg = rvg.bfg
+
+        cmapping = VolumeMapping(mesh.coors, conn[ccell:ccell+1],
+                                 poly_space=geo_ps)
+        cori = field.ori[1:] if field.ori is not None else None
+        cvg = cmapping.get_mapping(crc, qp_weights,
+                                   poly_space=ps, ori=cori)
+        cbfg = cvg.bfg
+
+        dofs = nm.r_[edofs, fdofs]
+
+        res = nm.zeros((2, dofs.shape[0]), dtype=nm.int32)
+        res[0, :] = dofs
+        for ii, ip in enumerate(dofs):
+            vec.fill(0.0)
+            vec[ip] = 1.0
+
+            evec = vec[field.econn]
+
+            rvals = nm.dot(rbfg, evec[rcell])[0]
+            cvals = nm.dot(cbfg, evec[ccell])[0]
+
+            okx = nm.allclose(rvals[:, 0], cvals[:, 0],
+                              atol=1e-12, rtol=0.0)
+            if gel.dim == 2:
+                oky = nm.allclose(rvals[:, 1], -cvals[:, 1],
+                                  atol=1e-12, rtol=0.0)
+                _ok = okx and oky
+
+            else:
+                oky = nm.allclose(rvals[:, 1], cvals[:, 1],
+                                  atol=1e-12, rtol=0.0)
+                okz = nm.allclose(rvals[:, 2], -cvals[:, 2],
+                                  atol=1e-12, rtol=0.0)
+                _ok = okx and oky and okz
+
+            res[1, ii] = _ok
+            if not _ok:
+                bads.append([geom, poly_space_base, im, ir, ic, ip])
+                bad_families.add((geom, poly_space_base))
+
+            ok = ok and _ok
+
+        tst.report('results (dofs, status: 1 ok, 0 failure):\n%s' % res)
+
+    if not ok:
+        tst.report('gradient continuity errors:\n', bads)
+        tst.report('%d in total!' % len(bads))
+        tst.report('gradient continuity errors occurred in these'
+                   ' spaces:\n', bad_families)
+
+    assert_(ok)
+
+def test_hessians(gels):
+    """
+    Test the second partial derivatives of basis functions using finite
+    differences.
+    """
+    from sfepy.linalg import combine
+    from sfepy.discrete import Integral, PolySpace
+
+    ok = True
+    orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
+    bases = ([ii for ii in combine([['2_3', '2_4', '3_4', '3_8'],
+                                    ['lagrange']])])
+
+    for geom, poly_space_base in bases:
+        tst.report('geometry: %s, base: %s' % (geom, poly_space_base))
+        order = orders[geom]
+
+        integral = Integral('i', order=order)
+        coors, _ = integral.get_qp(geom)
+
+        ps = PolySpace.any_from_args('ps', gels[geom], order,
+                                     base=poly_space_base)
+
+        dim = coors.shape[1]
+        h1 = nm.zeros((coors.shape[0], dim, dim, ps.n_nod), nm.float64)
+        eps = 1e-8
+        for ir in range(dim):
+            cc = coors.copy()
+
+            cc[:, ir] -= eps
+            aux0 = ps.eval_base(cc, diff=1)
+
+            cc[:, ir] += 2 * eps
+            aux1 = ps.eval_base(cc, diff=1)
+
+            h1[:, :, ir, :] = 0.5 * (aux1 - aux0) / eps
+
+        h2 = ps.eval_base(coors, diff=2)
+
+        _ok = nm.allclose(h1, h2, rtol=0, atol=50*eps)
+        tst.report('hessians: error: %.2e ok: %s'
+                   % (nm.abs(h1 - h2).max(), _ok))
+        ok = ok and _ok
+
+    assert_(ok)
