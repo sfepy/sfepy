@@ -100,7 +100,8 @@ from sfepy.homogenization.utils import define_box_regions
 
 def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
            ls='ls_d', u_inlet=None, mode='lcbc', term_mode='original',
-           backend='numpy', optimize='optimal', verbosity=0, output_dir=''):
+           backend='numpy', optimize='optimal', verbosity=0, output_dir='',
+           save_lcbc_vecs=False):
     """
     Parameters
     ----------
@@ -127,6 +128,10 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
         The einsum mode optimization (backend dependent).
     verbosity : 0, 1, 2, 3
         The verbosity level of einsum-based terms.
+    output_dir : str
+        The output directory.
+    save_lcbc_vecs : bool
+        If True, save the no_penetration and edge_direction LCBC vectors.
     """
     output('dims: {}, shape: {}, u_order: {}, refine: {}, u_inlet: {}'
            .format(dims, shape, u_order, refine, u_inlet))
@@ -216,9 +221,10 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
     if mode == 'lcbc':
         lcbcs = {
             'walls' : ('Gamma_v', {'u.all' : None}, None, 'no_penetration',
-                       indir('normals_Gamma.vtk')),
+                       indir('normals_Gamma.vtk') if save_lcbc_vecs else None),
             'edges' : ('Edges_v', [(-0.5, 1.5)], {'u.all' : None}, None,
-                       'edge_direction', indir('edges_Edges.vtk')),
+                       'edge_direction',
+                       indir('edges_Edges.vtk') if save_lcbc_vecs else None),
         }
 
         if term_mode == 'original':
