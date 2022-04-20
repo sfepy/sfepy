@@ -92,8 +92,6 @@ def gen_two_bodies(dims0, shape0, centre0, dims1, shape1, centre1, shift1):
 
     mesh = Mesh.from_data(name, coors, ngroups, [conn], [mat_id], m0.descs)
 
-    mesh.write(name, io='auto')
-
     return mesh
 
 def mesh_hook(mesh, mode):
@@ -202,6 +200,6 @@ solvers = {
             'ls_min' : 1e-5,
             'check' : 0,
             'delta' : 1e-8,
-            'log' : {'text' : 'log.txt', 'plot' : None},
+            # 'log' : {'text' : 'log.txt', 'plot' : None},
     })
 }
