@@ -175,7 +175,7 @@ def test_solving(data, output_dir):
     pb.set_bcs(ebcs=Conditions([fix_u, shift_u]))
     pb.set_solver(nls)
 
-    state = pb.solve()
+    state = pb.solve(save_results=False)
 
     name = op.join(output_dir, 'test_high_level_solving.vtk')
     pb.save_state(name, state)
