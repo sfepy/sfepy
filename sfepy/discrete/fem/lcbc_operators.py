@@ -561,7 +561,9 @@ class LCBCOperators(Container):
         except KeyError:
             raise ValueError('unknown LCBC kind! (%s)' % bc.kind)
 
-        args = bc.arguments + (self.variables, ts, self.functions)
+        args = (self.variables, ts, self.functions)
+        if bc.arguments is not None:
+            args = tuple(bc.arguments) + args
 
         op = cls('%d_%s' % (len(self), bc.kind), bc.regions, bc.dofs,
                  bc.dof_map_fun, *args)
