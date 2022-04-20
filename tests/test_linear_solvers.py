@@ -1,6 +1,7 @@
-from __future__ import absolute_import
+import pytest
+
 from sfepy import data_dir
-import six
+import sfepy.base.testing as tst
 
 filename_mesh = data_dir + '/meshes/3d/special/cube_cylinder.mesh'
 
@@ -154,151 +155,149 @@ options = {
     'nls' : 'newton',
 }
 
-from sfepy.base.testing import TestCommon
-output_name = 'test_linear_solvers_%s.vtk'
+can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc', 'ls.mumps',
+            'ls.scipy_direct']
 
-class Test(TestCommon):
-    can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc', 'ls.mumps',
-                'ls.scipy_direct']
+@pytest.fixture(scope='module')
+def problem():
+    import sys
+    from sfepy.discrete import Problem
+    from sfepy.base.conf import ProblemConf
 
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete import Problem
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
 
-        problem = Problem.from_conf(conf)
-        problem.time_update()
+    problem = Problem.from_conf(conf)
+    problem.time_update()
 
-        test = Test(problem=problem, conf=conf, options=options)
-        return test
+    return problem
 
-    def _list_linear_solvers(self, confs):
-        d = []
-        for key, val in six.iteritems(confs):
-            if val.kind.find('ls.') == 0:
-                d.append(val)
-        d.sort(key=lambda a: a.name)
+def _list_linear_solvers(confs):
+    d = []
+    for key, val in confs.items():
+        if val.kind.find('ls.') == 0:
+            d.append(val)
+    d.sort(key=lambda a: a.name)
 
-        return d
+    return d
 
-    def test_solvers(self):
-        from sfepy.base.base import IndexedStruct
-        import os.path as op
+def test_solvers(problem, output_dir):
+    from sfepy.base.base import IndexedStruct
+    import os.path as op
 
-        solver_confs = self._list_linear_solvers(self.problem.solver_confs)
+    solver_confs = _list_linear_solvers(problem.solver_confs)
 
-        ok = True
-        tt = []
-        for solver_conf in solver_confs:
-            method = solver_conf.get('method', '')
-            precond = solver_conf.get('precond', '')
-            name = ' '.join((solver_conf.name, solver_conf.kind,
-                             method, precond)).rstrip()
-            self.report(name)
-            self.report('matrix size:', self.problem.mtx_a.shape)
-            self.report('        nnz:', self.problem.mtx_a.nnz)
-            status = IndexedStruct()
-            try:
-                self.problem.init_solvers(status=status,
-                                          ls_conf=solver_conf,
-                                          force=True)
-                state = self.problem.solve()
-                failed = status.nls_status.condition != 0
-            except Exception as aux:
-                failed = True
-                status = None
-                exc = aux
+    ok = True
+    tt = []
+    for solver_conf in solver_confs:
+        method = solver_conf.get('method', '')
+        precond = solver_conf.get('precond', '')
+        name = ' '.join((solver_conf.name, solver_conf.kind,
+                         method, precond)).rstrip()
+        tst.report(name)
+        tst.report('matrix size:', problem.mtx_a.shape)
+        tst.report('        nnz:', problem.mtx_a.nnz)
+        status = IndexedStruct()
+        try:
+            problem.init_solvers(status=status,
+                                 ls_conf=solver_conf,
+                                 force=True)
+            state = problem.solve(save_results=False)
+            failed = status.nls_status.condition != 0
+        except Exception as aux:
+            failed = True
+            status = None
+            exc = aux
 
-            ok = ok and ((not failed) or (solver_conf.kind in self.can_fail))
+        ok = ok and ((not failed) or (solver_conf.kind in can_fail))
 
-            if status is not None:
-                status = status.nls_status
-                for kv in six.iteritems(status.time_stats):
-                    self.report('%10s: %7.2f [s]' % kv)
-                self.report('condition: %d, err0: %.3e, err: %.3e'
-                            % (status.condition, status.err0, status.err))
-                tt.append([name,
-                           status.time_stats['solve'],
-                           status.ls_n_iter,
-                           status.err])
+        if status is not None:
+            status = status.nls_status
+            for kv in status.time_stats.items():
+                tst.report('%10s: %7.2f [s]' % kv)
+            tst.report('condition: %d, err0: %.3e, err: %.3e'
+                       % (status.condition, status.err0, status.err))
+            tt.append([name,
+                       status.time_stats['solve'],
+                       status.ls_n_iter,
+                       status.err])
 
-                aux = name.replace(' ', '_')
-                fname = op.join(self.options.out_dir,
-                                op.split(self.conf.output_name)[1]) % aux
-                self.problem.save_state(fname, state)
-            else:
-                self.report('solver failed:')
-                self.report(exc)
-                tt.append([name, -1, 1e10, 1e10])
+            aux = name.replace(' ', '_')
+            fname = op.join(output_dir, 'test_linear_solvers_%s.vtk') % aux
+            problem.save_state(fname, state)
+        else:
+            tst.report('solver failed:')
+            tst.report(exc)
+            tt.append([name, -1, 1e10, 1e10])
 
-        tt.sort(key=lambda a: a[1])
-        self.report('solution times / numbers of iterations (residual norms):')
-        for row in tt:
-            self.report('%.2f [s] / % 4d' % (row[1], row[2]),
-                        '(%.3e)' % row[3], ':', row[0])
+    tt.sort(key=lambda a: a[1])
+    tst.report('solution times / numbers of iterations (residual norms):')
+    for row in tt:
+        tst.report('%.2f [s] / % 4d' % (row[1], row[2]),
+                   '(%.3e)' % row[3], ':', row[0])
 
-        return ok
+    assert ok
 
-    def test_ls_reuse(self):
-        import numpy as nm
-        from sfepy.solvers import Solver
+def test_ls_reuse(problem):
+    import numpy as nm
+    from sfepy.solvers import Solver
 
-        self.problem.init_solvers(ls_conf=self.problem.solver_confs['d00'])
-        nls = self.problem.get_nls()
+    problem.init_solvers(ls_conf=problem.solver_confs['d00'])
+    nls = problem.get_nls()
 
-        state0 = self.problem.get_initial_state()
-        state0.apply_ebc()
-        vec0 = state0.get_state(self.problem.active_only)
+    state0 = problem.get_initial_state()
+    state0.apply_ebc()
+    vec0 = state0.get_state(problem.active_only)
 
-        self.problem.update_materials()
+    problem.update_materials()
 
-        rhs = nls.fun(vec0)
-        mtx = nls.fun_grad(vec0)
+    rhs = nls.fun(vec0)
+    mtx = nls.fun_grad(vec0)
 
-        ok = True
-        for name in ['i12', 'i01']:
-            solver_conf = self.problem.solver_confs[name]
-            method = solver_conf.get('method', '')
-            precond = solver_conf.get('precond', '')
-            name = ' '.join((solver_conf.name, solver_conf.kind,
-                             method, precond)).rstrip()
-            self.report(name)
-            try:
-                ls = Solver.any_from_conf(solver_conf)
+    ok = True
+    for name in ['i12', 'i01']:
+        solver_conf = problem.solver_confs[name]
+        method = solver_conf.get('method', '')
+        precond = solver_conf.get('precond', '')
+        name = ' '.join((solver_conf.name, solver_conf.kind,
+                         method, precond)).rstrip()
+        tst.report(name)
+        try:
+            ls = Solver.any_from_conf(solver_conf)
 
-            except:
-                self.report('skipped!')
-                continue
+        except:
+            tst.report('skipped!')
+            continue
 
-            conf = ls.conf.copy()
-            conf.force_reuse = True
+        conf = ls.conf.copy()
+        conf.force_reuse = True
 
-            sol00 = ls(rhs, mtx=mtx, conf=conf)
-            digest00 = ls.mtx_digest
+        sol00 = ls(rhs, mtx=mtx, conf=conf)
+        digest00 = ls.mtx_digest
 
-            sol0 = ls(rhs, mtx=mtx)
-            digest0 = ls.mtx_digest
+        sol0 = ls(rhs, mtx=mtx)
+        digest0 = ls.mtx_digest
 
-            sol1 = ls(rhs, mtx=2*mtx, conf=conf)
-            digest1 = ls.mtx_digest
+        sol1 = ls(rhs, mtx=2*mtx, conf=conf)
+        digest1 = ls.mtx_digest
 
-            sol2 = ls(rhs, mtx=2*mtx)
-            digest2 = ls.mtx_digest
-            ls(rhs, mtx=2*mtx)
-            digest3 = ls.mtx_digest
+        sol2 = ls(rhs, mtx=2*mtx)
+        digest2 = ls.mtx_digest
+        ls(rhs, mtx=2*mtx)
+        digest3 = ls.mtx_digest
 
-            _ok = digest00 != digest0
-            self.report(digest00, '!=', digest0, ':', _ok); ok = ok and _ok
-            _ok = digest0 == digest1
-            self.report(digest0, '==', digest1, ':', _ok); ok = ok and _ok
-            _ok = digest1 != digest2
-            self.report(digest1, '!=', digest2, ':', _ok); ok = ok and _ok
-            _ok = digest2[1] == digest3[1]
-            self.report(digest2[1], '==', digest3[1], ':', _ok); ok = ok and _ok
-            _ok = nm.allclose(sol00, sol0, atol=1e-12, rtol=0.0)
-            self.report('sol00 == sol0:', _ok); ok = ok and _ok
-            _ok = nm.allclose(sol0, sol1, atol=1e-12, rtol=0.0)
-            self.report('sol0 == sol1:', _ok); ok = ok and _ok
-            _ok = nm.allclose(sol0, 2 * sol2, atol=1e-12, rtol=0.0)
-            self.report('sol0 == 2 * sol2:', _ok); ok = ok and _ok
+        _ok = digest00 != digest0
+        tst.report(digest00, '!=', digest0, ':', _ok); ok = ok and _ok
+        _ok = digest0 == digest1
+        tst.report(digest0, '==', digest1, ':', _ok); ok = ok and _ok
+        _ok = digest1 != digest2
+        tst.report(digest1, '!=', digest2, ':', _ok); ok = ok and _ok
+        _ok = digest2[1] == digest3[1]
+        tst.report(digest2[1], '==', digest3[1], ':', _ok); ok = ok and _ok
+        _ok = nm.allclose(sol00, sol0, atol=1e-12, rtol=0.0)
+        tst.report('sol00 == sol0:', _ok); ok = ok and _ok
+        _ok = nm.allclose(sol0, sol1, atol=1e-12, rtol=0.0)
+        tst.report('sol0 == sol1:', _ok); ok = ok and _ok
+        _ok = nm.allclose(sol0, 2 * sol2, atol=1e-12, rtol=0.0)
+        tst.report('sol0 == 2 * sol2:', _ok); ok = ok and _ok
 
-        return ok
+    assert ok
