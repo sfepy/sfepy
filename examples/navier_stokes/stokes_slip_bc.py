@@ -89,7 +89,8 @@ Note the pressure field distribution improvement w.r.t. the previous examples. I
   python3 simple.py examples/navier_stokes/stokes_slip_bc -d "u_order=2,ls=ls_i,mode=penalty,term_mode=einsum,backend=opt_einsum,optimize=auto"
   python3 resview.py -f p:p0 u:o.4:p1 u:g:f0.2:p1 -- user_block.vtk
 """
-from __future__ import absolute_import
+import os
+from functools import partial
 import numpy as nm
 
 from sfepy.base.base import assert_, output
@@ -99,7 +100,7 @@ from sfepy.homogenization.utils import define_box_regions
 
 def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
            ls='ls_d', u_inlet=None, mode='lcbc', term_mode='original',
-           backend='numpy', optimize='optimal', verbosity=0):
+           backend='numpy', optimize='optimal', verbosity=0, output_dir=''):
     """
     Parameters
     ----------
@@ -210,12 +211,14 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
     if u_inlet is not None:
         ebcs['inlet'] = ('Inlet_f', {'u.0' : u_inlet, 'u.[1, 2]' : 0.0})
 
+    indir = partial(os.path.join, output_dir)
+
     if mode == 'lcbc':
         lcbcs = {
             'walls' : ('Gamma_v', {'u.all' : None}, None, 'no_penetration',
-                       'normals_Gamma.vtk'),
+                       indir('normals_Gamma.vtk')),
             'edges' : ('Edges_v', [(-0.5, 1.5)], {'u.all' : None}, None,
-                       'edge_direction', 'edges_Edges.vtk'),
+                       'edge_direction', indir('edges_Edges.vtk')),
         }
 
         if term_mode == 'original':
@@ -310,6 +313,7 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
             },
         },
         'refinement_level' : refine,
+        'output_dir' : output_dir,
     }
 
     return locals()
