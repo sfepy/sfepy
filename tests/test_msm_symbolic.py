@@ -192,7 +192,7 @@ def _test_msm_symbolic(problem, equations, output_dir):
             globals()['solution'][0] = sol_expr
             rhs_mat.function.set_extra_args(expression=rhs_expr)
             problem.time_update()
-            state = problem.solve()
+            state = problem.solve(save_results=False)
             coor = variables[var_name].field.get_coor()
             ana_sol = tst.eval_coor_expression(sol_expr, coor)
             num_sol = state(var_name)
