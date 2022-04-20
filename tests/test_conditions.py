@@ -183,6 +183,11 @@ def test_epbcs(data):
 
     ok = True
 
+    _ok = variables.has_ebc(vec)
+    if not _ok:
+        tst.report('EPBCs were not applied correctly!')
+    ok = ok and _ok
+
     _ok = len(nm.setdiff1d(eq0, var.eq_map.master)) == 0
     if not _ok:
         tst.report('master equations mismatch! (set(%s) == set(%s))'
@@ -199,7 +204,7 @@ def test_epbcs(data):
     _ok = nm.allclose(vec[off + eq0], vec[off + eq1], atol=1e-14, rtol=0.0)
     if not _ok:
         tst.report('periodicity test failed! (%s == %s)'
-                   % (vec[off + eq0], vec[off + eq0]))
+                   % (vec[off + eq0], vec[off + eq1]))
     ok = ok and _ok
 
     assert ok
