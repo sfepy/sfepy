@@ -232,7 +232,7 @@ def test_hdf5_meshio():
         from igakit import igalib; igalib
     except ImportError:
         tst.report('hdf5_meshio not-tested (missing igalib module)!')
-        return True
+        return
 
     import tempfile
     import numpy as nm
