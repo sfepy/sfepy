@@ -1,6 +1,13 @@
-from __future__ import absolute_import
+import numpy as nm
+import pytest
+
+try:
+    import sfepy.linalg.sympy_operators as sops
+except ImportError:
+    sops = None
+
 from sfepy import data_dir
-import six
+import sfepy.base.testing as tst
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
@@ -80,20 +87,10 @@ solver_1 = {
     'eps_a'      : 1e-10,
 }
 
-import numpy as nm
-try:
-    import sfepy.linalg.sympy_operators as sops
-except ImportError as exc:
-    sops = None
-
-from sfepy.base.testing import TestCommon
-
-output_name = 'test_msm_symbolic_%s.vtk'
-
 solution = ['']
 def ebc(ts, coor, solution=None):
     expression = solution[0]
-    val = TestCommon.eval_coor_expression(expression, coor)
+    val = tst.eval_coor_expression(expression, coor)
     return nm.atleast_1d(val)
 
 def rhs(ts, coor, mode=None, expression=None, **kwargs):
@@ -101,7 +98,7 @@ def rhs(ts, coor, mode=None, expression=None, **kwargs):
         if expression is None:
             expression = '0.0 * x'
 
-        val = TestCommon.eval_coor_expression(expression, coor)
+        val = tst.eval_coor_expression(expression, coor)
         val.shape = (val.shape[0], 1, 1)
         return {'val' : val}
 
@@ -111,139 +108,141 @@ functions = {
     'rhs' : (rhs,),
 }
 
-class Test(TestCommon):
-
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete import Problem
-
-        problem = Problem.from_conf(conf, init_equations=False)
-        test = Test(problem=problem, conf=conf, options=options)
-        return test
-
-    def _build_rhs(self, equation, sols):
-        rhss = {}
-        self.report('%s:' % equation.name)
-        self.report('evaluating terms, "<=" is solution, "=>" is the rhs:')
-        for term in equation.terms:
-            if not hasattr(term, 'symbolic'):
-                self.report('term %s has no symbolic description!' % term.name)
-                raise ValueError
-            expr = term.symbolic['expression']
-            arg_map = term.symbolic['map']
-            self.report('%s(%s)' %\
-                         (term.name, ', '.join(term.ats)))
-            self.report('multiplicator: %f' % term.sign)
-            self.report('  symbolic:', expr)
-            self.report('  using argument map:', arg_map)
-
-            for sol_name, sol in six.iteritems(sols):
-                rhs = self._eval_term(sol[1], term, sops)
-                srhs = "(%s * (%s))" % (term.sign, rhs)
-                rhss.setdefault(sol_name, []).append(srhs)
-
-        for key, val in six.iteritems(rhss):
-            rhss[key] = '+'.join(val)
-
-        return rhss
-
-    def _eval_term(self, sol, term, sops):
-        """Works for scalar, single unknown terms only!"""
+def _build_rhs(equation, sols):
+    rhss = {}
+    tst.report('%s:' % equation.name)
+    tst.report('evaluating terms, "<=" is solution, "=>" is the rhs:')
+    for term in equation.terms:
+        if not hasattr(term, 'symbolic'):
+            tst.report('term %s has no symbolic description!' % term.name)
+            raise ValueError
         expr = term.symbolic['expression']
         arg_map = term.symbolic['map']
-        env = {'x' : sops.Symbol('x'),
-               'y' : sops.Symbol('y'),
-               'z' : sops.Symbol('z'),
-               'dim' : dim}
-        for key, val in six.iteritems(arg_map):
-            if val == 'state':
-                env[key] = sol
+        tst.report('%s(%s)' % (term.name, ', '.join(term.ats)))
+        tst.report('multiplicator: %f' % term.sign)
+        tst.report('  symbolic:', expr)
+        tst.report('  using argument map:', arg_map)
+
+        for sol_name, sol in sols.items():
+            rhs = _eval_term(sol[1], term, sops)
+            srhs = "(%s * (%s))" % (term.sign, rhs)
+            rhss.setdefault(sol_name, []).append(srhs)
+
+    for key, val in rhss.items():
+        rhss[key] = '+'.join(val)
+
+    return rhss
+
+def _eval_term(sol, term, sops):
+    """Works for scalar, single unknown terms only!"""
+    expr = term.symbolic['expression']
+    arg_map = term.symbolic['map']
+    env = {'x' : sops.Symbol('x'),
+           'y' : sops.Symbol('y'),
+           'z' : sops.Symbol('z'),
+           'dim' : dim}
+    for key, val in arg_map.items():
+        if val == 'state':
+            env[key] = sol
+        else:
+            env[key] = term.get_args([val])[0]
+
+        if 'material' in val:
+            # Take the first value - constant in all QPs.
+            aux = env[key][0,0]
+            if nm.prod(aux.shape) == 1:
+                env[key] = aux.squeeze()
             else:
-                env[key] = term.get_args([val])[0]
+                import sympy
+                env[key] = sympy.Matrix(aux)
 
-            if 'material' in val:
-                # Take the first value - constant in all QPs.
-                aux = env[key][0,0]
-                if nm.prod(aux.shape) == 1:
-                    env[key] = aux.squeeze()
-                else:
-                    import sympy
-                    env[key] = sympy.Matrix(aux)
+    tst.report('  <= ', sol)
+    sops.set_dim(dim)
+    val = str(eval(expr, sops.__dict__, env))
+    tst.report('   =>', val)
+    return val
 
-        self.report('  <= ', sol)
-        sops.set_dim(dim)
-        val = str(eval(expr, sops.__dict__, env))
-        self.report('   =>', val)
-        return val
+def _test_msm_symbolic(problem, equations, output_dir):
+    import os.path as op
 
-    def _test_msm_symbolic(self, equations):
-        import os.path as op
+    if sops is None:
+        tst.report('cannot import sympy, skipping')
+        return True
 
-        if sops is None:
-            self.report('cannot import sympy, skipping')
-            return True
+    ok = True
+    for eq_name, equation in equations.items():
+        problem.set_equations({eq_name : equation})
+        problem.update_materials()
 
-        problem  = self.problem
-        ok = True
-        for eq_name, equation in six.iteritems(equations):
-            problem.set_equations({eq_name : equation})
-            problem.update_materials()
+        rhss = _build_rhs(problem.equations[eq_name], solutions)
+        erhs = problem.conf.equations_rhs[eq_name]
 
-            rhss = self._build_rhs(problem.equations[eq_name],
-                                   self.conf.solutions)
-            erhs = problem.conf.equations_rhs[eq_name]
+        problem.set_equations({eq_name : equation + erhs})
+        variables = problem.get_variables()
+        materials = problem.get_materials()
+        rhs_mat = materials['rhs']
 
-            problem.set_equations({eq_name : equation + erhs})
-            variables = problem.get_variables()
-            materials = problem.get_materials()
-            rhs_mat = materials['rhs']
+        for sol_name, sol in problem.conf.solutions.items():
+            tst.report('testing', sol_name)
+            var_name, sol_expr = sol
+            rhs_expr = rhss[sol_name]
 
-            for sol_name, sol in six.iteritems(problem.conf.solutions):
-                self.report('testing', sol_name)
-                var_name, sol_expr = sol
-                rhs_expr = rhss[sol_name]
+            tst.report('sol:', sol_expr)
+            tst.report('rhs:', rhs_expr)
+            globals()['solution'][0] = sol_expr
+            rhs_mat.function.set_extra_args(expression=rhs_expr)
+            problem.time_update()
+            state = problem.solve()
+            coor = variables[var_name].field.get_coor()
+            ana_sol = tst.eval_coor_expression(sol_expr, coor)
+            num_sol = state(var_name)
 
-                self.report('sol:', sol_expr)
-                self.report('rhs:', rhs_expr)
-                globals()['solution'][0] = sol_expr
-                rhs_mat.function.set_extra_args(expression=rhs_expr)
-                problem.time_update()
-                state = problem.solve()
-                coor = variables[var_name].field.get_coor()
-                ana_sol = self.eval_coor_expression(sol_expr, coor)
-                num_sol = state(var_name)
+            ana_norm = nm.linalg.norm(ana_sol, nm.inf)
+            ret = tst.compare_vectors(ana_sol, num_sol,
+                                      allowed_error=ana_norm * 1e-2,
+                                      label1='analytical %s' % var_name,
+                                      label2='numerical %s' % var_name,
+                                      norm=nm.inf)
+            if not ret:
+                tst.report('variable %s: failed' % var_name)
 
-                ana_norm = nm.linalg.norm(ana_sol, nm.inf)
-                ret = self.compare_vectors(ana_sol, num_sol,
-                                           allowed_error=ana_norm * 1e-2,
-                                           label1='analytical %s' % var_name,
-                                           label2='numerical %s' % var_name,
-                                           norm=nm.inf)
-                if not ret:
-                    self.report('variable %s: failed' % var_name)
+            fname = op.join(output_dir, 'test_msm_symbolic_%s.vtk')
+            out = {}
+            astate = state.copy()
+            astate.set_state(ana_sol)
+            aux = astate.create_output()
+            out['ana_t'] = aux['t']
+            aux = state.create_output()
+            out['num_t'] = aux['t']
 
-                fname = op.join(self.options.out_dir, self.conf.output_name)
-                out = {}
-                astate = state.copy()
-                astate.set_state(ana_sol)
-                aux = astate.create_output()
-                out['ana_t'] = aux['t']
-                aux = state.create_output()
-                out['num_t'] = aux['t']
+            problem.domain.mesh.write(fname % '_'.join((sol_name, eq_name)),
+                                      io='auto', out=out)
 
-                problem.domain.mesh.write(fname % '_'.join((sol_name, eq_name)),
-                                          io='auto', out=out)
+            ok = ok and ret
 
-                ok = ok and ret
+    return ok
 
-        return ok
+@pytest.fixture(scope='module')
+def problem():
+    import sys
+    from sfepy.discrete import Problem
+    from sfepy.base.conf import ProblemConf
 
-    def _get_equations(self, name):
-        """Choose a sub-problem from all equations."""
-        return {name : self.problem.conf.equations[name]}
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
 
-    def test_msm_symbolic_laplace(self):
-        return self._test_msm_symbolic(self._get_equations('Laplace'))
+    problem = Problem.from_conf(conf)
+    return problem
 
-    def test_msm_symbolic_diffusion(self):
-        return self._test_msm_symbolic(self._get_equations('Diffusion'))
+def _get_equations(problem, name):
+    """
+    Choose a sub-problem from all equations.
+    """
+    return {name : problem.conf.equations[name]}
+
+def test_msm_symbolic_laplace(problem, output_dir):
+    equations = _get_equations(problem, 'Laplace')
+    assert _test_msm_symbolic(problem, equations, output_dir)
+
+def test_msm_symbolic_diffusion(problem, output_dir):
+    equations = _get_equations(problem, 'Diffusion')
+    assert _test_msm_symbolic(problem, equations, output_dir)
