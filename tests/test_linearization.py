@@ -1,87 +1,79 @@
-from __future__ import absolute_import
 import os
 import numpy as nm
 
-from sfepy.base.testing import TestCommon
-from six.moves import range
+import sfepy.base.testing as tst
 
-class Test(TestCommon):
+def test_linearization(output_dir):
+    from sfepy.base.base import Struct
+    from sfepy.discrete.fem import Mesh, FEDomain, Field
+    from sfepy import data_dir
 
-    @staticmethod
-    def from_conf(conf, options):
-        test = Test(conf=conf, options=options)
-        test.join = lambda x: os.path.join(test.options.out_dir, x)
-        return test
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+    approx_orders = [1, 2]
+    funs = [nm.cos, nm.sin, lambda x: x]
 
-    def test_linearization(self):
-        from sfepy.base.base import Struct
-        from sfepy.discrete.fem import Mesh, FEDomain, Field
-        from sfepy import data_dir
+    ok = True
+    for geometry in geometries:
+        name = os.path.join(data_dir,
+                            'meshes/elements/%s_1.mesh' % geometry)
+        mesh = Mesh.from_file(name)
 
-        geometries = ['2_3', '2_4', '3_4', '3_8']
-        approx_orders = [1, 2]
-        funs = [nm.cos, nm.sin, lambda x: x]
+        domain = FEDomain('', mesh)
+        domain = domain.refine()
 
-        ok = True
-        for geometry in geometries:
-            name = os.path.join(data_dir,
-                                'meshes/elements/%s_1.mesh' % geometry)
-            mesh = Mesh.from_file(name)
+        domain.mesh.write(os.path.join(output_dir,
+                                       'linearizer-%s-0.mesh' % geometry))
 
-            domain = FEDomain('', mesh)
-            domain = domain.refine()
+        omega = domain.create_region('Omega', 'all')
 
-            domain.mesh.write(self.join('linearizer-%s-0.mesh' % geometry))
+        for approx_order in approx_orders:
+            for dpn in [1, mesh.dim]:
+                tst.report('geometry: %s, approx. order: %d, dpn: %d' %
+                           (geometry, approx_order, dpn))
 
-            omega = domain.create_region('Omega', 'all')
+                field = Field.from_args('fu', nm.float64, dpn, omega,
+                                        approx_order=approx_order)
 
-            for approx_order in approx_orders:
-                for dpn in [1, mesh.dim]:
-                    self.report('geometry: %s, approx. order: %d, dpn: %d' %
-                                (geometry, approx_order, dpn))
+                cc = field.get_coor()
+                dofs = nm.zeros((field.n_nod, dpn), dtype=nm.float64)
 
-                    field = Field.from_args('fu', nm.float64, dpn, omega,
-                                            approx_order=approx_order)
+                for ic in range(dpn):
+                    dofs[:, ic] = funs[ic](3 * (cc[:, 0] * cc[:, 1]))
 
-                    cc = field.get_coor()
-                    dofs = nm.zeros((field.n_nod, dpn), dtype=nm.float64)
+                vmesh, vdofs, level = field.linearize(dofs,
+                                                      min_level=0,
+                                                      max_level=3,
+                                                      eps=1e-2)
 
-                    for ic in range(dpn):
-                        dofs[:, ic] = funs[ic](3 * (cc[:, 0] * cc[:, 1]))
+                if approx_order == 1:
+                    _ok = level == 0
 
-                    vmesh, vdofs, level = field.linearize(dofs,
-                                                          min_level=0,
-                                                          max_level=3,
-                                                          eps=1e-2)
+                else:
+                    _ok = level > 0
+                tst.report('max. refinement level: %d: %s' % (level, _ok))
 
-                    if approx_order == 1:
-                        _ok = level == 0
+                ok = ok and _ok
 
-                    else:
-                        _ok = level > 0
-                    self.report('max. refinement level: %d: %s' % (level, _ok))
+                rdofs = nm.zeros((vmesh.n_nod, dpn), dtype=nm.float64)
+                cc = vmesh.coors
+                for ic in range(dpn):
+                    rdofs[:, ic] = funs[ic](3 * (cc[:, 0] * cc[:, 1]))
 
-                    ok = ok and _ok
+                _ok = nm.allclose(rdofs, vdofs, rtol=0.0, atol=0.03)
+                tst.report('interpolation: %s' % _ok)
+                ok = ok and _ok
 
-                    rdofs = nm.zeros((vmesh.n_nod, dpn), dtype=nm.float64)
-                    cc = vmesh.coors
-                    for ic in range(dpn):
-                        rdofs[:, ic] = funs[ic](3 * (cc[:, 0] * cc[:, 1]))
+                out = {
+                    'u' : Struct(name='output_data',
+                                 mode='vertex', data=vdofs,
+                                 var_name='u', dofs=None)
+                }
 
-                    _ok = nm.allclose(rdofs, vdofs, rtol=0.0, atol=0.03)
-                    self.report('interpolation: %s' % _ok)
-                    ok = ok and _ok
+                name = os.path.join(output_dir,
+                                    'linearizer-%s-%d-%d'
+                                    % (geometry, approx_order, dpn))
 
-                    out = {
-                        'u' : Struct(name='output_data',
-                                     mode='vertex', data=vdofs,
-                                     var_name='u', dofs=None)
-                    }
+                vmesh.write(name + '.mesh')
+                vmesh.write(name + '.vtk', out=out)
 
-                    name = self.join('linearizer-%s-%d-%d'
-                                     % (geometry, approx_order, dpn))
-
-                    vmesh.write(name + '.mesh')
-                    vmesh.write(name + '.vtk', out=out)
-
-        return ok
+    assert ok
