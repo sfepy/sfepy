@@ -11,7 +11,10 @@ def test_stokes_slip_bc(output_dir):
     from sfepy.discrete import Problem
     import examples.navier_stokes.stokes_slip_bc as ssb
 
-    conf = ProblemConf.from_dict(ssb.define(output_dir=output_dir), ssb)
+    conf = ProblemConf.from_dict(
+        ssb.define(output_dir=output_dir, save_lcbc_vecs=True),
+        ssb,
+    )
     pb = Problem.from_conf(conf, init_solvers=False)
 
     pb.time_update()
