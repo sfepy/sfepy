@@ -101,3 +101,81 @@ def test_laplace_shifted_periodic(output_dir):
 
     assert ok
 
+@pytest.mark.parametrize('mesh_filename', [
+    'meshes/2d/special/circle_in_square.mesh',
+    'meshes/3d/special/cube_sphere.mesh',
+])
+def test_elasticity_rigid(mesh_filename, output_dir):
+    from sfepy import data_dir
+    from sfepy.base.base import IndexedStruct
+    from sfepy.discrete import (FieldVariable, Material, Integral,
+                                Equation, Equations, Problem)
+    from sfepy.discrete.fem import Mesh, FEDomain, Field
+    from sfepy.mechanics.matcoefs import stiffness_from_lame
+    from sfepy.terms import Term
+    from sfepy.discrete.conditions import (Conditions, EssentialBC,
+                                           LinearCombinationBC)
+    from sfepy.solvers.ls import ScipyDirect
+    from sfepy.solvers.nls import Newton
+
+    filename = op.join(data_dir, mesh_filename)
+    mesh = Mesh.from_file(filename)
+    domain = FEDomain('domain', mesh)
+
+    min_x, max_x = domain.get_mesh_bounding_box()[:,0]
+    eps = 1e-8 * (max_x - min_x)
+
+    axis = {2 : 'y', 3 : 'z'}[mesh.dim]
+    order = {2 : 2, 3 : 1}[mesh.dim]
+
+    omega = domain.create_region('Omega', 'all')
+    yrig = domain.create_region('Yrig', 'cells of group 2')
+    bottom = domain.create_region('Bottom',
+                                  f'vertices in {axis} < {min_x + eps}',
+                                  'facet')
+    top = domain.create_region('Top',
+                               f'vertices in {axis} > {max_x - eps}',
+                               'facet')
+    field = Field.from_args('fu', nm.float64, 'vector', omega,
+                            approx_order=order)
+    u = FieldVariable('u', 'unknown', field)
+    v = FieldVariable('v', 'test', field, primary_var_name='u')
+
+    m = Material('m', D=stiffness_from_lame(dim=mesh.dim, lam=10.0, mu=1.0))
+
+    integral = Integral('i', order=2 * order)
+    t1 = Term.new('dw_lin_elastic(m.D, v, u)',
+                  integral, omega, m=m, v=v, u=u)
+    eq = Equation('balance', t1)
+    eqs = Equations([eq])
+
+    fix = EssentialBC('fix', bottom, {'u.all' : 0.0})
+    load = EssentialBC('load', top, {'u.all' : 0.3})
+    rig = LinearCombinationBC('rig', [yrig, None], {'u.all' : None},
+                              None, 'rigid')
+
+    ls = ScipyDirect({})
+
+    nls_status = IndexedStruct()
+    nls = Newton({}, lin_solver=ls, status=nls_status)
+
+    pb = Problem('elasticity', equations=eqs)
+
+    trunk = f'test_elasticity_rigid_{mesh.dim}d'
+    pb.setup_output(output_filename_trunk=trunk, output_dir=output_dir)
+    pb.save_regions_as_groups(op.join(output_dir, trunk + '_regions'))
+
+    pb.set_bcs(ebcs=Conditions([fix, load]), lcbcs=Conditions([rig]))
+    pb.set_solver(nls)
+
+    status = IndexedStruct()
+    pb.solve(status=status)
+
+    assert nls_status.condition == 0
+
+    strain = u.evaluate('cauchy_strain', region=yrig, integral=integral)
+
+    mstrain = nm.abs(strain).max()
+    tst.report('max |strain| in rigid region:', mstrain)
+
+    assert mstrain < 1e-13
