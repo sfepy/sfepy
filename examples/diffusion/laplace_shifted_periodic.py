@@ -26,7 +26,7 @@ from sfepy.solvers.nls import Newton
 from sfepy.mesh.mesh_generators import gen_block_mesh
 import sfepy.discrete.fem.periodic as per
 
-def run(domain, order):
+def run(domain, order, output_dir=''):
     omega = domain.create_region('Omega', 'all')
     bbox = domain.get_mesh_bounding_box()
     min_x, max_x = bbox[:, 0]
@@ -74,6 +74,7 @@ def run(domain, order):
     nls = Newton({}, lin_solver=ls)
 
     pb = Problem('laplace', equations=eqs)
+    pb.set_output_dir(output_dir)
 
     pb.set_bcs(ebcs=Conditions([fix1, fix2]), lcbcs=Conditions([sper]))
 
