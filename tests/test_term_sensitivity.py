@@ -1,10 +1,10 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import gc
 import numpy as nm
+import pytest
+
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
-from sfepy.base.testing import TestCommon
 from sfepy import data_dir
+import sfepy.base.testing as tst
 
 filename_mesh = data_dir + '/meshes/3d/special/cube_sphere.mesh'
 
@@ -87,100 +87,101 @@ def modify_mesh(val, spbox, dv_mode, cp_pos):
     return new_coors
 
 
-class Test(TestCommon):
+@pytest.fixture(scope='module')
+def problem():
+    import sys
+    from sfepy.discrete import Problem
+    from sfepy.base.conf import ProblemConf
 
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete import Problem
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
 
-        problem = Problem.from_conf(conf, init_equations=False)
-        test = Test(problem=problem, conf=conf, options=options)
-        return test
+    problem = Problem.from_conf(conf, init_equations=False)
+    return problem
 
-    def test_sensitivity(self):
-        from sfepy.discrete import Variables
-        from sfepy.mesh.splinebox import SplineBox
 
-        tolerance = 1e-4
-        ok = True
-        pb = self.problem
+def test_sensitivity(problem):
+    from sfepy.discrete import Variables
+    from sfepy.mesh.splinebox import SplineBox
 
-        variables = Variables.from_conf(self.conf.variables, pb.fields)
+    tolerance = 1e-4
+    ok = True
 
-        for var_name in variables.names:
-            var = variables[var_name]
-            n_dof = var.field.n_nod * var.field.shape[0]
-            aux = nm.arange(n_dof, dtype=nm.float64)
-            var.set_data(aux)
+    variables = Variables.from_conf(problem.conf.variables, problem.fields)
 
-        mesh = pb.domain.mesh
-        bbox = nm.array(mesh.get_bounding_box()).T
-        spbox = SplineBox(bbox, mesh.coors)
+    for var_name in variables.names:
+        var = variables[var_name]
+        n_dof = var.field.n_nod * var.field.shape[0]
+        aux = nm.arange(n_dof, dtype=nm.float64)
+        var.set_data(aux)
 
-        dvel_modes = [
-            # expand inner cylinder, no volume change
-            [([20, 21, 22, 23], (-1, -1, 0)),
-             ([24, 25, 26, 27], (-1, 1, 0)),
-             ([36, 37, 38, 39], (1, -1, 0)),
-             ([40, 41, 42, 43], (1, 1, 0))],
-            # volume change
-            [(range(16, 32), (0.2, 0, 0)),
-             (range(32, 48), (0.4, 0, 0)),
-             (range(48, 52), (0.6, 0.2, 0.2)),
-             (range(52, 56), (0.8, 0.2, 0.3)),
-             (range(56, 60), (1.0, 0.2, 0.4)),
-             (range(60, 64), (1.2, 0.2, 0.5))],
-        ]
+    mesh = problem.domain.mesh
+    bbox = nm.array(mesh.get_bounding_box()).T
+    spbox = SplineBox(bbox, mesh.coors)
 
-        r4 = range(4)
-        cp_pos = {i*16 + j*4 + k: (i, j, k)
-            for k in r4 for j in r4 for i in r4}
+    dvel_modes = [
+        # expand inner cylinder, no volume change
+        [([20, 21, 22, 23], (-1, -1, 0)),
+         ([24, 25, 26, 27], (-1, 1, 0)),
+         ([36, 37, 38, 39], (1, -1, 0)),
+         ([40, 41, 42, 43], (1, 1, 0))],
+        # volume change
+        [(range(16, 32), (0.2, 0, 0)),
+         (range(32, 48), (0.4, 0, 0)),
+         (range(48, 52), (0.6, 0.2, 0.2)),
+         (range(52, 56), (0.8, 0.2, 0.3)),
+         (range(56, 60), (1.0, 0.2, 0.4)),
+         (range(60, 64), (1.2, 0.2, 0.5))],
+    ]
 
-        # compute design velocities
-        dvels = []
-        for dv_mode in dvel_modes:
-            dvel = 0
-            for pts, dir in dv_mode:
-                for pt in pts:
-                    dvel += spbox.evaluate_derivative(cp_pos[pt], dir)
-            dvels.append(dvel)
+    r4 = range(4)
+    cp_pos = {i*16 + j*4 + k: (i, j, k)
+        for k in r4 for j in r4 for i in r4}
 
-        for tname_sa, tname, rname, mat, var1, var2 in test_terms:
-            args = [] if mat is None else [mat]
-            args += [var1] if var2 is None else [var1, var2]
-            term = '%s.i.%s(%s)' % (tname, rname, ', '.join(args))
-            term_sa = '%s.i.%s(%s)' % (tname_sa, rname, ', '.join(args + ['V']))
+    # compute design velocities
+    dvels = []
+    for dv_mode in dvel_modes:
+        dvel = 0
+        for pts, dir in dv_mode:
+            for pt in pts:
+                dvel += spbox.evaluate_derivative(cp_pos[pt], dir)
+        dvels.append(dvel)
 
-            val = pb.evaluate(term, var_dict=variables.as_dict())
-            self.report('%s: %s' % (tname, val))
+    for tname_sa, tname, rname, mat, var1, var2 in test_terms:
+        args = [] if mat is None else [mat]
+        args += [var1] if var2 is None else [var1, var2]
+        term = '%s.i.%s(%s)' % (tname, rname, ', '.join(args))
+        term_sa = '%s.i.%s(%s)' % (tname_sa, rname, ', '.join(args + ['V']))
 
-            dt = 1e-6
-            for ii, dvel in enumerate(dvels):
-                val = pb.evaluate(term, var_dict=variables.as_dict())
-                variables['V'].set_data(dvel)
-                val_sa = pb.evaluate(term_sa, var_dict=variables.as_dict())
-                self.report('%s - mesh_velocity mode %d' % (tname_sa, ii))
-                # mesh perturbation +
-                new_coors = modify_mesh(dt/2., spbox, dvel_modes[ii], cp_pos)
-                pb.set_mesh_coors(new_coors, update_fields=True)
-                val1 = pb.evaluate(term, var_dict=variables.as_dict())
+        val = problem.evaluate(term, var_dict=variables.as_dict())
+        tst.report('%s: %s' % (tname, val))
 
-                # mesh perturbation -
-                new_coors = modify_mesh(-dt/2., spbox, dvel_modes[ii], cp_pos)
-                pb.set_mesh_coors(new_coors, update_fields=True)
-                val2 = pb.evaluate(term, var_dict=variables.as_dict())
+        dt = 1e-6
+        for ii, dvel in enumerate(dvels):
+            val = problem.evaluate(term, var_dict=variables.as_dict())
+            variables['V'].set_data(dvel)
+            val_sa = problem.evaluate(term_sa, var_dict=variables.as_dict())
+            tst.report('%s - mesh_velocity mode %d' % (tname_sa, ii))
+            # mesh perturbation +
+            new_coors = modify_mesh(dt/2., spbox, dvel_modes[ii], cp_pos)
+            problem.set_mesh_coors(new_coors, update_fields=True)
+            val1 = problem.evaluate(term, var_dict=variables.as_dict())
 
-                val_fd = (val1 - val2) / dt
-                err = nm.abs(val_sa - val_fd) / nm.linalg.norm(val_sa)
-                self.report('term:               %s' % val)
-                self.report('sensitivity term:   %s' % val_sa)
-                self.report('finite differences: %s' % val_fd)
-                self.report('relative error:     %s' % err)
+            # mesh perturbation -
+            new_coors = modify_mesh(-dt/2., spbox, dvel_modes[ii], cp_pos)
+            problem.set_mesh_coors(new_coors, update_fields=True)
+            val2 = problem.evaluate(term, var_dict=variables.as_dict())
 
-                _ok = err < tolerance
+            val_fd = (val1 - val2) / dt
+            err = nm.abs(val_sa - val_fd) / nm.linalg.norm(val_sa)
+            tst.report('term:               %s' % val)
+            tst.report('sensitivity term:   %s' % val_sa)
+            tst.report('finite differences: %s' % val_fd)
+            tst.report('relative error:     %s' % err)
 
-                ok = ok and _ok
+            _ok = err < tolerance
 
-                gc.collect()
+            ok = ok and _ok
 
-        return ok
+            gc.collect()
+
+    assert ok
