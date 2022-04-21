@@ -106,7 +106,7 @@ class Probe(Struct):
         line.SetResolution(n_point)
         line.Update()
 
-        pars = nm.arange(n_point + 1) / nm.float(n_point)
+        pars = nm.arange(n_point + 1) / float(n_point)
         self.probes[name] = (line, pars)
         self.probes_png[name] = False
 

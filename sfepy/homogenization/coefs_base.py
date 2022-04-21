@@ -122,7 +122,7 @@ class CorrSolution(Struct):
 
     def get_ts_val(self, step):
         if hasattr(self, 'states'):
-            states = nm.zeros(self.states.shape, dtype=nm.object)
+            states = nm.zeros(self.states.shape, dtype=object)
             for idx in self.components:
                 state = {k: v[step] for k, v in\
                          six.iteritems(self.states[idx])}
@@ -282,7 +282,7 @@ class OnesDim(CorrMiniApp):
         e00 = nm.zeros((nnod, dim), dtype=var.dtype)
         e1 = nm.ones((nnod,), dtype=var.dtype)
 
-        ones = nm.zeros((dim,), dtype=nm.object)
+        ones = nm.zeros((dim,), dtype=object)
         clist = []
         for ir in range(dim):
             aux = e00.copy()
@@ -314,7 +314,7 @@ class CorrEval(CorrMiniApp):
             corr_sol = CorrSolution(name=self.name,
                                     state=val)
         elif type(val) is nm.ndarray:
-            if val.dtype == nm.object:
+            if val.dtype == object:
                 corr_sol = CorrSolution(name=self.name,
                                         states=val,
                                         components=['data'])
@@ -367,7 +367,7 @@ class CorrNN(CorrMiniApp):
 
         variables = problem.get_variables()
 
-        states = nm.zeros((self.dim, self.dim), dtype=nm.object)
+        states = nm.zeros((self.dim, self.dim), dtype=object)
         clist = []
         for ir in range(self.dim):
             for ic in range(self.dim):
@@ -418,7 +418,7 @@ class CorrN(CorrMiniApp):
 
         variables = problem.get_variables()
 
-        states = nm.zeros((self.dim,), dtype=nm.object)
+        states = nm.zeros((self.dim,), dtype=object)
         clist = []
         for ir in range(self.dim):
             if isinstance(self.set_variables, list):
@@ -535,7 +535,7 @@ class CorrEqPar(CorrOne):
     def __call__(self, problem=None, data=None):
         problem = get_default(problem, self.problem)
 
-        states = nm.zeros((self.dim,), dtype=nm.object)
+        states = nm.zeros((self.dim,), dtype=object)
         clist = []
 
         eqns ={}

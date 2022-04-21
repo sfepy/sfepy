@@ -45,7 +45,7 @@ class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
         self.setup_equations(self.equations)
 
         solve = self.compute_correctors
-        states = nm.zeros((dim, dim), dtype=nm.object)
+        states = nm.zeros((dim, dim), dtype=object)
         clist = []
         for ir in range( dim ):
             for ic in range( dim ):
