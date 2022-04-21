@@ -1,7 +1,5 @@
-from __future__ import absolute_import
 from sfepy.base.base import assert_
-from sfepy.base.testing import TestCommon
-import six
+import sfepy.base.testing as tst
 
 def _cmp(s1, s2):
     s1 = s1.split()
@@ -10,130 +8,122 @@ def _cmp(s1, s2):
     v2, t2 = float(s2[0]), s2[1:]
     return (abs(v1 - v2) < (1e-15 * abs(v1))) and (t1 == t2)
 
-class Test(TestCommon):
+def test_units():
+    from sfepy.mechanics.units import Unit, Quantity, sm
 
-    @staticmethod
-    def from_conf(conf, options):
-        return Test(conf=conf, options=options)
+    if sm is None:
+        tst.report('cannot import sympy, skipping')
+        return
 
-    def test_units(self):
-        from sfepy.mechanics.units import Unit, Quantity, sm
+    units = ['m', 's', 'kg', 'C']
+    tst.report('units:', units)
+    unit_set = [Unit(key) for key in units]
 
-        if sm is None:
-            self.report('cannot import sympy, skipping')
-            return True
+    q1 = Quantity('stress', unit_set)
+    tst.report(q1.name, ':', q1())
+    assert_(_cmp(q1(), '1.0 Pa'))
+    assert_(_cmp(q1('c'), '100.0 cPa'))
 
-        units = ['m', 's', 'kg', 'C']
-        self.report('units:', units)
-        unit_set = [Unit(key) for key in units]
- 
-        q1 = Quantity('stress', unit_set)
-        self.report(q1.name, ':', q1())
-        assert_(_cmp(q1(), '1.0 Pa'))
-        assert_(_cmp(q1('c'), '100.0 cPa'))
+    q2 = Quantity('force', unit_set)
+    tst.report(q2.name, ':', q2())
+    assert_(_cmp(q2(), '1.0 Newton'))
+    assert_(_cmp(q2('d'), '0.1 dNewton'))
 
-        q2 = Quantity('force', unit_set)
-        self.report(q2.name, ':', q2())
-        assert_(_cmp(q2(), '1.0 Newton'))
-        assert_(_cmp(q2('d'), '0.1 dNewton'))
+    q3 = Quantity('energy', unit_set)
+    tst.report(q3.name, ':', q3())
+    assert_(_cmp(q3(), '1.0 J'))
+    assert_(_cmp(q3('mu'), '1000000.0 muJ'))
 
-        q3 = Quantity('energy', unit_set)
-        self.report(q3.name, ':', q3())
-        assert_(_cmp(q3(), '1.0 J'))
-        assert_(_cmp(q3('mu'), '1000000.0 muJ'))
+    units = ['mm', 's', 'g', 'C']
+    tst.report('units:', units)
+    unit_set = [Unit(key) for key in units]
 
-        units = ['mm', 's', 'g', 'C']
-        self.report('units:', units)
-        unit_set = [Unit(key) for key in units]
- 
-        q1 = Quantity('stress', unit_set)
-        self.report(q1.name, ':', q1())
-        assert_(_cmp(q1(), '1.0 Pa'))
+    q1 = Quantity('stress', unit_set)
+    tst.report(q1.name, ':', q1())
+    assert_(_cmp(q1(), '1.0 Pa'))
 
-        q2 = Quantity('force', unit_set)
-        self.report(q2.name, ':', q2())
-        assert_(_cmp(q2(), '1.0 muNewton'))
+    q2 = Quantity('force', unit_set)
+    tst.report(q2.name, ':', q2())
+    assert_(_cmp(q2(), '1.0 muNewton'))
 
-        q3 = Quantity('energy', unit_set)
-        self.report(q3.name, ':', q3())
-        assert_(_cmp(q3(), '1.0 nJ'))
+    q3 = Quantity('energy', unit_set)
+    tst.report(q3.name, ':', q3())
+    assert_(_cmp(q3(), '1.0 nJ'))
 
-        units = ['cm', 'ms', 'kg', 'kC']
-        self.report('units:', units)
-        unit_set = [Unit(key) for key in units]
- 
-        q1 = Quantity('stress', unit_set)
-        self.report(q1.name, ':', q1())
-        assert_(_cmp(q1(), '0.1 GPa'))
+    units = ['cm', 'ms', 'kg', 'kC']
+    tst.report('units:', units)
+    unit_set = [Unit(key) for key in units]
 
-        q2 = Quantity('force', unit_set)
-        self.report(q2.name, ':', q2())
-        assert_(_cmp(q2(), '10.0 kNewton'))
+    q1 = Quantity('stress', unit_set)
+    tst.report(q1.name, ':', q1())
+    assert_(_cmp(q1(), '0.1 GPa'))
 
-        q3 = Quantity('energy', unit_set)
-        self.report(q3.name, ':', q3())
-        assert_(_cmp(q3(), '0.1 kJ'))
+    q2 = Quantity('force', unit_set)
+    tst.report(q2.name, ':', q2())
+    assert_(_cmp(q2(), '10.0 kNewton'))
 
-        q4 = Quantity('thermal_expandability', unit_set)
-        self.report(q4.name, ':', q4())
-        assert_(_cmp(q4(), '0.1 MPa / C'))
+    q3 = Quantity('energy', unit_set)
+    tst.report(q3.name, ':', q3())
+    assert_(_cmp(q3(), '0.1 kJ'))
 
-        assert_(_cmp(q4('G'), '0.0001 GPa / C'))
-        assert_(_cmp(q4('M'), '0.1 MPa / C'))
-        assert_(_cmp(q4('k'), '100.0 kPa / C'))
-        assert_(_cmp(q4('d'), '10000.0 dPa / C'))
-        assert_(_cmp(q4(''), '100000.0 Pa / C'))
+    q4 = Quantity('thermal_expandability', unit_set)
+    tst.report(q4.name, ':', q4())
+    assert_(_cmp(q4(), '0.1 MPa / C'))
 
-        units = ['m', 's', 'g', 'C']
-        self.report('units:', units)
-        unit_set = [Unit(key) for key in units]
+    assert_(_cmp(q4('G'), '0.0001 GPa / C'))
+    assert_(_cmp(q4('M'), '0.1 MPa / C'))
+    assert_(_cmp(q4('k'), '100.0 kPa / C'))
+    assert_(_cmp(q4('d'), '10000.0 dPa / C'))
+    assert_(_cmp(q4(''), '100000.0 Pa / C'))
 
-        q4 = Quantity('thermal_expandability', unit_set)
-        self.report(q4.name, ':', q4())
-        assert_(_cmp(q4(), '1.0 mPa / C'))
+    units = ['m', 's', 'g', 'C']
+    tst.report('units:', units)
+    unit_set = [Unit(key) for key in units]
 
-        assert_(_cmp(q4('k'), str(0.000001) + ' kPa / C'))
-        assert_(_cmp(q4('d'), '0.0001 dPa / C'))
-        assert_(_cmp(q4(''), '0.001 Pa / C'))
-        assert_(_cmp(q4('c'), '0.1 cPa / C'))
-        assert_(_cmp(q4('m'), '1.0 mPa / C'))
-        assert_(_cmp(q4('mu'), '1000.0 muPa / C'))
-        assert_(_cmp(q4('n'), '1000000.0 nPa / C'))
+    q4 = Quantity('thermal_expandability', unit_set)
+    tst.report(q4.name, ':', q4())
+    assert_(_cmp(q4(), '1.0 mPa / C'))
 
+    assert_(_cmp(q4('k'), str(0.000001) + ' kPa / C'))
+    assert_(_cmp(q4('d'), '0.0001 dPa / C'))
+    assert_(_cmp(q4(''), '0.001 Pa / C'))
+    assert_(_cmp(q4('c'), '0.1 cPa / C'))
+    assert_(_cmp(q4('m'), '1.0 mPa / C'))
+    assert_(_cmp(q4('mu'), '1000.0 muPa / C'))
+    assert_(_cmp(q4('n'), '1000000.0 nPa / C'))
+
+def test_consistent_sets():
+    from sfepy.mechanics.units import get_consistent_unit_set, sm
+
+    if sm is None:
+        tst.report('cannot import sympy, skipping')
         return True
 
-    def test_consistent_sets(self):
-        from sfepy.mechanics.units import get_consistent_unit_set, sm
+    u_sets = {
+        ('m', 's', 'kg', 'C') : {'force' : '1.0 Newton',
+                                 'stress' : '1.0 Pa',
+                                 'energy' : '1.0 J',
+                                 'thermal_expandability' : '1.0 Pa / C'},
+        ('mm', 's', 'kg', 'C') : {'force' : '1.0 mNewton',
+                                  'stress' : '1.0 kPa',
+                                  'energy' : '1.0 muJ',
+                                 'thermal_expandability' : '1.0 kPa / C'},
+        ('mm', 's', 'g', 'C') : {'force' : '1.0 muNewton',
+                                 'stress' : '1.0 Pa',
+                                 'energy' : '1.0 nJ',
+                                 'thermal_expandability' : '1.0 Pa / C'},
+    }
 
-        if sm is None:
-            self.report('cannot import sympy, skipping')
-            return True
+    ok = True
+    for unit_set, true_derived_units in u_sets.items():
+        tst.report('units:', unit_set)
+        derived_units = get_consistent_unit_set(*unit_set)
 
-        u_sets = {
-            ('m', 's', 'kg', 'C') : {'force' : '1.0 Newton',
-                                     'stress' : '1.0 Pa',
-                                     'energy' : '1.0 J',
-                                     'thermal_expandability' : '1.0 Pa / C'},
-            ('mm', 's', 'kg', 'C') : {'force' : '1.0 mNewton',
-                                      'stress' : '1.0 kPa',
-                                      'energy' : '1.0 muJ',
-                                     'thermal_expandability' : '1.0 kPa / C'},
-            ('mm', 's', 'g', 'C') : {'force' : '1.0 muNewton',
-                                     'stress' : '1.0 Pa',
-                                     'energy' : '1.0 nJ',
-                                     'thermal_expandability' : '1.0 Pa / C'},
-        }
+        for key, true_val in true_derived_units.items():
+            val = derived_units[key]
+            _ok = _cmp(true_val, val)
+            tst.report('%s: %s == %s -> %s' % (key, true_val, val, _ok))
 
-        ok = True
-        for unit_set, true_derived_units in six.iteritems(u_sets):
-            self.report('units:', unit_set)
-            derived_units = get_consistent_unit_set(*unit_set)
+            ok = ok and _ok
 
-            for key, true_val in six.iteritems(true_derived_units):
-                val = derived_units[key]
-                _ok = _cmp(true_val, val)
-                self.report('%s: %s == %s -> %s' % (key, true_val, val, _ok))
-
-                ok = ok and _ok
-
-        return ok
+    assert_(ok)
