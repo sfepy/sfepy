@@ -1,12 +1,9 @@
-from __future__ import absolute_import
 import sympy as sm
 import numpy as nm
 import scipy.sparse as sps
 
 from sfepy.base.base import dict_to_struct
-from sfepy.base.testing import TestCommon
-import six
-from six.moves import range
+import sfepy.base.testing as tst
 
 conf = {
     'name' : 'semismooth_newton',
@@ -19,8 +16,7 @@ conf = {
     'eps_r'      : 1e-2,
     'macheps'   : 1e-16,
     'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-    'ls_red_reg' : 0.1,
-    'ls_red_alt' : 0.01,
+    'ls_red'     : {'regular' : 0.1, 'steepest_descent' : 0.01},
     'ls_red_warp' : 0.001,
     'ls_on'      : 2.0,
     'ls_min'     : 1e-10,
@@ -59,7 +55,7 @@ def eval_matrix(mtx, **kwargs):
 
 def convert_to_csr(m_in):
     m_out = {}
-    for key, mtx in six.iteritems(m_in):
+    for key, mtx in m_in.items():
         m_out[key] = sps.csr_matrix(mtx)
 
     return m_out
@@ -127,137 +123,121 @@ def define_matrices():
 
     return m, ms, w
 
-class Test(TestCommon):
+def test_semismooth_newton():
+    import numpy as nm
+    from sfepy.solvers import Solver
 
-    @staticmethod
-    def from_conf(conf, options):
+    m, ms, w_names = define_matrices()
 
-        test = Test(conf=conf, options=options)
+    ns = [0, 6, 2, 2]
 
-        test.m, test.ms, test.w_names = define_matrices()
+    offsets = nm.cumsum(ns)
+    nx = offsets[-1]
 
-        return test
+    iw = slice(offsets[0], offsets[1])
+    ig = slice(offsets[1], offsets[2])
+    il = slice(offsets[2], offsets[3])
 
-    def test_semismooth_newton(self):
-        import numpy as nm
-        from sfepy.solvers import Solver
-
-        ns = [0, 6, 2, 2]
-
-        offsets = nm.cumsum(ns)
-        nx = offsets[-1]
-
-        iw = slice(offsets[0], offsets[1])
-        ig = slice(offsets[1], offsets[2])
-        il = slice(offsets[2], offsets[3])
-
-        def fun_smooth(vec_x):
-            xw = vec_x[iw]
-            xg = vec_x[ig]
-            xl = vec_x[il]
-
-            m = self.ms
-            rw = m['A'] * xw - m['Bb'].T * xg - self.m['fs'] 
-            rg = m['Bb'] * xw + xl * xg
-
-            rwg = nm.r_[rw, rg]
-
-            return rwg
-
-        def fun_smooth_grad(vec_x):
-            xw = vec_x[iw]
-            xl = vec_x[il]
-            xg = vec_x[ig]
-
-            m = self.m
-
-            mzl = nm.zeros((6, 2), dtype=nm.float64)
-
-            mw = nm.c_[m['A'], -m['Bb'].T, mzl]
-            mg = nm.c_[m['Bb'], nm.diag(xl), nm.diag(xg)]
-
-            mx = nm.r_[mw, mg]
-
-            mx = sps.csr_matrix(mx)
-            return mx
-
-        def fun_a(vec_x):
-            xw = vec_x[iw]
-            xg = vec_x[ig]
-
-            subsd = {}
-            for ii, key in enumerate(self.w_names):
-                subsd[key] = xw[ii]
-
-            sn = eval_matrix(self.m['sn'], **subsd).squeeze()
-
-            ra = nm.abs(xg) - fc * nm.abs(sn)
-
-            return -ra
-
-        def fun_a_grad(vec_x):
-            xw = vec_x[iw]
-            xg = vec_x[ig]
-            xl = vec_x[il]
-
-            subsd = {}
-            for ii, key in enumerate(self.w_names):
-                subsd[key] = xw[ii]
-
-            md = eval_matrix(self.m['D'], **subsd)
-            sn = eval_matrix(self.m['sn'], **subsd).squeeze()
-
-            ma = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
-            ma[:,iw] = - fc * nm.sign(sn)[:,None] * md
-            ma[:,ig] = nm.sign(xg)[:,None] * self.m['C']
-
-            return -sps.csr_matrix(ma)
-
-        def fun_b(vec_x):
-            xl = vec_x[il]
-
-            return xl
-
-        def fun_b_grad(vec_x):
-            xl = vec_x[il]
-
-            mb = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
-            mb[:,il] = self.m['C']
-
-            return sps.csr_matrix(mb)
-
-        vec_x0 = 0.1 * nm.ones((nx,), dtype=nm.float64)
-
-        lin_solver = Solver.any_from_conf(dict_to_struct(ls_conf))
-        status = {}
-        solver = Solver.any_from_conf(dict_to_struct(conf),
-                                      fun_smooth=fun_smooth,
-                                      fun_smooth_grad=fun_smooth_grad,
-                                      fun_a=fun_a,
-                                      fun_a_grad=fun_a_grad,
-                                      fun_b=fun_b,
-                                      fun_b_grad=fun_b_grad,
-                                      lin_solver=lin_solver,
-                                      status=status)
-
-        vec_x = solver(vec_x0)
-
+    def fun_smooth(vec_x):
         xw = vec_x[iw]
         xg = vec_x[ig]
         xl = vec_x[il]
 
-        self.report('x:', xw)
-        self.report('g:', xg)
-        self.report('l:', xl)
+        rw = ms['A'] * xw - ms['Bb'].T * xg - m['fs']
+        rg = ms['Bb'] * xw + xl * xg
 
+        rwg = nm.r_[rw, rg]
+
+        return rwg
+
+    def fun_smooth_grad(vec_x):
+        xl = vec_x[il]
+        xg = vec_x[ig]
+
+        mzl = nm.zeros((6, 2), dtype=nm.float64)
+
+        mw = nm.c_[m['A'], -m['Bb'].T, mzl]
+        mg = nm.c_[m['Bb'], nm.diag(xl), nm.diag(xg)]
+
+        mx = nm.r_[mw, mg]
+
+        mx = sps.csr_matrix(mx)
+        return mx
+
+    def fun_a(vec_x):
+        xw = vec_x[iw]
+        xg = vec_x[ig]
 
         subsd = {}
-        for ii, key in enumerate(self.w_names):
+        for ii, key in enumerate(w_names):
             subsd[key] = xw[ii]
 
-        sn = eval_matrix(self.m['sn'], **subsd).squeeze()
-        self.report('sn:', sn)
+        sn = eval_matrix(m['sn'], **subsd).squeeze()
 
-        ok = status['condition'] == 0
+        ra = nm.abs(xg) - fc * nm.abs(sn)
 
-        return ok
+        return -ra
+
+    def fun_a_grad(vec_x):
+        xw = vec_x[iw]
+        xg = vec_x[ig]
+        xl = vec_x[il]
+
+        subsd = {}
+        for ii, key in enumerate(w_names):
+            subsd[key] = xw[ii]
+
+        md = eval_matrix(m['D'], **subsd)
+        sn = eval_matrix(m['sn'], **subsd).squeeze()
+
+        ma = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
+        ma[:,iw] = - fc * nm.sign(sn)[:,None] * md
+        ma[:,ig] = nm.sign(xg)[:,None] * m['C']
+
+        return -sps.csr_matrix(ma)
+
+    def fun_b(vec_x):
+        xl = vec_x[il]
+
+        return xl
+
+    def fun_b_grad(vec_x):
+        xl = vec_x[il]
+
+        mb = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
+        mb[:,il] = m['C']
+
+        return sps.csr_matrix(mb)
+
+    vec_x0 = 0.1 * nm.ones((nx,), dtype=nm.float64)
+
+    lin_solver = Solver.any_from_conf(dict_to_struct(ls_conf))
+    status = {}
+    solver = Solver.any_from_conf(dict_to_struct(conf),
+                                  fun_smooth=fun_smooth,
+                                  fun_smooth_grad=fun_smooth_grad,
+                                  fun_a=fun_a,
+                                  fun_a_grad=fun_a_grad,
+                                  fun_b=fun_b,
+                                  fun_b_grad=fun_b_grad,
+                                  lin_solver=lin_solver,
+                                  status=status)
+
+    vec_x = solver(vec_x0)
+
+    xw = vec_x[iw]
+    xg = vec_x[ig]
+    xl = vec_x[il]
+
+    tst.report('x:', xw)
+    tst.report('g:', xg)
+    tst.report('l:', xl)
+
+    subsd = {}
+    for ii, key in enumerate(w_names):
+        subsd[key] = xw[ii]
+
+    sn = eval_matrix(m['sn'], **subsd).squeeze()
+    tst.report('sn:', sn)
+
+    assert status['condition'] == 0
