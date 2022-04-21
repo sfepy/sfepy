@@ -1,6 +1,7 @@
-from __future__ import print_function
-from __future__ import absolute_import
+import pytest
+
 from sfepy import data_dir
+import sfepy.base.testing as tst
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
@@ -37,7 +38,7 @@ materials = {
 }
 
 equations = {
-    'eq' : """dw_diffusion.i.Omega( m2.K, ts, us ) = 0"""
+    'eq' : """dw_diffusion.i.Omega(m2.K, ts, us) = 0"""
 }
 
 def get_pars(ts, coor, mode=None, term=None, **kwargs):
@@ -66,18 +67,17 @@ functions = {
 # 'dw' variables (test must be paired with unknown, which should be at
 # index 2!), mat mode)
 test_terms = [
-    ('%s_biot.i.Omega( m.val, %s, %s )',
+    ('%s_biot.i.Omega(m.val, %s, %s)',
      ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us', 'uv', 'tv'))),
-    ('%s_biot.i.Omega( m.val, %s, %s )',
+    ('%s_biot.i.Omega(m.val, %s, %s)',
      ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us', 'ts'))),
-    ('%s_diffusion.i.Omega( m.val, %s, %s )',
+    ('%s_diffusion.i.Omega(m.val, %s, %s)',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
-    ('%s_dot.i.Omega( m.val, %s, %s )',
+    ('%s_dot.i.Omega(m.val, %s, %s)',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
 ]
 
 import numpy as nm
-from sfepy.base.testing import TestCommon
 
 def _integrate(var, val_qp):
     from sfepy.discrete import Integral
@@ -89,187 +89,174 @@ def _integrate(var, val_qp):
 
     return val
 
-class Test(TestCommon):
+@pytest.fixture(scope='module')
+def problem():
+    import sys
+    from sfepy.discrete import Problem
+    from sfepy.base.conf import ProblemConf
 
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete import Problem
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
 
-        problem = Problem.from_conf(conf, init_equations=False)
-        test = Test(problem=problem,
-                    conf=conf, options=options)
-        return test
+    problem = Problem.from_conf(conf, init_equations=False)
+    return problem
 
-    def test_consistency_d_dw(self):
-        from sfepy.discrete import Variables
+def test_consistency_d_dw(problem):
+    from sfepy.discrete import Variables
 
-        ok = True
-        pb = self.problem
-        for aux in test_terms:
-            term_template, (prefix, par_name, d_vars, dw_vars) = aux
-            print(term_template, prefix, par_name, d_vars, dw_vars)
+    ok = True
+    for aux in test_terms:
+        term_template, (prefix, par_name, d_vars, dw_vars) = aux
+        tst.report(term_template, prefix, par_name, d_vars, dw_vars)
 
-            term1 = term_template % ((prefix,) + d_vars)
+        term1 = term_template % ((prefix,) + d_vars)
 
-            variables = Variables.from_conf(self.conf.variables, pb.fields)
+        variables = Variables.from_conf(problem.conf.variables, problem.fields)
 
-            for var_name in d_vars:
-                var = variables[var_name]
-                n_dof = var.field.n_nod * var.field.shape[0]
-                aux = nm.arange(n_dof, dtype=nm.float64)
-                var.set_data(aux)
+        for var_name in d_vars:
+            var = variables[var_name]
+            n_dof = var.field.n_nod * var.field.shape[0]
+            aux = nm.arange(n_dof, dtype=nm.float64)
+            var.set_data(aux)
 
-            if prefix == 'd':
-                val1 = pb.evaluate(term1, var_dict=variables.as_dict())
+        if prefix == 'd':
+            val1 = problem.evaluate(term1, var_dict=variables.as_dict())
 
-            else:
-                val1 = pb.evaluate(term1, call_mode='d_eval',
-                                   var_dict=variables.as_dict())
+        else:
+            val1 = problem.evaluate(term1, call_mode='d_eval',
+                                    var_dict=variables.as_dict())
 
-            self.report('%s: %s' % (term1, val1))
+        tst.report('%s: %s' % (term1, val1))
 
-            term2 = term_template % (('dw',) + dw_vars[:2])
+        term2 = term_template % (('dw',) + dw_vars[:2])
 
-            vec, vv = pb.evaluate(term2, mode='weak',
-                                  var_dict=variables.as_dict(),
-                                  ret_variables=True)
+        vec, vv = problem.evaluate(term2, mode='weak',
+                                   var_dict=variables.as_dict(),
+                                   ret_variables=True)
 
-            pvec = vv.get_vec_part(vec, dw_vars[2])
-            val2 = nm.dot(variables[par_name](), pvec)
-            self.report('%s: %s' % (term2, val2))
+        pvec = vv.get_vec_part(vec, dw_vars[2])
+        val2 = nm.dot(variables[par_name](), pvec)
+        tst.report('%s: %s' % (term2, val2))
 
-            err = nm.abs(val1 - val2) / nm.abs(val1)
-            _ok = err < 1e-12
-            self.report('relative difference: %e -> %s' % (err, _ok))
+        err = nm.abs(val1 - val2) / nm.abs(val1)
+        _ok = err < 1e-12
+        tst.report('relative difference: %e -> %s' % (err, _ok))
 
-            ok = ok and _ok
+        ok = ok and _ok
 
-        return ok
+    assert ok
 
-    def test_eval_matrix(self):
-        problem = self.problem
+def test_eval_matrix(problem):
+    problem.set_equations()
+    problem.time_update(ebcs={}, epbcs={})
 
-        problem.set_equations()
-        problem.time_update(ebcs={}, epbcs={})
+    var = problem.get_variables()['us']
 
-        var = problem.get_variables()['us']
+    vec = nm.arange(var.n_dof, dtype=var.dtype)
+    var.set_data(vec)
 
-        vec = nm.arange(var.n_dof, dtype=var.dtype)
+    val1 = problem.evaluate('dw_diffusion.i.Omega(m2.K, us, us)',
+                            mode='eval', us=var)
 
-        var.set_data(vec)
+    mtx = problem.evaluate('dw_diffusion.i.Omega(m2.K, ts, us)',
+                           mode='weak', dw_mode='matrix')
 
-        val1 = problem.evaluate('dw_diffusion.i.Omega( m2.K, us, us )',
-                                mode='eval', us=var)
+    val2 = nm.dot(vec, mtx * vec)
 
-        mtx = problem.evaluate('dw_diffusion.i.Omega( m2.K, ts, us )',
-                               mode='weak', dw_mode='matrix')
+    ok = (nm.abs(val1 - val2) / nm.abs(val1)) < 1e-14
+    tst.report('eval: %s, weak: %s, ok: %s' % (val1, val2, ok))
 
-        val2 = nm.dot(vec, mtx * vec)
+    assert ok
 
-        ok = (nm.abs(val1 - val2) / nm.abs(val1)) < 1e-14
-        self.report('eval: %s, weak: %s, ok: %s' % (val1, val2, ok))
+def test_vector_matrix(problem):
+    problem.set_equations()
+    problem.time_update()
 
-        return ok
+    state = problem.create_state()
+    state.apply_ebc()
 
-    def test_vector_matrix(self):
-        problem = self.problem
+    aux1 = problem.evaluate("dw_diffusion.i.Omega(m2.K, ts, us)",
+                            mode='weak', dw_mode='vector')
 
-        problem.set_equations()
-        problem.time_update()
+    problem.time_update(ebcs={}, epbcs={})
 
-        state = problem.create_state()
-        state.apply_ebc()
+    mtx = problem.evaluate("dw_diffusion.i.Omega(m2.K, ts, us)",
+                           mode='weak', dw_mode='matrix')
+    aux2g = mtx * state()
+    problem.time_update(ebcs=problem.conf.ebcs,
+                        epbcs=problem.conf.epbcs)
+    aux2 = problem.equations.reduce_vec(aux2g, follow_epbc=True)
 
-        aux1 = problem.evaluate("dw_diffusion.i.Omega( m2.K, ts, us )",
-                                mode='weak', dw_mode='vector')
+    ok = tst.compare_vectors(aux1, aux2,
+                             label1='vector mode',
+                             label2='matrix mode')
+    if not ok:
+        tst.report('failed')
 
-        problem.time_update(ebcs={}, epbcs={})
+    assert ok
 
-        mtx = problem.evaluate("dw_diffusion.i.Omega( m2.K, ts, us )",
-                               mode='weak', dw_mode='matrix')
-        aux2g = mtx * state()
-        problem.time_update(ebcs=self.conf.ebcs,
-                            epbcs=self.conf.epbcs)
-        aux2 = problem.equations.reduce_vec(aux2g, follow_epbc=True)
+def test_surface_evaluate(problem):
+    from sfepy.discrete import FieldVariable
 
-        ret = self.compare_vectors(aux1, aux2,
-                                   label1='vector mode',
-                                   label2='matrix mode')
-        if not ret:
-            self.report('failed')
+    us = problem.create_variables(['us'])['us']
+    vec = nm.ones(us.n_dof, dtype=us.dtype)
+    us.set_data(vec)
 
-        return ret
+    expr = 'ev_integrate.i.Left(us)'
+    val = problem.evaluate(expr, us=us)
+    ok1 = nm.abs(val - 1.0) < 1e-15
+    tst.report('with unknown: %s, value: %s, ok: %s'
+               % (expr, val, ok1))
 
-    def test_surface_evaluate(self):
-        from sfepy.discrete import FieldVariable
-        problem = self.problem
+    ps1 = FieldVariable('ps1', 'parameter', us.get_field(),
+                        primary_var_name='(set-to-None)')
+    ps1.set_data(vec)
 
-        us = problem.get_variables()['us']
-        vec = nm.empty(us.n_dof, dtype=us.dtype)
-        vec[:] = 1.0
-        us.set_data(vec)
+    expr = 'ev_integrate.i.Left(ps1)'
+    val = problem.evaluate(expr, ps1=ps1)
+    ok2 = nm.abs(val - 1.0) < 1e-15
+    tst.report('with parameter: %s, value: %s, ok: %s'
+               % (expr, val, ok2))
 
-        expr = 'ev_integrate.i.Left( us )'
-        val = problem.evaluate(expr, us=us)
-        ok1 = nm.abs(val - 1.0) < 1e-15
-        self.report('with unknown: %s, value: %s, ok: %s'
-                    % (expr, val, ok1))
+    assert ok1 and ok2
 
-        ps1 = FieldVariable('ps1', 'parameter', us.get_field(),
-                            primary_var_name='(set-to-None)')
-        ps1.set_data(vec)
+def test_ev_grad(problem):
+    var = problem.create_variables(['us'])['us']
+    val = nm.arange(var.n_dof, dtype=var.dtype)
+    var.set_data(val)
 
-        expr = 'ev_integrate.i.Left( ps1 )'
-        val = problem.evaluate(expr, ps1=ps1)
-        ok2 = nm.abs(val - 1.0) < 1e-15
-        self.report('with parameter: %s, value: %s, ok: %s'
-                    % (expr, val, ok2))
-        ok2 = True
+    val1 = problem.evaluate('ev_grad.i.Omega(us)', us=var, mode='el_avg')
+    tst.report('ev_grad(el_avg): min, max:', val1.min(), val1.max())
 
-        return ok1 and ok2
+    aux = problem.evaluate('ev_grad.i.Omega(us)', us=var, mode='qp')
+    val2 = _integrate(var, aux)
+    val2.shape = val1.shape
+    tst.report('ev_grad(qp): min, max:', val2.min(), val2.max())
 
-    def test_ev_grad(self):
-        problem = self.problem
+    ok = tst.compare_vectors(val1, val2,
+                             label1='de mode',
+                             label2='dq mode')
+    if not ok:
+        tst.report('failed')
 
-        var = problem.create_variables(['us'])['us']
-        val = nm.arange(var.n_dof, dtype=var.dtype)
-        var.set_data(val)
+    assert ok
 
-        val1 = problem.evaluate('ev_grad.i.Omega( us )', us=var, mode='el_avg')
-        self.report('ev_grad(el_avg): min, max:', val1.min(), val1.max())
+def test_ev_div(problem):
+    var = problem.create_variables(['uv'])['uv']
+    val = nm.arange(var.n_dof, dtype=var.dtype)
+    var.set_data(val)
 
-        aux = problem.evaluate('ev_grad.i.Omega( us )', us=var, mode='qp')
-        val2 = _integrate(var, aux)
-        val2.shape = val1.shape
-        self.report('ev_grad(qp): min, max:', val2.min(), val2.max())
+    val1 = problem.evaluate('ev_div.i.Omega(uv)', uv=var, mode='el_avg')
+    tst.report('ev_div(el_avg): min, max:', val1.min(), val1.max())
 
-        ok = self.compare_vectors(val1, val2,
-                                  label1='de mode',
-                                  label2='dq mode')
-        if not ok:
-            self.report('failed')
+    aux = problem.evaluate('ev_div.i.Omega(uv)', uv=var, mode='qp')
+    val2 = _integrate(var, aux)
+    val2.shape = val1.shape
+    tst.report('ev_div(qp): min, max:', val2.min(), val2.max())
 
-        return ok
+    ok = tst.compare_vectors(val1, val2,
+                             label1='de mode',
+                             label2='dq mode')
+    if not ok:
+        tst.report('failed')
 
-    def test_ev_div(self):
-        problem = self.problem
-
-        var = problem.create_variables(['uv'])['uv']
-        val = nm.arange(var.n_dof, dtype=var.dtype)
-        var.set_data(val)
-
-        val1 = problem.evaluate('ev_div.i.Omega( uv )', uv=var, mode='el_avg')
-        self.report('ev_div(el_avg): min, max:', val1.min(), val1.max())
-
-        aux = problem.evaluate('ev_div.i.Omega( uv )', uv=var, mode='qp')
-        val2 = _integrate(var, aux)
-        val2.shape = val1.shape
-        self.report('ev_div(qp): min, max:', val2.min(), val2.max())
-
-        ok = self.compare_vectors(val1, val2,
-                                  label1='de mode',
-                                  label2='dq mode')
-        if not ok:
-            self.report('failed')
-
-        return ok
+    assert ok
