@@ -1,11 +1,11 @@
-from __future__ import absolute_import
 from copy import copy
 
 import numpy as nm
+import pytest
 
-from sfepy.base.testing import TestCommon
 from sfepy.base.base import ordered_iteritems
 from sfepy import data_dir
+import sfepy.base.testing as tst
 
 filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
                    for geom in ['1_2', '2_3', '2_4', '3_4', '3_8', '3_2_4']]
@@ -156,192 +156,189 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
 
     return args, str_args, materials, variables
 
-class Test(TestCommon):
+@pytest.fixture(scope='module')
+def data():
+    from sfepy.base.base import Struct
+    from sfepy.discrete import Integral
+    from sfepy.discrete.fem import Mesh, FEDomain
 
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete import Integral
-        from sfepy.discrete.fem import Mesh, FEDomain
+    domains = []
+    for filename in filename_meshes:
+        mesh = Mesh.from_file(filename)
+        domain = FEDomain('domain_%s' % mesh.name.replace(data_dir, ''),
+                          mesh)
+        domain.create_region('Omega', 'all')
+        domain.create_region('Gamma', 'vertices of surface', 'facet')
 
-        domains = []
-        for filename in filename_meshes:
-            mesh = Mesh.from_file(filename)
-            domain = FEDomain('domain_%s' % mesh.name.replace(data_dir, ''),
-                              mesh)
-            domain.create_region('Omega', 'all')
-            domain.create_region('Gamma', 'vertices of surface', 'facet')
+        domains.append(domain)
 
-            domains.append(domain)
+    integral = Integral('i', order=3)
+    qp_coors, qp_weights = integral.get_qp('3_8')
+    custom_integral = Integral('i', coors=qp_coors, weights=qp_weights,
+                               order='custom')
 
-        integral = Integral('i', order=3)
-        qp_coors, qp_weights = integral.get_qp('3_8')
-        custom_integral = Integral('i', coors=qp_coors, weights=qp_weights,
-                                   order='custom')
+    return Struct(domains=domains, integral=integral,
+                  custom_integral=custom_integral)
 
-        test = Test(domains=domains, integral=integral,
-                    custom_integral=custom_integral,
-                    conf=conf, options=options)
-        return test
+def _test_single_term(data, term_cls, domain, rname):
+    from sfepy.terms import Term
+    from sfepy.terms.terms import get_arg_kinds
 
-    def test_term_call_modes(self):
-        from sfepy.terms import term_table
-        ok = True
+    ok = True
 
-        failed = []
-        for domain in self.domains:
-            self.report('domain: %s' % domain.name)
+    term_call = term_cls.name + '(%s)'
 
-            domain_geometry = list(domain.geom_els.values())[0].name
-            if domain.shape.dim != domain.shape.tdim:
-                domain_geometry = '%d_%s' % (domain.shape.dim, domain_geometry)
+    arg_shapes_list = term_cls.arg_shapes
+    if not isinstance(arg_shapes_list, list):
+        arg_shapes_list = [arg_shapes_list]
 
-            for _, term_cls in ordered_iteritems(term_table):
-                if (domain_geometry not in term_cls.geometries) \
-                   or ("dg" in term_cls.name) \
-                   or (term_cls.name == "dw_ns_dot_grad_s"):
-                    continue
+    if term_cls.integration != 'custom':
+        integral = data.integral
 
-                if term_cls.integration == 'by_region':
-                    rnames = ['Omega', 'Gamma']
+    else:
+        integral = data.custom_integral
+
+    poly_space_base = getattr(term_cls, 'poly_space_base', 'lagrange')
+
+    prev_shapes = {}
+    for _arg_shapes in arg_shapes_list:
+        # Unset shapes are taken from the previous iteration.
+        arg_shapes = copy(prev_shapes)
+        arg_shapes.update(_arg_shapes)
+        prev_shapes = arg_shapes
+
+        tst.report('arg_shapes:', arg_shapes)
+        arg_types = term_cls.arg_types
+        if not isinstance(arg_types[0], tuple):
+            arg_types = (arg_types,)
+
+        for iat, ats in enumerate(arg_types):
+            tst.report('arg_types:', ats)
+
+            arg_kinds = get_arg_kinds(ats)
+            modes = getattr(term_cls, 'modes', None)
+            mode = modes[iat] if modes is not None else None
+
+            if 'dw_s_dot_grad_i_s' in term_cls.name:
+                material_value = 0.0
+
+            else:
+                material_value = 1.0
+            aux = make_term_args(arg_shapes, arg_kinds, ats, mode, domain,
+                                 material_value=material_value,
+                                 poly_space_base=poly_space_base)
+            args, str_args, materials, variables = aux
+
+            tst.report('args:', str_args)
+
+            name = term_call % (', '.join(str_args))
+            term = Term.new(name, integral, domain.regions[rname], **args)
+            term.setup()
+
+            call_mode = 'weak' if term.names.virtual else 'eval'
+            tst.report('call mode:', call_mode)
+
+            out = term.evaluate(mode=call_mode, ret_status=True)
+
+            if call_mode == 'eval':
+                vals, status = out
+                vals = nm.array(vals)
+
+            else:
+                vals, iels, status = out
+
+            if isinstance(vals, tuple):
+                # Dynamic connectivity terms.
+                vals = vals[0]
+
+            _ok = nm.isfinite(vals).all()
+            ok = ok and _ok
+            tst.report('values shape: %s' % (vals.shape,))
+            if not _ok:
+                tst.report('values are not finite!')
+                tst.report(vals)
+
+            _ok = status == 0
+            if not _ok:
+                tst.report('status is %s!' % status)
+
+            ok = ok and _ok
+
+            if term.names.virtual:
+                # Test differentiation w.r.t. state variables in the weak
+                # mode.
+                svars = term.get_state_variables(unknown_only=True)
+                for svar in svars:
+                    vals, iels, status = term.evaluate(mode=call_mode,
+                                                       diff_var=svar.name,
+                                                       ret_status=True)
+                    if isinstance(vals, tuple):
+                        # Dynamic connectivity terms.
+                        vals = vals[0]
+
+                    _ok = status == 0
+                    ok = ok and _ok
+                    tst.report('diff: %s' % svar.name)
+                    if not _ok:
+                        tst.report('status is %s!' % status)
+
+                    _ok = nm.isfinite(vals).all()
+                    ok = ok and _ok
+                    tst.report('values shape: %s' % (vals.shape,))
+                    if not _ok:
+                        tst.report('values are not finite!')
+                        tst.report(vals)
+
+    return ok
+
+def test_term_call_modes(data):
+    from sfepy.terms import term_table
+    ok = True
+
+    failed = []
+    for domain in data.domains:
+        tst.report('domain: %s' % domain.name)
+
+        domain_geometry = list(domain.geom_els.values())[0].name
+        if domain.shape.dim != domain.shape.tdim:
+            domain_geometry = '%d_%s' % (domain.shape.dim, domain_geometry)
+
+        for _, term_cls in ordered_iteritems(term_table):
+            if (domain_geometry not in term_cls.geometries) \
+               or ("dg" in term_cls.name) \
+               or (term_cls.name == "dw_ns_dot_grad_s"):
+                continue
+
+            if term_cls.integration == 'by_region':
+                rnames = ['Omega', 'Gamma']
+            else:
+                vint = ('volume', 'point', 'custom')
+                rnames = ['Omega'] if term_cls.integration in vint\
+                    else ['Gamma']
+
+            for rname in rnames:
+                tst.report('<-- %s.%s ...' % (term_cls.name, rname))
+
+                if rname == 'Gamma' and domain.mesh.dim == 1:
+                    tst.report('--> 1D Gamma region: not tested!')
+
+                elif term_cls.arg_shapes:
+                    try:
+                        _ok = _test_single_term(data, term_cls, domain,
+                                                rname)
+
+                    except:
+                        _ok = False
+
+                    if not _ok:
+                        failed.append((domain.name, term_cls.name))
+
+                    ok = ok and _ok
+                    tst.report('--> ok: %s' % _ok)
+
                 else:
-                    vint = ('volume', 'point', 'custom')
-                    rnames = ['Omega'] if term_cls.integration in vint\
-                        else ['Gamma']
+                    tst.report('--> not tested!')
 
-                for rname in rnames:
-                    self.report('<-- %s.%s ...' % (term_cls.name, rname))
+    tst.report('failed:', failed)
 
-                    if rname == 'Gamma' and domain.mesh.dim == 1:
-                        self.report('--> 1D Gamma region: not tested!')
-
-                    elif term_cls.arg_shapes:
-                        try:
-                            _ok = self._test_single_term(term_cls, domain,
-                                                         rname)
-
-                        except:
-                            _ok = False
-
-                        if not _ok:
-                            failed.append((domain.name, term_cls.name))
-
-                        ok = ok and _ok
-                        self.report('--> ok: %s' % _ok)
-
-                    else:
-                        self.report('--> not tested!')
-
-        self.report('failed:', failed)
-
-        return ok
-
-    def _test_single_term(self, term_cls, domain, rname):
-        from sfepy.terms import Term
-        from sfepy.terms.terms import get_arg_kinds
-
-        ok = True
-
-        term_call = term_cls.name + '(%s)'
-
-        arg_shapes_list = term_cls.arg_shapes
-        if not isinstance(arg_shapes_list, list):
-            arg_shapes_list = [arg_shapes_list]
-
-        if term_cls.integration != 'custom':
-            integral = self.integral
-
-        else:
-            integral = self.custom_integral
-
-        poly_space_base = getattr(term_cls, 'poly_space_base', 'lagrange')
-
-        prev_shapes = {}
-        for _arg_shapes in arg_shapes_list:
-            # Unset shapes are taken from the previous iteration.
-            arg_shapes = copy(prev_shapes)
-            arg_shapes.update(_arg_shapes)
-            prev_shapes = arg_shapes
-
-            self.report('arg_shapes:', arg_shapes)
-            arg_types = term_cls.arg_types
-            if not isinstance(arg_types[0], tuple):
-                arg_types = (arg_types,)
-
-            for iat, ats in enumerate(arg_types):
-                self.report('arg_types:', ats)
-
-                arg_kinds = get_arg_kinds(ats)
-                modes = getattr(term_cls, 'modes', None)
-                mode = modes[iat] if modes is not None else None
-
-                if 'dw_s_dot_grad_i_s' in term_cls.name:
-                    material_value = 0.0
-
-                else:
-                    material_value = 1.0
-                aux = make_term_args(arg_shapes, arg_kinds, ats, mode, domain,
-                                     material_value=material_value,
-                                     poly_space_base=poly_space_base)
-                args, str_args, materials, variables = aux
-
-                self.report('args:', str_args)
-
-                name = term_call % (', '.join(str_args))
-                term = Term.new(name, integral, domain.regions[rname], **args)
-                term.setup()
-
-                call_mode = 'weak' if term.names.virtual else 'eval'
-                self.report('call mode:', call_mode)
-
-                out = term.evaluate(mode=call_mode, ret_status=True)
-
-                if call_mode == 'eval':
-                    vals, status = out
-                    vals = nm.array(vals)
-
-                else:
-                    vals, iels, status = out
-
-                if isinstance(vals, tuple):
-                    # Dynamic connectivity terms.
-                    vals = vals[0]
-
-                _ok = nm.isfinite(vals).all()
-                ok = ok and _ok
-                self.report('values shape: %s' % (vals.shape,))
-                if not _ok:
-                    self.report('values are not finite!')
-                    self.report(vals)
-
-                _ok = status == 0
-                if not _ok:
-                    self.report('status is %s!' % status)
-
-                ok = ok and _ok
-
-                if term.names.virtual:
-                    # Test differentiation w.r.t. state variables in the weak
-                    # mode.
-                    svars = term.get_state_variables(unknown_only=True)
-                    for svar in svars:
-                        vals, iels, status = term.evaluate(mode=call_mode,
-                                                           diff_var=svar.name,
-                                                           ret_status=True)
-                        if isinstance(vals, tuple):
-                            # Dynamic connectivity terms.
-                            vals = vals[0]
-
-                        _ok = status == 0
-                        ok = ok and _ok
-                        self.report('diff: %s' % svar.name)
-                        if not _ok:
-                            self.report('status is %s!' % status)
-
-                        _ok = nm.isfinite(vals).all()
-                        ok = ok and _ok
-                        self.report('values shape: %s' % (vals.shape,))
-                        if not _ok:
-                            self.report('values are not finite!')
-                            self.report(vals)
-
-        return ok
+    assert ok
