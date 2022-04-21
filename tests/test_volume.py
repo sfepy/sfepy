@@ -1,8 +1,11 @@
 """
 Test computing volumes by volume or surface integrals.
 """
-from __future__ import absolute_import
+import numpy as nm
+import pytest
+
 from sfepy import data_dir
+import sfepy.base.testing as tst
 
 filename_mesh = data_dir + '/meshes/3d/elbow.mesh'
 
@@ -27,73 +30,71 @@ expressions = {
     'surface_u' : 'ev_volume_surface.i.Gamma(u)',
 }
 
-import numpy as nm
-from sfepy.base.testing import TestCommon
+@pytest.fixture(scope='module')
+def problem():
+    import sys
+    from sfepy.discrete import Problem
+    from sfepy.base.conf import ProblemConf
 
-class Test(TestCommon):
+    conf = ProblemConf.from_dict(globals(), sys.modules[__name__])
 
-    @staticmethod
-    def from_conf(conf, options):
-        from sfepy.discrete import Problem
+    problem = Problem.from_conf(conf, init_equations=False)
+    return problem
 
-        problem = Problem.from_conf(conf, init_equations=False)
-        test = Test(problem=problem, conf=conf, options=options)
-        return test
+def test_volume(problem):
+    from sfepy.discrete import FieldVariable
 
-    def test_volume(self):
-        from sfepy.discrete import FieldVariable
+    ok = True
 
-        ok = True
+    field_map = {'u' : 'vector', 'p' : 'scalar'}
 
-        field_map = {'u' : 'vector', 'p' : 'scalar'}
+    volumes = {}
+    avg = 0.0
+    for key, term in expressions.items():
+        var_name = key[-1]
+        field = problem.fields[field_map[var_name]]
+        var = FieldVariable(var_name, 'parameter', field,
+                            primary_var_name='(set-to-None)')
 
-        volumes = {}
-        avg = 0.0
-        for key, term in expressions.items():
-            var_name = key[-1]
-            field = self.problem.fields[field_map[var_name]]
-            var = FieldVariable(var_name, 'parameter', field,
-                                primary_var_name='(set-to-None)')
+        val = problem.evaluate(term, **{var_name : var})
 
-            val = self.problem.evaluate(term, **{var_name : var})
+        volumes[key] = val
+        avg += val
 
-            volumes[key] = val
-            avg += val
+    avg /= len(volumes)
 
-        avg /= len(volumes)
+    for key, val in volumes.items():
+        err = nm.abs(avg - val) / nm.abs(avg)
+        _ok = err < 1e-12
+        tst.report('"'"%s"'" - volume: %e' % (key, val))
+        tst.report('"'"%s"'" - relative volume difference: %e -> %s'
+                    % (key, err, _ok))
+        ok = ok and _ok
 
-        for key, val in volumes.items():
-            err = nm.abs(avg - val) / nm.abs(avg)
-            _ok = err < 1e-12
-            self.report('"'"%s"'" - volume: %e' % (key, val))
-            self.report('"'"%s"'" - relative volume difference: %e -> %s'
-                        % (key, err, _ok))
-            ok = ok and _ok
+    assert ok
 
-        return ok
+def test_volume_tl(problem):
+    from sfepy.discrete import FieldVariable
 
-    def test_volume_tl(self):
-        from sfepy.discrete import FieldVariable
+    fu = problem.fields['vector']
+    fq = problem.fields['scalar']
 
-        fu = self.problem.fields['vector']
-        fq = self.problem.fields['scalar']
+    var_u = FieldVariable('u', 'parameter', fu,
+                          primary_var_name='(set-to-None)')
+    var_q = FieldVariable('q', 'test', fq,
+                          primary_var_name='(set-to-None)')
 
-        var_u = FieldVariable('u', 'parameter', fu,
-                              primary_var_name='(set-to-None)')
-        var_q = FieldVariable('q', 'test', fq,
-                              primary_var_name='(set-to-None)')
+    var_u.set_data(nm.linspace(0, 0.004, var_u.n_dof))
 
-        var_u.set_data(nm.linspace(0, 0.004, var_u.n_dof))
+    vval = problem.evaluate('dw_tl_volume.i.Omega( q, u )',
+                            term_mode='volume', q=var_q, u=var_u)
 
-        vval = self.problem.evaluate('dw_tl_volume.i.Omega( q, u )',
-                                     term_mode='volume', q=var_q, u=var_u)
+    sval = problem.evaluate('ev_tl_volume_surface.i.Gamma( u )',
+                            u=var_u)
 
-        sval = self.problem.evaluate('ev_tl_volume_surface.i.Gamma( u )',
-                                     u=var_u)
+    ok = abs(vval - sval) < 1e-14
 
-        ok = abs(vval - sval) < 1e-14
+    tst.report('TL: by volume: %e == by surface: %e -> %s' %
+                (vval, sval, ok))
 
-        self.report('TL: by volume: %e == by surface: %e -> %s' %
-                    (vval, sval, ok))
-
-        return ok
+    assert ok
