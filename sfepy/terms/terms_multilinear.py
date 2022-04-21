@@ -1385,6 +1385,33 @@ class EConvectTerm(ETermBase):
             'i,i.j,j', virtual, state, state, diff_var=diff_var,
         )
 
+class ELinearConvectTerm(ETermBase):
+    r"""
+    Linearized convective term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
+
+    :Arguments:
+        - virtual/parameter_1: :math:`\ul{v}`
+        - parameter/parameter_2: :math:`\ul{b}`
+        - state/parameter_3: :math:`\ul{u}`
+    """
+    name = 'de_lin_convect'
+    arg_types = (('virtual', 'parameter', 'state'),
+                 ('parameter_1', 'parameter_2', 'parameter_3'))
+    arg_shapes = {'virtual' : ('D', 'state'), 'parameter' : 'D', 'state' : 'D',
+                  'parameter_1' : 'D', 'parameter_2' : 'D', 'parameter_3' : 'D'}
+    modes = ('weak', 'eval')
+
+    def get_function(self, virtual, parameter, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        return self.make_function(
+            'i,i.j,j', virtual, state, parameter, diff_var=diff_var,
+        )
+
 class EDivTerm(ETermBase):
     r"""
     Weighted divergence term.
