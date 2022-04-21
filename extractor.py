@@ -164,7 +164,7 @@ def main():
         else:
             args.update({'steps' : nm.arange(options.step_from,
                                              options.step_to + 1,
-                                             options.step_by, dtype=nm.int)})
+                                             options.step_by, dtype=nm.int32)})
 
         th.dump_to_vtk(filename_results, output_filename_trunk=trunk, **args)
 

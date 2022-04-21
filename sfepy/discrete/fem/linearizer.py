@@ -147,7 +147,7 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
 
         # Deal with elements to refine.
         if level < max_level:
-            eflag = flag.sum(axis=1, dtype=nm.bool)
+            eflag = flag.sum(axis=1, dtype=bool)
             iels = iels[eflag]
 
             rc0 = rc

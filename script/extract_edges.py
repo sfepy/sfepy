@@ -26,7 +26,7 @@ def merge_lines(mesh, eps=1e-18):
     n_v = coors.shape[0]
     n_e = conns.shape[0]
     row = nm.repeat(nm.arange(n_e), 2)
-    aux = coo_matrix((nm.ones((n_e * 2,), dtype=nm.bool),
+    aux = coo_matrix((nm.ones((n_e * 2,), dtype=bool),
                      (row, conns.flatten())), shape=(n_e, n_v))
     v2e = aux.tocsc()
     n_epv = nm.diff(v2e.indptr)
@@ -35,7 +35,7 @@ def merge_lines(mesh, eps=1e-18):
     de = coors[conns[:, 1], :] - coors[conns[:, 0], :]
     de = de / nm.linalg.norm(de, axis=1)[:, nm.newaxis]
 
-    eflag = nm.ones((n_e, ), dtype=bool) 
+    eflag = nm.ones((n_e, ), dtype=bool)
     valid_e = nm.where(eflag)[0]
     e_remove = []
 
@@ -138,8 +138,8 @@ def extract_edges(mesh, eps=1e-16):
         n_ef = nm.diff(se_off)[0]  # = 2
         n_sf = se_map.shape[0] // n_ef
         row = nm.repeat(nm.arange(n_sf), n_ef)
-        sf2e = coo_matrix((nm.ones((n_sf * n_ef,), dtype=nm.bool),
-                           (row, se_map0)), shape=(n_sf, n_se))
+        sf2e = coo_matrix((nm.ones((n_sf * n_ef,), dtype=bool),
+                           (row , se_map0)), shape=(n_sf, n_se))
         # edge to face map (n_edge x 2)
         se2f = sf2e.tocsc().indices.reshape((sedges.shape[0], 2))
 

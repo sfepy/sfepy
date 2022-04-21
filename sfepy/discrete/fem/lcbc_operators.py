@@ -664,7 +664,7 @@ class LCBCOperators(Container):
         cols = []
         data = []
 
-        lcbc_mask = nm.ones(n_dof, dtype=nm.bool)
+        lcbc_mask = nm.ones(n_dof, dtype=bool)
         is_homogeneous = True
         for ii, op in enumerate(self):
             rvar_name = op.var_names[0]
