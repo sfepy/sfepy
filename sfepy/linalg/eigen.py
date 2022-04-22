@@ -172,21 +172,3 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
         eigs -= shift
 
     return x, ii, nm.array(norm_rs), eigs
-
-def arpack_eigs(mtx, nev=1, which='SM'):
-    """
-    Calculate several eigenvalues and corresponding eigenvectors of a
-    matrix using ARPACK from SciPy. The eigenvalues are sorted in
-    ascending order.
-    """
-    from scipy.sparse.linalg.interface import aslinearoperator
-    from scipy.sparse.linalg.eigen.arpack import speigs
-
-    matvec = aslinearoperator(mtx).matvec
-    eigs, vecs = speigs.ARPACK_eigs(matvec, mtx.shape[0], nev=nev, which=which)
-
-    ii = nm.argsort(eigs)
-    eigs = eigs[ii]
-    vecs = vecs[:,ii]
-
-    return eigs, vecs
