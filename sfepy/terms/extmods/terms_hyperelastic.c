@@ -347,8 +347,7 @@ int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
     geme_det3x3( detF->val, mtxF );
     for (iqp = 0; iqp < nQP; iqp++) {
       if (detF->val[iqp] <= 0.0) {
-        errput( "warp violation %e at (iel: %d, iqp: %d)!\n",
-                detF->val[iqp], ii, iqp );
+        errset( "warp violation!" );
       }
     }
     if (mode_ul) {
@@ -445,8 +444,7 @@ int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
     geme_det3x3( detF->val, mtxF );
     for (iqp = 0; iqp < nQP; iqp++) {
       if (detF->val[iqp] <= 0.0) {
-        errput( "warp violation %e at (iel: %d, iqp: %d)!\n",
-                detF->val[iqp], iel, iqp );
+        errset( "warp violation!" );
       }
     }
     geme_invert3x3( mtxFI, mtxF );

@@ -129,8 +129,7 @@ int32 _v_describe( Mapping *obj,
     geme_det3x3( obj->det->val, mtxMR );
     for (iqp = 0; iqp < nQP; iqp++) {
       if (obj->det->val[iqp] <= 0.0) {
-        errput( "warp violation %e at (iel: "FI32", iqp: "FI32")!\n",
-                obj->det->val[iqp], iel, iqp );
+        errset( "warp violation!" );
       }
     }
     fmf_mul( obj->det, weight->val );
