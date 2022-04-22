@@ -9,10 +9,7 @@ words to the expected ones.
 
 The output of failed commands is saved to 'test_install.log' file.
 """
-from __future__ import print_function
-from __future__ import absolute_import
 import time
-import sys
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import shlex
 import subprocess
@@ -139,25 +136,29 @@ def report_tests(out, return_item=False):
     Check that all tests in the output string `out` passed.
     If not, print the output.
     """
-    search = re.compile('([0-9]+) test file\(s\) executed in ([0-9.]+) s, ([0-9]+) failure\(s\) of ([0-9]+) test\(s\)').search
+    search = re.compile(
+        '(?:([0-9]+) failed, )*([0-9]+) passed'
+        '(?:, ([0-9]+) warnings)*.* in ([0-9.]+) seconds'
+    ).search
 
     try:
         stats = search(out).groups()
+        stats = [stat if stat is not None else '0' for stat in stats]
 
     except AttributeError:
-        stats = '0', '0', '-1', '0'
+        stats = '0', '0', '0', '-1'
         ok = False
 
-    ok = stats[2] == '0'
+    ok = stats[0] == '0'
 
-    logger.info('  %s test file(s) executed in %s s, %s failure(s) of %s test(s)'
-                % (stats[0], stats[1], stats[2], stats[3]))
+    logger.info('  %s failed, %s passed, %s warnings in %s seconds'
+                % tuple(stats))
 
     if not ok:
         logger.debug(DEBUG_FMT, out)
 
     if return_item:
-        return ok, stats[2]
+        return ok, stats[0]
 
     else:
         return ok
@@ -171,114 +172,109 @@ def main():
     fd = open('test_install.log', 'w')
     fd.close()
 
-    if sys.version_info[0] < 3:
-        cmd = 'python2'
-    else:
-        cmd = 'python3'
-
     eok = 0
 
     t0 = time.time()
 
-    out, err = check_output('%s ./script/blockgen.py' % cmd)
+    out, err = check_output('python3 ./script/blockgen.py')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('%s ./script/cylindergen.py' % cmd)
+    out, err = check_output('python3 ./script/cylindergen.py')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('%s ./script/convert_mesh.py meshes/3d/cylinder.vtk out.mesh' % cmd)
+    out, err = check_output('python3 ./script/convert_mesh.py meshes/3d/cylinder.vtk out.mesh')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('%s ./script/tile_periodic_mesh.py -r 2,2 meshes/elements/2_4_2.mesh out-per.mesh' % cmd)
+    out, err = check_output('python3 ./script/tile_periodic_mesh.py -r 2,2 meshes/elements/2_4_2.mesh out-per.mesh')
     eok += report(out, '...', -2, 1, 'done.')
 
-    out, err = check_output('%s ./script/extract_surface.py meshes/various_formats/octahedron.node -' % cmd)
+    out, err = check_output('python3 ./script/extract_surface.py meshes/various_formats/octahedron.node -')
     eok += report(out, '...', -2, 0, '1185')
 
-    out, err = check_output('%s ./simple.py examples/diffusion/poisson.py' % cmd)
+    out, err = check_output('python3 ./simple.py examples/diffusion/poisson.py')
     eok += report(out, '...', -3, 5, '1.173819e-16', eps=1e-15)
 
-    out, err = check_output("""%s ./simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" examples/diffusion/poisson.py""" %cmd)
+    out, err = check_output("""python3 ./simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" examples/diffusion/poisson.py""")
     eok += report(out, '...', -3, 5, '2.308051e-16', eps=1e-15)
 
-    out, err = check_output('%s ./simple.py examples/diffusion/poisson_iga.py' % cmd)
+    out, err = check_output('python3 ./simple.py examples/diffusion/poisson_iga.py')
     eok += report(out, '...', -3, 5, '3.373487e-15', eps=1e-14)
 
-    out, err = check_output('%s ./simple.py examples/navier_stokes/stokes.py' % cmd)
+    out, err = check_output('python3 ./simple.py examples/navier_stokes/stokes.py')
     eok += report(out, '...', -3, 5, '1.210678e-13', eps=1e-11)
 
-    out, err = check_output('%s ./simple.py examples/diffusion/poisson_parametric_study.py' % cmd)
+    out, err = check_output('python3 ./simple.py examples/diffusion/poisson_parametric_study.py')
     eok += report(out, '...', -3, 5, '1.606408e-14', eps=1e-13)
 
-    out, err = check_output('%s ./simple.py examples/linear_elasticity/its2D_3.py' % cmd)
+    out, err = check_output('python3 ./simple.py examples/linear_elasticity/its2D_3.py')
     eok += report(out, '...', -24, 5, '3.964886e-12', eps=1e-11)
     eok += report(out, '...', -4, 4, '2.58660e+01', eps=1e-5)
 
-    out, err = check_output('%s ./simple.py examples/linear_elasticity/linear_elastic.py --format h5' % cmd)
+    out, err = check_output('python3 ./simple.py examples/linear_elasticity/linear_elastic.py --format h5')
     eok += report(out, '...', -3, 5, '4.638192e-18', eps=1e-15)
 
-    out, err = check_output('%s ./extractor.py -d cylinder.h5' % cmd)
+    out, err = check_output('python3 ./extractor.py -d cylinder.h5')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('%s ./postproc.py -n --no-offscreen -o cylinder.png cylinder.h5' % cmd)
+    out, err = check_output('python3 ./postproc.py -n --no-offscreen -o cylinder.png cylinder.h5')
     eok += report(out, '...', -3, 2, 'cylinder.png...')
 
-    out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py' % cmd)
+    out, err = check_output('python3 ./phonon.py examples/phononic/band_gaps.py')
     eok += report(out, '...', -9, 0, '2.08545116e+08', match_numbers=True)
     eok += report(out, '...', -8, 1, '1.16309223e+11', match_numbers=True)
 
-    out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py --phase-velocity' % cmd)
+    out, err = check_output('python3 ./phonon.py examples/phononic/band_gaps.py --phase-velocity')
     eok += report(out, '...', -2, 0, '4189.41229592', match_numbers=True)
     eok += report(out, '...', -2, 1, '2620.55608256', match_numbers=True)
 
-    out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py -d' % cmd)
+    out, err = check_output('python3 ./phonon.py examples/phononic/band_gaps.py -d')
     eok += report(out, '...', -6, 1, '[0,')
 
-    out, err = check_output('%s ./phonon.py examples/phononic/band_gaps_rigid.py' % cmd)
+    out, err = check_output('python3 ./phonon.py examples/phononic/band_gaps_rigid.py')
     eok += report(out, '...', -9, 0, '4.58709531e+07', match_numbers=True)
     eok += report(out, '...', -8, 1, '1.13929200e+11', match_numbers=True)
 
-    out, err = check_output('%s ./simple.py examples/quantum/hydrogen.py' % cmd)
+    out, err = check_output('python3 ./simple.py examples/quantum/hydrogen.py')
     eok += report(out, '...', -2, -2, '-0.01913506', eps=1e-4)
 
-    out, err = check_output('%s ./simple.py examples/homogenization/perfusion_micro.py' % cmd)
+    out, err = check_output('python3 ./simple.py examples/homogenization/perfusion_micro.py')
     eok += report2(out, '...', ['computing EpA', 'computing PA_3',
                                 'computing GA', 'computing EmA',
                                 'computing KA'])
 
-    out, err = check_output('%s examples/homogenization/rs_correctors.py -n' % cmd)
+    out, err = check_output('python3 examples/homogenization/rs_correctors.py -n')
     eok += report(out, '...', -2, -1, '1.644e-01', match_numbers=True)
 
-    out, err = check_output('%s examples/large_deformation/compare_elastic_materials.py -n' % cmd)
+    out, err = check_output('python3 examples/large_deformation/compare_elastic_materials.py -n')
     eok += report(out, '...', -3, 5, '1.068759e-14', eps=1e-13)
 
-    out, err = check_output('%s examples/linear_elasticity/linear_elastic_interactive.py' % cmd)
+    out, err = check_output('python3 examples/linear_elasticity/linear_elastic_interactive.py')
     eok += report(out, '...', -16, 0, '1.62128841139e-14', eps=1e-13)
 
-    out, err = check_output('%s examples/linear_elasticity/modal_analysis.py' % cmd)
+    out, err = check_output('python3 examples/linear_elasticity/modal_analysis.py')
     eok += report(out, '...', -12, 5, '12142.11470773', eps=1e-13)
 
-    out, err = check_output('%s examples/multi_physics/thermal_electric.py' % cmd)
+    out, err = check_output('python3 examples/multi_physics/thermal_electric.py')
     eok += report(out, '...', -4, 5, '2.612933e-14', eps=1e-13)
 
-    out, err = check_output('%s examples/diffusion/laplace_refine_interactive.py output' % cmd)
+    out, err = check_output('python3 examples/diffusion/laplace_refine_interactive.py output')
     eok += report(out, '...', -3, 5, '2.675866e-15', eps=1e-13)
 
-    out, err = check_output('%s examples/diffusion/laplace_iga_interactive.py -o output-tests' % cmd)
+    out, err = check_output('python3 examples/diffusion/laplace_iga_interactive.py -o output-tests')
     eok += report(out, '...', -3, 5, '1.028134e-13', eps=1e-12)
 
-    out, err = check_output('%s examples/dg/imperative_burgers_1D.py -o output-tests' % cmd)
+    out, err = check_output('python3 examples/dg/imperative_burgers_1D.py -o output-tests')
     eok += report(out, '...', -3, 3, 'moment_1D_limiter')
 
-    out, err = check_output('mpiexec -n 2 %s examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor' % cmd)
+    out, err = check_output('mpiexec -n 2 python3 examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
     eok += report(out, '...', -2, 4, '8.021313824020e-07', eps=1e-6)
 
-    out, err = check_output('mpiexec -n 2 %s examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor' % cmd)
+    out, err = check_output('mpiexec -n 2 python3 examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
     eok += report(out, '...', -2, 4, '3.787214380277e-09', eps=1e-8)
 
     t1 = time.time()
 
-    out, err = check_output('%s ./run_tests.py' % cmd)
+    out, err = check_output('pytest -v --disable-warnings tests/')
     tok, failed = report_tests(out, return_item=True)
     tok = {True : 'ok', False : 'fail'}[tok]
 
