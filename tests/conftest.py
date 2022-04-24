@@ -1,5 +1,11 @@
 import pytest
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        'markers',
+        'slow: Mark tests as slow (deselect with \'-m "not slow"\'.',
+    )
+
 def pytest_addoption(parser):
     parser.addoption('--output-dir', action='store', default=None)
 
