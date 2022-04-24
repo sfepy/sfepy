@@ -1,8 +1,20 @@
 import pytest
 
+def pytest_addoption(parser):
+    parser.addoption('--output-dir', action='store', default=None)
+
 @pytest.fixture(scope='session')
-def output_dir(tmpdir_factory):
+def output_dir(request, tmpdir_factory):
     """
     Output directory for tests.
     """
-    return tmpdir_factory.mktemp('output')
+    output_dir = request.config.getoption('output_dir')
+    if output_dir is not None:
+        import os
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        return output_dir
+
+    else:
+        return tmpdir_factory.mktemp('output')
