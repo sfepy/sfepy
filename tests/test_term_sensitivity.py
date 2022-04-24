@@ -99,6 +99,7 @@ def problem():
     return problem
 
 
+@pytest.mark.slow
 def test_sensitivity(problem):
     from sfepy.discrete import Variables
     from sfepy.mesh.splinebox import SplineBox

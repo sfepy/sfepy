@@ -291,6 +291,7 @@ def _test_single_term(data, term_cls, domain, rname):
 
     return ok
 
+@pytest.mark.slow
 def test_term_call_modes(data):
     from sfepy.terms import term_table
     ok = True

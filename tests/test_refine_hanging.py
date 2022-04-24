@@ -123,6 +123,7 @@ def gels():
 
     return gels
 
+@pytest.mark.slow
 def test_continuity(gels, output_dir):
     from sfepy.base.base import Struct
     from sfepy.mesh.mesh_generators import gen_block_mesh

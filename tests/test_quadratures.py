@@ -5,6 +5,8 @@ try:
 except ImportError:
     sm = None
 
+import pytest
+
 from sfepy.base.base import assert_, ordered_iteritems
 import sfepy.base.testing as tst
 
@@ -99,6 +101,7 @@ def _test_quadratures(quad, geometry, order):
 
     return ok, integral, val
 
+@pytest.mark.slow
 def test_quadratures():
     """
     Test if the quadratures have orders they claim to have, using

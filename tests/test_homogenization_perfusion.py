@@ -1,3 +1,5 @@
+import pytest
+
 import sfepy.base.testing as tst
 
 input_name = 'examples/homogenization/perfusion_micro.py'
@@ -12,6 +14,7 @@ def compare_scalars(s1, s2, l1= 's1', l2 = 's2',
     else:
         return True
 
+@pytest.mark.slow
 def test_solution():
     import sfepy
     from sfepy.base.base import Struct

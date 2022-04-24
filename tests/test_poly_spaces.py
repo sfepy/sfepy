@@ -227,6 +227,7 @@ def test_partition_of_unity(gels):
 
     assert_(ok)
 
+@pytest.mark.slow
 def test_continuity(gels):
     ok = True
     orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
@@ -276,6 +277,7 @@ def test_continuity(gels):
 
     assert_(ok)
 
+@pytest.mark.slow
 def test_gradients(gels):
     from sfepy.discrete.fem.mappings import VolumeMapping
 

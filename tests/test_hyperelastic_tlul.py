@@ -1,3 +1,5 @@
+import pytest
+
 import sfepy.base.testing as tst
 
 input_names = {'TL': 'examples/large_deformation/hyperelastic.py',
@@ -5,6 +7,7 @@ input_names = {'TL': 'examples/large_deformation/hyperelastic.py',
                'ULM': 'examples/large_deformation/hyperelastic_ul_up.py'}
 output_name_trunk = 'test_hyperelastic_'
 
+@pytest.mark.slow
 def test_solution(output_dir):
     import sfepy
     from sfepy.base.base import IndexedStruct, Struct
