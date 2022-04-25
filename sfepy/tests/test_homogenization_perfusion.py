@@ -15,7 +15,7 @@ def compare_scalars(s1, s2, l1= 's1', l2 = 's2',
         return True
 
 @pytest.mark.slow
-def test_solution():
+def test_solution(output_dir):
     import sfepy
     from sfepy.base.base import Struct
     from sfepy.base.conf import ProblemConf, get_standard_keywords
@@ -37,7 +37,7 @@ def test_solution():
                      save_regions_as_groups=False,
                      solve_not=False)
 
-    test_conf.options['output_dir'] = './output-tests'
+    test_conf.options['output_dir'] = output_dir
     app = HomogenizationApp(test_conf, options, 'homogen:' )
     coefs = app()
 
