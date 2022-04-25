@@ -20,6 +20,9 @@ def output_dir(request, tmpdir_factory):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
+        if not os.path.isdir(output_dir):
+            raise IOError(f'cannot create directory "{output_dir}"!')
+
         return output_dir
 
     else:
