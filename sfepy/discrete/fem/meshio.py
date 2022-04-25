@@ -2,7 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import sys
 from copy import copy
-import logging
+from io import StringIO
 import numpy as nm
 from distutils.version import LooseVersion
 
@@ -285,11 +285,14 @@ class UserMeshIO(MeshIO):
 
 def _suppress_meshio_warnings(f):
     def __suppress_meshio_warnings(*args, **kwargs):
-        logger = logging.getLogger()
-        level = logger.level
-        logger.setLevel(logging.ERROR)
+        old_stderr = sys.stderr
+        sys.stderr = mystderr = StringIO()
         out = f(*args, **kwargs)
-        logger.setLevel(level)
+        sys.stderr = old_stderr
+        to_stderr = [k for k in mystderr.getvalue().split('\n')
+                     if k.startswith('Error')]
+        if len(to_stderr) > 0:
+            output('\n'.join(to_stderr))
 
         return out
 
