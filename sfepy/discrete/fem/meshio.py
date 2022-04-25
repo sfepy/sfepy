@@ -287,12 +287,19 @@ def _suppress_meshio_warnings(f):
     def __suppress_meshio_warnings(*args, **kwargs):
         old_stderr = sys.stderr
         sys.stderr = mystderr = StringIO()
-        out = f(*args, **kwargs)
-        sys.stderr = old_stderr
-        to_stderr = [k for k in mystderr.getvalue().split('\n')
-                     if k.startswith('Error')]
-        if len(to_stderr) > 0:
-            output('\n'.join(to_stderr))
+        try:
+            out = f(*args, **kwargs)
+            to_stderr = [k for k in mystderr.getvalue().split('\n')
+                         if k.startswith('Error')]
+            sys.stderr = old_stderr
+            if len(to_stderr) > 0:
+                output('\n'.join(to_stderr))
+        except:
+            to_stderr = mystderr.getvalue()
+            if len(to_stderr) > 0:
+                output(to_stderr)
+            sys.stderr = old_stderr
+            raise
 
         return out
 
