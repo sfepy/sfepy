@@ -58,7 +58,6 @@ def configuration(parent_package='', top_path=None):
         'homogen.py',
         'postproc.py',
         'probe.py',
-        'run_tests.py',
         'simple.py',
         'test_install.py',
     ]

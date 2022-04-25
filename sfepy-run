@@ -26,7 +26,6 @@ def get_commands():
         'extractor.py',
         'postproc.py',
         'probe.py',
-        'run_tests.py',
         'simple.py',
     ]
 
