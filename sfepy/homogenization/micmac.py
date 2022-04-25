@@ -14,7 +14,8 @@ import six
 
 def get_homog_coefs_linear(ts, coor, mode,
                            micro_filename=None, regenerate=False,
-                           coefs_filename=None, define_args=None):
+                           coefs_filename=None, define_args=None,
+                           output_dir=None):
 
     oprefix = output.prefix
     output.prefix = 'micro:'
@@ -24,6 +25,9 @@ def get_homog_coefs_linear(ts, coor, mode,
 
     conf = ProblemConf.from_file(micro_filename, required, other,
                                  verbose=False, define_args=define_args)
+    if output_dir is not None:
+        conf.options.output_dir = output_dir
+
     if coefs_filename is None:
         coefs_filename = conf.options.get('coefs_filename', 'coefs')
         coefs_filename = op.join(conf.options.get('output_dir', '.'),
@@ -72,7 +76,8 @@ def get_homog_coefs_linear(ts, coor, mode,
 
 def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
                               term=None, problem=None,
-                              iteration=None, define_args=None, **kwargs):
+                              iteration=None, define_args=None,
+                              output_dir=None, **kwargs):
     if not (mode == 'qp'):
         return
 
@@ -85,6 +90,8 @@ def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
         micro_file = problem.conf.options.micro_filename
         conf = ProblemConf.from_file(micro_file, required, other,
                                      verbose=False, define_args=define_args)
+        if output_dir is not None:
+            conf.options.output_dir = output_dir
         options = Struct(output_filename_trunk=None)
         app = HomogenizationApp(conf, options, 'micro:',
                                 n_micro=coor.shape[0])
