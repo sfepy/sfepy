@@ -244,49 +244,20 @@ functions are working properly by running the automated tests.
 Running Automated Test Suite
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Depending on type of your build run following tests:
+The tests can be run using::
 
-- in-place build::
+  python -c "import sfepy; sfepy.test()"
 
-    python ./run_tests.py
+in the *SfePy* top-level directory in case of the in-place build and anywhere
+else when testing the installed package. The testing function is based on
+`pytest`_. Additional `pytest`_ options can be passed as arguments to
+``sfepy.test()``, for example::
 
-  or ::
+  python -c "import sfepy; sfepy.test('-v', '--durations=0', '-m not slow')"
 
-    python ./sfepy-run run_tests
+The tests output directory can be specified using::
 
-  or (on Unix-based systems) directly by ::
-
-    ./sfepy-run run_tests
-
-
-- installed (local or system-wide) build::
-
-    sfepy-run run_tests
-
-  (This command creates a directory called ``'output'`` in the current
-  directory as well as some other auxiliary files. Use the in-place build
-  testing if you do not want to care about this.)
-
-  Please note this method is *not fully supported on Windows
-  systems yet*. It can be currently used only with pre-compiled `sfepy`
-  packages (see `Installing SfePy`_).
-
-
-Running Failing Tests in Raise Mode
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If a particular test fails, run it in the raise mode ::
-
-    python sfepy-run run_tests --raise tests/<failing_test_name.py>
-
-and, please, report the output to the `SfePy mailing list`_.
-
-It is also possible to automatically start a debugger when/if an exception
-is raised by running a test in the debug mode::
-
-    python sfepy-run run_tests --debug tests/failing_test_name.py
-
-
+  python -c "import sfepy; sfepy.test('--output-dir=output-tests')"
 
 Debugging
 ---------

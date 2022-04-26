@@ -35,6 +35,7 @@
 .. _docstring example: https://github.com/numpy/numpy/blob/master/doc/example.py
 .. _numpydoc: http://pypi.python.org/pypi/numpydoc
 .. _meshio: https://github.com/nschloe/meshio
+.. _pytest: https://pytest.org
 
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
 .. _continuum analytics: http://www.continuum.io/
