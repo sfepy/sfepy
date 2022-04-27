@@ -69,17 +69,11 @@ directory.
      - finite element mesh files in various formats shared by the examples
    * - `output/`
      - default output directory for storing results of the examples
-   * - `output-tests/`
-     - output directory for tests
    * - `script/`
      - various small scripts (simple mesh generators, mesh format
        convertors etc.)
    * - `sfepy/`
-     - the source code
-   * - `tests/`
-     - the tests run by `run_tests.py`
-   * - `tmp/`
-     - directory for temporary files (generated)
+     - the source code including tests
 
 New users/developers (after going through the :ref:`sec-tutorial`)
 should explore the `examples/` directory. For developers, the principal
