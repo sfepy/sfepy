@@ -115,13 +115,20 @@ def check_conditions(conditions):
         report(conditions)
     return ok
 
-def run_declaratice_example(ex_filename, output_dir, ext='.vtk'):
+def run_declaratice_example(ex_filename, output_dir, ext='.vtk',
+                            remove_prefix=''):
     import sfepy
     from sfepy.applications import solve_pde
 
     report('solving %s...' % ex_filename)
 
-    output_name = op.splitext(ex_filename.replace('/', '-'))[0]
+    if remove_prefix and ex_filename.startswith(remove_prefix):
+        output_name = ex_filename.replace(remove_prefix, '')
+
+    else:
+        output_name = ex_filename
+
+    output_name = op.splitext(output_name.replace('/', '-'))[0]
     filename = op.join(sfepy.data_dir, ex_filename)
     name = op.splitext(op.split(output_name)[1])[0]
     fmt = ext.replace('.', '')
