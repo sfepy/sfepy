@@ -9,7 +9,7 @@ def test_stokes_slip_bc(output_dir):
 
     from sfepy.base.conf import ProblemConf
     from sfepy.discrete import Problem
-    import examples.navier_stokes.stokes_slip_bc as ssb
+    import sfepy.examples.navier_stokes.stokes_slip_bc as ssb
 
     conf = ProblemConf.from_dict(
         ssb.define(output_dir=output_dir, save_lcbc_vecs=True),
@@ -69,7 +69,7 @@ def test_stokes_slip_bc(output_dir):
 def test_laplace_shifted_periodic(output_dir):
     from sfepy.mesh.mesh_generators import gen_block_mesh
     from sfepy.discrete.fem import FEDomain
-    from examples.diffusion.laplace_shifted_periodic import run
+    from sfepy.examples.diffusion.laplace_shifted_periodic import run
 
     dims = [2.0, 1.0]
     shape = [21, 11]

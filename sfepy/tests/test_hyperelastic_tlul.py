@@ -20,7 +20,7 @@ def test_solution(output_dir):
 
     for hp, pb_filename in input_names.items():
 
-        input_name = op.join(sfepy.data_dir, pb_filename)
+        input_name = op.join(sfepy.base_dir, pb_filename)
 
         name = output_name_trunk + hp
         solver_options = Struct(output_filename_trunk=name,

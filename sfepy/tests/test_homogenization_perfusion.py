@@ -26,7 +26,7 @@ def test_solution(output_dir):
 
     required, other = get_standard_keywords()
     required.remove('equations')
-    full_name = op.join(sfepy.data_dir, input_name)
+    full_name = op.join(sfepy.base_dir, input_name)
     test_conf = ProblemConf.from_file(full_name, required, other)
 
     options = Struct(output_filename_trunk=None,
