@@ -166,7 +166,7 @@ Mesh-Related Tasks
 
    - Using the problem description files (declarative API)::
 
-       python3 simple.py examples/diffusion/poisson_short_syntax.py --save-regions-as-groups --solve-not
+       python3 simple.py sfepy/examples/diffusion/poisson_short_syntax.py --save-regions-as-groups --solve-not
        python3 resview.py -e cylinder_regions.vtk
 
    - In a script (imperative API)::
