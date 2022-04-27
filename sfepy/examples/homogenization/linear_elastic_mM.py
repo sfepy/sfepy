@@ -106,7 +106,7 @@ solvers = {
 }
 
 micro_filename = data_dir \
-                 + '/examples/homogenization/linear_homogenization_up.py'
+                 + '/sfepy/examples/homogenization/linear_homogenization_up.py'
 
 options = {
     'nls' : 'newton',

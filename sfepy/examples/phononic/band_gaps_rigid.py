@@ -16,8 +16,8 @@ from sfepy.discrete.fem import extend_cell_data
 from sfepy.linalg import norm_l2_along_axis
 from sfepy.homogenization.coefficients import Coefficients
 
-from examples.phononic.band_gaps_conf import (BandGapsRigidConf, get_pars,
-                                              normalize)
+from sfepy.examples.phononic.band_gaps_conf import (BandGapsRigidConf,
+                                                    get_pars, normalize)
 
 normalize # Make pyflakes happy...
 

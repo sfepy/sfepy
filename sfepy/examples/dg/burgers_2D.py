@@ -39,7 +39,7 @@ elements in GMSH and Sfepy and might get patched in the future.
 """
 
 
-from examples.dg.example_dg_common import *
+from sfepy.examples.dg.example_dg_common import *
 from sfepy import data_dir
 
 from sfepy.discrete.dg.limiters import MomentLimiter2D, IdentityLimiter

@@ -16,7 +16,7 @@ where
     \;.
 """
 from __future__ import absolute_import
-from examples.linear_elasticity.linear_elastic import *
+from sfepy.examples.linear_elasticity.linear_elastic import *
 import os
 import numpy as nm
 

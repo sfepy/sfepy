@@ -133,7 +133,7 @@ equations = {
 solvers = {
     'ls': ('ls.cm_pb',
            {'others': [data_dir
-                       + '/examples/acoustics/vibro_acoustic3d_mid.py'],
+                       + '/sfepy/examples/acoustics/vibro_acoustic3d_mid.py'],
             'coupling_variables': ['g0', 'w'],
             }),
     'nls': ('nls.newton', {

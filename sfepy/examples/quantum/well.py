@@ -5,7 +5,7 @@ See :ref:`quantum-quantum_common`.
 """
 from __future__ import absolute_import
 
-from examples.quantum.quantum_common import common
+from sfepy.examples.quantum.quantum_common import common
 
 def get_exact(n_eigs, box_size, dim):
     from numpy import pi

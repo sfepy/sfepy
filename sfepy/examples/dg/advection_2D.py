@@ -31,7 +31,7 @@ mesh. Note that for triangular meshes normal raise -1 produces expected raise
 above the mesh. This is due to the opposite orientation of the reference
 elements in GMSH and Sfepy and might get patched in the future.
 """
-from examples.dg.example_dg_common import *
+from sfepy.examples.dg.example_dg_common import *
 from sfepy.discrete.dg.limiters import MomentLimiter2D
 
 mesh_center = (0.5, 0.25)

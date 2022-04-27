@@ -6,7 +6,7 @@ See :ref:`quantum-quantum_common`.
 from __future__ import absolute_import
 from sfepy.linalg import norm_l2_along_axis
 
-from examples.quantum.quantum_common import common
+from sfepy.examples.quantum.quantum_common import common
 
 def get_exact(n_eigs, box_size, dim):
     Z = 5

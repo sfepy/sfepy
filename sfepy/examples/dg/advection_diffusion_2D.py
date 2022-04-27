@@ -38,7 +38,7 @@ above the mesh. This is due to the opposite orientation of the reference
 elements in GMSH and Sfepy and might get patched in the future.
 """
 
-from examples.dg.example_dg_common import *
+from sfepy.examples.dg.example_dg_common import *
 
 
 def define(filename_mesh=None,

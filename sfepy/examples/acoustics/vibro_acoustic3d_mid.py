@@ -45,9 +45,10 @@ and :math:`\ul{\theta}` (rotation) such that:
 """
 from __future__ import absolute_import
 import numpy as nm
+from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 
-filename_mesh = '../../meshes/2d/acoustic_wg_mid.vtk'
+filename_mesh = data_dir + '/meshes/2d/acoustic_wg_mid.vtk'
 
 sound_speed = 343.0
 wave_num = 5.5

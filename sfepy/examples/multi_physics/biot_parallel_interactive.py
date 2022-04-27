@@ -518,7 +518,7 @@ def main():
     output(stats)
 
     if options.stats_filename:
-        from examples.diffusion.poisson_parallel_interactive import save_stats
+        from sfepy.examples.diffusion.poisson_parallel_interactive import save_stats
         if comm.rank == 0:
             ensure_path(options.stats_filename)
         comm.barrier()

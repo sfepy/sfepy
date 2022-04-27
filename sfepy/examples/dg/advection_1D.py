@@ -23,7 +23,7 @@ output in ``output/`` folder, default is ``dg/advection_1D``::
 
 
 """
-from examples.dg.example_dg_common import *
+from sfepy.examples.dg.example_dg_common import *
 from sfepy.discrete.dg.limiters import MomentLimiter1D
 
 dim = 1

@@ -9,7 +9,8 @@ from os.path import join as pjoin
 
 import numpy as nm
 
-from examples.dg.example_dg_common import clear_folder, get_gen_1D_mesh_hook
+from sfepy.examples.dg.example_dg_common import \
+    clear_folder, get_gen_1D_mesh_hook
 from script.dg_plot_1D import load_and_plot_fun
 
 # sfepy imports
