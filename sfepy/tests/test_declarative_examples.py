@@ -2,6 +2,7 @@ import os
 import pytest
 from sfepy.base.testing import check_conditions, run_declaratice_example
 
+# Relative to sfepy.base_dir, see run_declaratice_example().
 examples_dir = 'examples/'
 
 def inedir(filename):

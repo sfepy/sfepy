@@ -117,6 +117,10 @@ def check_conditions(conditions):
 
 def run_declaratice_example(ex_filename, output_dir, ext='.vtk',
                             remove_prefix=''):
+    """
+    Run a declarative example in `ex_filename` given relatively to
+    ``sfepy.base_dir``.
+    """
     import sfepy
     from sfepy.applications import solve_pde
 
@@ -129,7 +133,7 @@ def run_declaratice_example(ex_filename, output_dir, ext='.vtk',
         output_name = ex_filename
 
     output_name = op.splitext(output_name.replace('/', '-'))[0]
-    filename = op.join(sfepy.data_dir, ex_filename)
+    filename = op.join(sfepy.base_dir, ex_filename)
     name = op.splitext(op.split(output_name)[1])[0]
     fmt = ext.replace('.', '')
     options = Struct(output_filename_trunk=name,
