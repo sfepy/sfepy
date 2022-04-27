@@ -191,26 +191,26 @@ def main():
     out, err = check_output('python3 ./script/extract_surface.py meshes/various_formats/octahedron.node -')
     eok += report(out, '...', -2, 0, '1185')
 
-    out, err = check_output('python3 ./simple.py examples/diffusion/poisson.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/diffusion/poisson.py')
     eok += report(out, '...', -3, 5, '1.173819e-16', eps=1e-15)
 
-    out, err = check_output("""python3 ./simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" examples/diffusion/poisson.py""")
+    out, err = check_output("""python3 ./simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" sfepy/examples/diffusion/poisson.py""")
     eok += report(out, '...', -3, 5, '2.308051e-16', eps=1e-15)
 
-    out, err = check_output('python3 ./simple.py examples/diffusion/poisson_iga.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/diffusion/poisson_iga.py')
     eok += report(out, '...', -3, 5, '3.373487e-15', eps=1e-14)
 
-    out, err = check_output('python3 ./simple.py examples/navier_stokes/stokes.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/navier_stokes/stokes.py')
     eok += report(out, '...', -3, 5, '1.210678e-13', eps=1e-11)
 
-    out, err = check_output('python3 ./simple.py examples/diffusion/poisson_parametric_study.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/diffusion/poisson_parametric_study.py')
     eok += report(out, '...', -3, 5, '1.606408e-14', eps=1e-13)
 
-    out, err = check_output('python3 ./simple.py examples/linear_elasticity/its2D_3.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/linear_elasticity/its2D_3.py')
     eok += report(out, '...', -24, 5, '3.964886e-12', eps=1e-11)
     eok += report(out, '...', -4, 4, '2.58660e+01', eps=1e-5)
 
-    out, err = check_output('python3 ./simple.py examples/linear_elasticity/linear_elastic.py --format h5')
+    out, err = check_output('python3 ./simple.py sfepy/examples/linear_elasticity/linear_elastic.py --format h5')
     eok += report(out, '...', -3, 5, '4.638192e-18', eps=1e-15)
 
     out, err = check_output('python3 ./extractor.py -d cylinder.h5')
@@ -219,62 +219,62 @@ def main():
     out, err = check_output('python3 ./postproc.py -n --no-offscreen -o cylinder.png cylinder.h5')
     eok += report(out, '...', -3, 2, 'cylinder.png...')
 
-    out, err = check_output('python3 ./phonon.py examples/phononic/band_gaps.py')
+    out, err = check_output('python3 ./phonon.py sfepy/examples/phononic/band_gaps.py')
     eok += report(out, '...', -9, 0, '2.08545116e+08', match_numbers=True)
     eok += report(out, '...', -8, 1, '1.16309223e+11', match_numbers=True)
 
-    out, err = check_output('python3 ./phonon.py examples/phononic/band_gaps.py --phase-velocity')
+    out, err = check_output('python3 ./phonon.py sfepy/examples/phononic/band_gaps.py --phase-velocity')
     eok += report(out, '...', -2, 0, '4189.41229592', match_numbers=True)
     eok += report(out, '...', -2, 1, '2620.55608256', match_numbers=True)
 
-    out, err = check_output('python3 ./phonon.py examples/phononic/band_gaps.py -d')
+    out, err = check_output('python3 ./phonon.py sfepy/examples/phononic/band_gaps.py -d')
     eok += report(out, '...', -6, 1, '[0,')
 
-    out, err = check_output('python3 ./phonon.py examples/phononic/band_gaps_rigid.py')
+    out, err = check_output('python3 ./phonon.py sfepy/examples/phononic/band_gaps_rigid.py')
     eok += report(out, '...', -9, 0, '4.58709531e+07', match_numbers=True)
     eok += report(out, '...', -8, 1, '1.13929200e+11', match_numbers=True)
 
-    out, err = check_output('python3 ./simple.py examples/quantum/hydrogen.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/quantum/hydrogen.py')
     eok += report(out, '...', -2, -2, '-0.01913506', eps=1e-4)
 
-    out, err = check_output('python3 ./simple.py examples/homogenization/perfusion_micro.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/homogenization/perfusion_micro.py')
     eok += report2(out, '...', ['computing EpA', 'computing PA_3',
                                 'computing GA', 'computing EmA',
                                 'computing KA'])
 
-    out, err = check_output('python3 examples/homogenization/rs_correctors.py -n')
+    out, err = check_output('python3 sfepy/examples/homogenization/rs_correctors.py -n')
     eok += report(out, '...', -2, -1, '1.644e-01', match_numbers=True)
 
-    out, err = check_output('python3 examples/large_deformation/compare_elastic_materials.py -n')
+    out, err = check_output('python3 sfepy/examples/large_deformation/compare_elastic_materials.py -n')
     eok += report(out, '...', -3, 5, '1.068759e-14', eps=1e-13)
 
-    out, err = check_output('python3 examples/linear_elasticity/linear_elastic_interactive.py')
+    out, err = check_output('python3 sfepy/examples/linear_elasticity/linear_elastic_interactive.py')
     eok += report(out, '...', -16, 0, '1.62128841139e-14', eps=1e-13)
 
-    out, err = check_output('python3 examples/linear_elasticity/modal_analysis.py')
+    out, err = check_output('python3 sfepy/examples/linear_elasticity/modal_analysis.py')
     eok += report(out, '...', -12, 5, '12142.11470773', eps=1e-13)
 
-    out, err = check_output('python3 examples/multi_physics/thermal_electric.py')
+    out, err = check_output('python3 sfepy/examples/multi_physics/thermal_electric.py')
     eok += report(out, '...', -4, 5, '2.612933e-14', eps=1e-13)
 
-    out, err = check_output('python3 examples/diffusion/laplace_refine_interactive.py output')
+    out, err = check_output('python3 sfepy/examples/diffusion/laplace_refine_interactive.py output')
     eok += report(out, '...', -3, 5, '2.675866e-15', eps=1e-13)
 
-    out, err = check_output('python3 examples/diffusion/laplace_iga_interactive.py -o output-tests')
+    out, err = check_output('python3 sfepy/examples/diffusion/laplace_iga_interactive.py -o output-tests')
     eok += report(out, '...', -3, 5, '1.028134e-13', eps=1e-12)
 
-    out, err = check_output('python3 examples/dg/imperative_burgers_1D.py -o output-tests')
+    out, err = check_output('python3 sfepy/examples/dg/imperative_burgers_1D.py -o output-tests')
     eok += report(out, '...', -3, 3, 'moment_1D_limiter')
 
-    out, err = check_output('mpiexec -n 2 python3 examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
+    out, err = check_output('mpiexec -n 2 python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
     eok += report(out, '...', -2, 4, '8.021313824020e-07', eps=1e-6)
 
-    out, err = check_output('mpiexec -n 2 python3 examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
+    out, err = check_output('mpiexec -n 2 python3 sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
     eok += report(out, '...', -2, 4, '3.787214380277e-09', eps=1e-8)
 
     t1 = time.time()
 
-    out, err = check_output('pytest -v --disable-warnings tests/')
+    out, err = check_output("python3 -c \"import sfepy; sfepy.test('-v', '--disable-warnings')\"")
     tok, failed = report_tests(out, return_item=True)
     tok = {True : 'ok', False : 'fail'}[tok]
 
