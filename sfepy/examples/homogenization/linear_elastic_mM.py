@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import os
-from sfepy import data_dir
+from sfepy import data_dir, base_dir
 from sfepy.base.base import nm
 from sfepy.homogenization.micmac import get_homog_coefs_linear
 from sfepy.homogenization.recovery import save_recovery_region,\
@@ -105,8 +105,8 @@ solvers = {
     }),
 }
 
-micro_filename = data_dir \
-                 + '/sfepy/examples/homogenization/linear_homogenization_up.py'
+micro_filename = base_dir \
+                 + '/examples/homogenization/linear_homogenization_up.py'
 
 options = {
     'nls' : 'newton',

@@ -44,7 +44,7 @@ and :math:`\ul{\theta}` (rotation) such that:
     \;, \quad \forall \ul{\nu} \;,
 """
 from __future__ import absolute_import
-from sfepy import data_dir
+from sfepy import data_dir, base_dir
 filename_mesh = data_dir + '/meshes/3d/acoustic_wg.vtk'
 
 sound_speed = 343.0
@@ -132,8 +132,8 @@ equations = {
 
 solvers = {
     'ls': ('ls.cm_pb',
-           {'others': [data_dir
-                       + '/sfepy/examples/acoustics/vibro_acoustic3d_mid.py'],
+           {'others': [base_dir
+                       + '/examples/acoustics/vibro_acoustic3d_mid.py'],
             'coupling_variables': ['g0', 'w'],
             }),
     'nls': ('nls.newton', {
