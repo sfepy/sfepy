@@ -7,7 +7,7 @@ and homogenized coefficients.
 
 Run this script as::
 
-    mpiexec -n 4 simple_homog_mpi.py examples/homogenization/nonlinear_hyperelastic_mM.py
+    mpiexec -n 4 simple_homog_mpi.py sfepy/examples/homogenization/nonlinear_hyperelastic_mM.py
 
 """
 from __future__ import print_function
