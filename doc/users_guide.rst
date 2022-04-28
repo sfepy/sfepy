@@ -27,13 +27,13 @@ Basic Usage
 
 * ::
 
-    $ ./simple.py examples/diffusion/poisson_short_syntax.py
+    $ ./simple.py sfepy/examples/diffusion/poisson_short_syntax.py
 
   * Creates ``cylinder.vtk``
 
 * ::
 
-    $ ./simple.py examples/navier_stokes/stokes.py
+    $ ./simple.py sfepy/examples/navier_stokes/stokes.py
 
   * Creates ``channels_symm944t.vtk``
 
@@ -44,9 +44,9 @@ Applications
 
   * ::
 
-      $ ./phonon.py -p examples/phononic/band_gaps.py
+      $ ./phonon.py -p sfepy/examples/phononic/band_gaps.py
 
-    * see ``examples/phononic/output/``
+    * see ``sfepy/examples/phononic/output/``
 
 .. _SfePy-command-wrapper:
 
@@ -79,21 +79,6 @@ Notes
   run as stand-alone (as mentioned above).
 * Both "inplace" and "system-wide" installations are supported.
 
-Stand-Alone Examples
-^^^^^^^^^^^^^^^^^^^^
-
-* ::
-
-    $ python examples/rs_correctors.py
-
-* ::
-
-    $ python examples/compare_elastic_materials.py
-
-* ::
-
-    $ python examples/live_plot.py
-
 Running Tests
 ^^^^^^^^^^^^^
 
@@ -115,13 +100,12 @@ If it is run without arguments, a help message is printed::
 
     Solve partial differential equations given in a SfePy problem definition file.
 
-    Example problem definition files can be found in ``examples/`` directory of the
-    SfePy top-level directory. This script works with all the examples except those
-    in ``examples/standalone/``.
+    Example problem definition files can be found in ``sfepy/examples/`` directory
+    of the SfePy top-level directory.
 
-    Both normal and parametric study runs are supported. A parametric study allows
-    repeated runs for varying some of the simulation parameters - see
-    ``examples/diffusion/poisson_parametric_study.py`` file.
+    Both normal and parametric study runs are supported. A parametric study
+    allows repeated runs for varying some of the simulation parameters - see
+    ``sfepy/examples/diffusion/poisson_parametric_study.py`` file.
 
     Options:
       --version             show program's version number and exit
@@ -161,21 +145,21 @@ If it is run without arguments, a help message is printed::
       --solve-not           do not solve (use in connection with --save-*)
       --list=what           list data, what can be one of: {terms, solvers}
 
-Additional (stand-alone) examples are in the examples/ directory, e.g.::
+Additional (stand-alone) examples are in the sfepy/examples/ directory, e.g.::
 
-    $ python examples/compare_elastic_materials.py
+    $ python sfepy/examples/large_deformation/compare_elastic_materials.py
 
 Parametric study example::
 
-    $ ./simple.py examples/diffusion/poisson_parametric_study.py
+    $ ./simple.py sfepy/examples/diffusion/poisson_parametric_study.py
 
 Common Tasks
 """"""""""""
 
 * Run a simulation::
 
-    ./simple.py examples/diffusion/poisson_short_syntax.py
-    ./simple.py examples/diffusion/poisson_short_syntax.py -o some_results # -> produces some_results.vtk
+    ./simple.py sfepy/examples/diffusion/poisson_short_syntax.py
+    ./simple.py sfepy/examples/diffusion/poisson_short_syntax.py -o some_results # -> produces some_results.vtk
 
 * Print available terms::
 
@@ -183,7 +167,7 @@ Common Tasks
 
 * Run a simulation and also save Dirichlet boundary conditions::
 
-    ./simple.py --save-ebc examples/diffusion/poisson_short_syntax.py # -> produces an additional .vtk file with BC visualization
+    ./simple.py --save-ebc sfepy/examples/diffusion/poisson_short_syntax.py # -> produces an additional .vtk file with BC visualization
 
 * Use a restart file to continue an interrupted simulation:
 
@@ -191,7 +175,7 @@ Common Tasks
     internal state.
   - Run::
 
-      ./simple.py examples/large_deformation/balloon.py --save-restart=-1
+      ./simple.py sfepy/examples/large_deformation/balloon.py --save-restart=-1
 
     and break the computation after a while (hit Ctrl-C). The mode
     ``--save-restart=-1`` is currently the only supported mode. It saves a
@@ -202,12 +186,12 @@ Common Tasks
     ``'unit_ball.restart-04.h5'``, i.e. the fifth step.
   - Restart the simulation by::
 
-      ./simple.py examples/large_deformation/balloon.py --load-restart=unit_ball.restart-04.h5
+      ./simple.py sfepy/examples/large_deformation/balloon.py --load-restart=unit_ball.restart-04.h5
 
     The simulation should continue from the next time step. Verify that by
     running::
 
-      ./simple.py examples/large_deformation/balloon.py
+      ./simple.py sfepy/examples/large_deformation/balloon.py
 
     and compare the residuals printed in the corresponding time steps.
 
@@ -527,7 +511,7 @@ The help message of the script is::
 
 As a simple example, try::
 
-    $ ./simple.py examples/diffusion/poisson_short_syntax.py
+    $ ./simple.py sfepy/examples/diffusion/poisson_short_syntax.py
     $ ./postproc.py cylinder.vtk
 
 The following window should display:
@@ -551,7 +535,7 @@ Problem Description File
 
 Here we discuss the basic items that users have to specify in their input
 files. For complete examples, see the problem description files in the
-``examples/`` directory of SfePy.
+``sfepy/examples/`` directory of SfePy.
 
 
 Long Syntax
@@ -1143,7 +1127,7 @@ above.
 Examples
 """"""""
 
-See ``examples/diffusion/poisson_functions.py`` for a complete problem
+See ``sfepy/examples/diffusion/poisson_functions.py`` for a complete problem
 description file demonstrating how to use different kinds of functions.
 
 - functions for defining regions::
@@ -1371,10 +1355,10 @@ Additional options (including solver selection)::
 
 * ``post_process_hook`` enables computing derived quantities, like
   stress or strain, from the primary unknown variables. See the
-  examples in ``examples/large_deformation/`` directory.
+  examples in ``sfepy/examples/large_deformation/`` directory.
 * ``parametric_hook`` makes it possible to run parametric studies by
   modifying the problem description programmatically. See
-  ``examples/diffusion/poisson_parametric_study.py`` for an example.
+  ``sfepy/examples/diffusion/poisson_parametric_study.py`` for an example.
 * ``output_dir`` redirects output files to specified directory
 
 

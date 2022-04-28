@@ -63,8 +63,6 @@ directory.
      - directory created by the build process (generated)
    * - `doc/`
      - source files of this documentation
-   * - `examples/`
-     - example problem description files
    * - `meshes/`
      - finite element mesh files in various formats shared by the examples
    * - `output/`
@@ -73,10 +71,10 @@ directory.
      - various small scripts (simple mesh generators, mesh format
        convertors etc.)
    * - `sfepy/`
-     - the source code including tests
+     - the source code including examples and tests
 
 New users/developers (after going through the :ref:`sec-tutorial`)
-should explore the `examples/` directory. For developers, the principal
+should explore the `sfepy/examples/` directory. For developers, the principal
 directory is `sfepy/`, which has the following contents:
 
 .. list-table:: `sfepy/` directory structure.

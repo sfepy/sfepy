@@ -129,7 +129,7 @@ Running identification script
 Run the script from the command shell as (from the top-level directory of
 *SfePy*)::
 
-  $ python examples/homogenization/material_opt.py
+  $ python sfepy/examples/homogenization/material_opt.py
 
 The iteration process is monitored using graphs where the values of the
 objective function and material parameters are plotted.

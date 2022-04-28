@@ -34,8 +34,8 @@ available consult ``doc/sfepy_manual.pdf``, or see them online [6]_.
 In order to solve a problem, a problem description file has to be created.
 There is also an interactive solution support for advanced users [7]_. When
 starting to solve a new problem, it is best to have a look at example problem
-definition files in the ``examples/`` directory - copy the one that is similar
-to the problem at hand, and modify it.
+definition files in the ``sfepy/examples/`` directory - copy the one that is
+similar to the problem at hand, and modify it.
 
 While a problem definition file describes a mathematical problem, it does not
 contain a discretized solution domain (a FE mesh). The FE mesh must be provided
