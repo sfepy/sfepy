@@ -35,7 +35,7 @@ Usage examples
 
 This example can be run with the ``simple.py`` script with the following::
 
-    python3 simple.py examples/diffusion/laplace_fluid_2d.py
+    python3 simple.py sfepy/examples/diffusion/laplace_fluid_2d.py
     python3 resview.py citroen.vtk -f phi:p0 phi:t50:p0 --2d-view
 
 

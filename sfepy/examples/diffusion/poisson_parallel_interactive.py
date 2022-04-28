@@ -37,24 +37,24 @@ Usage Examples
 
 See all options::
 
-  $ python examples/diffusion/poisson_parallel_interactive.py -h
+  $ python sfepy/examples/diffusion/poisson_parallel_interactive.py -h
 
 See PETSc options::
 
-  $ python examples/diffusion/poisson_parallel_interactive.py -help
+  $ python sfepy/examples/diffusion/poisson_parallel_interactive.py -help
 
 Single process run useful for debugging with :func:`debug()
 <sfepy.base.base.debug>`::
 
-  $ python examples/diffusion/poisson_parallel_interactive.py output-parallel
+  $ python sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel
 
 Parallel runs::
 
-  $ mpiexec -n 3 python examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101
+  $ mpiexec -n 3 python sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101
 
-  $ mpiexec -n 3 python examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101 --metis
+  $ mpiexec -n 3 python sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101 --metis
 
-  $ mpiexec -n 5 python examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101 --verify --metis -ksp_monitor -ksp_converged_reason
+  $ mpiexec -n 5 python sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101 --verify --metis -ksp_monitor -ksp_converged_reason
 
 View the results using::
 

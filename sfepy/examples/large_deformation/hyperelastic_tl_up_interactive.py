@@ -73,36 +73,36 @@ Usage Examples
 
 Default options::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py
+  $ python sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py
 
 To show a comparison of stress against the analytic formula::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py -p
+  $ python sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py -p
 
 Using different mesh fineness::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
+  $ python sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py \
     --shape "5, 5, 5"
 
 Different dimensions of the computational domain::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
+  $ python sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py \
     --dims "2, 1, 3"
 
 Different length of time interval and/or number of time steps::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
+  $ python sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py \
     -t 0,15,21
 
 Use higher approximation order (the ``-t`` option to decrease the time step is
 required for convergence here)::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
+  $ python sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py \
     --order 2 -t 0,2,21
 
 Change material parameters::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py -m 2,1
+  $ python sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py -m 2,1
 """
 from __future__ import print_function, absolute_import
 import argparse

@@ -70,23 +70,23 @@ Examples
 
 Specify the inlet velocity and a finer mesh::
 
-  python3 simple.py examples/navier_stokes/stokes_slip_bc -d shape="(11,31,31),u_inlet=0.5"
+  python3 simple.py sfepy/examples/navier_stokes/stokes_slip_bc -d shape="(11,31,31),u_inlet=0.5"
   python3 resview.py -f p:p0 u:o.4:p1 u:g:f0.2:p1 -- user_block.vtk
 
 Use the penalty term formulation and einsum-based terms with the default
 (numpy) backend::
 
-  python3 simple.py examples/navier_stokes/stokes_slip_bc -d "mode=penalty,term_mode=einsum"
+  python3 simple.py sfepy/examples/navier_stokes/stokes_slip_bc -d "mode=penalty,term_mode=einsum"
   python3 resview.py -f p:p0 u:o.4:p1 u:g:f0.2:p1 -- user_block.vtk
 
 Change backend to opt_einsum (needs to be installed) and use the quadratic velocity approximation order::
 
-  python3 simple.py examples/navier_stokes/stokes_slip_bc -d "u_order=2,mode=penalty,term_mode=einsum,backend=opt_einsum,optimize=auto"
+  python3 simple.py sfepy/examples/navier_stokes/stokes_slip_bc -d "u_order=2,mode=penalty,term_mode=einsum,backend=opt_einsum,optimize=auto"
   python3 resview.py -f p:p0 u:o.4:p1 u:g:f0.2:p1 -- user_block.vtk
 
 Note the pressure field distribution improvement w.r.t. the previous examples. IfPETSc + petsc4py are installed, try using the iterative solver to speed up the solution::
 
-  python3 simple.py examples/navier_stokes/stokes_slip_bc -d "u_order=2,ls=ls_i,mode=penalty,term_mode=einsum,backend=opt_einsum,optimize=auto"
+  python3 simple.py sfepy/examples/navier_stokes/stokes_slip_bc -d "u_order=2,ls=ls_i,mode=penalty,term_mode=einsum,backend=opt_einsum,optimize=auto"
   python3 resview.py -f p:p0 u:o.4:p1 u:g:f0.2:p1 -- user_block.vtk
 """
 import os

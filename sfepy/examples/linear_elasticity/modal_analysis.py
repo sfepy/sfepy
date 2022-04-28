@@ -20,23 +20,23 @@ Examples
 
 - Run with the default arguments, show results (color = strain)::
 
-    python examples/linear_elasticity/modal_analysis.py --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py --show
 
 - Fix bottom surface of the domain, show 9 eigen-shapes::
 
-    python examples/linear_elasticity/modal_analysis.py -b cantilever -n 9 --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py -b cantilever -n 9 --show
 
 - Increase mesh resolution::
 
-    python examples/linear_elasticity/modal_analysis.py -s 31,31 -n 9 --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py -s 31,31 -n 9 --show
 
 - Use 3D domain::
 
-    python examples/linear_elasticity/modal_analysis.py -d 1,1,1 -c 0,0,0 -s 8,8,8 --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py -d 1,1,1 -c 0,0,0 -s 8,8,8 --show
 
 - Change the eigenvalue problem solver to LOBPCG::
 
-    python examples/linear_elasticity/modal_analysis.py --solver="eig.scipy_lobpcg,i_max:100,largest:False" --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py --solver="eig.scipy_lobpcg,i_max:100,largest:False" --show
 
   See :mod:`sfepy.solvers.eigen` for available solvers.
 """

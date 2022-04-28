@@ -14,7 +14,7 @@ Usage Examples
 
 Run with simple.py script::
 
-    python simple.py examples/dg/burgers_2D.py
+    python simple.py sfepy/examples/dg/burgers_2D.py
 
 Results are saved to output/dg/burgers_2D folder by default as ``.msh`` files,
 the best way to view them is through GMSH (http://gmsh.info/) version 4.6 or

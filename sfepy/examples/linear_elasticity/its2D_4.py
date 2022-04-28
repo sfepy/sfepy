@@ -7,7 +7,7 @@ may need to prefix all the commands with "python " and remove "./"):
 
 1. solve the problem::
 
-   ./simple.py examples/linear_elasticity/its2D_4.py
+   ./simple.py sfepy/examples/linear_elasticity/its2D_4.py
 
 2. optionally, view the results::
 
@@ -20,7 +20,7 @@ may need to prefix all the commands with "python " and remove "./"):
 
 4. probe the data::
 
-   ./probe.py examples/linear_elasticity/its2D_4.py its2D.h5
+   ./probe.py sfepy/examples/linear_elasticity/its2D_4.py its2D.h5
 
 Find :math:`\ul{u}` such that:
 

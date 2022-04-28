@@ -74,7 +74,7 @@ coordinate frame.
 Use the following command to show a comparison of the FEM solution with the
 above analytical relation (notice the nonlinearity of the dependence)::
 
-  python simple.py examples/large_deformation/balloon.py -d 'plot: True'
+  python simple.py sfepy/examples/large_deformation/balloon.py -d 'plot: True'
 
 The agreement should be very good, even though the mesh is coarse.
 

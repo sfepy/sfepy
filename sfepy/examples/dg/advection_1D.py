@@ -10,7 +10,7 @@ Usage Examples
 --------------
 Run with simple.py script::
 
-    python simple.py examples/dg/advection_1D.py
+    python simple.py sfepy/examples/dg/advection_1D.py
 
 To view animated results use ``script/dg_plot_1D.py`` specifing name of the
 output in ``output/`` folder, default is ``dg/advection_1D``::

@@ -17,20 +17,20 @@ Usage Examples
 Default material parameters, a square periodic cell with a spherical inclusion,
 logs also standard pressure dilatation and shear waves, no eigenvectors::
 
-  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only
+  python sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only
 
 As above, with custom eigenvalue solver parameters, and different number of
 eigenvalues, mesh size and units used in the calculation::
 
-  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --solver-conf="kind='eig.scipy', method='eigsh', tol=1e-10, maxiter=1000, which='LM', sigma=0" --log-std-waves -n 5 --range=0,640,101 --mode=omega --unit-multipliers=1e-6,1e-2,1e-3 --mesh-size=1e-2 --eigs-only
+  python sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --solver-conf="kind='eig.scipy', method='eigsh', tol=1e-10, maxiter=1000, which='LM', sigma=0" --log-std-waves -n 5 --range=0,640,101 --mode=omega --unit-multipliers=1e-6,1e-2,1e-3 --mesh-size=1e-2 --eigs-only
 
 Default material parameters, a square periodic cell with a square inclusion,
 and a very small mesh to allow comparing the omega and kappa modes (full matrix
 solver required!)::
 
-  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_2m.mesh --solver-conf="kind='eig.scipy', method='eigh'" --log-std-waves -n 10 --range=0,640,101 --mesh-size=1e-2 --mode=omega --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/omega
+  python sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_2m.mesh --solver-conf="kind='eig.scipy', method='eigh'" --log-std-waves -n 10 --range=0,640,101 --mesh-size=1e-2 --mode=omega --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/omega
 
-  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_2m.mesh --solver-conf="kind='eig.qevp', method='companion', mode='inverted', solver={kind='eig.scipy', method='eig'}" --log-std-waves -n 500 --range=0,4000000,1001 --mesh-size=1e-2 --mode=kappa --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/kappa
+  python sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_2m.mesh --solver-conf="kind='eig.qevp', method='companion', mode='inverted', solver={kind='eig.scipy', method='eig'}" --log-std-waves -n 500 --range=0,4000000,1001 --mesh-size=1e-2 --mode=kappa --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/kappa
 
 View/compare the resulting logs::
 
@@ -41,13 +41,13 @@ View/compare the resulting logs::
 In contrast to the heterogeneous square periodic cell, a homogeneous
 square periodic cell (the region Y2 is empty)::
 
-  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_1m.mesh --solver-conf="kind='eig.scipy', method='eigh'" --log-std-waves -n 10 --range=0,640,101 --mesh-size=1e-2 --mode=omega --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/omega-h
+  python sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_1m.mesh --solver-conf="kind='eig.scipy', method='eigh'" --log-std-waves -n 10 --range=0,640,101 --mesh-size=1e-2 --mode=omega --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/omega-h
 
   python script/plot_logs.py output/omega-h/frequencies.txt --no-legends -g 1 -o mode-omega-h.png
 
 Use the Brillouin stepper::
 
-  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves -n=60 --eigs-only --no-legends --stepper=brillouin
+  python sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves -n=60 --eigs-only --no-legends --stepper=brillouin
 
   python script/plot_logs.py output/frequencies.txt -g 0 --rc="'font.size':14, 'lines.linewidth' : 3, 'lines.markersize' : 4" -o brillouin-stepper-kappas.png
 
@@ -57,7 +57,7 @@ Additional arguments can be passed to the problem configuration's
 :func:`define()` function using the ``--define-kwargs`` option. In this file,
 only the mesh vertex separation parameter `mesh_eps` can be used::
 
-  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --define-kwargs="mesh_eps=1e-10" --save-regions
+  python sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --define-kwargs="mesh_eps=1e-10" --save-regions
 """
 from __future__ import absolute_import
 import os

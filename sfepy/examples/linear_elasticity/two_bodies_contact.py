@@ -22,7 +22,7 @@ g_N(\ul{u}) \rangle` are the Macaulay's brackets of the gap function
 
 Usage examples::
 
-  ./simple.py examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
+  ./simple.py sfepy/examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
 
   ./postproc.py two_bodies.mesh.vtk -b --wire
   ./postproc.py two_bodies.mesh.vtk -b --wire -d 'u,plot_displacements,rel_scaling=1.0'

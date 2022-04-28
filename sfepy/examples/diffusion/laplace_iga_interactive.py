@@ -25,11 +25,11 @@ Usage Examples
 
 Default options, storing results in this file's parent directory::
 
-  $ python3 examples/diffusion/laplace_iga_interactive.py
+  $ python3 sfepy/examples/diffusion/laplace_iga_interactive.py
 
 Command line options for tweaking the geometry of the NURBS-patch & more::
 
-  $ python3 examples/diffusion/laplace_iga_interactive.py --R1=0.7 --C2=0.1,0.1 --viewpatch
+  $ python3 sfepy/examples/diffusion/laplace_iga_interactive.py --R1=0.7 --C2=0.1,0.1 --viewpatch
 
 View the results using::
 

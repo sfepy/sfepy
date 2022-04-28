@@ -52,30 +52,30 @@ Usage Examples
 
 See all options::
 
-  $ python examples/multi_physics/biot_parallel_interactive.py -h
+  $ python sfepy/examples/multi_physics/biot_parallel_interactive.py -h
 
 See PETSc options::
 
-  $ python examples/multi_physics/biot_parallel_interactive.py -help
+  $ python sfepy/examples/multi_physics/biot_parallel_interactive.py -help
 
 Single process run useful for debugging with :func:`debug()
 <sfepy.base.base.debug>`::
 
-  $ python examples/multi_physics/biot_parallel_interactive.py output-parallel
+  $ python sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel
 
 Parallel runs::
 
-  $ mpiexec -n 3 python examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --shape=101,101
+  $ mpiexec -n 3 python sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --shape=101,101
 
-  $ mpiexec -n 3 python examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --shape=101,101 --metis
+  $ mpiexec -n 3 python sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --shape=101,101 --metis
 
-  $ mpiexec -n 8 python examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --shape 101,101 --metis -snes_monitor -snes_view -snes_converged_reason -ksp_monitor
+  $ mpiexec -n 8 python sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --shape 101,101 --metis -snes_monitor -snes_view -snes_converged_reason -ksp_monitor
 
 Using FieldSplit preconditioner::
 
-  $ mpiexec -n 2 python examples/multi_physics/biot_parallel_interactive.py output-parallel --shape=101,101 -snes_monitor -snes_converged_reason -ksp_monitor -pc_type fieldsplit
+  $ mpiexec -n 2 python sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel --shape=101,101 -snes_monitor -snes_converged_reason -ksp_monitor -pc_type fieldsplit
 
-  $ mpiexec -n 8 python examples/multi_physics/biot_parallel_interactive.py output-parallel --shape=1001,1001 --metis -snes_monitor -snes_converged_reason -ksp_monitor -pc_type fieldsplit -pc_fieldsplit_type additive
+  $ mpiexec -n 8 python sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel --shape=1001,1001 --metis -snes_monitor -snes_converged_reason -ksp_monitor -pc_type fieldsplit -pc_fieldsplit_type additive
 
 View the results using (strip linearization or approximation orders one)::
 

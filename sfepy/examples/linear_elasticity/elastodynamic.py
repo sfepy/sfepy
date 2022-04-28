@@ -35,11 +35,11 @@ Usage Examples
 Run with the default settings (the Newmark method, 3D problem, results stored
 in ``output/ed/``)::
 
-  python simple.py examples/linear_elasticity/elastodynamic.py
+  python simple.py sfepy/examples/linear_elasticity/elastodynamic.py
 
 Solve using the Bathe method::
 
-  python simple.py examples/linear_elasticity/elastodynamic.py -O "ts='tsb'"
+  python simple.py sfepy/examples/linear_elasticity/elastodynamic.py -O "ts='tsb'"
 
 View the resulting deformation using:
 

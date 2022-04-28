@@ -26,9 +26,9 @@ The Lagrange or Bernstein polynomial bases support higher order
 DOFs in the Dirichlet boundary conditions, unlike the hierarchical Lobatto
 basis implementation, compare the results of::
 
-  python simple.py examples/diffusion/sinbc.py -d basis=lagrange
-  python simple.py examples/diffusion/sinbc.py -d basis=bernstein
-  python simple.py examples/diffusion/sinbc.py -d basis=lobatto
+  python simple.py sfepy/examples/diffusion/sinbc.py -d basis=lagrange
+  python simple.py sfepy/examples/diffusion/sinbc.py -d basis=bernstein
+  python simple.py sfepy/examples/diffusion/sinbc.py -d basis=lobatto
 
 Use the following commands to view each of the results of the above commands
 (assuming default output directory and names)::

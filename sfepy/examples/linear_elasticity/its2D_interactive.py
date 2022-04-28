@@ -18,7 +18,7 @@ approximation order greater than one.
 In the SfePy top-level directory the following command can be used to get usage
 information::
 
-  python examples/linear_elasticity/its2D_interactive.py -h
+  python sfepy/examples/linear_elasticity/its2D_interactive.py -h
 
 Notes
 -----

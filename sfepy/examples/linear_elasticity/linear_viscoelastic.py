@@ -65,8 +65,8 @@ Time history plots
 
 Run the following::
 
-    $ python examples/linear_elasticity/linear_viscoelastic.py -h
-    $ python examples/linear_elasticity/linear_viscoelastic.py block.h5
+    $ python sfepy/examples/linear_elasticity/linear_viscoelastic.py -h
+    $ python sfepy/examples/linear_elasticity/linear_viscoelastic.py block.h5
 
 Try comparing 'th' and 'eth' versions, e.g., for n_step = 201, and f_n_step =
 51. There is a visible notch on viscous stress curves in the 'th' mode, as the
