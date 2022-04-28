@@ -8,7 +8,7 @@ pages 110-125. https://doi.org/10.1016/j.ijsolstr.2018.05.017
 """
 
 import numpy as nm
-from sfepy import data_dir
+from sfepy import data_dir, base_dir
 from sfepy.base.base import Struct
 from sfepy.homogenization.micmac import get_homog_coefs_linear
 import os.path as osp
@@ -101,7 +101,7 @@ def define():
     filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
     # define the micro problem - homogenization procedure
-    filename_micro = data_dir +\
+    filename_micro = base_dir +\
         '/examples/multi_physics/piezo_elasticity_micro.py'
     filename_mesh_micro = data_dir + '/meshes/3d/piezo_mesh_micro.vtk'
 

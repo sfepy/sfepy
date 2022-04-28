@@ -11,6 +11,7 @@ sys.path.append('.')
 import numpy as nm
 from scipy.optimize import fmin_tnc
 
+import sfepy
 from sfepy.base.base import Struct
 from sfepy.base.log import Log
 
@@ -139,7 +140,7 @@ class MaterialOptimizer(object):
         return self.x_norm2real(xopt[0])
 
 def main():
-    srcdir = 'examples/homogenization/'
+    srcdir = sfepy.base_dir + '/examples/homogenization/'
     micro_filename = srcdir + 'homogenization_opt.py'
     macro_filename = srcdir + 'linear_elasticity_opt.py'
 
