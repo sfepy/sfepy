@@ -1,6 +1,6 @@
 graft doc
-prune examples/*/output
-prune examples/*/*/output
+prune sfepy/examples/*/output
+prune sfepy/examples/*/*/output
 prune doc/_build
 prune doc/html
 exclude doc/logo/*.vtk
