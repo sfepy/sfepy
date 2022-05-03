@@ -3,6 +3,6 @@
 linear_elasticity_opt.py
 ------------------------
 
-:download:`Download the file. </../examples/homogenization/linear_elasticity_opt.py>`
+:download:`Download the file. </../sfepy/examples/homogenization/linear_elasticity_opt.py>`
 
-.. literalinclude:: /../examples/homogenization/linear_elasticity_opt.py
+.. literalinclude:: /../sfepy/examples/homogenization/linear_elasticity_opt.py

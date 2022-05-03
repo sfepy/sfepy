@@ -145,8 +145,8 @@ The following commands should be run in the top-level directory of the *SfePy*
 source tree after compiling the C extension files. See
 :ref:`introduction_installation` for full installation instructions.
 
-* Download :download:`examples/diffusion/poisson_short_syntax.py
-  <../examples/diffusion/poisson_short_syntax.py>`. It represents our sample
+* Download :download:`sfepy/examples/diffusion/poisson_short_syntax.py
+  <../sfepy/examples/diffusion/poisson_short_syntax.py>`. It represents our sample
   *SfePy* :ref:`sec-problem-description-file`, which defines the problem to be
   solved in terms *SfePy* can understand.
 
@@ -188,10 +188,10 @@ Example Problem Description File
 --------------------------------
 
 Here we discuss the contents of the
-:download:`examples/diffusion/poisson_short_syntax.py
-<../examples/diffusion/poisson_short_syntax.py>` problem description file. For
+:download:`sfepy/examples/diffusion/poisson_short_syntax.py
+<../sfepy/examples/diffusion/poisson_short_syntax.py>` problem description file. For
 additional examples, see the problem description files in the
-``examples/`` directory of *SfePy*.
+``sfepy/examples/`` directory of *SfePy*.
 
 The problem at hand is the following:
 
@@ -225,8 +225,8 @@ long table in :ref:`term_overview`, we can see that *SfePy* contains
 this term under name `dw_laplace`. We are now ready to proceed to the
 actual problem definition.
 
-Open the :download:`examples/diffusion/poisson_short_syntax.py
-<../examples/diffusion/poisson_short_syntax.py>` file in your favorite text
+Open the :download:`sfepy/examples/diffusion/poisson_short_syntax.py
+<../sfepy/examples/diffusion/poisson_short_syntax.py>` file in your favorite text
 editor. Note that the file is a regular Python source code.
 
 ::
@@ -635,11 +635,11 @@ Complete Example as a Script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The source code: :download:`linear_elastic_interactive.py
-<../examples/linear_elasticity/linear_elastic_interactive.py>`.
+<../sfepy/examples/linear_elasticity/linear_elastic_interactive.py>`.
 
 This file should be run from the top-level *SfePy* source directory so it can
 find the mesh file correctly. Please note that the provided example script may
 differ from above tutorial in some minor details.
 
-.. literalinclude:: ../examples/linear_elasticity/linear_elastic_interactive.py
+.. literalinclude:: ../sfepy/examples/linear_elasticity/linear_elastic_interactive.py
    :linenos:

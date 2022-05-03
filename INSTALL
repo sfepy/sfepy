@@ -87,20 +87,11 @@ Installation
 Testing:
 --------
 
-Run './run_tests.py' or './run_tests.py --filter-less' in TOPDIR.
+Run
 
-Tests that save results save them into TOPDIR/output-tests directory. View the
-results (*.vtk) with a VTK-capable viewer (e.g. ParaView, Mayavi).
+  python -c "import sfepy; sfepy.test()"
 
-No failures should be reported.
-
-If you get some failures it probably means some optional packages are not
-installed. Also be sure to have a recent version of Numpy and SciPy installed
-(latest releases or Git versions are the best bet). Verify also your pytables
-(hdf5) installation (possible test_io.py failures).
-
-See also './run_tests.py --help' for further options, especially --raise and
---debug are helpful.
+in TOPDIR.
 
 Documentation:
 --------------

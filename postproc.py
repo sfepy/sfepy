@@ -5,39 +5,40 @@ computations results.
 
 Examples
 --------
-  The examples assume that run_tests.py has been run successfully and the
-  resulting data files are present.
+The examples assume that
+``python -c "import sfepy; sfepy.test('--output-dir=output-tests')"``
+has been run successfully and the resulting data files are present.
 
-  - view data in output-tests/test_navier_stokes.vtk
+- view data in output-tests/navier_stokes-navier_stokes.vtk
 
-    $ python postproc.py output-tests/test_navier_stokes.vtk
-    $ python postproc.py output-tests/test_navier_stokes.vtk --3d
+  $ python postproc.py output-tests/navier_stokes-navier_stokes.vtk
+  $ python postproc.py output-tests/navier_stokes-navier_stokes.vtk --3d
 
-  - save a snapshot image and exit
+- save a snapshot image and exit
 
-    $ python postproc.py output-tests/test_poisson.vtk -o image.png -n
+  $ python postproc.py output-tests/diffusion-poisson.vtk -o image.png -n
 
-  - save a snapshot image without off-screen rendering and exit
+- save a snapshot image without off-screen rendering and exit
 
-    $ python postproc.py output-tests/test_poisson.vtk -o image.png -n --no-offscreen
+  $ python postproc.py output-tests/diffusion-poisson.vtk -o image.png -n --no-offscreen
 
-  - create animation (forces offscreen rendering) from
-    output-tests/test_time_poisson.*.vtk
+- create animation (forces offscreen rendering) from
+  output-tests/diffusion-time_poisson.*.vtk
 
-    $ python postproc.py output-tests/test_time_poisson.*.vtk -a mov
+  $ python postproc.py output-tests/diffusion-time_poisson.*.vtk -a mov
 
-  - create animation (forces offscreen rendering) from
-    output-tests/test_hyperelastic.*.vtk
+- create animation (forces offscreen rendering) from
+  output-tests/test_hyperelastic_TL.*.vtk
 
-    The range specification for the displacements 'u' is required, as
-    output-tests/test_hyperelastic.00.vtk contains only zero
-    displacements which leads to invisible glyph size.
+  The range specification for the displacements 'u' is required, as
+  output-tests/test_hyperelastic_TL.00.vtk contains only zero
+  displacements which leads to invisible glyph size.
 
-    $ python postproc.py output-tests/test_hyperelastic.*.vtk --ranges=u,0,0.02 -a mov
+  $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk --ranges=u,0,0.02 -a mov
 
-  - same as above, but slower frame rate
+- same as above, but slower frame rate
 
-    $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk --ranges=u,0,0.02 -a mov --ffmpeg-options="-framerate 2"
+  $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk --ranges=u,0,0.02 -a mov --ffmpeg-options="-framerate 2"
 """
 from __future__ import print_function
 from __future__ import absolute_import

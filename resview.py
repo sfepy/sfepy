@@ -6,40 +6,41 @@ computations results.
 
 Examples
 --------
-  The examples assume that run_tests.py has been run successfully and the
-  resulting data files are present.
+The examples assume that
+``python -c "import sfepy; sfepy.test('--output-dir=output-tests')"``
+has been run successfully and the resulting data files are present.
 
-  - View data in output-tests/test_navier_stokes.vtk.
+- View data in output-tests/test_navier_stokes.vtk::
 
-    $ python resview.py output-tests/test_navier_stokes.vtk
+  $ python resview.py output-tests/navier_stokes-navier_stokes.vtk
 
-  - Customize the above output:
-    plot0: field "p", switch on edges,
-    plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2.
+- Customize the above output:
+  plot0: field "p", switch on edges,
+  plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2.
 
-    $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
+  $ python resview.py output-tests/navier_stokes-navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
 
-  - As above, but glyphs are scaled by the factor determined automatically as
-    20% of the minimum bounding box size.
+- As above, but glyphs are scaled by the factor determined automatically as
+  20% of the minimum bounding box size.
 
-    $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f10%:p1
+  $ python resview.py output-tests/navier_stokes-navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f10%:p1
 
-  - View data and take a screenshot.
+- View data and take a screenshot.
 
-    $ python resview.py output-tests/test_poisson.vtk -o image.png
+  $ python resview.py output-tests/diffusion-poisson.vtk -o image.png
 
-  - Take a screenshot without a window popping up.
+- Take a screenshot without a window popping up.
 
-    $ python resview.py output-tests/test_poisson.vtk -o image.png --off-screen
+  $ python resview.py output-tests/diffusion-poisson.vtk -o image.png --off-screen
 
-  - Create animation from output-tests/test_time_poisson.*.vtk.
+- Create animation from output-tests/diffusion-time_poisson.*.vtk.
 
-    $ python resview.py output-tests/test_time_poisson.*.vtk -a mov.mp4
+  $ python resview.py output-tests/diffusion-time_poisson.*.vtk -a mov.mp4
 
-  - Create animation from output-tests/test_hyperelastic.*.vtk,
-    set frame rate to 3, plot displacements and mooney_rivlin_stress.
+- Create animation from output-tests/test_hyperelastic.*.vtk,
+  set frame rate to 3, plot displacements and mooney_rivlin_stress.
 
-    $ python resview.py output-tests/test_hyperelastic_TL.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
+  $ python resview.py output-tests/test_hyperelastic_TL.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
 """
 from argparse import ArgumentParser, Action, RawDescriptionHelpFormatter
 from ast import literal_eval

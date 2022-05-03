@@ -161,7 +161,7 @@ def find_level_interface(domain, refine_flag):
         fc = fc.reshape((-1, 6))
         ff = ff.reshape((-1, 6))
 
-        emask = nm.zeros((domain.shape.n_el, 12), dtype=nm.bool)
+        emask = nm.zeros((domain.shape.n_el, 12), dtype=bool)
 
         ffs = []
         for ii in range(oe):
@@ -185,7 +185,7 @@ def find_level_interface(domain, refine_flag):
         effs = ffs[ie]
         omit = ie[emask[ennn[:, 0], effs[:, 1]]]
 
-        valid = nm.ones(nnn.shape[0], dtype=nm.bool)
+        valid = nm.ones(nnn.shape[0], dtype=bool)
         valid[omit] = False
 
         cells = nnn[valid]

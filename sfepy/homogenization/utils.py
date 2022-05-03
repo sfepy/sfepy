@@ -17,7 +17,7 @@ def create_pis(problem, var_name):
     var = problem.get_variables(auto_create=True)[var_name]
 
     dim = problem.domain.mesh.dim
-    pis = nm.zeros( (dim, dim), dtype = nm.object )
+    pis = nm.zeros((dim, dim), dtype=object)
     components = []
     for ir in range( dim ):
         for ic in range( dim ):
@@ -32,7 +32,7 @@ def create_scalar_pis( problem, var_name ):
     coor = var.field.get_coor()
 
     dim = problem.domain.mesh.dim
-    pis = nm.zeros( (dim,), dtype = nm.object )
+    pis = nm.zeros((dim,), dtype=object)
     components = []
     for ir in range( dim ):
         pis[ir] = {var_name : nm.ascontiguousarray( coor[:,ir] )}

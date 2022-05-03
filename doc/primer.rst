@@ -148,10 +148,10 @@ The programming of the `problem description file` is well documented in
 the *SfePy* :doc:`users_guide`. The problem description file used in the
 tutorial follows:
 
-.. literalinclude:: /../examples/linear_elasticity/its2D_1.py
+.. literalinclude:: /../sfepy/examples/linear_elasticity/its2D_1.py
 
 Download the :download:`Problem description file
-</../examples/linear_elasticity/its2D_1.py>` and open it in your favourite
+</../sfepy/examples/linear_elasticity/its2D_1.py>` and open it in your favourite
 Python editor. Note that you may wish to change the location of the output
 directory to somewhere on your drive. You may also need to edit the mesh file
 name. For the analysis we will assume that the material of the test specimen is
@@ -275,9 +275,9 @@ Post-processing
 include a function to calculate these and update the problem material
 definition and options to call this function as a
 `post_process_hook()`. Save this file as :download:`its2D_2.py
-</../examples/linear_elasticity/its2D_2.py>`.
+</../sfepy/examples/linear_elasticity/its2D_2.py>`.
 
-.. literalinclude:: /../examples/linear_elasticity/its2D_2.py
+.. literalinclude:: /../sfepy/examples/linear_elasticity/its2D_2.py
 
 The updated file imports all of the previous definitions in
 ``its2D_1.py``. The stress function (`de_cauchy_stress()`) requires as input
@@ -527,10 +527,10 @@ elements. It is possible to provide custom integrals to allow the
 calculation of stresses with the Gauss quadrature points at the element
 nodes. This will provide us a more accurate estimate of the stress at
 the centre of the specimen located at node 0. The :download:`code
-</../examples/linear_elasticity/its2D_3.py>` below outlines one way to
+</../sfepy/examples/linear_elasticity/its2D_3.py>` below outlines one way to
 achieve this.
 
-.. literalinclude:: /../examples/linear_elasticity/its2D_3.py
+.. literalinclude:: /../sfepy/examples/linear_elasticity/its2D_3.py
 
 The output:
 
@@ -590,7 +590,7 @@ The above computation could also be done in the IPython shell:
     In [28]: ivn = Integral('ivn', order=-1,
        ....:                coors=gdata.coors, weights=[gdata.volume / nc] * nc)
 
-    In [29]: pb, variables = solve_pde('examples/linear_elasticity/its2D_2.py')
+    In [29]: pb, variables = solve_pde('sfepy/examples/linear_elasticity/its2D_2.py')
 
     In [30]: stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D,u)',
        ....:                      mode='qp', integrals=Integrals([ivn]))
@@ -621,10 +621,10 @@ Probing
 
 As a bonus for sticking to the end of this tutorial see the following
 :download:`Problem description file
-</../examples/linear_elasticity/its2D_5.py>` that provides *SfePy*
+</../sfepy/examples/linear_elasticity/its2D_5.py>` that provides *SfePy*
 functions to quickly and neatly probe the solution.
 
-.. literalinclude:: /../examples/linear_elasticity/its2D_5.py
+.. literalinclude:: /../sfepy/examples/linear_elasticity/its2D_5.py
 
 Probing applies interpolation to output the solution along specified
 paths. For the tutorial, line probing is done along the x- and y-axes of
@@ -663,16 +663,16 @@ corresponds to the keywords in the problem description files. The following
 listing shows a script with the same (and more) functionality as the above
 examples:
 
-.. literalinclude:: /../examples/linear_elasticity/its2D_interactive.py
+.. literalinclude:: /../sfepy/examples/linear_elasticity/its2D_interactive.py
 
 The script can be run from the *SfePy* top-level directory, assuming the
 in-place build, as follows::
 
-    python examples/linear_elasticity/its2D_interactive.py
+    python sfepy/examples/linear_elasticity/its2D_interactive.py
 
 The script allows setting several parameters that influence the solution, see::
 
-    python examples/linear_elasticity/its2D_interactive.py -h
+    python sfepy/examples/linear_elasticity/its2D_interactive.py -h
 
 for the complete list. Besides the material parameters, a uniform mesh
 refinement level and the displacement field approximation order can be

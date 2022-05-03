@@ -169,8 +169,7 @@ def get_examples(table):
 
     term_use = dict_from_keys_init(table.keys(), set)
     required, other = get_standard_keywords()
-
-    for filename in locate_files('*py', get_paths('examples/')[0]):
+    for filename in locate_files('*py', get_paths('sfepy/examples/')[0]):
         try:
             conf = ProblemConf.from_file(filename, required, other,
                                          verbose=False)

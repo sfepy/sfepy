@@ -38,9 +38,9 @@ environment:
   matrix:
 
     - PYTHON: "C:\\Python37_64"
-      PYTHON_VERSION: "3.7"
+      PYTHON_VERSION: "3.9"
       PYTHON_ARCH: "64"
-      CONDA_PY: "37"
+      CONDA_PY: "39"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -95,8 +95,7 @@ test_script:
 
   - python setup.py build_ext --inplace
   - ps: |
-      python run_tests.py
-      if ($LastExitCode -ne 0) { python run_tests.py --raise }
+      python -c "import sfepy; sfepy.test()"
 
 #---------------------------------#
 #         notifications           #

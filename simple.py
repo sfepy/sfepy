@@ -3,13 +3,12 @@
 """
 Solve partial differential equations given in a SfePy problem definition file.
 
-Example problem definition files can be found in ``examples/`` directory of the
-SfePy top-level directory. This script works with all the examples except those
-in ``examples/standalone/``.
+Example problem definition files can be found in ``sfepy/examples/`` directory
+of the SfePy top-level directory.
 
 Both normal and parametric study runs are supported. A parametric study allows
 repeated runs for varying some of the simulation parameters - see
-``examples/diffusion/poisson_parametric_study.py`` file.
+``sfepy/examples/diffusion/poisson_parametric_study.py`` file.
 """
 from __future__ import print_function
 from __future__ import absolute_import

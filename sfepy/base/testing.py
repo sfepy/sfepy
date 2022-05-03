@@ -1,187 +1,151 @@
-from __future__ import print_function
-import sys
+import os.path as op
 import inspect
 
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import Struct, output, assert_
+from sfepy.base.base import Struct, assert_, IndexedStruct
 
-class TestCommon(Struct):
+def report(*argc):
+    """All tests should print via this function."""
+    format = '...' + ' %s' * len(argc)
+    msg = format % argc
+    print(msg)
 
-    @staticmethod
-    def xfail(test_method):
-        """
-        Decorator that allows a test to fail.
-        """
-        def wrapper(self):
-            try:
-                ret = test_method(self)
-            except:
-                if self.debug:
-                    raise
-                ret = False
+def eval_coor_expression(expression, coor):
 
-            if not ret:
-                print('--- test expected to fail.')
-                ret = True
+    x = coor[:, 0]
+    y = coor[:, 1]
+    if coor.shape[1] == 3:
+        z = coor[:, 2]
+    else:
+        z = None
 
-            return ret
+    env = {'x' : x, 'y' : y, 'z' : z}
+    out = eval(expression, nm.__dict__, env)
 
-        return wrapper
+    if isinstance(out, float):
+        aux = nm.empty(coor.shape[0], dtype=nm.float64)
+        aux.fill(out)
+        out = aux
 
-    def get_number(self):
-        methods = inspect.getmembers(self, inspect.ismethod)
-        tests = [ii for ii in methods
-                 if (len(ii[0]) > 5) and ii[0][:5] == 'test_']
-        return len(tests)
+    return out
 
-    def run(self, debug=False, ifile=None):
-        self.debug = debug
+def compare_vectors(vec1, vec2, allowed_error=1e-8,
+                    label1='vec1', label2='vec2', norm=None):
 
-        ok = True
-        n_fail = 0
+    diff_norm = nla.norm(vec1 - vec2, ord=norm)
+    report('||%s - %s||: %e' % (label1, label2, diff_norm))
+    if diff_norm > allowed_error:
+        return False
+    else:
+        return True
 
-        methods = inspect.getmembers(self, inspect.ismethod)
-        if hasattr(self, 'tests'):
-            dmethods = {}
-            for key, method in methods:
-                dmethods[key] = method
-            tests = [(ii, dmethods[ii]) for ii in self.tests]
-            print(tests)
+def assert_equal(a, b, msg='assertion of equality failed!'):
+    import scipy.sparse
+
+    assert_base_types = (int, float, str, bytes, complex,
+                         None.__class__, type)
+    if a is b: return
+
+    def assert_dict(a, b):
+        assert_(set(a.keys()) == set(b.keys()), msg)
+        for i in a:
+            assert_equal(a[i], b[i], msg)
+
+    def assert_list(a, b):
+        assert_(len(a) == len(b), msg)
+        for i, j in zip(a, b):
+            assert_equal(i, j)
+
+    assert_(a.__class__ is b.__class__, msg)
+    if isinstance(a, (int, float, str, assert_base_types, bytes, complex)):
+        assert_(a == b, msg)
+
+    elif isinstance(a, dict):
+        assert_dict(a, b)
+
+    elif isinstance(a, (list, tuple)):
+        assert_list(a, b)
+
+    elif isinstance(a, nm.ndarray):
+        nm.testing.assert_array_equal(a,b)
+
+    elif isinstance(a, (scipy.sparse.csr_matrix, scipy.sparse.csc_matrix)):
+        nm.testing.assert_array_equal(a.data, b.data)
+        nm.testing.assert_array_equal(a.indices, b.indices)
+        nm.testing.assert_array_equal(a.indptr, b.indptr)
+
+    elif isinstance(a, object):
+        cls = a.__class__
+
+        if hasattr(cls, '__slots__'):
+            ad = dict((i,getattr(a,i)) for i in cls.__slots__)
+            bd = dict((i,getattr(b,i)) for i in cls.__slots__)
+
+        elif hasattr(a, '__dict__'):
+            ad = a.__dict__
+            bd = b.__dict__
+
         else:
-            tests = [ii for ii in methods
-                     if (len(ii[0]) > 5) and ii[0][:5] == 'test_']
+            def members(obj):
+                out = inspect.getmembers(obj, lambda x: not
+                                         inspect.isroutine(x) )
+                out = dict( (k,v) for k,v in out if not k.startswith('__'))
+                return out
+            ad = members(a)
+            bd = members(b)
 
-        orig_prefix = output.get_output_prefix()
-        for itest, (test_name, test_method) in enumerate(tests):
-            if len(tests) > 1 and ifile is not None:
-                output.set_output_prefix('[%d/%d] %s'\
-                    % (ifile, itest + 1, orig_prefix))
-            else:
-                output.set_output_prefix('[%d] %s' % (ifile, orig_prefix))
+        assert_dict(ad, bd)
 
-            aux = ' %s: ' % test_name
+class NLSStatus(IndexedStruct):
+    """
+    Custom nonlinear solver status storing stopping condition of all
+    time steps.
+    """
+    def __setitem__(self, key, val):
+        IndexedStruct.__setitem__(self, key, val)
+        if key == 'condition':
+            self.conditions.append(val)
 
-            try:
-                ret = test_method()
-            except:
-                if debug:
-                    raise
-                ret = False
+def check_conditions(conditions):
+    ok = (conditions == 0).all()
+    if not ok:
+        report('nls stopping conditions:')
+        report(conditions)
+    return ok
 
-            if not ret:
-                aux = '---' + aux + 'failed!'
-                n_fail += 1
-                ok = False
-            else:
-                aux = '+++' + aux + 'ok'
+def run_declaratice_example(ex_filename, output_dir, ext='.vtk',
+                            remove_prefix=''):
+    """
+    Run a declarative example in `ex_filename` given relatively to
+    ``sfepy.base_dir``.
+    """
+    import sfepy
+    from sfepy.applications import solve_pde
 
-            print(aux)
+    report('solving %s...' % ex_filename)
 
-        output.set_output_prefix(orig_prefix)
+    if remove_prefix and ex_filename.startswith(remove_prefix):
+        output_name = ex_filename.replace(remove_prefix, '')
 
-        return ok, n_fail, len(tests)
+    else:
+        output_name = ex_filename
 
-    @staticmethod
-    def report(*argc):
-        """All tests should print via this function."""
-        format = '...' + ' %s' * len(argc)
-        msg = format % argc
-        print(msg)
+    output_name = op.splitext(output_name.replace('/', '-'))[0]
+    filename = op.join(sfepy.base_dir, ex_filename)
+    name = op.splitext(op.split(output_name)[1])[0]
+    fmt = ext.replace('.', '')
+    options = Struct(output_filename_trunk=name,
+                     output_format=fmt if fmt != '' else 'vtk',
+                     save_ebc=False, save_ebc_nodes=False,
+                     save_regions=False,
+                     save_regions_as_groups=False,
+                     save_field_meshes=False,
+                     solve_not=False)
+    status = IndexedStruct(nls_status=NLSStatus(conditions=[]))
 
-    @staticmethod
-    def eval_coor_expression(expression, coor):
+    solve_pde(filename, options=options, status=status, output_dir=output_dir)
+    report('%s solved' % ex_filename)
 
-        x = coor[:, 0]
-        y = coor[:, 1]
-        if coor.shape[1] == 3:
-            z = coor[:, 2]
-        else:
-            z = None
-
-        env = {'x' : x, 'y' : y, 'z' : z}
-        out = eval(expression, nm.__dict__, env)
-
-        if isinstance(out, float):
-            aux = nm.empty(coor.shape[0], dtype=nm.float64)
-            aux.fill(out)
-            out = aux
-
-        return out
-
-    @staticmethod
-    def compare_vectors(vec1, vec2, allowed_error=1e-8,
-                        label1='vec1', label2='vec2', norm=None):
-
-        diff_norm = nla.norm(vec1 - vec2, ord=norm)
-        TestCommon.report('||%s - %s||: %e' % (label1, label2, diff_norm))
-        if diff_norm > allowed_error:
-            return False
-        else:
-            return True
-
-    @staticmethod
-    def assert_equal(a, b, msg='assertion of equality failed!'):
-        import scipy.sparse
-
-        assert_base_types = (int, float, str, bytes, complex,
-                             None.__class__, type)
-        if sys.version_info < (3, 0):
-            assert_base_types = assert_base_types + (unicode,) # NOQA
-            #
-            # Dirty fix for Py27/win64/NumPy combo (LK) NOQA
-            #
-            assert_base_types = assert_base_types + (long,)
-
-        if a is b: return
-
-        def assert_dict(a, b):
-            assert_(set(a.keys()) == set(b.keys()), msg)
-            for i in a:
-                TestCommon.assert_equal(a[i], b[i], msg)
-
-        def assert_list(a, b):
-            assert_(len(a) == len(b), msg)
-            for i, j in zip(a, b):
-                TestCommon.assert_equal(i, j)
-
-        assert_(a.__class__ is b.__class__, msg)
-        if isinstance(a, (int, float, str, assert_base_types, bytes, complex)):
-            assert_(a == b, msg)
-
-        elif isinstance(a, dict):
-            assert_dict(a, b)
-
-        elif isinstance(a, (list, tuple)):
-            assert_list(a, b)
-
-        elif isinstance(a, nm.ndarray):
-            nm.testing.assert_array_equal(a,b)
-
-        elif isinstance(a, (scipy.sparse.csr_matrix, scipy.sparse.csc_matrix)):
-            nm.testing.assert_array_equal(a.data, b.data)
-            nm.testing.assert_array_equal(a.indices, b.indices)
-            nm.testing.assert_array_equal(a.indptr, b.indptr)
-
-        elif isinstance(a, object):
-            cls = a.__class__
-
-            if hasattr(cls, '__slots__'):
-                ad = dict((i,getattr(a,i)) for i in cls.__slots__)
-                bd = dict((i,getattr(b,i)) for i in cls.__slots__)
-
-            elif hasattr(a, '__dict__'):
-                ad = a.__dict__
-                bd = b.__dict__
-
-            else:
-                def members(obj):
-                    out = inspect.getmembers(obj, lambda x: not
-                                             inspect.isroutine(x) )
-                    out = dict( (k,v) for k,v in out if not k.startswith('__'))
-                    return out
-                ad = members(a)
-                bd = members(b)
-
-            assert_dict(ad, bd)
+    return nm.array(status.nls_status.conditions)

@@ -477,7 +477,7 @@ cdef class CMesh:
         self.setup_connectivity(d1, d2)
         conn = self.get_conn(d1, d2)
 
-        graph = sps.csr_matrix((np.ones(conn.indices.shape[0], dtype=np.bool),
+        graph = sps.csr_matrix((np.ones(conn.indices.shape[0], dtype=bool),
                                 np.array(conn.indices, copy=True,
                                          dtype=np.int32),
                                 np.array(conn.offsets, copy=True,

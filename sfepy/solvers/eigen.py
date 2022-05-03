@@ -222,7 +222,7 @@ class LOBPCGEigenvalueSolver(EigenvalueSolver):
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
 
-        from scipy.sparse.linalg.eigen import lobpcg
+        from scipy.sparse.linalg import lobpcg
         self.lobpcg = lobpcg
 
     @standard_call

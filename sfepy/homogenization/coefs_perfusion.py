@@ -19,7 +19,7 @@ class CorrRegion( CorrMiniApp ):
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        states = nm.zeros( (self.Nreg,), dtype = nm.object )
+        states = nm.zeros((self.Nreg,), dtype=object)
         clist = []
         for ir in range( self.Nreg ):
 

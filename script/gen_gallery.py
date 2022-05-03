@@ -624,7 +624,7 @@ def main():
 
     rst_dir = 'examples'
     doc_dir = os.path.realpath(options.doc_dir)
-    examples_dir = os.path.realpath('examples')
+    examples_dir = os.path.realpath('sfepy/examples')
     full_rst_dir = os.path.join(doc_dir, rst_dir)
     images_dir = os.path.join(doc_dir, 'images/gallery')
     thumbnails_dir = os.path.join(images_dir, 'thumbnails')

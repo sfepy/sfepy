@@ -65,7 +65,8 @@ def main():
     sources = set(ii for ii in
                   locate_files('*.py',
                                root_dir=os.path.join(top_dir, 'sfepy'))
-                  if os.path.basename(ii) not in omits)
+                  if (os.path.basename(ii) not in omits)
+                  and ('sfepy/examples' not in ii) )
     sources.update(ii for ii in
                    locate_files('*.pyx',
                                 root_dir=os.path.join(top_dir, 'sfepy'))

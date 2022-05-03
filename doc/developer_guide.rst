@@ -63,26 +63,18 @@ directory.
      - directory created by the build process (generated)
    * - `doc/`
      - source files of this documentation
-   * - `examples/`
-     - example problem description files
    * - `meshes/`
      - finite element mesh files in various formats shared by the examples
    * - `output/`
      - default output directory for storing results of the examples
-   * - `output-tests/`
-     - output directory for tests
    * - `script/`
      - various small scripts (simple mesh generators, mesh format
        convertors etc.)
    * - `sfepy/`
-     - the source code
-   * - `tests/`
-     - the tests run by `run_tests.py`
-   * - `tmp/`
-     - directory for temporary files (generated)
+     - the source code including examples and tests
 
 New users/developers (after going through the :ref:`sec-tutorial`)
-should explore the `examples/` directory. For developers, the principal
+should explore the `sfepy/examples/` directory. For developers, the principal
 directory is `sfepy/`, which has the following contents:
 
 .. list-table:: `sfepy/` directory structure.
@@ -1096,7 +1088,7 @@ Utility scripts
    src/script/plot_times
    src/script/save_basis
    src/script/show_authors
-   src/script/show_mesh_info.rst
+   src/script/show_mesh_info
    src/script/show_terms_use
    src/script/sync_module_docs
    src/script/tile_periodic_mesh
@@ -1392,7 +1384,7 @@ sfepy.terms package
    src/sfepy/terms/terms_navier_stokes
    src/sfepy/terms/terms_piezo
    src/sfepy/terms/terms_point
-   src/sfepy/terms/terms_sensitivity.rst
+   src/sfepy/terms/terms_sensitivity
    src/sfepy/terms/terms_shells
    src/sfepy/terms/terms_surface
    src/sfepy/terms/terms_th
@@ -1400,3 +1392,60 @@ sfepy.terms package
    src/sfepy/terms/utils
 
    src/sfepy/terms/extmods/terms
+
+Tests
+^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/tests/conftest
+   src/sfepy/tests/test_assembling
+   src/sfepy/tests/test_base
+   src/sfepy/tests/test_cmesh
+   src/sfepy/tests/test_conditions
+   src/sfepy/tests/test_declarative_examples
+   src/sfepy/tests/test_dg_field
+   src/sfepy/tests/test_dg_terms_calls
+   src/sfepy/tests/test_domain
+   src/sfepy/tests/test_eigenvalue_solvers
+   src/sfepy/tests/test_elasticity_small_strain
+   src/sfepy/tests/test_fem
+   src/sfepy/tests/test_functions
+   src/sfepy/tests/test_high_level
+   src/sfepy/tests/test_homogenization_engine
+   src/sfepy/tests/test_homogenization_perfusion
+   src/sfepy/tests/test_hyperelastic_tlul
+   src/sfepy/tests/test_io
+   src/sfepy/tests/test_laplace_unit_disk
+   src/sfepy/tests/test_laplace_unit_square
+   src/sfepy/tests/test_lcbcs
+   src/sfepy/tests/test_linalg
+   src/sfepy/tests/test_linear_solvers
+   src/sfepy/tests/test_linearization
+   src/sfepy/tests/test_log
+   src/sfepy/tests/test_matcoefs
+   src/sfepy/tests/test_mesh_expand
+   src/sfepy/tests/test_mesh_generators
+   src/sfepy/tests/test_mesh_interp
+   src/sfepy/tests/test_mesh_smoothing
+   src/sfepy/tests/test_meshio
+   src/sfepy/tests/test_msm_laplace
+   src/sfepy/tests/test_msm_symbolic
+   src/sfepy/tests/test_normals
+   src/sfepy/tests/test_parsing
+   src/sfepy/tests/test_poly_spaces
+   src/sfepy/tests/test_projections
+   src/sfepy/tests/test_quadratures
+   src/sfepy/tests/test_ref_coors
+   src/sfepy/tests/test_refine_hanging
+   src/sfepy/tests/test_regions
+   src/sfepy/tests/test_semismooth_newton
+   src/sfepy/tests/test_sparse
+   src/sfepy/tests/test_splinebox
+   src/sfepy/tests/test_tensors
+   src/sfepy/tests/test_term_call_modes
+   src/sfepy/tests/test_term_consistency
+   src/sfepy/tests/test_term_sensitivity
+   src/sfepy/tests/test_units
+   src/sfepy/tests/test_volume

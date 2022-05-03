@@ -36,8 +36,8 @@ class SplineBox(Struct):
     @staticmethod
     def create_spb(bbox, coors, degree=3, nsg=None):
         nc, cdim = coors.shape
-        inside = nm.ones((nc,), dtype=nm.bool)
-        nsg = nm.ones((cdim,), dtype=nm.int) if nsg is None else nm.array(nsg)
+        inside = nm.ones((nc,), dtype=bool)
+        nsg = nm.ones((cdim,), dtype=int) if nsg is None else nm.array(nsg)
 
         for idim in range(cdim):
             inrange = nm.logical_and(coors[:, idim] >= bbox[idim][0],
@@ -325,7 +325,7 @@ class SplineRegion2D(SplineBox):
         """
         poly = nm.array(poly)
         points = nm.array(points)
-        inside = nm.zeros((points.shape[0],), dtype=nm.bool)
+        inside = nm.zeros((points.shape[0],), dtype=bool)
 
         p1 = poly[:-1]
         p2 = poly[1:]

@@ -66,7 +66,7 @@ def match_plane_by_dir(coors1, coors2, direction, get_saved=True):
     else:
         aux = coors2.copy()
         if direction is not None:
-            direction = nm.asarray(direction, dtype=nm.float).reshape((3, 1))
+            direction = nm.asarray(direction, dtype=nm.float64).reshape((3, 1))
             direction = direction[:coors1.shape[1]]
             direction /= nm.linalg.norm(direction)
             x0p = coors1[0] - coors2

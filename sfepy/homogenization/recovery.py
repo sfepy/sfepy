@@ -502,12 +502,14 @@ def _recovery_hook(args):
     return recovery_hook(pb, corrs, local_macro)
 
 
-def recover_micro_hook_init(micro_filename, define_args):
+def recover_micro_hook_init(micro_filename, define_args, output_dir=None):
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
     required.remove('equations')
     conf = ProblemConf.from_file(micro_filename, required, other,
                                  verbose=False, define_args=define_args)
+    if output_dir is not None:
+        conf.options.output_dir = output_dir
 
     recovery_hook = conf.options.get('recovery_hook', None)
     pb, corrs = None, None
@@ -529,11 +531,12 @@ def recover_micro_hook_init(micro_filename, define_args):
 def recover_micro_hook(micro_filename, region, macro,
                        naming_scheme='step_iel',
                        recovery_file_tag='',
-                       define_args=None, verbose=False):
+                       define_args=None, output_dir=None, verbose=False):
     import sfepy.base.multiproc_proc as multi
 
     if 'micro_problem' not in _recovery_global_dict:
-        recover_micro_hook_init(micro_filename, define_args)
+        recover_micro_hook_init(micro_filename, define_args,
+                                output_dir=output_dir)
 
     pb, corrs, recovery_hook = _recovery_global_dict['micro_problem']
 
@@ -611,11 +614,12 @@ def recover_micro_hook(micro_filename, region, macro,
 def recover_micro_hook_eps(micro_filename, region,
                            eval_var, nodal_values, const_values, eps0,
                            recovery_file_tag='',
-                           define_args=None, verbose=False):
+                           define_args=None, output_dir=None, verbose=False):
     import sfepy.base.multiproc_proc as multi
 
     if 'micro_problem' not in _recovery_global_dict:
-        recover_micro_hook_init(micro_filename, define_args)
+        recover_micro_hook_init(micro_filename, define_args,
+                                output_dir=output_dir)
 
     pb, corrs, recovery_hook = _recovery_global_dict['micro_problem']
 

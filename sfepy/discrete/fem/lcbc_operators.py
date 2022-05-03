@@ -561,7 +561,9 @@ class LCBCOperators(Container):
         except KeyError:
             raise ValueError('unknown LCBC kind! (%s)' % bc.kind)
 
-        args = bc.arguments + (self.variables, ts, self.functions)
+        args = (self.variables, ts, self.functions)
+        if bc.arguments is not None:
+            args = tuple(bc.arguments) + args
 
         op = cls('%d_%s' % (len(self), bc.kind), bc.regions, bc.dofs,
                  bc.dof_map_fun, *args)
@@ -662,7 +664,7 @@ class LCBCOperators(Container):
         cols = []
         data = []
 
-        lcbc_mask = nm.ones(n_dof, dtype=nm.bool)
+        lcbc_mask = nm.ones(n_dof, dtype=bool)
         is_homogeneous = True
         for ii, op in enumerate(self):
             rvar_name = op.var_names[0]

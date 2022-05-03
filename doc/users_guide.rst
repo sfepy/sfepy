@@ -27,21 +27,15 @@ Basic Usage
 
 * ::
 
-    $ ./simple.py examples/diffusion/poisson_short_syntax.py
+    $ ./simple.py sfepy/examples/diffusion/poisson_short_syntax.py
 
   * Creates ``cylinder.vtk``
 
 * ::
 
-    $ ./simple.py examples/navier_stokes/stokes.py
+    $ ./simple.py sfepy/examples/navier_stokes/stokes.py
 
   * Creates ``channels_symm944t.vtk``
-
-* ::
-
-    $ ./run_tests.py
-
-  * See `Running Tests`_
 
 Applications
 ^^^^^^^^^^^^
@@ -50,9 +44,9 @@ Applications
 
   * ::
 
-      $ ./phonon.py -p examples/phononic/band_gaps.py
+      $ ./phonon.py -p sfepy/examples/phononic/band_gaps.py
 
-    * see ``examples/phononic/output/``
+    * see ``sfepy/examples/phononic/output/``
 
 .. _SfePy-command-wrapper:
 
@@ -68,7 +62,7 @@ All top-level *SfePy* scripts (applications) can be run via single
   Simple wrapper for main SfePy commands.
 
   positional arguments:
-  {extractor,phonon,postproc,probe,run_tests,simple}
+  {extractor,phonon,postproc,probe,simple}
                         Available SfePy command(s).
   options               Additional options passed directly to selected
                         [command].
@@ -85,53 +79,14 @@ Notes
   run as stand-alone (as mentioned above).
 * Both "inplace" and "system-wide" installations are supported.
 
-Stand-Alone Examples
-^^^^^^^^^^^^^^^^^^^^
-
-* ::
-
-    $ python examples/rs_correctors.py
-
-* ::
-
-    $ python examples/compare_elastic_materials.py
-
-* ::
-
-    $ python examples/live_plot.py
-
 Running Tests
 ^^^^^^^^^^^^^
 
-The tests are run by the ``run_tests.py`` script. Run
+The tests are based on `pytest`_ and can be run using::
 
-    $ ./run_tests.py -h
+  python -c "import sfepy; sfepy.test()"
 
-to get help.
-
-Common Tasks
-""""""""""""
-
-* Run all tests, filter output; result files related to the tests can be found
-  in output-tests directory::
-
-    ./run_tests.py
-    ./run_tests.py --filter-more
-    ./run_tests.py --filter-less
-
-* Run a particular test file, filter output::
-
-    # Test if linear elasticity input file works.
-    ./run_tests.py tests/test_input_le.py
-
-* Debug a failing test by automatically starting a debugger when/if an
-  exception is raised ::
-
-    ./run_tests.py tests/test_input_le.py --debug
-
-* Raise silenced exceptions that could have occurred in a failing test::
-
-    ./run_tests.py tests/test_input_le.py --raise
+See :ref:`testing_installation` for additional information.
 
 Computations and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -145,13 +100,12 @@ If it is run without arguments, a help message is printed::
 
     Solve partial differential equations given in a SfePy problem definition file.
 
-    Example problem definition files can be found in ``examples/`` directory of the
-    SfePy top-level directory. This script works with all the examples except those
-    in ``examples/standalone/``.
+    Example problem definition files can be found in ``sfepy/examples/`` directory
+    of the SfePy top-level directory.
 
-    Both normal and parametric study runs are supported. A parametric study allows
-    repeated runs for varying some of the simulation parameters - see
-    ``examples/diffusion/poisson_parametric_study.py`` file.
+    Both normal and parametric study runs are supported. A parametric study
+    allows repeated runs for varying some of the simulation parameters - see
+    ``sfepy/examples/diffusion/poisson_parametric_study.py`` file.
 
     Options:
       --version             show program's version number and exit
@@ -191,21 +145,21 @@ If it is run without arguments, a help message is printed::
       --solve-not           do not solve (use in connection with --save-*)
       --list=what           list data, what can be one of: {terms, solvers}
 
-Additional (stand-alone) examples are in the examples/ directory, e.g.::
+Additional (stand-alone) examples are in the sfepy/examples/ directory, e.g.::
 
-    $ python examples/compare_elastic_materials.py
+    $ python sfepy/examples/large_deformation/compare_elastic_materials.py
 
 Parametric study example::
 
-    $ ./simple.py examples/diffusion/poisson_parametric_study.py
+    $ ./simple.py sfepy/examples/diffusion/poisson_parametric_study.py
 
 Common Tasks
 """"""""""""
 
 * Run a simulation::
 
-    ./simple.py examples/diffusion/poisson_short_syntax.py
-    ./simple.py examples/diffusion/poisson_short_syntax.py -o some_results # -> produces some_results.vtk
+    ./simple.py sfepy/examples/diffusion/poisson_short_syntax.py
+    ./simple.py sfepy/examples/diffusion/poisson_short_syntax.py -o some_results # -> produces some_results.vtk
 
 * Print available terms::
 
@@ -213,7 +167,7 @@ Common Tasks
 
 * Run a simulation and also save Dirichlet boundary conditions::
 
-    ./simple.py --save-ebc examples/diffusion/poisson_short_syntax.py # -> produces an additional .vtk file with BC visualization
+    ./simple.py --save-ebc sfepy/examples/diffusion/poisson_short_syntax.py # -> produces an additional .vtk file with BC visualization
 
 * Use a restart file to continue an interrupted simulation:
 
@@ -221,7 +175,7 @@ Common Tasks
     internal state.
   - Run::
 
-      ./simple.py examples/large_deformation/balloon.py --save-restart=-1
+      ./simple.py sfepy/examples/large_deformation/balloon.py --save-restart=-1
 
     and break the computation after a while (hit Ctrl-C). The mode
     ``--save-restart=-1`` is currently the only supported mode. It saves a
@@ -232,12 +186,12 @@ Common Tasks
     ``'unit_ball.restart-04.h5'``, i.e. the fifth step.
   - Restart the simulation by::
 
-      ./simple.py examples/large_deformation/balloon.py --load-restart=unit_ball.restart-04.h5
+      ./simple.py sfepy/examples/large_deformation/balloon.py --load-restart=unit_ball.restart-04.h5
 
     The simulation should continue from the next time step. Verify that by
     running::
 
-      ./simple.py examples/large_deformation/balloon.py
+      ./simple.py sfepy/examples/large_deformation/balloon.py
 
     and compare the residuals printed in the corresponding time steps.
 
@@ -247,8 +201,9 @@ Visualization of Results
 resview.py -- PyVista
 ^^^^^^^^^^^^^^^^^^^^^
 
-Quick visualisation of the *SfePy* results can be done by ``resview.py`` script,
-which uses `PyVista`_ visualisation toolkit (need to be installed).
+Quick visualisation of the *SfePy* results can be done by :mod:`resview.py
+<resview>` script, which uses `PyVista`_ visualisation toolkit (need to be
+installed).
 
 The help message of the script is::
 
@@ -257,8 +212,10 @@ The help message of the script is::
                       [--factor factor] [--opacity opacity] [--color-map cmap]
                       [--axes-options options [options ...]] [--no-axes]
                       [--position-vector position_vector] [--no-labels]
-                      [--label-position position] [--no-scalar-bars] [-v position]
-                      [-a output_file] [-r rate] [-o output_file] [--off-screen]
+                      [--label-position position] [--no-scalar-bars]
+                      [--scalar-bar-size size] [--scalar-bar-position position]
+                      [-v position] [-a output_file] [-r rate] [-o output_file]
+                      [--off-screen] [-2]
                       filenames [filenames ...]
 
     This is a script for quick VTK-based visualizations of finite element
@@ -266,35 +223,41 @@ The help message of the script is::
 
     Examples
     --------
-      The examples assume that run_tests.py has been run successfully and the
-      resulting data files are present.
+    The examples assume that
+    ``python -c "import sfepy; sfepy.test('--output-dir=output-tests')"``
+    has been run successfully and the resulting data files are present.
 
-      - view data in output-tests/test_navier_stokes.vtk
+    - View data in output-tests/test_navier_stokes.vtk.
 
-        $ python resview.py output-tests/test_navier_stokes.vtk
+      $ python resview.py output-tests/navier_stokes-navier_stokes.vtk
 
-      - customize the above output,
-        plot0: field "p", switch on edges
-        plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2
+    - Customize the above output:
+      plot0: field "p", switch on edges,
+      plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2.
 
-        $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
+      $ python resview.py output-tests/navier_stokes-navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
 
-      - view data and take a screenshot
+    - As above, but glyphs are scaled by the factor determined automatically as
+      20% of the minimum bounding box size.
 
-        $ python resview.py output-tests/test_poisson.vtk -o image.png
+      $ python resview.py output-tests/navier_stokes-navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f10%:p1
 
-      - take a screenshot without a window popping up
+    - View data and take a screenshot.
 
-        $ python postproc.py output-tests/test_poisson.vtk -o image.png --no-offscreen
+      $ python resview.py output-tests/diffusion-poisson.vtk -o image.png
 
-      - create animation from output-tests/test_time_poisson.*.vtk
+    - Take a screenshot without a window popping up.
 
-        $ python resview.py output-tests/test_time_poisson.*.vtk -a mov.mp4
+      $ python resview.py output-tests/diffusion-poisson.vtk -o image.png --off-screen
 
-      - create animation from output-tests/test_hyperelastic.*.vtk,
-        set frame rate to 3, plot displacements and mooney_rivlin_stress
+    - Create animation from output-tests/diffusion-time_poisson.*.vtk.
 
-        $ python resview.py output-tests/test_hyperelastic.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
+      $ python resview.py output-tests/diffusion-time_poisson.*.vtk -a mov.mp4
+
+    - Create animation from output-tests/test_hyperelastic.*.vtk,
+      set frame rate to 3, plot displacements and mooney_rivlin_stress.
+
+      $ python resview.py output-tests/test_hyperelastic_TL.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
 
     positional arguments:
       filenames
@@ -304,13 +267,15 @@ The help message of the script is::
       -f field_spec [field_spec ...], --fields field_spec [field_spec ...]
                             fields to plot, options separated by ":" are possible:
                             "cX" - plot only Xth field component; "e" - print
-                            edges; "fX" - scale factor for warp/glyphs; "g -
-                            glyphs (for vector fields only), scale by factor; "mX"
-                            - plot cells with mat_id=X; "oX" - set opacity to X;
-                            "pX" - plot in slot X; "r" - recalculate cell data to
-                            point data; "sX" - plot data in step X; "vX" -
-                            plotting style: s=surface, w=wireframe, p=points; "wX"
-                            - warp mesh by vector field X, scale by factor
+                            edges; "fX" - scale factor for warp/glyphs, see
+                            --factor option; "g - glyphs (for vector fields only),
+                            scale by factor; "tX" - plot X streamlines, gradient
+                            employed for scalar fields; "mX" - plot cells with
+                            mat_id=X; "oX" - set opacity to X; "pX" - plot in slot
+                            X; "r" - recalculate cell data to point data; "sX" -
+                            plot data in step X; "vX" - plotting style: s=surface,
+                            w=wireframe, p=points; "wX" - warp mesh by vector
+                            field X, scale by factor
       --fields-map map [map ...]
                             map fields and cell groups, e.g. 1:u1,p1 2:u2,p2
       -s step, --step step  select data in a given time step
@@ -318,20 +283,27 @@ The help message of the script is::
       -e, --edges           plot cell edges
       -w field, --warp field
                             warp mesh by vector field
-      --factor factor       scaling factor for mesh warp and glyphs
+      --factor factor       scaling factor for mesh warp and glyphs. Append "%" to
+                            scale relatively to the minimum bounding box size.
       --opacity opacity     set opacity [default: 1.0]
       --color-map cmap      set color_map, e.g. hot, cool, bone, etc. [default:
-                            coolwarm]
+                            viridis]
       --axes-options options [options ...]
                             options for directional axes, e.g. xlabel="z1"
                             ylabel="z2", zlabel="z3"
       --no-axes             hide orientation axes
       --position-vector position_vector
-                            define positions of plots [default: "0,0,1.6"]
+                            define positions of plots [default: "0, 0, 1.6"]
       --no-labels           hide plot labels
       --label-position position
-                            define position of plot labels [default: "225,75,0.9"]
+                            define position of plot labels [default: "-1, -1, 0,
+                            0.2"]
       --no-scalar-bars      hide scalar bars
+      --scalar-bar-size size
+                            define size of scalar bars [default: "0.15, 0.05"]
+      --scalar-bar-position position
+                            define position of scalar bars [default: "0.8, 0.02,
+                            0, 1.5"]
       -v position, --view position
                             camera azimuth, elevation angles, and optionally zoom
                             factor [default: "225,75,0.9"]
@@ -342,6 +314,7 @@ The help message of the script is::
       -o output_file, --screenshot output_file
                             save screenshot to file
       --off-screen          off screen plots, e.g. when screenshotting
+      -2, --2d-view         2d view of XY plane
 
 The first example in the above help::
 
@@ -375,9 +348,9 @@ The argument ``-o filename.png`` takes the screenshot of the produced view::
 postproc.py -- Mayavi2
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The ``postproc.py`` script can be used for quick postprocessing and
-visualization of the *SfePy* results. It requires mayavi2 installed on your
-system.
+The :mod:`postproc.py <postproc>` script can be used for quick
+postprocessing and visualization of the *SfePy* results. It requires mayavi2
+installed on your system.
 
 The help message of the script is::
 
@@ -404,39 +377,40 @@ The help message of the script is::
 
     Examples
     --------
-      The examples assume that run_tests.py has been run successfully and the
-      resulting data files are present.
+    The examples assume that
+    ``python -c "import sfepy; sfepy.test('--output-dir=output-tests')"``
+    has been run successfully and the resulting data files are present.
 
-      - view data in output-tests/test_navier_stokes.vtk
+    - view data in output-tests/navier_stokes-navier_stokes.vtk
 
-        $ python postproc.py output-tests/test_navier_stokes.vtk
-        $ python postproc.py output-tests/test_navier_stokes.vtk --3d
+      $ python postproc.py output-tests/navier_stokes-navier_stokes.vtk
+      $ python postproc.py output-tests/navier_stokes-navier_stokes.vtk --3d
 
-      - save a snapshot image and exit
+    - save a snapshot image and exit
 
-        $ python postproc.py output-tests/test_poisson.vtk -o image.png -n
+      $ python postproc.py output-tests/diffusion-poisson.vtk -o image.png -n
 
-      - save a snapshot image without off-screen rendering and exit
+    - save a snapshot image without off-screen rendering and exit
 
-        $ python postproc.py output-tests/test_poisson.vtk -o image.png -n --no-offscreen
+      $ python postproc.py output-tests/diffusion-poisson.vtk -o image.png -n --no-offscreen
 
-      - create animation (forces offscreen rendering) from
-        output-tests/test_time_poisson.*.vtk
+    - create animation (forces offscreen rendering) from
+      output-tests/diffusion-time_poisson.*.vtk
 
-        $ python postproc.py output-tests/test_time_poisson.*.vtk -a mov
+      $ python postproc.py output-tests/diffusion-time_poisson.*.vtk -a mov
 
-      - create animation (forces offscreen rendering) from
-        output-tests/test_hyperelastic.*.vtk
+    - create animation (forces offscreen rendering) from
+      output-tests/test_hyperelastic_TL.*.vtk
 
-        The range specification for the displacements 'u' is required, as
-        output-tests/test_hyperelastic.00.vtk contains only zero
-        displacements which leads to invisible glyph size.
+      The range specification for the displacements 'u' is required, as
+      output-tests/test_hyperelastic_TL.00.vtk contains only zero
+      displacements which leads to invisible glyph size.
 
-        $ python postproc.py output-tests/test_hyperelastic.*.vtk --ranges=u,0,0.02 -a mov
+      $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk --ranges=u,0,0.02 -a mov
 
-      - same as above, but slower frame rate
+    - same as above, but slower frame rate
 
-        $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk --ranges=u,0,0.02 -a mov --ffmpeg-options="-framerate 2"
+      $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk --ranges=u,0,0.02 -a mov --ffmpeg-options="-framerate 2"
 
     positional arguments:
       filenames
@@ -537,7 +511,7 @@ The help message of the script is::
 
 As a simple example, try::
 
-    $ ./simple.py examples/diffusion/poisson_short_syntax.py
+    $ ./simple.py sfepy/examples/diffusion/poisson_short_syntax.py
     $ ./postproc.py cylinder.vtk
 
 The following window should display:
@@ -561,7 +535,7 @@ Problem Description File
 
 Here we discuss the basic items that users have to specify in their input
 files. For complete examples, see the problem description files in the
-``examples/`` directory of SfePy.
+``sfepy/examples/`` directory of SfePy.
 
 
 Long Syntax
@@ -1153,7 +1127,7 @@ above.
 Examples
 """"""""
 
-See ``examples/diffusion/poisson_functions.py`` for a complete problem
+See ``sfepy/examples/diffusion/poisson_functions.py`` for a complete problem
 description file demonstrating how to use different kinds of functions.
 
 - functions for defining regions::
@@ -1381,10 +1355,10 @@ Additional options (including solver selection)::
 
 * ``post_process_hook`` enables computing derived quantities, like
   stress or strain, from the primary unknown variables. See the
-  examples in ``examples/large_deformation/`` directory.
+  examples in ``sfepy/examples/large_deformation/`` directory.
 * ``parametric_hook`` makes it possible to run parametric studies by
   modifying the problem description programmatically. See
-  ``examples/diffusion/poisson_parametric_study.py`` for an example.
+  ``sfepy/examples/diffusion/poisson_parametric_study.py`` for an example.
 * ``output_dir`` redirects output files to specified directory
 
 

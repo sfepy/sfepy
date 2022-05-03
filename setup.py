@@ -58,7 +58,6 @@ def configuration(parent_package='', top_path=None):
         'homogen.py',
         'postproc.py',
         'probe.py',
-        'run_tests.py',
         'simple.py',
         'test_install.py',
     ]
@@ -100,8 +99,8 @@ def configuration(parent_package='', top_path=None):
     config.add_data_files(('sfepy/script', aux_scripts))
 
     config.add_data_dir(('sfepy/meshes', 'meshes'))
-    config.add_data_dir(('sfepy/examples', 'examples'))
-    config.add_data_dir(('sfepy/tests', 'tests'))
+    config.add_data_dir(('sfepy/examples', 'sfepy/examples'))
+    config.add_data_dir(('sfepy/tests', 'sfepy/tests'))
 
     config.get_version('sfepy/version.py')  # sets config.version
 

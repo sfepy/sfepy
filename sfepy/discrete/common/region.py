@@ -637,7 +637,7 @@ class Region(Struct):
         ucells = nm.unique(cells)
         ufcells = nm.unique(fcells)
         if not len(nm.intersect1d(ucells, ufcells, assume_unique=True)):
-            return nm.array([], dtype=nm.int)
+            return nm.array([], dtype=nm.int32)
 
         if len(ucells) <= len(ufcells):
             # self is a superset of cells.

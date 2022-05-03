@@ -149,12 +149,11 @@ class ScipyDirect(LinearSolver):
 
     def __init__(self, conf, method=None, **kwargs):
         LinearSolver.__init__(self, conf, solve=None, **kwargs)
-        um = self.sls = None
+        self.sls = None
         if method is None:
             method = self.conf.method
 
-        aux = try_imports(['import scipy.linsolve as sls',
-                           'import scipy.splinalg.dsolve as sls',
+        aux = try_imports(['import scipy.sparse.linalg as sls',
                            'import scipy.sparse.linalg.dsolve as sls'],
                           'cannot import scipy sparse direct solvers!')
         if 'sls' in aux:
@@ -163,11 +162,7 @@ class ScipyDirect(LinearSolver):
             raise ValueError('SuperLU not available!')
 
         if method in ['auto', 'umfpack']:
-            aux = try_imports([
-                'import scipy.linsolve.umfpack as um',
-                'import scipy.splinalg.dsolve.umfpack as um',
-                'import scipy.sparse.linalg.dsolve.umfpack as um',
-                'import scikits.umfpack as um'])
+            aux = try_imports(['import scikits.umfpack as um'])
 
             is_umfpack = True if 'um' in aux\
                 and hasattr(aux['um'], 'UMFPACK_OK') else False
@@ -272,7 +267,7 @@ class ScipyIterative(LinearSolver):
     _callbacks_res = ['gmres']
 
     def __init__(self, conf, context=None, **kwargs):
-        import scipy.sparse.linalg.isolve as la
+        import scipy.sparse.linalg as la
 
         LinearSolver.__init__(self, conf, context=context, **kwargs)
 
@@ -992,6 +987,7 @@ class MultiProblem(ScipyDirect):
             confi = ProblemConf.from_file(ifname, required, other,
                                           define_args=kwargs)
             pbi = Problem.from_conf(confi, init_equations=True)
+            pbi.set_output_dir(problem.output_dir)
             pbi.equations.set_data(None, ignore_unknown=True)
             pbi.time_update()
             pbi.update_materials()
@@ -1204,7 +1200,6 @@ class MultiProblem(ScipyDirect):
             if sti0 is not None:
                 sti = sti0.copy()
                 sti.set_state(-resi, pbi.active_only)
-                pbi.setup_default_output()
                 pbi.save_state(pbi.get_output_name(), sti)
                 self.subpb[kk][-1] = sti
 

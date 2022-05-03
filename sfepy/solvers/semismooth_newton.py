@@ -54,8 +54,9 @@ class SemismoothNewton(Newton):
         ('ls_on', 'float', 0.99999, False,
          """Start the backtracking line-search by reducing the step, if
             :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
-        ('ls_red', '0.0 < float < 1.0', 0.1, False,
-         'The step reduction factor in case of correct residual assembling.'),
+        ('ls_red', 'dict', {'regular' : 0.1, 'steepest_descent' : 0.01}, False,
+         """The step reduction factor in case of correct residual assembling
+            for regular and steepest descent modes."""),
         ('ls_red_warp', '0.0 < float < 1.0', 0.001, False,
          """The step reduction factor in case of failed residual assembling
             (e.g. the "warp violation" error caused by a negative volume
