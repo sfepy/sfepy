@@ -253,11 +253,28 @@ else when testing the installed package. The testing function is based on
 `pytest`_. Additional `pytest`_ options can be passed as arguments to
 ``sfepy.test()``, for example::
 
-  python -c "import sfepy; sfepy.test('-v', '--durations=0', '-m not slow')"
+  python -c "import sfepy; sfepy.test('-v', '--durations=0', '-m not slow', '-k test_assembling.py')"
 
 The tests output directory can be specified using::
 
   python -c "import sfepy; sfepy.test('--output-dir=output-tests')"
+
+See `pytest usage instructions
+<https://docs.pytest.org/en/latest/how-to/usage.html>`_ for other options and
+usage patterns.
+
+To test an in-place build (e.g. in a cloned git repository), the following
+simpler command can be used in the sources top-level directory::
+
+  python -m pytest sfepy/tests
+  python -m pytest -v sfepy/tests/test_assembling.py
+
+which will also add the current directory to ``sys.path``. If the top-level
+directory is already in ``sys.path`` (e.g. using ``export PYTHONPATH=.``), the
+simplest way of invoking pytest is::
+
+  pytest sfepy/tests
+  pytest -v sfepy/tests/test_assembling.py
 
 Debugging
 ---------
