@@ -165,3 +165,19 @@ def test_stiffness_tensors():
     ok = ok and _ok
 
     assert ok
+
+def test_wave_speeds():
+    import numpy as nm
+    import sfepy.mechanics.matcoefs as mc
+
+    E = 1e10
+    nu = 0.3
+    rho = 1100
+
+    vp, vs = mc.wave_speeds_from_youngpoisson(E, nu, rho)
+    E2, nu2 = mc.youngpoisson_from_wave_speeds(vp, vs, rho)
+
+    tst.report(E, nu, ' == ', E2, nu2)
+
+    assert nm.allclose(E, E2, rtol=1e-14, atol=0.0)
+    assert nm.allclose(nu, nu2, rtol=1e-14, atol=0.0)

@@ -412,3 +412,69 @@ class TransformToPlane(Struct):
                  - nm.dot(FE.T, nm.dot(Ainv, Feps))
 
             return c2, d2, b2
+
+def youngpoisson_from_wave_speeds(vp, vs, rho):
+    r"""
+    Compute the Young's modulus :math:`E` and Poisson's ratio :math:`\nu` from
+    the P- and S-wave speeds in a homogeneous isotropic material.
+
+    .. math::
+       E = {\rho v_s^2 (3 v_p^2 - 4 v_s^2) \over (v_p^2 - v_s^2)}
+
+    .. math::
+       \nu = {(v_p^2/2 - v_s^2) \over (v_p^2 - v_s^2)}
+
+    Parameters
+    ----------
+    vp : float or array
+        The P-wave speed.
+    vs : float or array
+        The S-wave speed.
+    rho : float or array
+        The density.
+
+    Returns
+    -------
+    young : float or array
+        The Young's modulus.
+    poisson : float or array
+        The Poisson's ratio.
+    """
+    vs2 = vs**2
+    vp2 = vp**2
+    aux = vp2 - vs2
+    return (vs2 * rho * (3.0*vp2 - 4.0*vs**2)/aux,
+            (vp2/2.0 - vs2)/aux)
+
+def wave_speeds_from_youngpoisson(young, poisson, rho):
+    r"""
+    Compute the P- and S-wave speeds from the Young's modulus :math:`E` and
+    Poisson's ratio :math:`\nu` in a homogeneous isotropic material.
+
+    .. math::
+       v_p^2 = {E (1 - \nu) \over \rho (1 + \nu) (1 - 2 \nu)}
+             = {(\lambda + 2 \mu) \over \rho}
+
+    .. math::
+       v_s^2 = {E \over 2 \rho (1 + \nu)}
+             = {\mu \over \rho}
+
+    Parameters
+    ----------
+    young : float or array
+        The Young's modulus.
+    poisson : float or array
+        The Poisson's ratio.
+    rho : float or array
+        The density.
+
+    Returns
+    -------
+    vp : float or array
+        The P-wave speed.
+    vs : float or array
+        The S-wave speed.
+    """
+    return (nm.sqrt(young * (1.0 - poisson)
+                    / (rho * (1.0 + poisson) * (1.0 - 2.0*poisson))),
+            nm.sqrt(young / (2.0 * rho * (1.0 + poisson))))
