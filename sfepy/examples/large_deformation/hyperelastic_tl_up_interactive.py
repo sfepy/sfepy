@@ -171,7 +171,7 @@ def plot_graphs(
 
     ax_difference.plot(stretch, stress_fem - stress_analytic, '.-')
 
-    ax_stress.legend(loc='best').draggable()
+    ax_stress.legend(loc='best').set_draggable(True)
     ax_stress.set_ylabel(r'true stress $\mathrm{[Pa]}$')
     ax_stress.grid()
 
