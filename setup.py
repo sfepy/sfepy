@@ -53,7 +53,6 @@ def configuration(parent_package='', top_path=None):
     config.add_subpackage('sfepy')
 
     main_scripts = [
-        'phonon.py',
         'extractor.py',
         'homogen.py',
         'postproc.py',
