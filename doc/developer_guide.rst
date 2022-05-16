@@ -1046,7 +1046,6 @@ Main scripts
    :maxdepth: 2
 
    src/extractor
-   src/phonon
    src/postproc
    src/probe
    src/resview

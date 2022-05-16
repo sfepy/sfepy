@@ -31,6 +31,13 @@ def print_solvers():
     print(sorted(solver_table.keys()))
 
 helps = {
+    'app' :
+    'override application kind, normally determined automatically.'
+    ' The supported kinds are:'
+    ' bvp (boundary value problem),'
+    ' evp (eigenvalue problem),'
+    ' homogen (correctors, homogenized coefficients),'
+    ' phonon (phononic band gaps)',
     'debug':
     'automatically start debugger when an exception is raised',
     'conf' :
@@ -69,6 +76,14 @@ helps = {
     'save meshes of problem fields (with extra DOF nodes)',
     'solve_not' :
     'do not solve (use in connection with --save-*)',
+    'detect_band_gaps' :
+    'detect frequency band gaps',
+    'analyze_dispersion' :
+    'analyze dispersion properties (low frequency domain)',
+    'plot' :
+    'plot frequency band gaps, assumes -b',
+    'phase_velocity' :
+    'compute phase velocity (frequency-independent mass only)',
     'list' :
     'list data, what can be one of: {terms, solvers}',
 }
@@ -78,6 +93,9 @@ def main():
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('-a', '--app', action='store', dest='app',
+                        choices=['bvp', 'evp', 'homogen', 'phonon'],
+                        default=None, help= helps['app'])
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
                         default=False, help=helps['debug'])
@@ -126,6 +144,18 @@ def main():
     parser.add_argument('--solve-not',
                         action='store_true', dest='solve_not',
                         default=False, help=helps['solve_not'])
+    parser.add_argument('--phonon-band-gaps',
+                        action='store_true', dest='detect_band_gaps',
+                        default=False, help=helps['detect_band_gaps'])
+    parser.add_argument('--phonon-dispersion',
+                        action='store_true', dest='analyze_dispersion',
+                        default=False, help=helps['analyze_dispersion'])
+    parser.add_argument('--phonon-plot',
+                        action='store_true', dest='plot',
+                        default=False, help=helps['plot'])
+    parser.add_argument('--phonon-phase-velocity',
+                        action='store_true', dest='phase_velocity',
+                        default=False, help=helps['phase_velocity'])
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--list', metavar='what',
                         action='store', dest='_list',
@@ -155,6 +185,10 @@ def main():
     if options.solve_not:
         required.remove('solver_[0-9]+|solvers')
         other.extend(['equations'])
+    if not options.analyze_dispersion:
+        required.remove('solver_[0-9]+|solvers')
+    if options.phase_velocity:
+        required = [ii for ii in required if 'ebc' not in ii]
 
     conf = ProblemConf.from_file_and_options(filename_in, options,
                                              required, other,
@@ -163,22 +197,49 @@ def main():
         if conf.get('equations') is None:
             ValueError('required missing: equations')
 
+    app_mode = options.app
+    if app_mode is None:
+        if conf.options.get('coefs') is not None:
+            if 'band_gaps' in conf.get(conf.options.coefs).keys():
+                app_mode = 'phonon'
+
+            else:
+                app_mode = 'homogen'
+
+        elif conf.options.get('evps') is not None:
+            app_mode = 'evp'
+
+        else:
+            app_mode = 'bvp'
+
     opts = conf.options
-    output_prefix = opts.get('output_prefix', 'sfepy:')
 
     opts.save_restart = options.save_restart
     opts.load_restart = options.load_restart
 
-    if conf.options.get('coefs') is not None:
-        from sfepy.homogenization.homogen_app import HomogenizationApp
+    if app_mode == 'bvp':
+        output_prefix = opts.get('output_prefix', 'sfepy:')
+        app = PDESolverApp(conf, options, output_prefix)
 
-        app = HomogenizationApp(conf, options, output_prefix)
-
-    elif conf.options.get('evps') is not None:
+    elif app_mode == 'evp':
+        output_prefix = opts.get('output_prefix', 'sfepy:')
         app = EVPSolverApp(conf, options, output_prefix)
 
-    else:
-        app = PDESolverApp(conf, options, output_prefix)
+    elif app_mode == 'homogen':
+        from sfepy.homogenization.homogen_app import HomogenizationApp
+
+        output_prefix = opts.get('output_prefix', 'homogen:')
+        app = HomogenizationApp(conf, options, output_prefix)
+
+    elif app_mode == 'phonon':
+        from sfepy.homogenization.band_gaps_app import AcousticBandGapsApp
+
+        if options.plot:
+            if not options.analyze_dispersion:
+                options.detect_band_gaps = True
+
+        output_prefix = opts.get('output_prefix', 'phonon:')
+        app = AcousticBandGapsApp(conf, options, output_prefix)
 
     if hasattr(opts, 'parametric_hook'): # Parametric study.
         parametric_hook = conf.get_function(opts.parametric_hook)

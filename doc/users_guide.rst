@@ -37,17 +37,6 @@ Basic Usage
 
   * Creates ``channels_symm944t.vtk``
 
-Applications
-^^^^^^^^^^^^
-
-* Phononic Materials
-
-  * ::
-
-      $ ./phonon.py -p sfepy/examples/phononic/band_gaps.py
-
-    * see ``sfepy/examples/phononic/output/``
-
 .. _SfePy-command-wrapper:
 
 Using Command Wrapper
@@ -62,7 +51,7 @@ All top-level *SfePy* scripts (applications) can be run via single
   Simple wrapper for main SfePy commands.
 
   positional arguments:
-  {extractor,phonon,postproc,probe,simple}
+  {extractor,postproc,probe,simple}
                         Available SfePy command(s).
   options               Additional options passed directly to selected
                         [command].

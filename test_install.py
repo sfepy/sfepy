@@ -219,18 +219,18 @@ def main():
     out, err = check_output('python3 ./postproc.py -n --no-offscreen -o cylinder.png cylinder.h5')
     eok += report(out, '...', -3, 2, 'cylinder.png...')
 
-    out, err = check_output('python3 ./phonon.py sfepy/examples/phononic/band_gaps.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps.py')
     eok += report(out, '...', -9, 0, '2.08545116e+08', match_numbers=True)
     eok += report(out, '...', -8, 1, '1.16309223e+11', match_numbers=True)
 
-    out, err = check_output('python3 ./phonon.py sfepy/examples/phononic/band_gaps.py --phase-velocity')
+    out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps.py --phonon-phase-velocity')
     eok += report(out, '...', -2, 0, '4189.41229592', match_numbers=True)
     eok += report(out, '...', -2, 1, '2620.55608256', match_numbers=True)
 
-    out, err = check_output('python3 ./phonon.py sfepy/examples/phononic/band_gaps.py -d')
+    out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps.py --phonon-dispersion')
     eok += report(out, '...', -6, 1, '[0,')
 
-    out, err = check_output('python3 ./phonon.py sfepy/examples/phononic/band_gaps_rigid.py')
+    out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps_rigid.py')
     eok += report(out, '...', -9, 0, '4.58709531e+07', match_numbers=True)
     eok += report(out, '...', -8, 1, '1.13929200e+11', match_numbers=True)
 

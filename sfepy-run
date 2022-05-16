@@ -22,7 +22,6 @@ def get_commands():
         The command : path_to_script dictionary.
     """
     scripts = [
-        'phonon.py',
         'extractor.py',
         'postproc.py',
         'probe.py',
