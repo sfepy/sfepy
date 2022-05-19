@@ -690,6 +690,29 @@ class ETermBase(Term):
         self.set_verbosity(kwargs.get('verbosity', 0))
         self.set_backend(**kwargs)
 
+    def _eval(self, out, shape, fargs, mode='eval', term_mode=None,
+              diff_var=None, **kwargs):
+        status = self.function(out, *fargs)
+        if mode == 'eval':
+            # Sum over elements but not over components.
+            out1 = nm.sum(out, 0).squeeze()
+            return out1, status
+
+        else:
+            return out, status
+
+    def eval_real(self, shape, fargs, mode='eval', term_mode=None,
+                  diff_var=None, **kwargs):
+        out = nm.empty(shape, dtype=nm.float64)
+        return self._eval(out, shape, fargs, mode=mode,
+                          term_mode=term_mode, diff_var=diff_var, **kwargs)
+
+    def eval_complex(self, shape, fargs, mode='eval', term_mode=None,
+                     diff_var=None, **kwargs):
+        out = nm.empty(shape, dtype=nm.complex128)
+        return self._eval(out, shape, fargs, mode=mode,
+                          term_mode=term_mode, diff_var=diff_var, **kwargs)
+
     @staticmethod
     def function_timer(out, eval_einsum, *args):
         tt = Timer('')
