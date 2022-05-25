@@ -28,7 +28,7 @@ Visualization
 Use the following to see the deformed structure with 10x magnified
 displacements::
 
-    $ ./postproc.py block.vtk -b --vector-mode=warp_norm -s 1 --wireframe
+    $ ./resview.py block.vtk -f u:wu:f5 1:vw
 """
 from __future__ import absolute_import
 import numpy as nm

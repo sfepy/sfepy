@@ -33,8 +33,8 @@ basis implementation, compare the results of::
 Use the following commands to view each of the results of the above commands
 (assuming default output directory and names)::
 
-  python postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' 2_4_2_refined_t.vtk --wireframe
-  python postproc.py -b 2_4_2_refined_grad.vtk
+  python resview.py 2_4_2_refined_t.vtk -2 -f t:wt
+  python resview.py 2_4_2_refined_grad.vtk -2
 """
 from __future__ import absolute_import
 import numpy as nm

@@ -179,8 +179,11 @@ Now we can view the results of our work. In your terminal, type::
 
   ./postproc.py --wireframe --vector-mode=warp_norm -s 2 Mesh_Partition_Hexa.vtk
 
-You should get the following plot. The undeformed mesh is displayed
-with a wireframe for comparison. Notice how the fish is bending its
-tail in response to the applied displacement.
+or::
+
+  ./resview.py Mesh_Partition_Hexa.vtk -f u:wu:f2.0:p0 0:vw:p0
+
+You should get the plot with the deformed and undeformed meshs. Notice how the
+fish is bending its tail in response to the applied displacement.
 
 Now you should be able to use meshes created in *Salome* with *SfePy*!

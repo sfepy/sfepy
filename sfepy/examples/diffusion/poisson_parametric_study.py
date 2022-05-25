@@ -23,7 +23,7 @@ Run::
 
 and then look in 'output/r_omega1' directory, try for example::
 
-    $ ./postproc.py output/r_omega1/circles_in_square*.vtk
+    $ ./resview.py output/r_omega1/circles_in_square*.vtk -2
 
 Remark: this simple case could be achieved also by defining
 :math:`\Omega_1` by a time-dependent function and solve the static

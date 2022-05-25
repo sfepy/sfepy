@@ -273,7 +273,7 @@ The results are saved in: %s.%s
 
 Try to display them with:
 
-   python postproc.py %s.%s
+   python resview.py %s.%s
 
 ['q'/other key to quit/continue...]""" % (2 * (name, problem.output_format)))
 

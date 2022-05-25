@@ -4,7 +4,7 @@ Laplace equation with shifted periodic BCs.
 
 Display using::
 
-  ./postproc.py laplace_shifted_periodic.vtk --wireframe -b -d'u,plot_warp_scalar,rel_scaling=1'
+  $ ./resview.py laplace_shifted_periodic.vtk -f u:wu:f0.5 1:vw
 
 or use the --show option.
 """

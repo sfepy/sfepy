@@ -22,7 +22,7 @@ The domain geometry was created by::
 
 View the results using::
 
-  $ ./postproc.py block2d.vtk -b
+  $ ./resview.py block2d.vtk -2
 """
 from __future__ import absolute_import
 from sfepy import data_dir

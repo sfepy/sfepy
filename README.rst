@@ -43,8 +43,8 @@ in another file in one of the supported formats, notably the legacy VTK format
 [8]_. SfePy does not provide meshing tools, but it can use a number of standard
 formats. The results are almost exclusively stored in legacy VTK files, or
 custom HDF5 files. Many standard open-source tools can be used to display the
-VTK files, namely paraview [9]_, or mayavi [10]_. The latter is supported
-directly within SfePy, via the ``postproc.py`` script.
+VTK files, namely paraview [9]_, mayavi [10]_, or pyvista [11]_. The latter is supported
+directly within SfePy, via the ``resview.py`` script.
 
 Once an input file and a corresponding mesh file are prepared, the solution of
 the problem can be attempted using the ``simple.py`` script, see the
@@ -64,3 +64,4 @@ References
 .. [8] http://www.vtk.org/VTK/img/file-formats.pdf
 .. [9] http://paraview.org/
 .. [10] http://code.enthought.com/projects/mayavi/
+.. [11] https://docs.pyvista.org/

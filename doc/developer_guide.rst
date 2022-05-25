@@ -123,7 +123,7 @@ directory is `sfepy/`, which has the following contents:
      - modules supporting parallel assembling and solution of problems
      -
    * - `postprocess/`
-     - Mayavi-based post-processing modules (`postproc.py`)
+     - Mayavi and PyVista based post-processing modules
      -
    * - `solvers/`
      - interface classes to various internal/external solvers (linear,

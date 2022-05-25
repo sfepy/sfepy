@@ -35,7 +35,7 @@ http://en.wikipedia.org/wiki/Lam%C3%A9_parameters)
 The output is the displacement for each vertex, saved by default to
 cylinder.vtk. View the results using::
 
-  $ ./postproc.py cylinder.vtk --wireframe -b --only-names=u -d'u,plot_displacements,rel_scaling=1'
+  $ ./resview.py cylinder.vtk -f u:wu 1:vw
 """
 from __future__ import absolute_import
 from sfepy import data_dir

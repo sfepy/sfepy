@@ -38,7 +38,7 @@ periodic coordinate mappings.
 
 View the results using::
 
-  $ ./postproc.py block.vtk --wireframe -b --only-names=u -d'u,plot_displacements,rel_scaling=1,color_kind="scalars",color_name="von_mises_stress"'
+  $ ./resview.py block.vtk -f u:wu:f2.0:p0 1:vw:p0 von_mises_stress:p1
 """
 from __future__ import absolute_import
 import numpy as nm
