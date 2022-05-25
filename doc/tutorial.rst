@@ -160,17 +160,17 @@ source tree after compiling the C extension files. See
 Postprocessing the Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* The `postproc.py` script can be used for quick postprocessing and
-  visualization of the *SfePy* output files. It requires `mayavi`_ installed
+* The `resview.py` script can be used for quick postprocessing and
+  visualization of the *SfePy* output files. It requires `pyvista`_ installed
   on your system.
 
 * As a simple example, try::
 
-  ./postproc.py cylinder.vtk
+  ./resview.py cylinder.vtk
 
 * The following interactive 3D window should display:
 
-.. image:: images/postproc_simple.png
+.. image:: images/resview/resview_shot3.png
    :width: 70 %
    :align: center
 
