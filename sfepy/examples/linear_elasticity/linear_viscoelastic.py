@@ -52,7 +52,7 @@ Deforming mesh
 
 Try to run the following::
 
-    $ ./resview.py block.h5 -s 20
+    $ ./resview.py block.h5 -s 20 -f u:wu:f1e3:p0 1:vw:p0  total_stress:p1
 
 to see the results.
 
