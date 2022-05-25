@@ -47,15 +47,11 @@ stress and to verify the linear combination constraints.
 
 View the 2D results using::
 
-  python postproc.py square_quad.vtk --wireframe -b
-
-  python postproc.py square_quad.vtk --wireframe -b --only-names=u -d'u,plot_displacements,rel_scaling=1,color_kind="scalars",color_name="von_mises_stress"'
+  python resview.py square_quad.vtk -2
 
 View the 3D results using::
 
-  python postproc.py cube_medium_tetra.vtk --wireframe -b
-
-  python postproc.py cube_medium_tetra.vtk --wireframe -b --only-names=u -d'u,plot_displacements,rel_scaling=1,color_kind="scalars",color_name="von_mises_stress"'
+  python resview.py cube_medium_tetra.vtk
 """
 from __future__ import absolute_import
 import numpy as nm

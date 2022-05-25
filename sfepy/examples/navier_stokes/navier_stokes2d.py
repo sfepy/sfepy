@@ -19,7 +19,7 @@ The mesh is created by ``gen_block_mesh()`` function.
 
 View the results using::
 
-  $ ./postproc.py user_block.vtk -b
+  $ ./resview.py user_block.vtk -2
 """
 from __future__ import absolute_import
 from sfepy.discrete.fem.meshio import UserMeshIO

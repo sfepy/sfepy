@@ -11,12 +11,12 @@ may need to prefix all the commands with "python " and remove "./"):
 
 2. optionally, view the results::
 
-   ./postproc.py its2D.h5 -b
+   ./resview.py its2D.h5 -2
 
 3. optionally, convert results to VTK, and view again::
 
    ./extractor.py -d its2D.h5
-   ./postproc.py its2D.vtk -b
+   ./resview.py its2D.0.vtk -2
 
 4. probe the data::
 

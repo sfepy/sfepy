@@ -13,7 +13,7 @@ Find :math:`u` such that:
 
 View the results using::
 
-  python postproc.py square_tri2.*.vtk -b --wireframe
+  python resview.py square_tri2.*.vtk -f u:wu 1:vw
 """
 from __future__ import absolute_import
 from sfepy import data_dir

@@ -43,17 +43,7 @@ Solve using the Bathe method::
 
 View the resulting deformation using:
 
-- color by :math:`\ul{u}`::
-
-    python postproc.py output/ed/user_block.h5 -b --wireframe --only-names=u -d 'u,plot_displacements,rel_scaling=1e3'
-
-- color by :math:`\ull{e}(\ul{u})`::
-
-    python postproc.py output/ed/user_block.h5 -b --wireframe --only-names=u -d 'u,plot_displacements,rel_scaling=1e3,color_kind="tensors",color_name="cauchy_strain"'
-
-- color by :math:`\ull{\sigma}(\ul{u})`::
-
-    python postproc.py output/ed/user_block.h5 -b --wireframe --only-names=u -d 'u,plot_displacements,rel_scaling=1e3,color_kind="tensors",color_name="cauchy_stress"'
+  python resview.py output/ed/user_block.h5 -f u:wu:p0 1:vw:p0 cauchy_strain:p1 cauchy_stress:p2 -s 18
 """
 from __future__ import absolute_import
 

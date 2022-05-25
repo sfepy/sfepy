@@ -22,8 +22,7 @@ The domain geometry was created by::
 
 View the results using::
 
-  $ ./postproc.py block3d.vtk --wireframe -b
-  $ ./postproc.py block3d.vtk --wireframe -b -d 'u,plot_displacements,rel_scaling=1e0'
+  $ ./resview.py block3d.vtk -f u:wu 1:vw
 """
 from __future__ import absolute_import
 from sfepy.mechanics.matcoefs import stiffness_from_lame

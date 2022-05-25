@@ -33,7 +33,7 @@ Command line options for tweaking the geometry of the NURBS-patch & more::
 
 View the results using::
 
-  $ python3 postproc.py concentric_circles.vtk
+  $ python3 resview.py concentric_circles.vtk
 """
 
 from argparse import RawDescriptionHelpFormatter, ArgumentParser

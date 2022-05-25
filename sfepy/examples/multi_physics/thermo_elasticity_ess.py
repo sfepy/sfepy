@@ -36,7 +36,7 @@ Notes
 -----
 The gallery image was produced by (plus proper view settings)::
 
-    ./postproc.py block.vtk -d'u,plot_displacements,rel_scaling=1000,color_kind="scalars",color_name="T"' --wireframe --only-names=u -b
+    ./resview.py block.vtk -f T:p1 u:wu:f1000:p0 u:vw:p0
 """
 from __future__ import absolute_import
 import numpy as np

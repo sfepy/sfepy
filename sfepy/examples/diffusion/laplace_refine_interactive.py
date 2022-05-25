@@ -36,28 +36,28 @@ Usage Examples
 Default options, 2D, storing results in 'output' directory::
 
   $ python sfepy/examples/diffusion/laplace_refine_interactive.py output
-  $ python postproc.py output/hanging.vtk --wireframe -b -d'u,plot_warp_scalar'
+  $ python resview.py output/hanging.vtk -2 -f u:wu 1:vw
 
 Default options, 3D, storing results in 'output' directory::
 
   $ python sfepy/examples/diffusion/laplace_refine_interactive.py -3 output
-  $ python postproc.py output/hanging.vtk --wireframe -b --3d
+  $ python resview.py output/hanging.vtk -f u:wu:f0.1 1:vw
 
 
 Finer initial domain, 2D, storing results in 'output' directory::
 
   $ python sfepy/examples/diffusion/laplace_refine_interactive.py --shape=11,11 output
-  $ python postproc.py output/hanging.vtk --wireframe -b -d'u,plot_warp_scalar'
+  $ python resview.py output/hanging.vtk -2 -f u:wu 1:vw
 
 Bi-quadratic approximation, 2D, storing results in 'output' directory::
 
   $ python sfepy/examples/diffusion/laplace_refine_interactive.py --order=2 output
 
   # View solution with higher order DOFs removed.
-  $ python postproc.py output/hanging.vtk --wireframe -b -d'u,plot_warp_scalar'
+  $ python resview.py output/hanging.vtk -2 -f u:wu 1:vw
 
   # View full solution on a mesh adapted for visualization.
-  $ python postproc.py output/hanging_u.vtk --wireframe -b -d'u,plot_warp_scalar'
+  $ python resview.py output/hanging_u.vtk -2 -f u:wu 1:vw
 """
 from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser

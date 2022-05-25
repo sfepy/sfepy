@@ -77,14 +77,9 @@ Using FieldSplit preconditioner::
 
   $ mpiexec -n 8 python sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel --shape=1001,1001 --metis -snes_monitor -snes_converged_reason -ksp_monitor -pc_type fieldsplit -pc_fieldsplit_type additive
 
-View the results using (strip linearization or approximation orders one)::
+View the results using::
 
-  $ python postproc.py output-parallel/sol.h5 --wireframe -b -d'p,plot_warp_scalar:u,plot_displacements'
-
-View the results using (adaptive linearization)::
-
-  $ python postproc.py output-parallel/sol_u.h5 --wireframe -b -d'u,plot_displacements'
-  $ python postproc.py output-parallel/sol_p.h5 --wireframe -b -d'p,plot_warp_scalar'
+  $ python resview.py output-parallel/sol.h5
 """
 from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser

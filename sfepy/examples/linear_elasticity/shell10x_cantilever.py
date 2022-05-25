@@ -22,7 +22,7 @@ See also :ref:`linear_elasticity-shell10x_cantilever_interactive` example.
 
 View the results using::
 
-  python postproc.py shell10x.vtk -d 'u_disp,plot_displacements,rel_scaling=1.0' --opacity='wireframe=0.5' -b --wireframe
+  python resview.py shell10x.vtk -f u_disp:wu_disp 1:vw
 """
 from __future__ import absolute_import
 from sfepy.base.base import output

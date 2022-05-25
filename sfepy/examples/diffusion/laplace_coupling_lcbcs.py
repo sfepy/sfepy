@@ -39,7 +39,7 @@ by the integral mean values.
 
 View the results using::
 
-  $ ./postproc.py square_quad.vtk -b --wireframe -d'u1,plot_warp_scalar,rel_scaling=1:u2,plot_warp_scalar,rel_scaling=1'
+  $ ./resview.py square_quad.vtk -f u1:wu1:p0 1:vw:p0 u2:wu2:p1 1:vw:p1
 """
 from __future__ import absolute_import
 import numpy as nm

@@ -80,7 +80,7 @@ The agreement should be very good, even though the mesh is coarse.
 
 View the results using::
 
-  python postproc.py unit_ball.h5 --wireframe -b -d'u,plot_displacements,rel_scaling=1' --step=-1
+  python resview.py unit_ball.h5 -f u:wu:s:19:p0 p:s19:p1
 
 This example uses the adaptive time-stepping solver (``'ts.adaptive'``) with
 the default adaptivity function :func:`adapt_time_step()

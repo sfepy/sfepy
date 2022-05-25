@@ -50,15 +50,11 @@ appropriately for your situation.
 Deforming mesh
 ^^^^^^^^^^^^^^
 
-Try to play with the following::
+Try to run the following::
 
-    $ ./postproc.py block.h5 -b --only-names=u -d 'u,plot_displacements,rel_scaling=1e0,opacity=1.0,color_name="viscous_stress",color_kind="tensors"' --wireframe
+    $ ./resview.py block.h5 -s 20
 
-Use::
-
-    $ ./postproc.py -l block.h5
-
-to see names and kinds of variables.
+to see the results.
 
 Time history plots
 ^^^^^^^^^^^^^^^^^^

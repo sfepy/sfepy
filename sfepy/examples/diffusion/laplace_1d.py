@@ -16,7 +16,7 @@ where the coefficient :math:`c(x) = 0.1 + \sin(2 \pi x)^2` is computed in
 
 View the results using::
 
-  $ ./postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' --wireframe --view=-90,90,1.5,0,0,0 --roll=0 laplace_1d.vtk
+  $ ./resview.py laplace_1d.vtk -f t:wt 1:vw
 """
 from __future__ import absolute_import
 import numpy as nm
