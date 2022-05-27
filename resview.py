@@ -486,6 +486,14 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
             pipe.append(streamlines)
 
+        isosurfaces = int(opts.get('i', options.isosurfaces))
+        if isosurfaces > 0:  # iso-surfaces
+            pipe[-1].set_active_scalars(scalar)
+            field_data = pipe[-1][scalar]
+            pars = (nm.min(field_data), nm.max(field_data), isosurfaces + 1)
+            pipe.append(pipe[-1].contour(nm.linspace(*pars)))
+            style = ''
+
         plotter.add_mesh(pipe[-1], scalars=scalar, color=color,
                          style=style, show_edges=show_edges,
                          opacity=opacity,
@@ -587,6 +595,7 @@ helps = {
         '"e" - print edges; '
         '"fX" - scale factor for warp/glyphs, see --factor option; '
         '"g - glyphs (for vector fields only), scale by factor; '
+        '"iX" - plot X isosurfaces; '
         '"tX" - plot X streamlines, gradient employed for scalar fields; '
         '"mX" - plot cells with mat_id=X; '
         '"oX" - set opacity to X; '
@@ -606,6 +615,8 @@ helps = {
         ' Append "%%" to scale relatively to the minimum bounding box size.',
     'edges':
         'plot cell edges',
+    'isosurfaces':
+        'plot isosurfaces [default: %(default)s]',
     'opacity':
         'set opacity [default: %(default)s]',
     'color_map':
@@ -661,6 +672,9 @@ def main():
     parser.add_argument('-l', '--outline',
                         action='store_true', dest='outline',
                         default=False, help=helps['outline'])
+    parser.add_argument('-i', '--isosurfaces',
+                        action='store', dest='isosurfaces',
+                        default=0, help=helps['isosurfaces'])
     parser.add_argument('-e', '--edges',
                         action='store_true', dest='show_edges',
                         default=False, help=helps['edges'])
