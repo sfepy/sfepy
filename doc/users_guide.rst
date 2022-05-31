@@ -196,14 +196,11 @@ installed).
 
 The help message of the script is::
 
-    usage: resview.py [-h] [-f field_spec [field_spec ...]]
-                      [--fields-map map [map ...]] [-s step] [-l] [-e] [-w field]
-                      [--factor factor] [--opacity opacity] [--color-map cmap]
-                      [--axes-options options [options ...]] [--no-axes]
-                      [--position-vector position_vector] [--no-labels]
-                      [--label-position position] [--no-scalar-bars]
-                      [--scalar-bar-size size] [--scalar-bar-position position]
-                      [-v position] [-a output_file] [-r rate] [-o output_file]
+    usage: resview.py [-h] [-f field_spec [field_spec ...]] [--fields-map map [map ...]] [-s step] [-l] [-i ISOSURFACES] [-e] [-w field]
+                      [--factor factor] [--opacity opacity] [--color-map cmap] [--axes-options options [options ...]] [--no-axes]
+                      [--grid-vector1 grid_vector1] [--grid-vector2 grid_vector2] [--max-plots MAX_PLOTS] [--no-labels]
+                      [--label-position position] [--no-scalar-bars] [--scalar-bar-size size] [--scalar-bar-position position] [-v position]
+                      [--camera-position camera_position] [--window-size window_size] [-a output_file] [-r rate] [-o output_file]
                       [--off-screen] [-2]
                       filenames [filenames ...]
 
@@ -216,7 +213,7 @@ The help message of the script is::
     ``python -c "import sfepy; sfepy.test('--output-dir=output-tests')"``
     has been run successfully and the resulting data files are present.
 
-    - View data in output-tests/test_navier_stokes.vtk.
+    - View data in output-tests/test_navier_stokes.vtk::
 
       $ python resview.py output-tests/navier_stokes-navier_stokes.vtk
 
@@ -254,48 +251,47 @@ The help message of the script is::
     optional arguments:
       -h, --help            show this help message and exit
       -f field_spec [field_spec ...], --fields field_spec [field_spec ...]
-                            fields to plot, options separated by ":" are possible:
-                            "cX" - plot only Xth field component; "e" - print
-                            edges; "fX" - scale factor for warp/glyphs, see
-                            --factor option; "g - glyphs (for vector fields only),
-                            scale by factor; "tX" - plot X streamlines, gradient
-                            employed for scalar fields; "mX" - plot cells with
-                            mat_id=X; "oX" - set opacity to X; "pX" - plot in slot
-                            X; "r" - recalculate cell data to point data; "sX" -
-                            plot data in step X; "vX" - plotting style: s=surface,
-                            w=wireframe, p=points; "wX" - warp mesh by vector
-                            field X, scale by factor
+                            fields to plot, options separated by ":" are possible: "cX" - plot only Xth field component; "e" - print edges;
+                            "fX" - scale factor for warp/glyphs, see --factor option; "g - glyphs (for vector fields only), scale by factor;
+                            "iX" - plot X isosurfaces; "tX" - plot X streamlines, gradient employed for scalar fields; "mX" - plot cells with
+                            mat_id=X; "oX" - set opacity to X; "pX" - plot in slot X; "r" - recalculate cell data to point data; "sX" - plot
+                            data in step X; "vX" - plotting style: s=surface, w=wireframe, p=points; "wX" - warp mesh by vector field X, scale
+                            by factor
       --fields-map map [map ...]
                             map fields and cell groups, e.g. 1:u1,p1 2:u2,p2
       -s step, --step step  select data in a given time step
       -l, --outline         plot mesh outline
+      -i ISOSURFACES, --isosurfaces ISOSURFACES
+                            plot isosurfaces [default: 0]
       -e, --edges           plot cell edges
       -w field, --warp field
                             warp mesh by vector field
-      --factor factor       scaling factor for mesh warp and glyphs. Append "%" to
-                            scale relatively to the minimum bounding box size.
+      --factor factor       scaling factor for mesh warp and glyphs. Append "%" to scale relatively to the minimum bounding box size.
       --opacity opacity     set opacity [default: 1.0]
-      --color-map cmap      set color_map, e.g. hot, cool, bone, etc. [default:
-                            viridis]
+      --color-map cmap      set color_map, e.g. hot, cool, bone, etc. [default: viridis]
       --axes-options options [options ...]
-                            options for directional axes, e.g. xlabel="z1"
-                            ylabel="z2", zlabel="z3"
+                            options for directional axes, e.g. xlabel="z1" ylabel="z2", zlabel="z3"
       --no-axes             hide orientation axes
-      --position-vector position_vector
-                            define positions of plots [default: "0, 0, 1.6"]
+      --grid-vector1 grid_vector1
+                            define positions of plots along grid axis 1 [default: "0, 0, 1.6"]
+      --grid-vector2 grid_vector2
+                            define positions of plots along grid axis 2 [default: "0, 1.6, 0"]
+      --max-plots MAX_PLOTS
+                            maximum number of plots along grid axis 1 [default: 4]
       --no-labels           hide plot labels
       --label-position position
-                            define position of plot labels [default: "-1, -1, 0,
-                            0.2"]
+                            define position of plot labels [default: "-1, -1, 0, 0.2"]
       --no-scalar-bars      hide scalar bars
       --scalar-bar-size size
                             define size of scalar bars [default: "0.15, 0.05"]
       --scalar-bar-position position
-                            define position of scalar bars [default: "0.8, 0.02,
-                            0, 1.5"]
+                            define position of scalar bars [default: "0.8, 0.02, 0, 1.5"]
       -v position, --view position
-                            camera azimuth, elevation angles, and optionally zoom
-                            factor [default: "225,75,0.9"]
+                            camera azimuth, elevation angles, and optionally zoom factor [default: "225,75,0.9"]
+      --camera-position camera_position
+                            define camera position
+      --window-size window_size
+                            define size of plotting window
       -a output_file, --animation output_file
                             create animation, mp4 file type supported
       -r rate, --frame-rate rate
