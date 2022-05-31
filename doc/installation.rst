@@ -42,7 +42,6 @@ Python packages required for using *SfePy*:
 - `Matplotlib`_ for various plots, GTKAgg for live plotting via log.py,
 - `PyTables`_ for storing results in HDF5 files,
 - `SymPy`_ for some tests and functions,
-- `Mayavi`_ for postproc.py,
 - `igakit`_ for script/gen_iga_patch.py - simple IGA domain generator,
 - `petsc4py`_ and `mpi4py`_ for running parallel examples and using parallel
   solvers from `PETSc`_,
@@ -377,7 +376,7 @@ Anaconda can be used for:
    In this case, install the missing/required packages using built-in `conda`
    package manager::
 
-     conda install mayavi wxpython
+     conda install wxpython
 
    See `conda help` for further information.
 
@@ -413,7 +412,7 @@ Gentoo
 
 ::
 
-    emerge -va pytables pyparsing numpy scipy matplotlib ipython mayavi
+    emerge -va pytables pyparsing numpy scipy matplotlib ipython
 
 Archlinux
 ^^^^^^^^^
@@ -421,7 +420,7 @@ Archlinux
 ::
 
     pacman -S python2-numpy python2-scipy python2-matplotlib ipython2 python2-sympy
-    yaourt -S python-pytables python2-mayavi
+    yaourt -S python-pytables
 
 Instructions
 """"""""""""
@@ -450,7 +449,7 @@ Than *SfePy* can be installed with::
 First, you have to install the dependencies packages (if `apt-get` is not
 installed, install it or try `apt-get install` instead)::
 
-    sudo apt-get install python-scipy python-matplotlib python-tables python-pyparsing libsuitesparse-dev python-setuptools mayavi2 python-dev ipython python-sympy cython python-sparse
+    sudo apt-get install python-scipy python-matplotlib python-tables python-pyparsing libsuitesparse-dev python-setuptools python-dev ipython python-sympy cython python-sparse
 
 Than *SfePy* can be installed with::
 
