@@ -23,7 +23,7 @@ def get_commands():
     """
     scripts = [
         'extractor.py',
-        'postproc.py',
+        'resview.py',
         'probe.py',
         'simple.py',
     ]
