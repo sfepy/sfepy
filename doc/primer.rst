@@ -253,13 +253,13 @@ editor. You'll notice that the output file includes separate sections:
     * CELLS (the model element connectivity),
     * VECTORS (the node displacements in the x-, y- and z- directions).
 
-*SfePy* provides a script (`postproc.py`) to quickly view the solution. To run
-this script you need to have `Mayavi`_ installed. From the command line issue
+*SfePy* provides a script (`resview.py`) to quickly view the solution. To run
+this script you need to have `pyvista`_ installed. From the command line issue
 the following (assuming the correct paths)::
 
-    ./postproc.py its2D.vtk
+    ./resview.py its2D.vtk -2
 
-The `postproc.py` script generates the image shown below, which shows by
+The `resview.py` script generates the image shown below, which shows by
 default the displacements in the model as arrows and their magnitude as
 color scale. Cool, but we are more interested in the stresses. To get
 these we need to modify the problem description file and do some
@@ -289,7 +289,7 @@ Run *SfePy* to solve the updated problem and view the solution (assuming
 the correct paths)::
 
     ./simple.py its2D_2.py
-    ./postproc.py its2D.vtk -b
+    ./resview.py its2D.vtk -2 --max-plots 2
 
 In addition to the node displacements, the VTK output shown below now
 also includes the stresses and strains averaged in the elements:
@@ -500,7 +500,7 @@ requires setting `f`  to (a copy of) the variables as follows:
     In [23]: out = variables.create_output()
     In [24]: pb.save_state('file.vtk', out=out)
 
-Running the `postproc.py` script on ``file.vtk`` displays the average nodal
+Running the `resview.py` script on ``file.vtk`` displays the average nodal
 forces as shown below:
 
 .. image:: images/primer/its2D_3.png
