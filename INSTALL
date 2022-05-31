@@ -29,7 +29,6 @@ Python packages required for using SfePy:
 - Matplotlib, for various plots; GTKAgg for live plotting via log.py
 - PyTables, for storing results in HDF5 files
 - SymPy, for some tests and functions
-- Mayavi, for postproc.py
 - Pysparse, for additional eigenvalue problem solvers
 - igakit, for script/gen_iga_patch.py - simple IGA domain generator
 - petsc4py and mpi4py, for running parallel examples and using parallel
