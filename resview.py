@@ -729,10 +729,10 @@ def main():
     parser.add_argument('-v', '--view', metavar='position',
                         action=StoreNumberAction, dest='camera',
                         default=[225, 75, 0.9], help=helps['view'])
-    parser.add_argument('--camera_position', metavar='camera_position',
+    parser.add_argument('--camera-position', metavar='camera_position',
                         action=StoreNumberAction, dest='camera_position',
                         default=None, help=helps['camera_position'])
-    parser.add_argument('--window_size', metavar='window_size',
+    parser.add_argument('--window-size', metavar='window_size',
                         action=StoreNumberAction, dest='window_size',
                         default=pv.global_theme.window_size,
                         help=helps['window_size'])
