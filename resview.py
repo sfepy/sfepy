@@ -305,16 +305,18 @@ def pv_plot(filenames, options, plotter=None, step=None,
     bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
     ii = nm.where(bbox_sizes > 0)[0]
     tdim = len(ii)
+    if tdim == 0:
+        ipv = 2
+        ipv2 = 1
+        print('WARNING: zero size mesh!')
+
     if options.position_vector is None:
-        if len(ii):
-            ipv = ii[-1]
-
-        else:
-            ipv = 2
-            print('WARNING: zero size mesh!')
-
         options.position_vector = [0, 0, 0]
-        options.position_vector[ipv] = 1.6
+        options.position_vector[ii[-1]] = 1.6
+
+    if options.position_vector2 is None:
+        options.position_vector2 = [0, 0, 0]
+        options.position_vector2[ii[-2]] = 1.6
 
     plotter.resview_step, plotter.resview_n_steps = fstep, n_steps
 
@@ -431,7 +433,10 @@ def pv_plot(filenames, options, plotter=None, step=None,
         if 'p' in opts:
             size = nm.array(bnds[1::2]) - nm.array(bnds[::2])
             pipe.append(pipe[-1].copy())
-            shift = position * size * nm.array(options.position_vector)
+            pos1 = position % options.max_plots
+            pos2 = position // options.max_plots
+            shift = pos1 * size * nm.array(options.position_vector)
+            shift += pos2 * size * nm.array(options.position_vector2)
             pipe[-1].translate(shift)
 
         if opts.get('l', options.outline):  # outline
@@ -636,6 +641,11 @@ helps = {
         'hide scalar bars',
     'position_vector':
         'define positions of plots [default: "0, 0, 1.6"]',
+    'position_vector2':
+        'define positions of plots [default: "0, 1.6, 0"]',
+    'max_plots':
+        'maximum nubmber of plots in direction given by position_vector'
+        ' [default: 4]',
     'view':
         'camera azimuth, elevation angles, and optionally zoom factor'
         ' [default: "225,75,0.9"]',
@@ -710,6 +720,12 @@ def main():
     parser.add_argument('--position-vector', metavar='position_vector',
                         action=StoreNumberAction, dest='position_vector',
                         default=None, help=helps['position_vector'])
+    parser.add_argument('--position-vector2', metavar='position_vector2',
+                        action=StoreNumberAction, dest='position_vector2',
+                        default=None, help=helps['position_vector2'])
+    parser.add_argument('--max-plots',
+                        action=StoreNumberAction, dest='max_plots',
+                        default=4, help=helps['max_plots'])
     parser.add_argument('--no-labels',
                         action='store_false', dest='show_labels',
                         default=True, help=helps['no_labels'])
