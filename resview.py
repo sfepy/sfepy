@@ -311,13 +311,13 @@ def pv_plot(filenames, options, plotter=None, step=None,
     else:
         ipv2, ipv = ii[-2:]
 
-    if options.position_vector is None:
-        options.position_vector = [0, 0, 0]
-        options.position_vector[ipv] = 1.6
+    if options.grid_vector1 is None:
+        options.grid_vector1 = [0, 0, 0]
+        options.grid_vector1[ipv] = 1.6
 
-    if options.position_vector2 is None:
-        options.position_vector2 = [0, 0, 0]
-        options.position_vector2[ipv2] = 1.6
+    if options.grid_vector2 is None:
+        options.grid_vector2 = [0, 0, 0]
+        options.grid_vector2[ipv2] = 1.6
 
     plotter.resview_step, plotter.resview_n_steps = fstep, n_steps
 
@@ -436,8 +436,8 @@ def pv_plot(filenames, options, plotter=None, step=None,
             pipe.append(pipe[-1].copy())
             pos1 = position % options.max_plots
             pos2 = position // options.max_plots
-            shift = pos1 * size * nm.array(options.position_vector)
-            shift += pos2 * size * nm.array(options.position_vector2)
+            shift = pos1 * size * nm.array(options.grid_vector1)
+            shift += pos2 * size * nm.array(options.grid_vector2)
             pipe[-1].translate(shift)
 
         if opts.get('l', options.outline):  # outline
@@ -640,12 +640,12 @@ helps = {
         'hide orientation axes',
     'no_scalar_bars':
         'hide scalar bars',
-    'position_vector':
-        'define positions of plots [default: "0, 0, 1.6"]',
-    'position_vector2':
-        'define positions of plots [default: "0, 1.6, 0"]',
+    'grid_vector1':
+        'define positions of plots along grid axis 1 [default: "0, 0, 1.6"]',
+    'grid_vector2':
+        'define positions of plots along grid axis 2 [default: "0, 1.6, 0"]',
     'max_plots':
-        'maximum number of plots in direction given by position_vector'
+        'maximum number of plots along grid axis 1'
         ' [default: 4]',
     'view':
         'camera azimuth, elevation angles, and optionally zoom factor'
@@ -718,12 +718,12 @@ def main():
     parser.add_argument('--no-axes',
                         action='store_false', dest='axes_visibility',
                         default=True, help=helps['no_axes'])
-    parser.add_argument('--position-vector', metavar='position_vector',
-                        action=StoreNumberAction, dest='position_vector',
-                        default=None, help=helps['position_vector'])
-    parser.add_argument('--position-vector2', metavar='position_vector2',
-                        action=StoreNumberAction, dest='position_vector2',
-                        default=None, help=helps['position_vector2'])
+    parser.add_argument('--grid-vector1', metavar='grid_vector1',
+                        action=StoreNumberAction, dest='grid_vector1',
+                        default=None, help=helps['grid_vector1'])
+    parser.add_argument('--grid-vector2', metavar='grid_vector2',
+                        action=StoreNumberAction, dest='grid_vector2',
+                        default=None, help=helps['grid_vector2'])
     parser.add_argument('--max-plots',
                         action=StoreNumberAction, dest='max_plots',
                         default=4, help=helps['max_plots'])
