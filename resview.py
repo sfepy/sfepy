@@ -644,7 +644,7 @@ helps = {
     'position_vector2':
         'define positions of plots [default: "0, 1.6, 0"]',
     'max_plots':
-        'maximum nubmber of plots in direction given by position_vector'
+        'maximum number of plots in direction given by position_vector'
         ' [default: 4]',
     'view':
         'camera azimuth, elevation angles, and optionally zoom factor'
