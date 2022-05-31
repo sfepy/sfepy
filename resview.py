@@ -306,17 +306,18 @@ def pv_plot(filenames, options, plotter=None, step=None,
     ii = nm.where(bbox_sizes > 0)[0]
     tdim = len(ii)
     if tdim == 0:
-        ipv = 2
-        ipv2 = 1
+        ipv2, ipv = 1, 2
         print('WARNING: zero size mesh!')
+    else:
+        ipv2, ipv = ii[-2:]
 
     if options.position_vector is None:
         options.position_vector = [0, 0, 0]
-        options.position_vector[ii[-1]] = 1.6
+        options.position_vector[ipv] = 1.6
 
     if options.position_vector2 is None:
         options.position_vector2 = [0, 0, 0]
-        options.position_vector2[ii[-2]] = 1.6
+        options.position_vector2[ipv2] = 1.6
 
     plotter.resview_step, plotter.resview_n_steps = fstep, n_steps
 
