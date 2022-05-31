@@ -55,7 +55,7 @@ def configuration(parent_package='', top_path=None):
     main_scripts = [
         'extractor.py',
         'homogen.py',
-        'postproc.py',
+        'resview.py',
         'probe.py',
         'simple.py',
         'test_install.py',
@@ -105,14 +105,6 @@ def configuration(parent_package='', top_path=None):
 
     return config
 
-def _mayavi_version(pkg_name):
-    try:
-        from enthought.mayavi import version
-
-    except:
-        from mayavi import version
-
-    return version.version
 
 def _cython_version(pkg_name):
     from Cython.Compiler.Version import version
@@ -155,10 +147,6 @@ def check_versions(show_only=False):
     package_check('pyparsing', INFO.PYPARSING_MIN_VERSION,
                   show_only=show_only)
     package_check('tables', INFO.PYTABLES_MIN_VERSION,
-                  show_only=show_only)
-    package_check(('enthought.mayavi', 'mayavi'),
-                  INFO.MAYAVI_MIN_VERSION, optional=True,
-                  version_getter=_mayavi_version,
                   show_only=show_only)
     package_check('sympy', INFO.SYMPY_MIN_VERSION, optional=True,
                   messages={'opt suffix' : '; some tests are going to fail!'},
