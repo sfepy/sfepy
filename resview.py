@@ -567,6 +567,11 @@ def pv_plot(filenames, options, plotter=None, step=None,
         return plotter
 
 
+def print_camera_position(plotter):
+    cp = nm.array([k for k in plotter.camera_position]).ravel()
+    print('camera position: ' + ', '.join(['%g' % k for k in cp]))
+
+
 class OptsToListAction(Action):
     separator = '='
 
@@ -633,6 +638,10 @@ helps = {
     'view':
         'camera azimuth, elevation angles, and optionally zoom factor'
         ' [default: "225,75,0.9"]',
+    'camera_position':
+        'define camera position',
+    'window_size':
+        'define size of plotting window',
     'animation':
         'create animation, mp4 file type supported',
     'framerate':
@@ -720,6 +729,13 @@ def main():
     parser.add_argument('-v', '--view', metavar='position',
                         action=StoreNumberAction, dest='camera',
                         default=[225, 75, 0.9], help=helps['view'])
+    parser.add_argument('--camera_position', metavar='camera_position',
+                        action=StoreNumberAction, dest='camera_position',
+                        default=None, help=helps['camera_position'])
+    parser.add_argument('--window_size', metavar='window_size',
+                        action=StoreNumberAction, dest='window_size',
+                        default=pv.global_theme.window_size,
+                        help=helps['window_size'])
     parser.add_argument('-a', '--animation', metavar='output_file',
                         action='store', dest='anim_output_file',
                         default=None, help=helps['animation'])
@@ -808,11 +824,18 @@ def main():
                                     plotter=plotter)
         )
 
+        plotter.add_key_event(
+            'c', lambda: print_camera_position(plotter)
+        )
+
         if options.view_2d:
             plotter.view_xy()
             plotter.show(screenshot=options.screenshot)
         else:
-            if options.camera:
+            if options.camera_position is not None:
+                cpos = nm.array(options.camera_position)
+                cpos = cpos.reshape((3, 3))
+            elif options.camera:
                 zoom = options.camera[2] if len(options.camera) > 2 else 1.
                 cpos = get_camera_position(plotter.bounds,
                                            options.camera[0],
@@ -821,7 +844,8 @@ def main():
             else:
                 cpos = None
 
-            plotter.show(cpos=cpos, screenshot=options.screenshot)
+            plotter.show(cpos=cpos, screenshot=options.screenshot,
+                         window_size=options.window_size)
 
 
 if __name__ == '__main__':
