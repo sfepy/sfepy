@@ -621,8 +621,6 @@ And the result is:
    :width: 70 %
    :align: center
 
-See the docstring of `view()` and play with its options.
-
 .. _tutorial_interactive_source:
 
 Complete Example as a Script
