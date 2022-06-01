@@ -11,20 +11,13 @@ allows setting various simulation parameters, namely:
 - uniform mesh refinement level
 
 The example shows also how to probe the results as in
-:ref:`linear_elasticity-its2D_4`, and how to display the results using Mayavi.
-Using :mod:`sfepy.discrete.probes` allows correct probing of fields with the
-approximation order greater than one.
+:ref:`linear_elasticity-its2D_4`. Using :mod:`sfepy.discrete.probes` allows
+correct probing of fields with the approximation order greater than one.
 
 In the SfePy top-level directory the following command can be used to get usage
 information::
 
   python sfepy/examples/linear_elasticity/its2D_interactive.py -h
-
-Notes
------
-
-The ``--probe`` and ``--show`` options work simultaneously only if Mayavi and
-Matplotlib use the same backend type (for example wx).
 """
 from __future__ import absolute_import
 import sys
