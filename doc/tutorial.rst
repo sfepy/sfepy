@@ -578,7 +578,7 @@ And view them ::
 You should see this:
 
 .. image:: images/linear_elasticity_regions.png
-   :width: 70 %
+   :width: 80 %
    :align: center
 
 Finally, we set the boundary conditions and the top-level solver , solve the
@@ -607,7 +607,7 @@ This ::
 is used to produce the resulting image:
 
 .. image:: images/linear_elasticity_solution1.png
-   :width: 70 %
+   :width: 80 %
    :align: center
 
 The default view is not very fancy. Let us show the displacements by
@@ -618,7 +618,7 @@ shifting the mesh. Close the previous window and do ::
 And the result is:
 
 .. image:: images/linear_elasticity_solution2.png
-   :width: 70 %
+   :width: 80 %
    :align: center
 
 .. _tutorial_interactive_source:
