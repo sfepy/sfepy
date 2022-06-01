@@ -45,7 +45,7 @@ convergence curves w.r.t. number of elements::
 
   python sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py output -t bend -p
 
-Apply the twisting transformation to the beam domain coordinates, change number of cells, show the solution::
+Apply the twisting transformation to the beam domain coordinates, change number of cells::
 
   python sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py output -t twist -n 2,51,3 -s
 """
@@ -248,9 +248,6 @@ def main():
     parser.add_argument('--u-scaling', metavar='float', type=float,
                         action='store', dest='scaling',
                         default=1.0, help=helps['scaling'])
-    parser.add_argument('-s', '--show',
-                        action="store_true", dest='show',
-                        default=False, help=helps['show'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -366,16 +363,6 @@ def main():
 
         plt.show()
 
-    if options.show:
-        from sfepy.postprocess.viewer import Viewer
-        from sfepy.postprocess.domain_specific import DomainSpecificPlot
-
-        ds = {'u_disp' :
-                  DomainSpecificPlot('plot_displacements',
-                                     ['rel_scaling=%f' % options.scaling])}
-        view = Viewer(odir('shell10x_cantilever.vtk'))
-        view(domain_specific=ds, is_scalar_bar=True, is_wireframe=True,
-             opacity={'wireframe' : 0.5})
 
 if __name__ == '__main__':
     main()

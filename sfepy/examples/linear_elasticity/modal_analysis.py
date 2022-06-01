@@ -18,25 +18,25 @@ The default material properties correspond to aluminium in the following units:
 Examples
 --------
 
-- Run with the default arguments, show results (color = strain)::
+- Run with the default arguments::
 
-    python sfepy/examples/linear_elasticity/modal_analysis.py --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py
 
-- Fix bottom surface of the domain, show 9 eigen-shapes::
+- Fix bottom surface of the domain::
 
-    python sfepy/examples/linear_elasticity/modal_analysis.py -b cantilever -n 9 --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py -b cantilever
 
 - Increase mesh resolution::
 
-    python sfepy/examples/linear_elasticity/modal_analysis.py -s 31,31 -n 9 --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py -s 31,31
 
 - Use 3D domain::
 
-    python sfepy/examples/linear_elasticity/modal_analysis.py -d 1,1,1 -c 0,0,0 -s 8,8,8 --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py -d 1,1,1 -c 0,0,0 -s 8,8,8
 
 - Change the eigenvalue problem solver to LOBPCG::
 
-    python sfepy/examples/linear_elasticity/modal_analysis.py --solver="eig.scipy_lobpcg,i_max:100,largest:False" --show
+    python sfepy/examples/linear_elasticity/modal_analysis.py --solver="eig.scipy_lobpcg,i_max:100,largest:False"
 
   See :mod:`sfepy.solvers.eigen` for available solvers.
 """
@@ -84,7 +84,6 @@ helps = {
     'solver' : 'the eigenvalue problem solver to use. It should be given'
     ' as a comma-separated list: solver_kind,option0:value0,option1:value1,...'
     ' [default: %(default)s]',
-    'show' : 'show the results figure',
 }
 
 def main():
@@ -130,9 +129,6 @@ def main():
                         default= \
                         "eig.scipy,method:'eigsh',tol:1e-5,maxiter:1000",
                         help=helps['solver'])
-    parser.add_argument('--show',
-                        action="store_true", dest='show',
-                        default=False, help=helps['show'])
     parser.add_argument('filename', nargs='?', default=None)
     options = parser.parse_args()
 
@@ -296,25 +292,6 @@ def main():
     pb.save_state('eigenshapes.vtk', out=out)
     pb.save_regions_as_groups('regions')
 
-    if len(eigs) and options.show:
-        # Show the solution. If the approximation order is greater than 1, the
-        # extra DOFs are simply thrown away.
-        from sfepy.postprocess.viewer import Viewer
-        from sfepy.postprocess.domain_specific import DomainSpecificPlot
-
-        scaling = 0.05 * dims.max() / nm.abs(vecs).max()
-
-        ds = {}
-        for ii in range(eigs.shape[0]):
-            pd = DomainSpecificPlot('plot_displacements',
-                                    ['rel_scaling=%s' % scaling,
-                                     'color_kind="tensors"',
-                                     'color_name="strain%03d"' % ii])
-            ds['u%03d' % ii] = pd
-
-        view = Viewer('eigenshapes.vtk')
-        view(domain_specific=ds, only_names=sorted(ds.keys()),
-             is_scalar_bar=False, is_wireframe=True)
 
 if __name__ == '__main__':
     main()
