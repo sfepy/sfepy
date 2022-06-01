@@ -47,7 +47,7 @@ convergence curves w.r.t. number of elements::
 
 Apply the twisting transformation to the beam domain coordinates, change number of cells::
 
-  python sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py output -t twist -n 2,51,3 -s
+  python sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py output -t twist -n 2,51,3
 """
 from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
@@ -215,8 +215,6 @@ helps = {
     'poisson' : "the Poisson's ratio [default: %(default)s]",
     'force' : "the force load [default: %(default)s]",
     'plot' : 'plot the max. displacement w.r.t. number of cells',
-    'scaling' : 'the displacement scaling, with --show [default: %(default)s]',
-    'show' : 'show the results figure',
     'silent' : 'do not print messages to screen',
 }
 
@@ -245,9 +243,6 @@ def main():
     parser.add_argument('-p', '--plot',
                         action="store_true", dest='plot',
                         default=False, help=helps['plot'])
-    parser.add_argument('--u-scaling', metavar='float', type=float,
-                        action='store', dest='scaling',
-                        default=1.0, help=helps['scaling'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
