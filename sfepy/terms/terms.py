@@ -1354,14 +1354,13 @@ class Term(Struct):
 
         fargsd = split_complex_args(fargs)
 
-        # Assuming linear forms. Then the matrix is the
-        # same both for real and imaginary part.
         rstatus = self.call_function(rout, fargsd['r'])
-        if (diff_var is None) and len(fargsd) >= 2:
+
+        if len(fargsd) >= 2:
             iout = nm.empty(shape, dtype=nm.float64)
             istatus = self.call_function(iout, fargsd['i'])
 
-            if mode == 'eval' and len(fargsd) >= 4:
+            if len(fargsd) >= 4:
                 irout = nm.empty(shape, dtype=nm.float64)
                 irstatus = self.call_function(irout, fargsd['ir'])
                 riout = nm.empty(shape, dtype=nm.float64)
