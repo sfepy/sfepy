@@ -848,7 +848,8 @@ def main():
 
         if options.view_2d:
             plotter.view_xy()
-            plotter.show(screenshot=options.screenshot)
+            plotter.show(screenshot=options.screenshot,
+                         window_size=options.window_size)
         else:
             if options.camera_position is not None:
                 cpos = nm.array(options.camera_position)
@@ -865,6 +866,8 @@ def main():
             plotter.show(cpos=cpos, screenshot=options.screenshot,
                          window_size=options.window_size)
 
+        if options.screenshot is not None and osp.exists(options.screenshot):
+            print(f'saved: {options.screenshot}')
 
 if __name__ == '__main__':
     main()
