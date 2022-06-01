@@ -571,15 +571,10 @@ for debugging. Let us try saving the regions into a VTK file.
 
     In [35]: pb.save_regions_as_groups('regions')
 
-And view them.
+And view them ::
 
-.. sourcecode:: ipython
-
-    In [36]: from sfepy.postprocess.viewer import Viewer
-
-    In [37]: view = Viewer('regions.vtk')
-    In [38]: view()
-
+    python resview.py regions.vtk -2 --grid-vector1 "[2, 0, 0]"
+    
 You should see this:
 
 .. image:: images/linear_elasticity_regions.png
@@ -604,22 +599,21 @@ automatically.
     In [44]: print('Stationary solver status:\n', status)
 
     In [45]: pb.save_state('linear_elasticity.vtk', variables)
-    In [46]: view = Viewer('linear_elasticity.vtk')
-    In [47]: view()
 
-This is the resulting image:
+This ::
+
+    python resview.py linear_elasticity.vtk -2
+
+is used to produce the resulting image:
 
 .. image:: images/linear_elasticity_solution1.png
    :width: 70 %
    :align: center
 
 The default view is not very fancy. Let us show the displacements by
-shifting the mesh. Close the previous window and do:
+shifting the mesh. Close the previous window and do ::
 
-.. sourcecode:: ipython
-
-    In [48]: view(vector_mode='warp_norm', rel_scaling=2,
-       ...:       is_scalar_bar=True, is_wireframe=True)
+    python resview.py linear_elasticity.vtk -2 -f u:wu:p0 1:vw:p0
 
 And the result is:
 

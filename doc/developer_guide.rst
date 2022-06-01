@@ -123,7 +123,7 @@ directory is `sfepy/`, which has the following contents:
      - modules supporting parallel assembling and solution of problems
      -
    * - `postprocess/`
-     - Mayavi and PyVista based post-processing modules
+     - Matplotlib and VTK based post-processing modules
      -
    * - `solvers/`
      - interface classes to various internal/external solvers (linear,
@@ -1321,17 +1321,13 @@ sfepy.postprocess package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/postprocess/domain_specific
    src/sfepy/postprocess/plot_cmesh
    src/sfepy/postprocess/plot_dofs
    src/sfepy/postprocess/plot_facets
    src/sfepy/postprocess/plot_quadrature
    src/sfepy/postprocess/probes_vtk
-   src/sfepy/postprocess/sources
    src/sfepy/postprocess/time_history
-   src/sfepy/postprocess/utils
    src/sfepy/postprocess/utils_vtk
-   src/sfepy/postprocess/viewer
 
 .. _sfepy_solvers:
 
