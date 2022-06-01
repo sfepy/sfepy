@@ -177,10 +177,6 @@ problem. The results will be saved to ``Mesh_Partition_Hexa.vtk``.
 
 Now we can view the results of our work. In your terminal, type::
 
-  ./postproc.py --wireframe --vector-mode=warp_norm -s 2 Mesh_Partition_Hexa.vtk
-
-or::
-
   ./resview.py Mesh_Partition_Hexa.vtk -f u:wu:f2.0:p0 0:vw:p0
 
 You should get the plot with the deformed and undeformed meshs. Notice how the

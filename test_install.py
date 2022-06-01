@@ -216,8 +216,8 @@ def main():
     out, err = check_output('python3 ./extractor.py -d cylinder.h5')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('python3 ./postproc.py -n --no-offscreen -o cylinder.png cylinder.h5')
-    eok += report(out, '...', -3, 2, 'cylinder.png...')
+    out, err = check_output('python3 ./resview.py --off-screen -o cylinder.png cylinder.h5')
+    eok += report(out, '...', -2, 1, 'cylinder.png')
 
     out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps.py')
     eok += report(out, '...', -9, 0, '2.08545116e+08', match_numbers=True)

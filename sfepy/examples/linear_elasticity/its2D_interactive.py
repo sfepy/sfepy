@@ -11,20 +11,13 @@ allows setting various simulation parameters, namely:
 - uniform mesh refinement level
 
 The example shows also how to probe the results as in
-:ref:`linear_elasticity-its2D_4`, and how to display the results using Mayavi.
-Using :mod:`sfepy.discrete.probes` allows correct probing of fields with the
-approximation order greater than one.
+:ref:`linear_elasticity-its2D_4`. Using :mod:`sfepy.discrete.probes` allows
+correct probing of fields with the approximation order greater than one.
 
 In the SfePy top-level directory the following command can be used to get usage
 information::
 
   python sfepy/examples/linear_elasticity/its2D_interactive.py -h
-
-Notes
------
-
-The ``--probe`` and ``--show`` options work simultaneously only if Mayavi and
-Matplotlib use the same backend type (for example wx).
 """
 from __future__ import absolute_import
 import sys
@@ -127,7 +120,6 @@ helps = {
     'order' : 'displacement field approximation order [default: %(default)s]',
     'refine' : 'uniform mesh refinement level [default: %(default)s]',
     'probe' : 'probe the results',
-    'show' : 'show the results figure',
 }
 
 def main():
@@ -151,9 +143,6 @@ def main():
     parser.add_argument('-r', '--refine', metavar='int', type=int,
                       action='store', dest='refine',
                       default=0, help=helps['refine'])
-    parser.add_argument('-s', '--show',
-                      action="store_true", dest='show',
-                      default=False, help=helps['show'])
     parser.add_argument('-p', '--probe',
                       action="store_true", dest='probe',
                       default=False, help=helps['probe'])
@@ -282,14 +271,6 @@ def main():
                        % (val.min(), val.mean(), val.max()))
             output.level -= 2
 
-    if options.show:
-        # Show the solution. If the approximation order is greater than 1, the
-        # extra DOFs are simply thrown away.
-        from sfepy.postprocess.viewer import Viewer
-
-        view = Viewer('its2D_interactive.vtk')
-        view(vector_mode='warp_norm', rel_scaling=1,
-             is_scalar_bar=True, is_wireframe=True)
 
 if __name__ == '__main__':
     main()

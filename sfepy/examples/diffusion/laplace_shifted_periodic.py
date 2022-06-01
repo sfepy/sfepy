@@ -5,8 +5,6 @@ Laplace equation with shifted periodic BCs.
 Display using::
 
   $ ./resview.py laplace_shifted_periodic.vtk -f u:wu:f0.5 1:vw
-
-or use the --show option.
 """
 from __future__ import absolute_import
 import sys
@@ -91,7 +89,6 @@ helps = {
     'centre of the block [default: %(default)s]',
     'shape' :
     'numbers of vertices along each axis [default: %(default)s]',
-    'show' : 'show the results figure',
 }
 
 def main():
@@ -107,9 +104,6 @@ def main():
     parser.add_argument('-s', '--shape', metavar='shape',
                         action='store', dest='shape',
                         default='[11, 11]', help=helps['shape'])
-    parser.add_argument('--show',
-                        action="store_true", dest='show',
-                        default=False, help=helps['show'])
     options = parser.parse_args()
 
     dims = nm.array(eval(options.dims), dtype=nm.float64)
@@ -126,16 +120,6 @@ def main():
     pb, state = run(fe_domain, 1)
     pb.save_state('laplace_shifted_periodic.vtk', state)
 
-    if options.show:
-        from sfepy.postprocess.viewer import Viewer
-        from sfepy.postprocess.domain_specific import DomainSpecificPlot
-
-        view = Viewer('laplace_shifted_periodic.vtk')
-        view(rel_scaling=1,
-             domain_specific={'u' : DomainSpecificPlot('plot_warp_scalar',
-                                                       ['rel_scaling=1'])},
-             is_scalar_bar=True, is_wireframe=True,
-             opacity=0.3)
 
 if __name__ == '__main__':
     main()

@@ -121,16 +121,10 @@ def create_patch(R1, R2, C1, C2, order=2, viewpatch=False):
                       bmesh.cps, bmesh.weights, bmesh.conn, regions)
 
     if viewpatch:
-        try:
-            iplt.use('mayavi')
-            iplt.figure()
-            iplt.plot(srf)
-            iplt.show()
-        except ImportError:
-            iplt.use('matplotlib')
-            iplt.figure()
-            iplt.plot(srf)
-            iplt.show()
+        iplt.use('matplotlib')
+        iplt.figure()
+        iplt.plot(srf)
+        iplt.show()
 
 def insert_uniformly(U, n):
     """
