@@ -289,13 +289,6 @@ class DiffusionVelocityTerm( Term ):
     .. math::
         - \int_{\cal{D}} K_{ij} \nabla_j p
 
-    .. math::
-        \mbox{vector for } K \from \Ical_h: - \int_{T_K} K_{ij} \nabla_j p
-        / \int_{T_K} 1
-
-    .. math::
-        - K_{ij} \nabla_j p
-
     :Arguments:
         - material  : :math:`K_{ij}`
         - parameter : :math:`p`
@@ -348,14 +341,6 @@ class SurfaceFluxTerm(Term):
 
     .. math::
         \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j p
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ul{n}
-        \cdot K_{ij} \nabla_j p\ / \int_{T_K} 1
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ul{n}
-        \cdot K_{ij} \nabla_j p
 
     :Arguments:
         - material: :math:`\ul{K}`

@@ -134,13 +134,6 @@ class BiotStressTerm(CauchyStressTerm):
     .. math::
         - \int_{\Omega} \alpha_{ij} \bar{p}
 
-    .. math::
-        \mbox{vector for } K \from \Ical_h:
-        - \int_{T_K} \alpha_{ij} \bar{p} / \int_{T_K} 1
-
-    .. math::
-        - \alpha_{ij} \bar{p}|_{qp}
-
     :Arguments:
         - material  : :math:`\alpha_{ij}`
         - parameter : :math:`\bar{p}`

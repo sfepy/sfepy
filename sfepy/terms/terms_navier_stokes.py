@@ -326,14 +326,6 @@ class GradTerm(Term):
         \int_{\cal{D}} \nabla p \mbox{ or } \int_{\cal{D}} \nabla \ul{u}\\
         \int_{\cal{D}} c \nabla p \mbox{ or } \int_{\cal{D}} c \nabla \ul{u}
 
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
-        \int_{T_K} 1 \mbox{ or } \int_{T_K} \nabla \ul{u} /
-        \int_{T_K} 1
-
-    .. math::
-        (\nabla p)|_{qp} \mbox{ or } \nabla \ul{u}|_{qp}
-
     :Arguments:
         - parameter : :math:`p` or :math:`\ul{u}`
     """
@@ -386,13 +378,6 @@ class DivTerm(Term):
     .. math::
          \int_{\cal{D}} \nabla \cdot \ul{u} \mbox { , }
          \int_{\cal{D}} c \nabla \cdot \ul{u}
-
-    .. math::
-         \mbox{vector for } K \from \Ical_h:
-         \int_{T_K} \nabla \cdot \ul{u} / \int_{T_K} 1
-
-    .. math::
-        (\nabla \cdot \ul{u})|_{qp}
 
     :Arguments:
         - parameter : :math:`\ul{u}`

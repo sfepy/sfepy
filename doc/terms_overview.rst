@@ -110,6 +110,22 @@ Term names are (usually) prefixed according to the following conventions:
      - any (work in progress)
      - multi-linear terms defined using an enriched einsum notation
 
+Evaluation modes 'eval', 'el_avg' and 'qp' are defined as follows:
+
+.. list-table:: Evaluation modes.
+   :widths: 20 80
+   :header-rows: 1
+
+   * - mode
+     - definition
+   * - 'eval'
+     - :math:`\int_{\cal{D}} (\cdot)`
+   * - 'el_avg'
+     - vector for :math:`K \from \Ical_h: \int_{T_K} (\cdot) / \int_{T_K} 1`
+   * - 'qp'
+     - :math:`(\cdot)|_{qp}`
+
+
 .. _term_table:
 
 Term Table

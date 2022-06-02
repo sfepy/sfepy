@@ -397,13 +397,6 @@ class CauchyStrainTerm(Term):
     .. math::
         \int_{\cal{D}} \ull{e}(\ul{w})
 
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ull{e}(\ul{w}) /
-        \int_{T_K} 1
-
-    .. math::
-        \ull{e}(\ul{w})|_{qp}
-
     :Arguments:
         - parameter : :math:`\ul{w}`
     """
@@ -458,13 +451,6 @@ class CauchyStressTerm(Term):
 
     .. math::
         \int_{\cal{D}} D_{ijkl} e_{kl}(\ul{w})
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h:
-        \int_{T_K} D_{ijkl} e_{kl}(\ul{w}) / \int_{T_K} 1
-
-    .. math::
-        D_{ijkl} e_{kl}(\ul{w})|_{qp}
 
     :Arguments:
         - material  : :math:`D_{ijkl}`
@@ -525,14 +511,6 @@ class CauchyStressTHTerm(CauchyStressTerm, THTerm):
         \int_{\Omega} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
         \difd{\tau}
 
-    .. math::
-        \mbox{vector for } K \from \Ical_h:
-        \int_{T_K} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
-        \difd{\tau} / \int_{T_K} 1
-
-    .. math::
-        \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau)) \difd{\tau}|_{qp}
-
     :Arguments:
         - ts        : :class:`TimeStepper` instance
         - material  : :math:`\Hcal_{ijkl}(\tau)`
@@ -582,14 +560,6 @@ class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
     .. math::
         \int_{\Omega} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
         \difd{\tau}
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h:
-        \int_{T_K} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
-        \difd{\tau} / \int_{T_K} 1
-
-    .. math::
-        \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau)) \difd{\tau}|_{qp}
 
     :Arguments:
         - ts         : :class:`TimeStepper` instance

@@ -53,22 +53,6 @@ class IntegrateTerm(Term):
         \int_{\cal{D}} c y \mbox{ , } \int_{\cal{D}} c \ul{y}
         \mbox{ , } \int_\Gamma c \ul{y} \cdot \ul{n} \mbox{ flux }
 
-    .. math::
-        \mbox{vector for } K \from \Ical_h:
-        \int_{T_K} y / \int_{T_K} 1 \mbox{ , }
-        \int_{T_K} \ul{y} / \int_{T_K} 1 \mbox{ , }
-        \int_{T_K} (\ul{y} \cdot \ul{n}) / \int_{T_K} 1 \\
-        \mbox{vector for } K \from \Ical_h:
-        \int_{T_K} c y / \int_{T_K} 1 \mbox{ , }
-        \int_{T_K} c \ul{y} / \int_{T_K} 1 \mbox{ , }
-        \int_{T_K} (c \ul{y} \cdot \ul{n}) / \int_{T_K} 1
-
-    .. math::
-        y|_{qp} \mbox{ , } \ul{y}|_{qp}
-        \mbox{ , } (\ul{y} \cdot \ul{n})|_{qp} \mbox{ flux } \\
-        c y|_{qp} \mbox{ , } c \ul{y}|_{qp}
-        \mbox{ , } (c \ul{y} \cdot \ul{n})|_{qp} \mbox{ flux }
-
     :Arguments:
         - material : :math:`c` (optional)
         - parameter : :math:`y` or :math:`\ul{y}`
