@@ -38,18 +38,14 @@ The following notation is used:
      - any vector function
    * - :math:`\ul{n}`
      - unit outward normal
-   * - :math:`q`, :math:`s`
+   * - :math:`q`
      - scalar test or parameter function
-   * - :math:`p`, :math:`r`
+   * - :math:`p`
      - scalar unknown or parameter function
-   * - :math:`\bar{p}`
-     - scalar parameter function
    * - :math:`\ul{v}`
      - vector test or parameter function
    * - :math:`\ul{w}`, :math:`\ul{u}`
      - vector unknown or parameter function
-   * - :math:`\ul{b}`
-     - vector parameter function
    * - :math:`\ull{e}(\ul{u})`
      - Cauchy strain tensor (:math:`\frac{1}{2}((\nabla u) + (\nabla u)^T)`)
    * - :math:`\ull{F}`
@@ -71,7 +67,7 @@ The following notation is used:
      - density
    * - :math:`\nu`
      - kinematic viscosity
-   * - :math:`c`
+   * - :math:`c`, :math:`\ul{c}`, :math:`\ull{c}`
      - any constant
    * - :math:`\delta_{ij}, \ull{I}`
      - Kronecker delta, identity matrix
