@@ -269,16 +269,10 @@ class IntegrateMatTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\cal{D}} m
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
-
-    .. math::
-        m|_{qp}
+        \int_{\cal{D}} c
 
     :Arguments:
-        - material  : :math:`m` (can have up to two dimensions)
+        - material  : :math:`c` (can have up to two dimensions)
         - parameter : :math:`y`
     """
     name = 'ev_integrate_mat'
