@@ -16,28 +16,18 @@ class DotProductTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\cal{D}} q p \mbox{ , } \int_{\cal{D}} \ul{v} \cdot \ul{u}
-        \mbox{ , }
+        \int_{\cal{D}} q p \mbox{ , }
+        \int_{\cal{D}} \ul{v} \cdot \ul{u}\\
         \int_\Gamma \ul{v} \cdot \ul{n} p \mbox{ , }
-        \int_\Gamma q \ul{n} \cdot \ul{u} \mbox{ , }
-        \int_{\cal{D}} p r \mbox{ , } \int_{\cal{D}} \ul{u} \cdot \ul{w}
-        \mbox{ , } \int_\Gamma \ul{w} \cdot \ul{n} p \\
-        \int_{\cal{D}} c q p \mbox{ , } \int_{\cal{D}} c \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_{\cal{D}} c p r \mbox{ , } \int_{\cal{D}} c \ul{u} \cdot \ul{w} \\
-        \int_{\cal{D}} \ul{v} \cdot \ull{M} \cdot \ul{u}
-        \mbox{ , }
-        \int_{\cal{D}} \ul{u} \cdot \ull{M} \cdot \ul{w}
+        \int_\Gamma q \ul{n} \cdot \ul{u} \mbox{ , }\\
+        \int_{\cal{D}} c q p \mbox{ , }
+        \int_{\cal{D}} c \ul{v} \cdot \ul{u} \mbox{ , }
+        \int_{\cal{D}} \ul{v} \cdot \ull{c} \cdot \ul{u}
 
-    :Arguments 1:
-        - material : :math:`c` or :math:`\ull{M}` (optional)
-        - virtual  : :math:`q` or :math:`\ul{v}`
-        - state    : :math:`p` or :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`c` or :math:`\ull{M}` (optional)
-        - parameter_1 : :math:`p` or :math:`\ul{u}`
-        - parameter_2 : :math:`r` or :math:`\ul{w}`
+    :Arguments:
+        - material: :math:`c` or :math:`\ull{c}` (optional)
+        - virtual/parameter_1: :math:`q` or :math:`\ul{v}`
+        - state/parameter_2: :math:`p` or :math:`\ul{u}`
     """
     name = 'dw_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -295,23 +285,18 @@ class VectorDotGradScalarTerm(Term):
         \int_{\Omega} \ul{u} \cdot \nabla q \\
         \int_{\Omega} c \ul{v} \cdot \nabla p \mbox{ , }
         \int_{\Omega} c \ul{u} \cdot \nabla q \\
-        \int_{\Omega} \ul{v} \cdot (\ull{M} \nabla p) \mbox{ , }
-        \int_{\Omega} \ul{u} \cdot (\ull{M} \nabla q)
+        \int_{\Omega} \ul{v} \cdot (\ull{c} \nabla p) \mbox{ , }
+        \int_{\Omega} \ul{u} \cdot (\ull{c} \nabla q)
 
     :Arguments 1:
-        - material : :math:`c` or :math:`\ull{M}` (optional)
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`p`
+        - material: :math:`c` or :math:`\ull{c}` (optional)
+        - virtual/parameter_v: :math:`\ul{v}`
+        - state/parameter_s: :math:`p`
 
     :Arguments 2:
-        - material : :math:`c` or :math:`\ull{M}` (optional)
+        - material : :math:`c` or :math:`\ull{c}` (optional)
         - state    : :math:`\ul{u}`
         - virtual  : :math:`q`
-
-    :Arguments 3:
-        - material    : :math:`c` or :math:`\ull{M}` (optional)
-        - parameter_v : :math:`\ul{u}`
-        - parameter_s : :math:`p`
     """
     name = 'dw_v_dot_grad_s'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -384,23 +369,18 @@ class VectorDotScalarTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} \ul{v} \cdot \ul{m} p \mbox{ , }
-        \int_{\Omega} \ul{u} \cdot \ul{m} q\\
+        \int_{\Omega} \ul{v} \cdot \ul{c} p \mbox{ , }
+        \int_{\Omega} \ul{u} \cdot \ul{c} q\\
 
     :Arguments 1:
-        - material : :math:`\ul{m}`
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`p`
+        - material : :math:`\ul{c}`
+        - virtual/parameter_v: :math:`\ul{v}`
+        - state/parameter_s: :math:`p`
 
     :Arguments 2:
-        - material : :math:`\ul{m}`
+        - material : :math:`\ul{c}`
         - state    : :math:`\ul{u}`
         - virtual  : :math:`q`
-
-    :Arguments 3:
-        - material    : :math:`\ul{m}`
-        - parameter_v : :math:`\ul{u}`
-        - parameter_s : :math:`p`
     """
     name = 'dw_vm_dot_s'
     arg_types = (('material', 'virtual', 'state'),

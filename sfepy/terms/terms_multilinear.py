@@ -1239,10 +1239,10 @@ class EDotTerm(ETermBase):
     .. math::
         \int_{\cal{D}} q p \mbox{ , } \int_{\cal{D}} \ul{v} \cdot \ul{u}\\
         \int_{\cal{D}} c q p \mbox{ , } \int_{\cal{D}} c \ul{v} \cdot \ul{u}\\
-        \int_{\cal{D}} \ul{v} \cdot (\ull{M}\, \ul{u})
+        \int_{\cal{D}} \ul{v} \cdot (\ull{c}\, \ul{u})
 
     :Arguments:
-        - material: :math:`c` or :math:`\ull{M}` (optional)
+        - material: :math:`c` or :math:`\ull{c}` (optional)
         - virtual/parameter_1: :math:`q` or :math:`\ul{v}`
         - state/parameter_2: :math:`p` or :math:`\ul{u}`
     """
@@ -1415,11 +1415,11 @@ class ELinearConvectTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
+        \int_{\Omega} ((\ul{w} \cdot \nabla) \ul{u}) \cdot \ul{v}
 
     :Arguments:
         - virtual/parameter_1: :math:`\ul{v}`
-        - parameter/parameter_2: :math:`\ul{b}`
+        - parameter/parameter_2: :math:`\ul{w}`
         - state/parameter_3: :math:`\ul{u}`
     """
     name = 'de_lin_convect'

@@ -96,20 +96,15 @@ class LinearElasticIsotropicTerm(LinearElasticTerm):
     :Definition:
 
     .. math::
-        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u}) \mbox{ with }
+        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})\\ \mbox{ with } \\
         D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
         \lambda \ \delta_{ij} \delta_{kl}
 
     :Arguments:
-        - material_1 : :math:`\lambda`
-        - material_2 : :math:`\mu`
-        - virtual    : :math:`\ul{v}`
-        - state      : :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`D_{ijkl}`
-        - parameter_1 : :math:`\ul{w}`
-        - parameter_2 : :math:`\ul{u}`
+        - material_1: :math:`\lambda`
+        - material_2: :math:`\mu`
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'dw_lin_elastic_iso'
     arg_types = (('material_1', 'material_2', 'virtual', 'state'),
@@ -817,7 +812,7 @@ class ElasticWaveCauchyTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} D_{ijkl}\ g_{ij}(\ul{v}) e_{kl}(\ul{u}) \;,
+        \int_{\Omega} D_{ijkl}\ g_{ij}(\ul{v}) e_{kl}(\ul{u})\\
         \int_{\Omega} D_{ijkl}\ g_{ij}(\ul{u}) e_{kl}(\ul{v})
 
     :Arguments 1:
