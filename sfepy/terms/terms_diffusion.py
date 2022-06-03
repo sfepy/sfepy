@@ -13,18 +13,12 @@ class DiffusionTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} K_{ij} \nabla_i q \nabla_j p \mbox{ , } \int_{\Omega}
-        K_{ij} \nabla_i \bar{p} \nabla_j r
+        \int_{\Omega} K_{ij} \nabla_i q \nabla_j p
 
-    :Arguments 1:
-        - material : :math:`K_{ij}`
-        - virtual  : :math:`q`
-        - state    : :math:`p`
-
-    :Arguments 2:
-        - material    : :math:`K_{ij}`
-        - parameter_1 : :math:`\bar{p}`
-        - parameter_2 : :math:`r`
+    :Arguments:
+        - material: :math:`K_{ij}`
+        - virtual/parameter_1: :math:`q`
+        - state/parameter_2: :math:`p`
     """
     name = 'dw_diffusion'
     arg_types = (('material', 'virtual', 'state'),
@@ -133,18 +127,12 @@ class LaplaceTerm(DiffusionTerm):
     :Definition:
 
     .. math::
-        \int_{\Omega} c \nabla q \cdot \nabla p \mbox{ , } \int_{\Omega}
-        c \nabla \bar{p} \cdot \nabla r
+        \int_{\Omega} c \nabla q \cdot \nabla p
 
     :Arguments 1:
-        - material : :math:`c`
-        - virtual  : :math:`q`
-        - state    : :math:`p`
-
-    :Arguments 2:
-        - material    : :math:`c`
-        - parameter_1 : :math:`\bar{p}`
-        - parameter_2 : :math:`r`
+        - material: :math:`c`
+        - virtual/parameter_1: :math:`q`
+        - state/parameter_2: :math:`p`
     """
     name = 'dw_laplace'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -299,18 +287,11 @@ class DiffusionVelocityTerm( Term ):
     :Definition:
 
     .. math::
-        - \int_{\cal{D}} K_{ij} \nabla_j \bar{p}
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: - \int_{T_K} K_{ij} \nabla_j \bar{p}
-        / \int_{T_K} 1
-
-    .. math::
-        - K_{ij} \nabla_j \bar{p}
+        - \int_{\cal{D}} K_{ij} \nabla_j p
 
     :Arguments:
         - material  : :math:`K_{ij}`
-        - parameter : :math:`\bar{p}`
+        - parameter : :math:`p`
     """
     name = 'ev_diffusion_velocity'
     arg_types = ('material', 'parameter')
@@ -359,19 +340,11 @@ class SurfaceFluxTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j \bar{p}
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ul{n}
-        \cdot K_{ij} \nabla_j \bar{p}\ / \int_{T_K} 1
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ul{n}
-        \cdot K_{ij} \nabla_j \bar{p}
+        \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j p
 
     :Arguments:
         - material: :math:`\ul{K}`
-        - parameter:  :math:`\bar{p}`,
+        - parameter:  :math:`p`,
     """
     name = 'ev_surface_flux'
     arg_types = ('material', 'parameter')

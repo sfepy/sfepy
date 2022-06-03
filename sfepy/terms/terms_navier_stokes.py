@@ -11,19 +11,12 @@ class DivGradTerm(Term):
 
     .. math::
         \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
-        \int_{\Omega} \nu\ \nabla \ul{u} : \nabla \ul{w} \\
-        \int_{\Omega} \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
-        \int_{\Omega} \nabla \ul{u} : \nabla \ul{w}
+        \int_{\Omega} \nabla \ul{v} : \nabla \ul{u}
 
-    :Arguments 1:
-        - material : :math:`\nu` (viscosity, optional)
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`\nu` (viscosity, optional)
-        - parameter_1 : :math:`\ul{u}`
-        - parameter_2 : :math:`\ul{w}`
+    :Arguments:
+        - material: :math:`\nu` (viscosity, optional)
+        - virtualparameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
     """
     name = 'dw_div_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -134,14 +127,14 @@ class LinearConvectTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
+        \int_{\Omega} ((\ul{w} \cdot \nabla) \ul{u}) \cdot \ul{v}
 
     .. math::
-        ((\ul{b} \cdot \nabla) \ul{u})|_{qp}
+        ((\ul{w} \cdot \nabla) \ul{u})|_{qp}
 
     :Arguments:
         - virtual   : :math:`\ul{v}`
-        - parameter : :math:`\ul{b}`
+        - parameter : :math:`\ul{w}`
         - state     : :math:`\ul{u}`
     """
     name = 'dw_lin_convect'
@@ -185,13 +178,13 @@ class LinearConvect2Term(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
+        \int_{\Omega} ((\ul{c} \cdot \nabla) \ul{u}) \cdot \ul{v}
 
     .. math::
-        ((\ul{b} \cdot \nabla) \ul{u})|_{qp}
+        ((\ul{c} \cdot \nabla) \ul{u})|_{qp}
 
     :Arguments:
-        - material : :math:`\ul{b}`
+        - material : :math:`\ul{c}`
         - virtual  : :math:`\ul{v}`
         - state    : :math:`\ul{u}`
     """
@@ -236,25 +229,20 @@ class StokesTerm(Term):
 
     .. math::
         \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , }
-        \int_{\Omega} q\ \nabla \cdot \ul{u}
+        \int_{\Omega} q\ \nabla \cdot \ul{u}\\
         \mbox{ or }
         \int_{\Omega} c\ p\ \nabla \cdot \ul{v} \mbox{ , }
         \int_{\Omega} c\ q\ \nabla \cdot \ul{u}
 
     :Arguments 1:
-        - material : :math:`c` (optional)
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`p`
+        - material: :math:`c` (optional)
+        - virtual/parameter_v: :math:`\ul{v}`
+        - state/parameter_s: :math:`p`
 
     :Arguments 2:
         - material : :math:`c` (optional)
         - state    : :math:`\ul{u}`
         - virtual  : :math:`q`
-
-    :Arguments 3:
-        - material    : :math:`c` (optional)
-        - parameter_v : :math:`\ul{u}`
-        - parameter_s : :math:`p`
     """
     name = 'dw_stokes'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -335,20 +323,11 @@ class GradTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\cal{D}} \nabla p \mbox{ or } \int_{\cal{D}} \nabla \ul{w}
-        \mbox{ , }
-        \int_{\cal{D}} c \nabla p \mbox{ or } \int_{\cal{D}} c \nabla \ul{w}
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
-        \int_{T_K} 1 \mbox{ or } \int_{T_K} \nabla \ul{w} /
-        \int_{T_K} 1
-
-    .. math::
-        (\nabla p)|_{qp} \mbox{ or } \nabla \ul{w}|_{qp}
+        \int_{\cal{D}} \nabla p \mbox{ or } \int_{\cal{D}} \nabla \ul{u}\\
+        \int_{\cal{D}} c \nabla p \mbox{ or } \int_{\cal{D}} c \nabla \ul{u}
 
     :Arguments:
-        - parameter : :math:`p` or :math:`\ul{w}`
+        - parameter : :math:`p` or :math:`\ul{u}`
     """
     name = 'ev_grad'
     arg_types = ('opt_material', 'parameter')
@@ -399,13 +378,6 @@ class DivTerm(Term):
     .. math::
          \int_{\cal{D}} \nabla \cdot \ul{u} \mbox { , }
          \int_{\cal{D}} c \nabla \cdot \ul{u}
-
-    .. math::
-         \mbox{vector for } K \from \Ical_h:
-         \int_{T_K} \nabla \cdot \ul{u} / \int_{T_K} 1
-
-    .. math::
-        (\nabla \cdot \ul{u})|_{qp}
 
     :Arguments:
         - parameter : :math:`\ul{u}`
