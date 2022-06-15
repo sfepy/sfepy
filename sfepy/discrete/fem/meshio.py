@@ -430,8 +430,9 @@ class MeshioLibIO(MeshIO):
 
                 continue
 
-            cells.append(c.data)
-            cell_types.append(self.cell_types[(c.type, dim)])
+            if (not omit_facets) or (c.dim == dim):
+                cells.append(c.data)
+                cell_types.append(self.cell_types[(c.type, dim)])
 
             if cgdata is not None:
                 cgroups.append(nm.asarray(cgdata[ic]).flatten())
