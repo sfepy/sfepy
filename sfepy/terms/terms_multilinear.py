@@ -1303,13 +1303,16 @@ class EScalarDotMGradScalarTerm(ETermBase):
     """
     name = 'de_s_dot_mgrad_s'
     arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'state', 'virtual'))
+                 ('material', 'state', 'virtual'),
+                 ('material', 'parameter_1', 'parameter_2'))
     arg_shapes = [{'material' : 'D, 1',
                    'virtual/grad_state' : (1, None),
                    'state/grad_state' : 1,
                    'virtual/grad_virtual' : (1, None),
-                   'state/grad_virtual' : 1}]
-    modes = ('grad_state', 'grad_virtual')
+                   'state/grad_virtual' : 1,
+                   'parameter_1': 1, 'parameter_2': 1}]
+
+    modes = ('grad_state', 'grad_virtual', 'eval')
 
     def get_function(self, mat, var1, var2, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
