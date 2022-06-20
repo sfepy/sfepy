@@ -22,6 +22,7 @@ def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
     n_dof, n_eigs = eig_vectors.shape
 
     equations, variables = problem.create_evaluable(em_equation)
+    variables.init_state()
     var = variables[var_name]
 
     n_c = var.n_components
@@ -39,7 +40,7 @@ def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
             eigenmomenta[ii, :] = 0.0
 
         else:
-            var.set_data(vec_phi.copy())
+            variables.set_state_parts({var_name: vec_phi})
 
             val = eval_equations(equations, variables)
 
