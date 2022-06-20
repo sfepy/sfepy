@@ -987,6 +987,7 @@ class MultiProblem(ScipyDirect):
             confi = ProblemConf.from_file(ifname, required, other,
                                           define_args=kwargs)
             pbi = Problem.from_conf(confi, init_equations=True)
+            pbi.setup_default_output(conf=confi)
             pbi.set_output_dir(problem.output_dir)
             pbi.equations.set_data(None, ignore_unknown=True)
             pbi.time_update()
