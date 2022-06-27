@@ -37,4 +37,4 @@ def test(*args):
     import pytest  # pylint: disable=import-outside-toplevel
 
     path = os.path.join(os.path.split(__file__)[0], 'tests')
-    pytest.main(args=[path] + list(args))
+    return pytest.main(args=[path] + list(args))

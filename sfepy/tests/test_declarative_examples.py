@@ -54,7 +54,6 @@ examples = [
     'multi_physics/thermo_elasticity_ess.py',
     'navier_stokes/navier_stokes.py',
     'navier_stokes/navier_stokes2d.py',
-    'navier_stokes/navier_stokes2d_iga.py',
     'navier_stokes/stabilized_navier_stokes.py',
     'navier_stokes/stokes.py',
     'navier_stokes/stokes_slip_bc.py',
@@ -74,6 +73,7 @@ else:
     examples.extend([
         'diffusion/poisson_iga.py',
         'linear_elasticity/linear_elastic_iga.py',
+        'navier_stokes/navier_stokes2d_iga.py',
     ])
 
 @pytest.mark.parametrize('ex_filename', examples)
