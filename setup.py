@@ -65,6 +65,7 @@ def configuration(parent_package='', top_path=None):
         'blockgen.py',
         'convert_mesh.py',
         'cylindergen.py',
+        'dg_plot_1D.py',
         'edit_identifiers.py',
         'eval_ns_forms.py',
         'eval_tl_forms.py',
