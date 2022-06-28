@@ -3,6 +3,7 @@ prune sfepy/examples/*/output
 prune sfepy/examples/*/*/output
 prune doc/_build
 prune doc/html
+prune sfepy/tests/.pytest_cache
 exclude doc/logo/*.vtk
 exclude doc/publish.py
 exclude sfepy/__config__.py

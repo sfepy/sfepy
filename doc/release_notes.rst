@@ -1,5 +1,291 @@
 # created: 20.07.2007 (-1)
 
+.. _2022.1-2022.2:
+
+from 2022.1 to 2022.2
+=====================
+
+- merge pull request #806 from vlukes/fix_meshio_vtkint64
+
+  - fix meshio: int64 required by the newer paraview
+
+- merge pull request #805 from vlukes/update_ev_div_grad_terms
+
+  - new EGradTerm
+  - update DivTerm, GradTerm: new optional material parameter
+
+- merge pull request #809 from rc/de-lin-convect-term new elinearconvectterm
+  term (de_lin_convect)
+
+  - new ELinearConvectTerm term (de_lin_convect)
+
+- merge pull request #811 from vlukes/suppres_meshio_warnings
+
+  - suppress meshio warnings
+
+- merge pull request #812 from vlukes/suppres_meshio_warnings suppress meshio
+  warnings - update
+
+  - suppress meshio warnings - update
+
+- merge pull request #803 from rc/use-pytest, closes #363
+
+  - move utility TestCommon methods into module scope - move report(),
+    eval_coor_expression(), compare_vectors(), assert_equal()
+  - update test_assembling.py for pytest
+  - update test_base.py for pytest, clean up
+  - update test_cmesh.py for pytest
+  - new conftest.py: new output_dir fixture
+  - import sfepy.base.testing as tst instead of st
+  - update test_conditions.py for pytest
+  - remove run_tests_py related code in test_dg_field.py, clean up
+  - remove run_tests_py related code in DGTermTestEnvornment - prepare
+    DGTermTestEnvornment using fixture
+  - remove TestCommon, fix compare_vectors(), assert_equal()
+  - new run_declaratice_example(), remove tests/tests_basic.py
+
+    - move NLSStatus from tests/tests_basic.py to sfepy/base/testing.py
+    - make TestInput.check_conditions() standalone function
+    - remove TestDummy, TestInput, TestInputEvolutionary
+    - remove TestLCBC (WIP)
+
+  - new test_declarative_examples.py: new test_examples(), test_examples_dg()
+  - remove tests/test_input*, tests/test_dg_input* - replaced by
+    test_declarative_examples.py
+  - fix error checking in updated tests - fix test_assembling.py, test_base.py,
+    test_cmesh.py, test_conditions.py
+  - remove return statements in test_dg_terms_calls.py
+  - update test_domain.py for pytest
+  - update test_eigenvalue_solvers.py for pytest
+  - update test_elasticity_small_strain.py for pytest
+  - update test_fem.py for pytest
+  - update test_functions.py for pytest
+  - update test_high_level.py for pytest
+  - update test_homogenization_engine.py for pytest
+  - update test_homogenization_perfusion.py for pytest
+  - update test_hyperelastic_tlul.py for pytest
+  - update test_io.py for pytest, clean up
+  - update test_laplace_unit_disk.py for pytest, clean up
+  - update test_laplace_unit_square.py for pytest, clean up
+  - fix LCBCOperators.add_from_bc() for no arguments
+  - support output_dir in define() of stokes_slip_bc.py example
+  - support output_dir in run() of laplace_shifted_periodic.py example
+  - update test_lcbcs.py for pytest, use output_dir for all output
+  - new test_elasticity_rigid() in test_lcbcs.py
+  - remove tests/test_lcbc_2d.py, tests/test_lcbc_3d.py - replaced by
+    test_elasticity_rigid()
+  - update MultiProblem solver to use master problem output_dir - update
+    .init_subproblems(), .__call__()
+  - do not save mesh in gen_two_bodies() and log in two_bodies_contact.py
+    example
+  - do not save state twice in test_ebc_functions(), update
+    test_region_functions()
+  - new save_lcbc_vecs argument of define() in stokes_slip_bc.py example
+  - update test_stokes_slip_bc() for save_lcbc_vecs argument
+  - do not save state twice in test_solving()
+  - update test_linalg.py for pytest
+  - update test_linear_solvers.py for pytest
+  - update test_linearization.py for pytest
+  - update test_log.py for pytest
+  - update test_matcoefs.py for pytest
+  - update test_mesh_expand.py for pytest
+  - update test_mesh_generators.py for pytest
+  - update test_mesh_interp.py for pytest
+  - update test_mesh_smoothing.py for pytest
+  - update test_meshio.py for pytest
+  - update test_msm_laplace.py for pytest, clean up
+  - update test_msm_symbolic.py for pytest
+  - update test_normals.py for pytest
+  - update test_parsing.py for pytest
+  - check EPBC application in test_epbcs(), fix error report
+  - remove tests/test_periodic_bc_2d.py, tests/test_periodic_bc_3d.py - covered
+    by test_epbcs()
+  - update test_poly_spaces.py for pytest
+  - do not save state twice in _test_msm_symbolic()
+  - fix return in test_hdf5_meshio()
+  - update test_projections.py for pytest
+  - update test_quadratures.py for pytest
+  - update test_ref_coors.py for pytest
+  - update test_refine_hanging.py for pytest
+  - update test_regions.py for pytest
+  - fix ls_red parameter default in SemismoothNewton parameters
+  - update test_semismooth_newton.py for pytest
+  - update test_sparse.py for pytest
+  - update test_splinebox.py for pytest
+  - update test_tensors.py for pytest
+  - update test_term_call_modes.py for pytest
+  - update test_term_consistency.py for pytest, fix test_surface_evaluate() -
+    clean up
+  - update test_term_sensitivity.py for pytest
+  - update test_units.py for pytest
+  - update test_volume.py for pytest
+  - warnings clean up: do not use numpy.int, numpy.bool
+  - warnings clean up: do not use numpy.object, numpy.float
+  - warnings clean up: update imports in ScipyDirect, ScipyIterative
+  - warnings clean up: update import in LOBPCGEigenvalueSolver
+  - warnings clean up: remove unused arpack_eigs()
+  - warnings clean up: update and simplify dot_sequences() - do not use
+    numpy.core.umath_tests.matrix_multiply()
+  - do not print warp violation messages - only set error in _v_describe(),
+    dq_finite_strain(), dq_tl_finite_strain_surface()
+  - update test_install.py for pytest, clean up - update report_tests(), main()
+  - new pytest_addoption(): new --output-dir option for output_dir fixture
+  - new pytest_configure(): new slow marker
+  - mark slow tests
+  - new test() in sfepy/__init__.py for installed sfepy testing
+  - remove run_tests.py, update setup.py, sfepy-run
+  - move tests/ -> sfepy/tests/
+  - obey output_dir in test_solution() of test_homogenization_perfusion.py
+  - add output_dir argument to homogenization-based material functions - update
+    get_homog_coefs_linear(), get_homog_coefs_nonlinear()
+  - add output_dir argument to homogenization micro recovery functions - update
+    recover_micro_hook_init(), recover_micro_hook(), recover_micro_hook_eps()
+  - obey output_dir in micro-problem of linear_elastic_mM.py example - update
+    post_process(), get_homog()
+  - verify that output_dir is directory in output_dir() fixture
+  - docs: update testing info
+  - new remove_prefix argument of run_declaratice_example()
+  - update test_examples(), test_examples_dg() to remove common name prefix
+
+    - new inedir(), examples_dir
+    - remove common prefix in examples, examples_dg lists
+
+  - update docstrings of postproc.py, resview.py for renamed result files and
+    pytest
+  - docs: update users guide for pytest-related changes
+  - docs: update developer guide for moved tests/
+  - move examples/ -> sfepy/examples/
+  - update examples for moved examples/
+  - assume example files relative to sfepy.base_dir in
+    run_declaratice_example() - add comment to examples_dir in
+    test_declarative_examples.py
+  - use sfepy.base_dir in multi-file examples
+  - update tests for moved examples/
+  - update test_install.py for moved tests/ and examples/
+  - update gen_gallery.py, gen_term_table.py for moved examples/
+  - update setup.py for moved tests/ and examples/
+  - docs: update FAQ for moved examples/
+  - update docstrings of examples for moved examples/
+  - use sfepy.base_dir in more multi-file examples
+  - docs: update for moved examples/
+  - update docstrings of simple.py, simple_homog_mpi.py for moved examples/
+  - sync_module_docs.py: omit sfepy/examples/ directory
+  - docs: sync module index of developer guide with current sources, include
+    tests
+  - update MANIFEST.in for moved examples/
+  - CI: update appveyor config for pytest, use Python 3.9
+  - test_install.py: update some output directories
+
+- merge pull request #814 from rc/update-testing-docs
+
+  - docs: update testing instructions
+
+- merge pull request #815 from rc/elastic-wave-speeds
+
+  - new youngpoisson_from_wave_speeds(), wave_speeds_from_youngpoisson()
+  - new test_wave_speeds()
+
+- merge pull request #818 from heczis/master
+
+  - Fix legend placement
+
+- merge pull request #820 from rc/remove-phonon
+
+  - run AcousticBandGapsApp from simple.py, new --app option
+
+    - add phonon.py-specific options with --phonon- prefix
+    - determine app_mode in main()
+
+  - remove phonon.py
+  - update scripts for no phonon.py
+  - docs: update for no phonon.py
+
+- merge pull request #821 from rc/fix-multilinear-terms-for-complex-args
+
+  - fix multilinear terms for complex arguments - new ETermBase._eval(),
+    .eval_real(), .eval_complex()
+
+- merge pull request #823 from vlukes/issue_760, closes #760
+
+  - update posprocessing instructions (#760)
+  - examples: update posprocessing instructions (#760)
+  - linear_viscoelastic example: plot deformed mesh
+
+- merge pull request #824 from vlukes/resview_isosurface, closes #759
+
+  - resview isosurfaces (#759)
+
+- merge pull request #826 from vlukes/update_resview
+
+  - resview.py: new 'camera_position' and 'window_size' options
+  - fix option names: replace '_' by '-'
+  - update print of camera position
+
+- merge pull request #828 from vlukes/resview_grid
+
+  - resview.py: new 'camera_position' and 'window_size' options
+  - fix option names: replace '_' by '-'
+  - update print of camera position
+  - resview.py: plot figures in grid
+  - fix spelling
+  - fix settings of position vectors
+  - rename '--position-vector' to '--grid-vector'
+  - update users' guide
+
+- merge pull request #829 from vlukes/remove_mayavi_dependency, closes #108,
+  #687
+
+  - remove mayavi dependent files
+  - update documentation
+  - update setup
+  - update 'sfepy-run'
+  - update INSTALL instructions
+  - update tutorials
+  - resview.py: report saving figure to file
+  - test resview.py script
+  - remove doc files
+  - update examples
+
+- merge pull request #830 from rc/fix-eval-complex
+
+  - fix weak mode in eval_complex() for two complex arguments
+
+- merge pull request #831 from vlukes/term_docs_cleanup, closes #773
+
+  - update term docs - simplify descriptions
+  - update terms notation
+  - update docs: define evaluation modes
+  - update 'ev_integrate_mat' docs: remove 'el_avg', 'qp' modes
+  - update term docs: replace '\bar{p}' with 'p'
+
+- merge pull request #832 from heczis/fix_omit_facets
+
+  - Fix omit_facets
+
+- merge pull request #833 from vlukes/evaluable_EScalarDotMGradScalarTerm
+
+  - Update EScalarDotMGradScalarTerm to be evaluable
+
+- merge pull request #834 from vlukes/fix_homog_phononic
+
+  - Fix compute_eigenmomenta()
+  - fix: init state on compute_eigenmomenta()
+
+- merge pull request #835 from vlukes/fix_multiproblem_output
+
+  - Fix output setting in subproblems
+
+- merge pull request #837 from rc/fix-test-examples-iga
+
+  - fix igakit-dependent examples list - add navier_stokes2d_iga.py
+  - return pytest result from test()
+
+- merge pull request #836 from rc/fix-gen-gallery-resview
+
+  - resview.py: fix pv_plot() for 1D meshes
+  - script/gen_gallery: fix generate_images() for current resview.py - update
+    custom plots
+
 .. _2021.4-2022.1:
 
 from 2021.4 to 2022.1
