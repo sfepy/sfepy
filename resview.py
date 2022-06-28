@@ -308,8 +308,12 @@ def pv_plot(filenames, options, plotter=None, step=None,
     if tdim == 0:
         ipv2, ipv = 1, 2
         print('WARNING: zero size mesh!')
-    else:
+
+    elif tdim > 1:
         ipv2, ipv = ii[-2:]
+
+    else:
+        ipv2, ipv = 0, 1
 
     if options.grid_vector1 is None:
         options.grid_vector1 = [0, 0, 0]

@@ -61,11 +61,11 @@ custom = {
     'acoustics/acoustics3d.py': {
         '_p_1': {
             'camera': [75, 135, 1.4],
-            'position_vector': [1.2, 0, 0],
+            'grid_vector1': [1.2, 0, 0],
         },
         '_p_2': {
             'camera': [75, 135, 1],
-            'position_vector': [1.2, 0, 0],
+            'grid_vector1': [1.2, 0, 0],
         },
     },
     'diffusion/cube.py': {
@@ -135,14 +135,14 @@ custom = {
             'fields': ['u_disp:wu_disp:p0', '1:vw:p0',
                        'u_rot:p1', '1:vw:p1'],
             'camera': [-45, 75, 1],
-            'position_vector': [1, 0, 0],
+            'grid_vector1': [1, 0, 0],
         },
     },
     'navier_stokes/stokes_slip_bc.py': {
         '': {
             'fields': ['u:g:f.25:p0', 'u:o.4:p0', 'p:p1'],
             'camera': [-45, 55, 1],
-            'position_vector': [0, 1.2, 0]
+            'grid_vector1': [0, 1.2, 0]
         },
     },
     'multi_physics/thermo_elasticity_ess.py': {
@@ -155,20 +155,30 @@ custom = {
         '': {'camera': [225, 75, 0.9]}
     },
     'multi_physics/piezo_elasticity.py': {
-        '': {'fields': ['u:p0', 'cauchy_strain:p1',
-             'elastic_stress:p2', 'piezo_stress:p3']},
+        '': {'fields': ['u:g:p0', 'cauchy_strain:p1',
+                        'elastic_stress:p2', 'piezo_stress:p3'],
+             'grid_vector1': [1.2, 0, 0],
+             'max_plots': 4},
     },
     'quantum/boron.py': {
-        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
+        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3'],
+             'grid_vector1': [1.2, 0, 0],
+             'max_plots': 4},
     },
     'quantum/hydrogen.py': {
-        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
+        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3'],
+             'grid_vector1': [1.2, 0, 0],
+             'max_plots': 4},
     },
     'quantum/oscillator.py': {
-        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
+        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3'],
+             'grid_vector1': [1.2, 0, 0],
+             'max_plots': 4},
     },
     'quantum/well.py': {
-        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3']},
+        '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3'],
+             'grid_vector1': [1.2, 0, 0],
+             'max_plots': 4},
     },
 }
 
@@ -288,6 +298,7 @@ def generate_images(images_dir, examples_dir):
     view_options = Struct(step=0,
                           fields=[], fields_map=[],
                           outline=False,
+                          isosurfaces=0,
                           show_edges=False,
                           warp=None,
                           factor=1.,
@@ -295,7 +306,9 @@ def generate_images(images_dir, examples_dir):
                           color_map='viridis',
                           axes_options=[],
                           axes_visibility=False,
-                          position_vector=None,
+                          grid_vector1=None,
+                          grid_vector2=None,
+                          max_plots=3,
                           show_labels=False,
                           label_position=[-1, -1, 0, 0.2],
                           scalar_bar_size=[0.15, 0.06],
@@ -346,12 +359,16 @@ def generate_images(images_dir, examples_dir):
                     suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
 
             filename = problem.get_output_name(suffix=suffix)
+            dim = problem.get_dim()
             for suffix, kwargs in six.iteritems(views):
-                if problem.get_dim() == 2 and not kwargs.force_view_3d:
+                if dim in (1, 2) and not kwargs.force_view_3d:
                     kwargs.view_2d = True
                     kwargs.scalar_bar_position = [0.04, 0.92, 1.7, 0]
-                    if kwargs.position_vector is None:
-                        kwargs.position_vector = [1.2, 0, 0]
+                    if kwargs.grid_vector1 is None:
+                        kwargs.grid_vector1 = [1.2, 0, 0]
+
+                    if kwargs.grid_vector2 is None:
+                        kwargs.grid_vector2 = [0, -1.2, 0]
 
                 fig_filename = _get_fig_filename(ebase, images_dir, suffix)
 
