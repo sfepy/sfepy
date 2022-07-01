@@ -355,19 +355,26 @@ class EquationMap(Struct):
             if not is_active_bc(bc, ts=ts, functions=functions):
                 continue
 
-            active_bcs.add(bc.key)
             if isinstance(bc, DGEssentialBC):
                 ntype = "DGEBC"
                 region = bc.region
+                sig = (bc.key, bc.name, tuple(bc.dofs[0]), bc.region.name)
             elif isinstance(bc, DGPeriodicBC):
                 ntype = "DGEPBC"
                 region = bc.regions[0]
+                sig = (bc.key, bc.name, tuple(bc.dofs[0]), tuple(bc.dofs[1]),
+                       bc.regions[0].name, bc.regions[1].name)
             elif isinstance(bc, EssentialBC):
                 ntype = 'EBC'
                 region = bc.region
+                sig = (bc.key, bc.name, tuple(bc.dofs[0]), bc.region.name)
             elif isinstance(bc, PeriodicBC):
                 ntype = 'EPBC'
                 region = bc.regions[0]
+                sig = (bc.key, bc.name, tuple(bc.dofs[0]), tuple(bc.dofs[1]),
+                       bc.regions[0].name, bc.regions[1].name)
+
+            active_bcs.add(sig)
 
             if warn:
                 clean_msg = ('warning: ignoring nonexistent %s node (%s) in '
