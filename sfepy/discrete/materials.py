@@ -103,6 +103,12 @@ class Material(Struct):
         another dictionary mapping region names to constant values (see
         :py:class:`sfepy.discrete.functions.ConstantFunctionByRegion`).
 
+        Special material parameters, that are not evaluated in quadrature
+        points - for example flags or geometry independent data - are denoted
+        by parameter names starting with '.' - in this case the `values`
+        argument need to be used, or a function that returns the parameters
+        when ``mode == 'special'``.
+
         Parameters
         ----------
         name : str
@@ -147,11 +153,8 @@ class Material(Struct):
                     f'material {self.name}: "function" needs to be callable!'
                 )
             self.function = function
-        else: # => function is None
-            # TODO: neither the documentation nor the code clarifies what exactly is valid for "values"!
-            # :py:class:`ConstantFunctionByRegion` ignores parameters that start with a dot ('.'),
-            # but requires all other values to be dictionaries.
 
+        else: # => function is None
             assert_(all(isinstance(k, str) for k in values.keys()))
             isbyregion = list(
                 (not k.startswith('.')) and isinstance(v, dict)
