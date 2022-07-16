@@ -93,14 +93,15 @@ class Material(Struct):
     def __init__(self, name, kind='time-dependent',
                  function=None, values=None, flags=None, **kwargs):
         """
-        A material is defined either by a function, or by a set of constant values,
-        potentially distinct per region. Therefore, either `function` must be specified,
-        or a combination of `values` and `**kwargs`.
+        A material is defined either by a function, or by a set of constant
+        values, potentially distinct per region. Therefore, either `function`
+        must be specified, or a combination of `values` and `**kwargs`.
 
-        For constant materials, `**kwargs` are simply combined with `values` into a dictionary
-        mapping material parameter names to parameter values.
-        The parameter values may either be specified as a constant value, or as another dictionary
-        mapping region names to constant values (see :py:class:`sfepy.discrete.functions.ConstantRegionByValue`).
+        For constant materials, `**kwargs` are simply combined with `values`
+        into a dictionary mapping material parameter names to parameter values.
+        The parameter values may either be specified as a constant value, or as
+        another dictionary mapping region names to constant values (see
+        :py:class:`sfepy.discrete.functions.ConstantRegionByValue`).
 
         Parameters
         ----------
@@ -127,18 +128,24 @@ class Material(Struct):
                 values.update(kwargs)
 
         if (function is not None) and (values is not None):
-            msg = f'material can have function or values but not both! ({self.name})'
-            raise ValueError(msg)
+            raise ValueError(
+                f'material {self.name}: use either "function" or "values"'
+                ' arguments but not both!'
+            )
 
         if (function is None) and (values is None):
-            raise ValueError(f'material {self.name}: neither "function" nor "values"'
-                             ' arguments (or keyword arguments) given!')
+            raise ValueError(
+                f'material {self.name}: neither "function" nor "values"'
+                ' arguments (or keyword arguments) given!'
+            )
 
         self.flags = get_default(flags, {})
 
         if function is not None:
             if not hasattr(function, '__call__'):
-                raise TypeError(f'material {self.name}: "function" needs to be callable!')
+                raise TypeError(
+                    f'material {self.name}: "function" needs to be callable!'
+                )
             self.function = function
         else: # => function is None
             # TODO: neither the documentation nor the code clarifies what exactly is valid for "values"!
@@ -160,8 +167,10 @@ class Material(Struct):
                 self.is_constant = True
 
             else:
-                raise ValueError(f'material {self.name}: Either all parameter values need to '
-                                 'be specified by region, or none at all.')
+                raise ValueError(
+                    f'material {self.name}: Either all parameter values need to '
+                    'be specified by region, or none at all.'
+                )
 
         self.reset()
 
