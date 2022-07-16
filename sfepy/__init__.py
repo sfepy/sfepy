@@ -20,7 +20,7 @@ def test(*args):
     """
     Run all the package tests.
 
-    Equivalent to running ``pytest tests/`` in the base directory of
+    Equivalent to running ``pytest sfepy/tests/`` in the base directory of
     SfePy. Allows an installed version of SfePy to be tested.
 
     To test an installed version of SfePy use
