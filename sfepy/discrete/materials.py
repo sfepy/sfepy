@@ -101,7 +101,7 @@ class Material(Struct):
         into a dictionary mapping material parameter names to parameter values.
         The parameter values may either be specified as a constant value, or as
         another dictionary mapping region names to constant values (see
-        :py:class:`sfepy.discrete.functions.ConstantRegionByValue`).
+        :py:class:`sfepy.discrete.functions.ConstantFunctionByRegion`).
 
         Parameters
         ----------
