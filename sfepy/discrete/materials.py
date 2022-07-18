@@ -93,6 +93,22 @@ class Material(Struct):
     def __init__(self, name, kind='time-dependent',
                  function=None, values=None, flags=None, **kwargs):
         """
+        A material is defined either by a function, or by a set of constant
+        values, potentially distinct per region. Therefore, either `function`
+        must be specified, or a combination of `values` and `**kwargs`.
+
+        For constant materials, `**kwargs` are simply combined with `values`
+        into a dictionary mapping material parameter names to parameter values.
+        The parameter values may either be specified as a constant value, or as
+        another dictionary mapping region names to constant values (see
+        :py:class:`sfepy.discrete.functions.ConstantFunctionByRegion`).
+
+        Special material parameters, that are not evaluated in quadrature
+        points - for example flags or geometry independent data - are denoted
+        by parameter names starting with '.' - in this case the `values`
+        argument need to be used, or a function that returns the parameters
+        when ``mode == 'special'``.
+
         Parameters
         ----------
         name : str
@@ -110,42 +126,54 @@ class Material(Struct):
         """
         Struct.__init__(self, name=name, kind=kind, is_constant=False)
 
-        if (function is not None) and ((values is not None) or len(kwargs)):
-            msg = 'material can have function or values but not both! (%s)' \
-                  % self.name
-            raise ValueError(msg)
+        if kwargs:
+            if values is None:
+                values = kwargs
+            else:
+                values = dict(values)
+                values.update(kwargs)
+
+        if (function is not None) and (values is not None):
+            raise ValueError(
+                f'material {self.name}: use either "function" or "values"'
+                ' arguments but not both!'
+            )
+
+        if (function is None) and (values is None):
+            raise ValueError(
+                f'material {self.name}: neither "function" nor "values"'
+                ' arguments (or keyword arguments) given!'
+            )
 
         self.flags = get_default(flags, {})
 
-        if hasattr(function, '__call__'):
+        if function is not None:
+            if not hasattr(function, '__call__'):
+                raise TypeError(
+                    f'material {self.name}: "function" needs to be callable!'
+                )
             self.function = function
 
-        elif (values is not None) or len(kwargs): # => function is None
-            if isinstance(values, dict):
-                key0 = list(values.keys())[0]
-                assert_(isinstance(key0, str))
+        else: # => function is None
+            assert_(all(isinstance(k, str) for k in values.keys()))
+            isbyregion = list(
+                (not k.startswith('.')) and isinstance(v, dict)
+                for k,v in values.items()
+            )
 
-            else:
-                key0 = None
-
-            if (key0 and (not key0.startswith('.'))
-                and isinstance(values[key0], dict)):
+            if all(isbyregion):
                 self.function = ConstantFunctionByRegion(values)
                 self.is_constant = True
 
-            else:
-                all_values = {}
-                if values is not None:
-                    all_values.update(values)
-                all_values.update(kwargs)
-
-                self.function = ConstantFunction(all_values, no_tile=True)
+            elif not any(isbyregion):
+                self.function = ConstantFunction(values, no_tile=True)
                 self.is_constant = True
 
-        else: # => both values and function are None
-            raise ValueError('material %s: neither "function" nor "values"'
-                             ' arguments (or keyword arguments) given!'
-                             % self.name)
+            else:
+                raise ValueError(
+                    f'material {self.name}: Either all parameter values need to '
+                    'be specified by region, or none at all.'
+                )
 
         self.reset()
 
