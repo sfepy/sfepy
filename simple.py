@@ -15,7 +15,7 @@ from __future__ import absolute_import
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import sfepy
-from sfepy.base.base import output
+from sfepy.base.base import output, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.applications import PDESolverApp, EVPSolverApp
 
@@ -35,11 +35,14 @@ helps = {
     'override application kind, normally determined automatically.'
     ' The supported kinds are:'
     ' bvp (boundary value problem),'
-    ' evp (eigenvalue problem),'
     ' homogen (correctors, homogenized coefficients),'
+    ' bvp-mM (micro-macro boundary value problem,'
+    '         homogenized coefficients computed in parallel using MPI),'
+    ' evp (eigenvalue problem),'
     ' phonon (phononic band gaps)',
     'debug':
     'automatically start debugger when an exception is raised',
+    'debug_mpi': 'log MPI communication (mM mode only)',
     'conf' :
     'override problem description file items, written as python'
     ' dictionary without surrounding braces',
@@ -94,11 +97,14 @@ def main():
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + sfepy.__version__)
     parser.add_argument('-a', '--app', action='store', dest='app',
-                        choices=['bvp', 'evp', 'homogen', 'phonon'],
+                        choices=['bvp', 'homogen', 'bvp-mM', 'evp', 'phonon'],
                         default=None, help= helps['app'])
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
                         default=False, help=helps['debug'])
+    parser.add_argument('--debug-mpi',
+                        action='store_true', dest='debug_mpi',
+                        default=False, help=helps['debug_mpi'])
     parser.add_argument('-c', '--conf', metavar='"key : value, ..."',
                         action='store', dest='conf', type=str,
                         default=None, help= helps['conf'])
@@ -221,15 +227,62 @@ def main():
         output_prefix = opts.get('output_prefix', 'sfepy:')
         app = PDESolverApp(conf, options, output_prefix)
 
-    elif app_mode == 'evp':
-        output_prefix = opts.get('output_prefix', 'sfepy:')
-        app = EVPSolverApp(conf, options, output_prefix)
-
     elif app_mode == 'homogen':
         from sfepy.homogenization.homogen_app import HomogenizationApp
 
         output_prefix = opts.get('output_prefix', 'homogen:')
         app = HomogenizationApp(conf, options, output_prefix)
+
+    elif app_mode == 'bvp-mM':
+        import sfepy.base.multiproc_mpi as multi_mpi
+
+        if options.debug_mpi:
+            multi_mpi.set_logging_level('debug')
+
+        if multi_mpi.mpi_rank == multi_mpi.mpi_master:
+            nslaves = multi_mpi.cpu_count() - 1
+            opts.n_mpi_homog_slaves = nslaves
+            output_prefix = opts.get('output_prefix', 'sfepy:')
+
+            app = PDESolverApp(conf, options, output_prefix)
+            if hasattr(opts, 'parametric_hook'):  # Parametric study.
+                parametric_hook = conf.get_function(opts.parametric_hook)
+                app.parametrize(parametric_hook)
+            app()
+
+            multi_mpi.master_send_task('finalize', None)
+            return
+
+        else:
+            # MPI slave mode - calculate homogenized coefficients
+            homogen_app = None
+            done = False
+            rank = multi_mpi.mpi_rank
+            while not done:
+                task, data = multi_mpi.slave_get_task('main slave loop')
+
+                if task == 'init':  # data: micro_file, n_micro
+                    output.set_output(filename='homog_app_mpi_%d.log' % rank,
+                                      quiet=True)
+                    micro_file, n_micro = data[:2]
+                    required, other = get_standard_keywords()
+                    required.remove('equations')
+                    conf = ProblemConf.from_file(micro_file, required, other,
+                                                 verbose=False)
+                    options = Struct(output_filename_trunk=None)
+                    homogen_app = HomogenizationApp(conf, options, 'micro:',
+                                                    n_micro=n_micro)
+                elif task == 'calculate':  # data: rel_def_grad, ts, iteration
+                    macro_data, ts, iteration = data[:3]
+                    homogen_app.setup_macro_data(macro_data)
+                    homogen_app(ret_all=True, itime=ts.step, iiter=iteration)
+                elif task == 'finalize':
+                    done = True
+            return
+
+    elif app_mode == 'evp':
+        output_prefix = opts.get('output_prefix', 'sfepy:')
+        app = EVPSolverApp(conf, options, output_prefix)
 
     elif app_mode == 'phonon':
         from sfepy.homogenization.band_gaps_app import AcousticBandGapsApp
