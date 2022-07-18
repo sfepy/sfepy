@@ -410,7 +410,7 @@ def slave_task_done(task=''):
 
 def get_slaves():
     """Get the list of slave nodes"""
-    slaves = range(mpi_comm.Get_size())
+    slaves = list(range(mpi_comm.Get_size()))
     slaves.remove(mpi_master)
     return slaves
 

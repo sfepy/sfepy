@@ -1,7 +1,15 @@
+"""
+Homogenized nonlinear hyperelastic material with evolving microstructure
+deformation in each macroscopic quadrature point.
+
+Run in parallel using::
+
+  mpiexec -n 4 python3 simple.py --app=bvp-mM --debug-mpi sfepy/examples/homogenization/nonlinear_hyperelastic_mM.py
+"""
 import numpy as nm
 import six
 
-from sfepy import data_dir
+from sfepy import data_dir, base_dir
 from sfepy.base.base import Struct, output
 from sfepy.terms.terms_hyperelastic_ul import HyperElasticULFamilyData
 from sfepy.homogenization.micmac import get_homog_coefs_nonlinear
@@ -133,7 +141,8 @@ options = {
     'mesh_update_variables': ['u'],
     'nls_iter_hook': ulf_iteration_hook,
     'pre_process_hook': ulf_init,
-    'micro_filename': 'examples/homogenization/nonlinear_homogenization.py',
+    'micro_filename': (base_dir +
+                       '/examples/homogenization/nonlinear_homogenization.py'),
     'recover_micro': True,
     'recovery_region': 'Recovery',
     'post_process_hook': post_process,

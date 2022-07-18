@@ -89,12 +89,9 @@ def def_mat(ts, mode, coors, term, pb):
     solid_mat = conf_mat[solid_key].values
     mat = {}
     for mat_key in ['mu', 'K']:
-        if isinstance(solid_mat[mat_key], dict):
-            mat_fun = ConstantFunctionByRegion({mat_key: solid_mat[mat_key]})
-            mat[mat_key] = mat_fun.function(ts=ts, coors=coors, mode='qp',
-                term=term, problem=pb)[mat_key].reshape((n_el, n_qp, 1, 1))
-    else:
-        mat[mat_key] = nm.ones((n_el, n_qp, 1, 1)) * solid_mat[mat_key]
+        mat_fun = ConstantFunctionByRegion({mat_key: solid_mat[mat_key]})
+        mat[mat_key] = mat_fun.function(ts=ts, coors=coors, mode='qp',
+            term=term, problem=pb)[mat_key].reshape((n_el, n_qp, 1, 1))
 
     shape = family_data.green_strain.shape[:2]
     sym = family_data.green_strain.shape[-2]
@@ -162,7 +159,7 @@ functions = {
 
 materials = {
     'mat_he': 'mat_fce',
-    'solid': ({'K': 1000,
+    'solid': ({'K': {'Ym': 1000, 'Yc': 1000},
                'mu': {'Ym': 100, 'Yc': 10},
                },),
 }
