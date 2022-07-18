@@ -1,3 +1,11 @@
+"""
+Homogenized nonlinear hyperelastic material with evolving microstructure
+deformation in each macroscopic quadrature point.
+
+Run in parallel using::
+
+  mpiexec -n 4 python3 simple.py --app=bvp-mM --debug-mpi sfepy/examples/homogenization/nonlinear_hyperelastic_mM.py
+"""
 import numpy as nm
 import six
 
