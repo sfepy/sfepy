@@ -6,6 +6,33 @@ Solve partial differential equations given in a SfePy problem definition file.
 Example problem definition files can be found in ``sfepy/examples/`` directory
 of the SfePy top-level directory.
 
+The supported application kinds (--app option) are:
+
+- bvp - boundary value problem. Example::
+
+    python3 simple.py sfepy/examples/diffusion/poisson.py
+
+- homogen - calculation of local microscopic problems (correctors) and
+  homogenized coefficients. Example::
+
+    python3 simple.py sfepy/examples/homogenization/perfusion_micro.py
+
+- bvp-mM - micro-macro boundary value problem. Solve a coupled two-scale
+  problem in parallel using MPI. One computational node is solving a
+  macroscopic equation while the others are solving local microscopic problems
+  and homogenized coefficients. The --app option is required in this case.
+  Example::
+
+    mpiexec -n 4 python3 simple.py --app=bvp-mM --debug-mpi sfepy/examples/homogenization/nonlinear_hyperelastic_mM.py
+
+- evp - eigenvalue problem. Example::
+
+    python3 simple.py sfepy/examples/quantum/well.py
+
+- phonon - phononic band gaps. Example::
+
+    python3 simple.py sfepy/examples/phononic/band_gaps.py --phonon-plot
+
 Both normal and parametric study runs are supported. A parametric study allows
 repeated runs for varying some of the simulation parameters - see
 ``sfepy/examples/diffusion/poisson_parametric_study.py`` file.
