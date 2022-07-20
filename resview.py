@@ -221,14 +221,14 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
 
             io = MeshIO.any_from_filename(fname)
 
-            mesh = io.read()
+            smesh = io.read()
             steps, times, nts = io.read_times()
             if not len(steps):
-                grid0 = make_grid_from_mesh(mesh, add_mat_id=True)
+                grid0 = make_grid_from_mesh(smesh, add_mat_id=True)
                 cache[(fname, 0)] = grid0
 
             else:
-                grid0 = make_grid_from_mesh(mesh, add_mat_id=False)
+                grid0 = make_grid_from_mesh(smesh, add_mat_id=False)
 
             for ii, _step in enumerate(steps):
                 grid = grid0.copy()
@@ -264,10 +264,10 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
             from sfepy.discrete.fem import Mesh
 
             io = MeshIO.any_from_filename(fname)
-            mesh = Mesh(fname)
-            mesh = io.read(mesh)
+            smesh = Mesh(fname)
+            smesh = io.read(smesh)
 
-            grid = make_grid_from_mesh(mesh, add_mat_id=True)
+            grid = make_grid_from_mesh(smesh, add_mat_id=True)
             cache[(fname, 0)] = grid
             cache['n_steps'] = len(filenames)
 
