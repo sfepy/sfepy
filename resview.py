@@ -129,6 +129,24 @@ def add_mat_id_to_grid(grid, cell_groups):
     return grid
 
 
+vtk_cell_types = {'1_1': 1, '1_2': 3, '2_2': 3, '3_2': 3,
+                  '2_3': 5, '2_4': 9, '3_4': 10, '3_8': 12}
+
+def make_grid_from_mesh(mesh, add_mat_id=False):
+    desc = mesh.descs[0]
+    nv, dim = mesh.coors.shape
+
+    points = nm.c_[mesh.coors, nm.zeros((nv, 3 - dim))]
+    cells, cell_type, offset = make_cells_from_conn(
+        {desc: mesh.get_conn(desc)}, vtk_cell_types,
+    )
+
+    grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+    if add_mat_id:
+        add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
+
+    return grid
+
 def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
               use_cache=True):
     _, ext = osp.splitext(filenames[0])
@@ -195,8 +213,6 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
         mesh = cache[key]
 
     elif ext in ['.h5', '.h5x']:
-        vtk_cell_types = {'1_1': 1, '1_2': 3, '2_2': 3, '3_2': 3,
-                          '2_3': 5, '2_4': 9, '3_4': 10, '3_8': 12}
         # Custom sfepy format.
         fname = filenames[0]
         key = (fname, step)
@@ -206,22 +222,16 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
             io = MeshIO.any_from_filename(fname)
 
             mesh = io.read()
-            desc = mesh.descs[0]
-            nv, dim = mesh.coors.shape
-
-            points = nm.c_[mesh.coors, nm.zeros((nv, 3 - dim))]
-            cells, cell_type, offset = make_cells_from_conn(
-                {desc: mesh.get_conn(desc)}, vtk_cell_types,
-            )
-
             steps, times, nts = io.read_times()
             if not len(steps):
-                grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
-                add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
-                cache[(fname, 0)] = grid
+                grid0 = make_grid_from_mesh(mesh, add_mat_id=True)
+                cache[(fname, 0)] = grid0
+
+            else:
+                grid0 = make_grid_from_mesh(mesh, add_mat_id=False)
 
             for ii, _step in enumerate(steps):
-                grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+                grid = grid0.copy()
                 datas = io.read_data(_step)
                 for dk, data in datas.items():
                     vval = data.data
