@@ -257,7 +257,21 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
         mesh = cache[key]
 
     else:
-        raise ValueError('unknown file format! (%s)' % ext)
+        fname = filenames[0]
+        key = (fname, step)
+        if key not in cache:
+            from sfepy.discrete.fem.meshio import MeshIO
+            from sfepy.discrete.fem import Mesh
+
+            io = MeshIO.any_from_filename(fname)
+            mesh = Mesh(fname)
+            mesh = io.read(mesh)
+
+            grid = make_grid_from_mesh(mesh, add_mat_id=True)
+            cache[(fname, 0)] = grid
+            cache['n_steps'] = len(filenames)
+
+        mesh = cache[key]
 
     if print_info:
         arrs = {'s': [], 'v': [], 'o': []}
