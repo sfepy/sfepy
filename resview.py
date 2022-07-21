@@ -603,8 +603,8 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
 def print_camera_position(plotter):
     cp = nm.array([k for k in plotter.camera_position]).ravel()
-    cp = ', '.join(['%g' % k for k in cp])
-    print(f'--camera-position "{cp}"')
+    cp = ','.join(['%g' % k for k in cp])
+    print(f'--camera-position="{cp}"')
 
 
 class OptsToListAction(Action):
