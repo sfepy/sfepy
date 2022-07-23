@@ -63,7 +63,6 @@ def configuration(parent_package='', top_path=None):
 
     aux_scripts = [
         'blockgen.py',
-        'convert_mesh.py',
         'cylindergen.py',
         'dg_plot_1D.py',
         'edit_identifiers.py',
@@ -225,6 +224,11 @@ def setup_package():
               classifiers=list(filter(None, CLASSIFIERS.split('\n'))),
               platforms=["Linux", "Mac OS-X", 'Windows'],
               scripts=['sfepy-run'],
+              entry_points={
+                  'console_scripts': [
+                      'sfepy-convert=sfepy.scripts.convert_mesh:main',
+                  ],
+              },
               cmdclass=cmdclass,
               configuration=configuration)
 
