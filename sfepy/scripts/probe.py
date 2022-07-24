@@ -3,9 +3,12 @@
 """
 Probe finite element solutions in points defined by various geometrical probes.
 
+In the examples below it is supposed that sfepy is installed. When using the
+in-place build, replace ``sfepy-probe`` by ``python3 sfepy/scripts/probe.py``.
+
 Generation mode
 ---------------
-python probe.py [generation options] <input file> <results file>
+sfepy-probe [generation options] <input file> <results file>
 
 Probe the data in the results file corresponding to the problem defined in the
 input file. The input file options must contain 'gen_probes' and 'probe_hook'
@@ -20,7 +23,7 @@ Generation options
 
 Postprocessing mode
 -------------------
-python probe.py [postprocessing options] <probe file> <figure file>
+sfepy-probe [postprocessing options] <probe file> <figure file>
 
 Read a previously probed data from the probe text file, re-plot them,
 and integrate them along the probe.
