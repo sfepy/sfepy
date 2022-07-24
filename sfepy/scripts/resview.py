@@ -4,6 +4,9 @@
 This is a script for quick VTK-based visualizations of finite element
 computations results.
 
+In the examples below it is supposed that sfepy is installed. When using the
+in-place build, replace ``sfepy-view`` by ``python3 sfepy/scripts/resview.py``.
+
 Examples
 --------
 The examples assume that
@@ -12,35 +15,35 @@ has been run successfully and the resulting data files are present.
 
 - View data in output-tests/test_navier_stokes.vtk::
 
-  $ python resview.py output-tests/navier_stokes-navier_stokes.vtk
+    sfepy-view output-tests/navier_stokes-navier_stokes.vtk
 
 - Customize the above output:
   plot0: field "p", switch on edges,
-  plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2.
+  plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2::
 
-  $ python resview.py output-tests/navier_stokes-navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
+    sfepy-view output-tests/navier_stokes-navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
 
 - As above, but glyphs are scaled by the factor determined automatically as
-  20% of the minimum bounding box size.
+  20% of the minimum bounding box size::
 
-  $ python resview.py output-tests/navier_stokes-navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f10%:p1
+    sfepy-view output-tests/navier_stokes-navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f10%:p1
 
-- View data and take a screenshot.
+- View data and take a screenshot::
 
-  $ python resview.py output-tests/diffusion-poisson.vtk -o image.png
+    sfepy-view output-tests/diffusion-poisson.vtk -o image.png
 
-- Take a screenshot without a window popping up.
+- Take a screenshot without a window popping up::
 
-  $ python resview.py output-tests/diffusion-poisson.vtk -o image.png --off-screen
+    sfepy-view output-tests/diffusion-poisson.vtk -o image.png --off-screen
 
-- Create animation from output-tests/diffusion-time_poisson.*.vtk.
+- Create animation from output-tests/diffusion-time_poisson.*.vtk::
 
-  $ python resview.py output-tests/diffusion-time_poisson.*.vtk -a mov.mp4
+    sfepy-view output-tests/diffusion-time_poisson.*.vtk -a mov.mp4
 
 - Create animation from output-tests/test_hyperelastic.*.vtk,
-  set frame rate to 3, plot displacements and mooney_rivlin_stress.
+  set frame rate to 3, plot displacements and mooney_rivlin_stress::
 
-  $ python resview.py output-tests/test_hyperelastic_TL.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
+    sfepy-view output-tests/test_hyperelastic_TL.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
 """
 from argparse import ArgumentParser, Action, RawDescriptionHelpFormatter
 from ast import literal_eval
