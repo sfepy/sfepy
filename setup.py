@@ -55,7 +55,6 @@ def configuration(parent_package='', top_path=None):
     main_scripts = [
         'extractor.py',
         'homogen.py',
-        'resview.py',
         'test_install.py',
     ]
 
@@ -226,6 +225,7 @@ def setup_package():
                       'sfepy-convert=sfepy.scripts.convert_mesh:main',
                       'sfepy-probe=sfepy.scripts.probe:main',
                       'sfepy-run=sfepy.scripts.simple:main',
+                      'sfepy-view=sfepy.scripts.resview:main',
                   ],
               },
               cmdclass=cmdclass,
