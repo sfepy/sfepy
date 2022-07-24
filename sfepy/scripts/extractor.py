@@ -11,10 +11,12 @@ linearization forces --dump option, i.e., output to VTK files.
 Examples
 --------
 
-$ ./extractor.py -e "p e 0 1999" bone.h5
-$ ./extractor.py -e "p e 0 1999" bone.h5 -a
-$ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5
-$ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
+Extract variables according to an extraction list::
+
+  python3 sfepy/scripts/extractor.py -e "p e 0 1999" bone.h5
+  python3 sfepy/scripts/extractor.py -e "p e 0 1999" bone.h5 -a
+  python3 sfepy/scripts/extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5
+  python3 sfepy/scripts/extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
 """
 from __future__ import print_function
 from __future__ import absolute_import
@@ -122,7 +124,7 @@ def main():
 
     filename_in = options.input_file
     filename_results = options.results_file
-    
+
     if filename_in is None:
         linearize = False
     else:
