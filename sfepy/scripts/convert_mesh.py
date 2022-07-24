@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 """
 Convert a mesh file from one SfePy-supported format to another.
-
-Examples::
-
-  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk
-  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s2.5
-  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1
-  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1 -c 0
-  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.mesh --remesh='q2/0 a1e-8 O9/7 V'
-  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new2.mesh --remesh='rq2/0 a1e-8 O9/7 V'
 """
 from __future__ import absolute_import
 import sys
@@ -53,7 +44,7 @@ helps = {
       tetrahedra. 4. O[<0-9>/<0-7>] - the two numbers correspond to a mesh
       optimization level and a choice of optimizing operations. 5. "V"
       (optional) - if present, mesh statistics are printed. Consult the tetgen
-      documentation for details.""",
+      documentation for details. Examples: --remesh='rq2/0 a1e-8 O9/7 V'""",
 }
 
 def _parse_val_or_vec(option, name, parser):
