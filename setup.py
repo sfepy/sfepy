@@ -57,7 +57,6 @@ def configuration(parent_package='', top_path=None):
         'homogen.py',
         'resview.py',
         'probe.py',
-        'simple.py',
         'test_install.py',
     ]
 
@@ -223,10 +222,10 @@ def setup_package():
               license='BSD',
               classifiers=list(filter(None, CLASSIFIERS.split('\n'))),
               platforms=["Linux", "Mac OS-X", 'Windows'],
-              scripts=['sfepy-run'],
               entry_points={
                   'console_scripts': [
                       'sfepy-convert=sfepy.scripts.convert_mesh:main',
+                      'sfepy-run=sfepy.scripts.simple:main',
                   ],
               },
               cmdclass=cmdclass,
