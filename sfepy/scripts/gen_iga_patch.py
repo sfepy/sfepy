@@ -43,43 +43,7 @@ helps = {
     'label control and Bezier mesh points in figures',
 }
 
-def main():
-    parser = ArgumentParser(description=__doc__,
-                            formatter_class=RawDescriptionHelpFormatter)
-    parser.add_argument('--version', action='version', version='%(prog)s')
-    parser.add_argument('-o', metavar='filename',
-                        action='store', dest='filename',
-                        default=None, help=helps['filename'])
-    parser.add_argument('-d', '--dims', metavar='dims',
-                        action='store', dest='dims',
-                        default='[1.0, 1.0, 1.0]', help=helps['dims'])
-    parser.add_argument('-c', '--centre', metavar='centre',
-                        action='store', dest='centre',
-                        default='[0.0, 0.0, 0.0]', help=helps['centre'])
-    parser.add_argument('-s', '--shape', metavar='shape',
-                        action='store', dest='shape',
-                        default='[5, 5, 5]', help=helps['shape'])
-    parser.add_argument('--degrees', metavar='degrees',
-                        action='store', dest='degrees',
-                        default='[2, 2, 2]', help=helps['degrees'])
-    parser.add_argument('--continuity', metavar='continuity',
-                        action='store', dest='continuity',
-                        default=None, help=helps['continuity'])
-    parser.add_argument('--cp-mode', metavar="'greville' or 'uniform'",
-                        action='store', dest='cp_mode',
-                        choices=['greville', 'uniform'],
-                        default='greville', help=helps['cp_mode'])
-    parser.add_argument('-2', '--2d',
-                        action='store_true', dest='is_2d',
-                        default=False, help=helps['2d'])
-    parser.add_argument('-p', '--plot',
-                        action='store_true', dest='plot',
-                        default=False, help=helps['plot'])
-    parser.add_argument('-l', '--label',
-                        action='store_true', dest='label',
-                        default=False, help=helps['label'])
-    options = parser.parse_args()
-
+def gen_iga_patch(options):
     dim = 2 if options.is_2d else 3
 
     filename = options.filename
@@ -158,6 +122,48 @@ def main():
         ax.set_title('1D NURBS basis')
 
         pn.plt.show()
+
+def add_args(parser):
+    parser.add_argument('-o', metavar='filename',
+                        action='store', dest='filename',
+                        default=None, help=helps['filename'])
+    parser.add_argument('-d', '--dims', metavar='dims',
+                        action='store', dest='dims',
+                        default='[1.0, 1.0, 1.0]', help=helps['dims'])
+    parser.add_argument('-c', '--centre', metavar='centre',
+                        action='store', dest='centre',
+                        default='[0.0, 0.0, 0.0]', help=helps['centre'])
+    parser.add_argument('-s', '--shape', metavar='shape',
+                        action='store', dest='shape',
+                        default='[5, 5, 5]', help=helps['shape'])
+    parser.add_argument('--degrees', metavar='degrees',
+                        action='store', dest='degrees',
+                        default='[2, 2, 2]', help=helps['degrees'])
+    parser.add_argument('--continuity', metavar='continuity',
+                        action='store', dest='continuity',
+                        default=None, help=helps['continuity'])
+    parser.add_argument('--cp-mode', metavar="'greville' or 'uniform'",
+                        action='store', dest='cp_mode',
+                        choices=['greville', 'uniform'],
+                        default='greville', help=helps['cp_mode'])
+    parser.add_argument('-2', '--2d',
+                        action='store_true', dest='is_2d',
+                        default=False, help=helps['2d'])
+    parser.add_argument('-p', '--plot',
+                        action='store_true', dest='plot',
+                        default=False, help=helps['plot'])
+    parser.add_argument('-l', '--label',
+                        action='store_true', dest='label',
+                        default=False, help=helps['label'])
+
+def main():
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    add_args(parser)
+
+    options = parser.parse_args()
+    gen_iga_patch(options)
 
 if __name__ == '__main__':
     main()
