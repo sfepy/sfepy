@@ -28,29 +28,7 @@ helps = {
     ' options are ignored',
 }
 
-def main():
-    parser = ArgumentParser(description=__doc__)
-    parser.add_argument('--version', action='version', version='%(prog)s')
-    parser.add_argument('-o', metavar='filename',
-                        action='store', dest='output_filename',
-                        default='out.vtk', help=helps['filename'])
-    parser.add_argument('-f', '--format', metavar='format',
-                        action='store', type=str, dest='format',
-                        default=None, help=helps['format'])
-    parser.add_argument('-d', '--dims', metavar='dims',
-                        action='store', dest='dims',
-                        default='[1.0, 1.0, 1.0]', help=helps['dims'])
-    parser.add_argument('-s', '--shape', metavar='shape',
-                        action='store', dest='shape',
-                        default='[11, 11, 11]', help=helps['shape'])
-    parser.add_argument('-c', '--centre', metavar='centre',
-                        action='store', dest='centre',
-                        default='[0.0, 0.0, 0.0]', help=helps['centre'])
-    parser.add_argument('-2', '--2d',
-                        action='store_true', dest='is_2d',
-                        default=False, help=helps['2d'])
-    options = parser.parse_args()
-
+def gen_block(options):
     dim = 2 if options.is_2d else 3
 
     dims = nm.array(eval(options.dims), dtype=nm.float64)[:dim]
@@ -72,6 +50,34 @@ def main():
                                   file_format=options.format, mode='w')
 
     mesh.write(options.output_filename, io=io)
+
+def add_args(parser):
+    parser.add_argument('-o', metavar='filename',
+                        action='store', dest='output_filename',
+                        default='out.vtk', help=helps['filename'])
+    parser.add_argument('-f', '--format', metavar='format',
+                        action='store', type=str, dest='format',
+                        default=None, help=helps['format'])
+    parser.add_argument('-d', '--dims', metavar='dims',
+                        action='store', dest='dims',
+                        default='[1.0, 1.0, 1.0]', help=helps['dims'])
+    parser.add_argument('-s', '--shape', metavar='shape',
+                        action='store', dest='shape',
+                        default='[11, 11, 11]', help=helps['shape'])
+    parser.add_argument('-c', '--centre', metavar='centre',
+                        action='store', dest='centre',
+                        default='[0.0, 0.0, 0.0]', help=helps['centre'])
+    parser.add_argument('-2', '--2d',
+                        action='store_true', dest='is_2d',
+                        default=False, help=helps['2d'])
+
+def main():
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    add_args(parser)
+
+    options = parser.parse_args()
+    gen_block(options)
 
 if __name__ == '__main__':
     main()
