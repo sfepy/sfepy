@@ -39,9 +39,34 @@ helps = {
     ' the outer surface thinner',
 }
 
-def main():
-    parser = ArgumentParser(description=__doc__)
-    parser.add_argument('--version', action='version', version = "%(prog)s")
+def gen_cylinder(options):
+    dims = nm.array(eval(options.dims), dtype=nm.float64)
+    shape = nm.array(eval(options.shape), dtype=nm.int32)
+    centre = nm.array(eval(options.centre), dtype=nm.float64)
+
+    output.prefix = 'cylindergen:'
+    output('dimensions:', dims)
+    output('shape:', shape)
+    output('centre:', centre)
+    output('output file:', options.output_filename)
+
+    check_format_suffix(options.format,
+                        op.splitext(options.output_filename)[1][1:])
+
+    mesh = gen_cylinder_mesh(dims, shape, centre,
+                             axis=options.axis,
+                             force_hollow=options.force_hollow,
+                             is_open=options.is_open,
+                             open_angle=options.open_angle,
+                             non_uniform=options.non_uniform,
+                             name=options.output_filename)
+
+    io = MeshIO.any_from_filename(options.output_filename,
+                                  file_format=options.format, mode='w')
+
+    mesh.write(options.output_filename, io=io)
+
+def add_args(parser):
     parser.add_argument('-o', metavar = 'filename',
                         action = "store", dest = "output_filename",
                         default = 'out.vtk', help = helps['filename'])
@@ -73,33 +98,14 @@ def main():
     parser.add_argument("--non-uniform",
                         action = "store_true", dest = "non_uniform",
                         default = False, help = helps['non_uniform'])
+
+def main():
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version = "%(prog)s")
+    add_args(parser)
+
     options = parser.parse_args()
-
-    dims = nm.array(eval(options.dims), dtype=nm.float64)
-    shape = nm.array(eval(options.shape), dtype=nm.int32)
-    centre = nm.array(eval(options.centre), dtype=nm.float64)
-
-    output.prefix = 'cylindergen:'
-    output('dimensions:', dims)
-    output('shape:', shape)
-    output('centre:', centre)
-    output('output file:', options.output_filename)
-
-    check_format_suffix(options.format,
-                        op.splitext(options.output_filename)[1][1:])
-
-    mesh = gen_cylinder_mesh(dims, shape, centre,
-                             axis=options.axis,
-                             force_hollow=options.force_hollow,
-                             is_open=options.is_open,
-                             open_angle=options.open_angle,
-                             non_uniform=options.non_uniform,
-                             name=options.output_filename)
-
-    io = MeshIO.any_from_filename(options.output_filename,
-                                  file_format=options.format, mode='w')
-
-    mesh.write(options.output_filename, io=io)
+    gen_cylinder(options)
 
 if __name__ == '__main__':
     main()
