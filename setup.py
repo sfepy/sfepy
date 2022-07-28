@@ -223,6 +223,7 @@ def setup_package():
               entry_points={
                   'console_scripts': [
                       'sfepy-convert=sfepy.scripts.convert_mesh:main',
+                      'sfepy-mesh=sfepy.scripts.gen_mesh:main',
                       'sfepy-probe=sfepy.scripts.probe:main',
                       'sfepy-run=sfepy.scripts.simple:main',
                       'sfepy-view=sfepy.scripts.resview:main',
