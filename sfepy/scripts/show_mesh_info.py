@@ -2,7 +2,6 @@
 """
 Print various information about a mesh.
 """
-from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
@@ -13,22 +12,7 @@ from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.common.extmods.cmesh import graph_components
 
-helps = {
-    'filename' :
-    'mesh file name',
-    'detailed' :
-    'show additional information (entity volume statistics)',
-}
-
-def main():
-    parser = ArgumentParser(description=__doc__.rstrip(),
-                            formatter_class=RawDescriptionHelpFormatter)
-    parser.add_argument('filename', help=helps['filename'])
-    parser.add_argument('-d', '--detailed',
-                        action='store_true', dest='detailed',
-                        default=False, help=helps['detailed'])
-    options = parser.parse_args()
-
+def show_mesh_info(options):
     mesh = Mesh.from_file(options.filename)
 
     output(mesh.cmesh)
@@ -79,6 +63,28 @@ def main():
         n_comp, _ = graph_components(surf_graph.shape[0],
                                      surf_graph.indptr, surf_graph.indices)
         output('number of connected surface components:', n_comp)
+
+helps = {
+    'filename' :
+    'mesh file name',
+    'detailed' :
+    'show additional information (entity volume statistics)',
+}
+
+def add_args(parser):
+    parser.add_argument('filename', help=helps['filename'])
+    parser.add_argument('-d', '--detailed',
+                        action='store_true', dest='detailed',
+                        default=False, help=helps['detailed'])
+
+def main():
+    parser = ArgumentParser(description=__doc__.rstrip(),
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    add_args(parser)
+
+    options = parser.parse_args()
+    show_mesh_info(options)
 
 if __name__ == '__main__':
     main()
