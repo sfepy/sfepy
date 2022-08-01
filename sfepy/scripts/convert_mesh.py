@@ -14,7 +14,7 @@ from sfepy.base.ioutils import remove_files
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import output_mesh_formats, MeshIO
 from sfepy.discrete.fem.mesh import fix_double_nodes
-from sfepy.mesh.mesh_tools import triangulate
+import sfepy.mesh.mesh_tools as mt
 
 helps = {
     'scale' : 'scale factor (float or comma-separated list for each axis)'
@@ -34,6 +34,14 @@ helps = {
     'save-per-mat': 'extract cells by material id and save them into'
     ' separate mesh files with a name based on filename_out and the id'
     ' numbers (preserves original mesh vertices)',
+    'extract_edges' : """
+      extract outline edges of a given mesh and save it into a meshio-supported
+      file. The outline edge is an edge for which norm(nvec1 - nvec2) < eps,
+      where nvec1 and nvec2 are the normal vectors of the incident facets.
+    """,
+    'eps' : """
+      tolerance parameter of the edge search algorithm [default: %(default)s]
+    """,
     'remesh' : """when given, remesh the given mesh using tetgen.
       The options can be the following, separated by spaces, in this order: 1.
       "r" causes remeshing of the mesh volume - if not present the mesh surface
@@ -90,6 +98,10 @@ def main():
                         default=None, help=helps['cell-dim'])
     parser.add_argument('--save-per-mat', action='store_true',
                         dest='save_per_mat', help=helps['save-per-mat'])
+    parser.add_argument('--extract-edges', action='store_true',
+                        dest='extract_edges', help=helps['extract_edges'])
+    parser.add_argument('--eps', action='store', type=float, dest='eps',
+                        default=1e-12, help=helps['eps'])
     parser.add_argument('--remesh', metavar='options',
                         action='store', dest='remesh',
                         default=None, help=helps['remesh'])
@@ -191,7 +203,7 @@ def main():
         mesh = domain.mesh
 
     if options.tri_tetra > 0:
-        mesh = triangulate(mesh, verbose=True)
+        mesh = mt.triangulate(mesh, verbose=True)
 
     if options.merge:
         desc = mesh.descs[0]
@@ -220,9 +232,19 @@ def main():
             imesh.write(ifilename_out, file_format=options.format)
             output('...done')
 
-    output('writing %s...' % filename_out)
-    mesh.write(filename_out, file_format=options.format, binary=False)
-    output('...done')
+    if options.extract_edges:
+        mesh_out = mt.extract_edges(mesh, eps=options.eps)
+        mesh_out = mt.merge_lines(mesh_out)
+
+        import meshio
+        emesh = meshio.Mesh(mesh_out[0], [('line', mesh_out[2][0])],
+                            cell_data={'mat_id' : mesh_out[3]})
+        emesh.write(filename_out)
+
+    else:
+        output('writing %s...' % filename_out)
+        mesh.write(filename_out, file_format=options.format, binary=False)
+        output('...done')
 
 if __name__ == '__main__':
     main()
