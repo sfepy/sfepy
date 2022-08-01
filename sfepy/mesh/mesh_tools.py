@@ -1,10 +1,10 @@
-from __future__ import absolute_import
 from sfepy.discrete.fem import Mesh, FEDomain
 import scipy.sparse as sps
 import numpy as nm
 from sfepy.base.compat import factorial
 from sfepy.base.base import output
-from six.moves import range
+from sfepy.discrete.common.extmods.cmesh import (create_mesh_graph,
+                                                 graph_components)
 
 def elems_q2t(el):
 
@@ -454,3 +454,58 @@ def extract_edges(mesh, eps=1e-16):
 
     else:
         raise ValueError('no outline edges found (eps=%e)!' % eps)
+
+def _get_facets(vertices, offsets, ii, n_fp):
+    facets = []
+    for ic in range(n_fp):
+        facets.append(vertices[offsets[ii] + ic][:, None])
+
+    facets = nm.concatenate(facets, axis=1)
+
+    return nm.ascontiguousarray(facets.astype(nm.int32))
+
+def get_surface_faces(domain):
+    cmesh = domain.cmesh
+    faces = cmesh.get_surface_facets()
+    vertices_f, offs_f = cmesh.get_incident(0, faces,
+                                            cmesh.dim - 1, ret_offsets=True)
+
+    n_fp = nm.diff(offs_f)
+    surf_faces = []
+
+    itri = nm.where(n_fp == 3)[0]
+    if itri.size:
+        surf_faces.append(_get_facets(vertices_f, offs_f, itri, 3))
+
+    itet = nm.where(n_fp == 4)[0]
+    if itet.size:
+        surf_faces.append(_get_facets(vertices_f, offs_f, itet, 4))
+
+    cells_c, offs_c = cmesh.get_incident(cmesh.dim, faces, cmesh.dim - 1,
+                                         ret_offsets=True)
+    ids = cmesh.get_local_ids(faces, cmesh.dim - 1, cells_c, offs_c,
+                              cmesh.dim)
+    lst = nm.c_[cells_c, ids]
+
+    return lst, surf_faces
+
+def surface_graph(surf_faces, n_nod):
+    nnz, prow, icol = create_mesh_graph(n_nod, n_nod, len(surf_faces),
+                                        surf_faces, surf_faces)
+    data = nm.empty((nnz,), dtype=nm.int32)
+    data.fill(2)
+    return sps.csr_matrix((data, icol, prow), (n_nod, n_nod))
+
+def surface_components(gr_s, surf_faces):
+    """
+    Determine surface components given surface mesh connectivity graph.
+    """
+    n_nod = gr_s.shape[0]
+    n_comp, flag = graph_components(n_nod, gr_s.indptr, gr_s.indices)
+
+    comps = []
+    for ii, face in enumerate(surf_faces):
+        comp = flag[face[:,0]]
+        comps.append(comp)
+
+    return n_comp, comps

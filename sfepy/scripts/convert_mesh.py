@@ -12,7 +12,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from sfepy.base.base import nm, output
 from sfepy.base.ioutils import remove_files
 from sfepy.discrete.fem import Mesh, FEDomain
-from sfepy.discrete.fem.meshio import output_mesh_formats, MeshIO
+from sfepy.discrete.fem.meshio import output_mesh_formats
 from sfepy.discrete.fem.mesh import fix_double_nodes
 import sfepy.mesh.mesh_tools as mt
 
@@ -41,6 +41,15 @@ helps = {
     """,
     'eps' : """
       tolerance parameter of the edge search algorithm [default: %(default)s]
+    """,
+    'extract_surface' : 'extract surface facets of a mesh',
+    'print_surface' : """
+       extract surface facets of a mesh and print it to a given file (use '-'
+       for stdout) in form of a list where each row is [element, face,
+       component]. A component corresponds to a contiguous surface region - for
+       example, a cubical mesh with a spherical hole has two surface
+       components. Two surface faces sharing a single node belong to one
+       component.
     """,
     'remesh' : """when given, remesh the given mesh using tetgen.
       The options can be the following, separated by spaces, in this order: 1.
@@ -102,6 +111,11 @@ def main():
                         dest='extract_edges', help=helps['extract_edges'])
     parser.add_argument('--eps', action='store', type=float, dest='eps',
                         default=1e-12, help=helps['eps'])
+    parser.add_argument('--extract-surface', action='store_true',
+                        dest='extract_surface', help=helps['extract_surface'])
+    parser.add_argument('--print-surface', action='store', metavar='filename',
+                        dest='print_surface', default=None,
+                        help=helps['print_surface'])
     parser.add_argument('--remesh', metavar='options',
                         action='store', dest='remesh',
                         default=None, help=helps['remesh'])
@@ -231,6 +245,39 @@ def main():
             output('writing %s...' % ifilename_out)
             imesh.write(ifilename_out, file_format=options.format)
             output('...done')
+
+    if options.extract_surface or options.print_surface:
+        domain = FEDomain(mesh.name, mesh)
+
+    if options.extract_surface:
+        region = domain.create_region('surf', 'vertices of surface', 'facet')
+        surf_mesh = Mesh.from_region(region, mesh,
+                                     localize=True, is_surface=True)
+        mesh = surf_mesh
+
+    if options.print_surface:
+        domain.fix_element_orientation()
+
+        lst, surf_faces = mt.get_surface_faces(domain)
+
+        gr_s = mt.surface_graph(surf_faces, domain.mesh.n_nod)
+
+        n_comp, comps = mt.surface_components(gr_s, surf_faces)
+        output('number of surface components:', n_comp)
+
+        ccs, comps = comps, nm.zeros((0,1), nm.int32)
+        for cc in ccs:
+            comps = nm.concatenate((comps, cc[:,nm.newaxis]), 0)
+
+        out = nm.concatenate((lst, comps), 1)
+        if (options.print_surface == '-'):
+            file_out = sys.stdout
+        else:
+            file_out = open(options.print_surface, 'w')
+        for row in out:
+            file_out.write('%d %d %d\n' % (row[0], row[1], row[2]))
+        if (options.print_surface != '-'):
+            file_out.close()
 
     if options.extract_edges:
         mesh_out = mt.extract_edges(mesh, eps=options.eps)
