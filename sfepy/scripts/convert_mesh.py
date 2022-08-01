@@ -5,6 +5,7 @@ Convert a mesh file from one SfePy-supported format to another.
 from __future__ import absolute_import
 import sys
 import os.path as op
+from ast import literal_eval
 from six.moves import range
 sys.path.append('.')
 
@@ -15,6 +16,7 @@ from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import output_mesh_formats
 from sfepy.discrete.fem.mesh import fix_double_nodes
 import sfepy.mesh.mesh_tools as mt
+from sfepy.mesh.mesh_generators import gen_tiled_mesh
 
 helps = {
     'scale' : 'scale factor (float or comma-separated list for each axis)'
@@ -34,13 +36,23 @@ helps = {
     'save-per-mat': 'extract cells by material id and save them into'
     ' separate mesh files with a name based on filename_out and the id'
     ' numbers (preserves original mesh vertices)',
+    'tile' : """
+      scale a periodic input mesh (a rectangle or box) by a scale factor
+      (--scale with a single integer value) and generate a new mesh by
+      repeating the scaled original mesh in a regular grid (scale x scale [x
+      scale]) if --tile=scale, or in a grid nx x ny[ x nz] for
+      --tile=<nx,ny[,nz]>, producing again a periodic rectangle or box mesh.
+      Use the --eps option to set the coordinate precision for periodicity
+      checks.
+    """,
     'extract_edges' : """
       extract outline edges of a given mesh and save it into a meshio-supported
       file. The outline edge is an edge for which norm(nvec1 - nvec2) < eps,
-      where nvec1 and nvec2 are the normal vectors of the incident facets.
+      where nvec1 and nvec2 are the normal vectors of the incident facets and
+      eps is given by the --eps option.
     """,
     'eps' : """
-      tolerance parameter of the edge search algorithm [default: %(default)s]
+      tolerance parameter [default: %(default)s]
     """,
     'extract_surface' : 'extract surface facets of a mesh',
     'print_surface' : """
@@ -107,6 +119,8 @@ def main():
                         default=None, help=helps['cell-dim'])
     parser.add_argument('--save-per-mat', action='store_true',
                         dest='save_per_mat', help=helps['save-per-mat'])
+    parser.add_argument('--tile', metavar='nx,ny[,nz]', dest='tile',
+                        default=None, help=helps['tile'])
     parser.add_argument('--extract-edges', action='store_true',
                         dest='extract_edges', help=helps['extract_edges'])
     parser.add_argument('--eps', action='store', type=float, dest='eps',
@@ -245,6 +259,18 @@ def main():
             output('writing %s...' % ifilename_out)
             imesh.write(ifilename_out, file_format=options.format)
             output('...done')
+
+    if options.tile:
+        _scale = (scale[0] if isinstance(scale, nm.ndarray)
+                  else scale if scale is not None else 1)
+        repeat = (list(literal_eval(options.tile)) if options.tile != 'scale'
+                  else None)
+        output('tiling paramaters:')
+        output('scale:', scale)
+        output('repeat:', repeat)
+        output('eps:', options.eps)
+
+        mesh = gen_tiled_mesh(mesh, repeat, 1./_scale, options.eps)
 
     if options.extract_surface or options.print_surface:
         domain = FEDomain(mesh.name, mesh)
