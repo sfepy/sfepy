@@ -176,68 +176,68 @@ def main():
 
     t0 = time.time()
 
-    out, err = check_output('python3 ./script/blockgen.py')
+    out, err = check_output('python3 sfepy/scripts/blockgen.py')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('python3 ./script/cylindergen.py')
+    out, err = check_output('python3 sfepy/scripts/cylindergen.py')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('python3 ./script/convert_mesh.py meshes/3d/cylinder.vtk out.mesh')
+    out, err = check_output('python3 sfepy/scripts/convert_mesh.py meshes/3d/cylinder.vtk out.mesh')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('python3 ./script/tile_periodic_mesh.py -r 2,2 meshes/elements/2_4_2.mesh out-per.mesh')
-    eok += report(out, '...', -2, 1, 'done.')
+    out, err = check_output('python3 sfepy/scripts/convert_mesh.py --tile 2,2 meshes/elements/2_4_2.mesh out-per.mesh')
+    eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('python3 ./script/extract_surface.py meshes/various_formats/octahedron.node -')
-    eok += report(out, '...', -2, 0, '1185')
+    out, err = check_output('python3 sfepy/scripts/convert_mesh.py --extract-surface --print-surface=- meshes/various_formats/octahedron.node surf_octahedron.mesh')
+    eok += report(out, '...', -4, 0, '1185')
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/diffusion/poisson.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/diffusion/poisson.py')
     eok += report(out, '...', -3, 5, '1.173819e-16', eps=1e-15)
 
-    out, err = check_output("""python3 ./simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" sfepy/examples/diffusion/poisson.py""")
+    out, err = check_output("""python3 sfepy/scripts/simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" sfepy/examples/diffusion/poisson.py""")
     eok += report(out, '...', -3, 5, '2.308051e-16', eps=1e-15)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/diffusion/poisson_iga.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/diffusion/poisson_iga.py')
     eok += report(out, '...', -3, 5, '3.373487e-15', eps=1e-14)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/navier_stokes/stokes.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/navier_stokes/stokes.py')
     eok += report(out, '...', -3, 5, '1.210678e-13', eps=1e-11)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/diffusion/poisson_parametric_study.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/diffusion/poisson_parametric_study.py')
     eok += report(out, '...', -3, 5, '1.606408e-14', eps=1e-13)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/linear_elasticity/its2D_3.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/linear_elasticity/its2D_3.py')
     eok += report(out, '...', -24, 5, '3.964886e-12', eps=1e-11)
     eok += report(out, '...', -4, 4, '2.58660e+01', eps=1e-5)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/linear_elasticity/linear_elastic.py --format h5')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/linear_elasticity/linear_elastic.py --format h5')
     eok += report(out, '...', -3, 5, '4.638192e-18', eps=1e-15)
 
-    out, err = check_output('python3 ./extractor.py -d cylinder.h5')
+    out, err = check_output('python3 sfepy/scripts/extractor.py -d cylinder.h5')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('python3 ./resview.py --off-screen -o cylinder.png cylinder.h5')
+    out, err = check_output('python3 sfepy/scripts/resview.py --off-screen -o cylinder.png cylinder.h5')
     eok += report(out, '...', -2, 1, 'cylinder.png')
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/phononic/band_gaps.py')
     eok += report(out, '...', -9, 0, '2.08545116e+08', match_numbers=True)
     eok += report(out, '...', -8, 1, '1.16309223e+11', match_numbers=True)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps.py --phonon-phase-velocity')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/phononic/band_gaps.py --phonon-phase-velocity')
     eok += report(out, '...', -2, 0, '4189.41229592', match_numbers=True)
     eok += report(out, '...', -2, 1, '2620.55608256', match_numbers=True)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps.py --phonon-dispersion')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/phononic/band_gaps.py --phonon-dispersion')
     eok += report(out, '...', -6, 1, '[0,')
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/phononic/band_gaps_rigid.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/phononic/band_gaps_rigid.py')
     eok += report(out, '...', -9, 0, '4.58709531e+07', match_numbers=True)
     eok += report(out, '...', -8, 1, '1.13929200e+11', match_numbers=True)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/quantum/hydrogen.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/quantum/hydrogen.py')
     eok += report(out, '...', -2, -2, '-0.01913506', eps=1e-4)
 
-    out, err = check_output('python3 ./simple.py sfepy/examples/homogenization/perfusion_micro.py')
+    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/homogenization/perfusion_micro.py')
     eok += report2(out, '...', ['computing EpA', 'computing PA_3',
                                 'computing GA', 'computing EmA',
                                 'computing KA'])
