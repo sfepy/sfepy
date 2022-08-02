@@ -1,4 +1,5 @@
 graft doc
+graft tools
 prune sfepy/examples/*/output
 prune sfepy/examples/*/*/output
 prune doc/_build
@@ -13,3 +14,7 @@ include sfepy/discrete/common/extmods/version.h.in
 include sfepy/discrete/fem/extmods/lobatto1d_template.c
 include sfepy/discrete/fem/extmods/lobatto1d_template.h
 include sfepy/solvers/matlab_eig.m
+
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
