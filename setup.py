@@ -11,6 +11,7 @@ DOCLINES = __doc__.split("\n")
 
 import os
 import sys
+sys.path.append('./tools')
 
 from build_helpers import (generate_a_pyrex_source, package_check, log,
                            cmdclass, INFO)
@@ -52,48 +53,8 @@ def configuration(parent_package='', top_path=None):
 
     config.add_subpackage('sfepy')
 
-    main_scripts = [
-        'extractor.py',
-        'homogen.py',
-        'test_install.py',
-    ]
-
-    aux_scripts = [
-        'blockgen.py',
-        'cylindergen.py',
-        'dg_plot_1D.py',
-        'edit_identifiers.py',
-        'eval_ns_forms.py',
-        'eval_tl_forms.py',
-        'extract_edges.py',
-        'extract_surface.py',
-        'gen_gallery.py',
-        'gen_iga_patch.py',
-        'gen_lobatto1d_c.py',
-        'gen_mesh_prev.py',
-        'gen_release_notes.py',
-        'gen_solver_table.py',
-        'gen_term_table.py',
-        'plot_condition_numbers.py',
-        'plot_logs.py',
-        'plot_mesh.py',
-        'plot_quadratures.py',
-        'plot_times.py',
-        'save_basis.py',
-        'show_authors.py',
-        'show_mesh_info.py',
-        'show_terms_use.py',
-        'sync_module_docs.py',
-        'tile_periodic_mesh.py',
-    ]
-    aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
-
-    config.add_data_files(('sfepy', ('VERSION', 'INSTALL', 'README.rst',
-                                     'LICENSE', 'AUTHORS', 'build_helpers.py',
-                                     'site_cfg_template.py', 'Makefile')))
-    config.add_data_files(('sfepy/script', main_scripts))
-    config.add_data_files(('sfepy/script', aux_scripts))
-
+    config.add_data_files(('sfepy', ('VERSION', 'LICENSE',
+                                     'site_cfg_template.py')))
     config.add_data_dir(('sfepy/meshes', 'meshes'))
     config.add_data_dir(('sfepy/examples', 'sfepy/examples'))
     config.add_data_dir(('sfepy/tests', 'sfepy/tests'))
