@@ -1,5 +1,5 @@
 """
-python3 script/gen_serendipity_basis.py > sfepy/discrete/fem/_serendipity.py
+python3 tools/gen_serendipity_basis.py > sfepy/discrete/fem/_serendipity.py
 """
 import sympy as sm
 

@@ -11,7 +11,7 @@ updated example files:
 
 2. generate the files:
 
-   $ ./script/gen_gallery.py
+   $ ./tools/gen_gallery.py
 
 3. regenerate the documentation::
 
