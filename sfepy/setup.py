@@ -15,6 +15,7 @@ def configuration(parent_package='',top_path=None):
         'mechanics',
         'parallel',
         'postprocess',
+        'scripts',
         'solvers',
         'terms'
     ]
