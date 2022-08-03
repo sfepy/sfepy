@@ -9,11 +9,9 @@ Notes
 -----
 The developer guide needs to be edited manually to reflect the changes.
 """
-from __future__ import absolute_import
 import sys
 sys.path.append('.')
 import os
-import fnmatch
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 from sfepy.base.base import output
@@ -73,14 +71,11 @@ def main():
                    if os.path.basename(ii) not in omits_pyx)
     scripts = set(ii for ii in
                   locate_files('*.py',
-                               root_dir=os.path.join(top_dir, 'script'))
+                               root_dir=os.path.join(top_dir, 'tools'))
                   if os.path.basename(ii) not in omits)
-    top_scripts = set(os.path.realpath(ii)
-                      for ii in fnmatch.filter(os.listdir(top_dir), '*.py')
-                      if os.path.basename(ii) not in omits)
 
     all_sources = set()
-    all_sources.update(sources, scripts, top_scripts)
+    all_sources.update(sources, scripts)
 
     cwd = os.path.realpath(os.path.curdir) + os.path.sep
 
