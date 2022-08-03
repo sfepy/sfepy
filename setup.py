@@ -53,8 +53,7 @@ def configuration(parent_package='', top_path=None):
 
     config.add_subpackage('sfepy')
 
-    config.add_data_files(('sfepy', ('VERSION', 'LICENSE',
-                                     'site_cfg_template.py')))
+    config.add_data_files(('sfepy', ('VERSION', 'LICENSE')))
     config.add_data_dir(('sfepy/meshes', 'meshes'))
     config.add_data_dir(('sfepy/examples', 'sfepy/examples'))
     config.add_data_dir(('sfepy/tests', 'sfepy/tests'))
