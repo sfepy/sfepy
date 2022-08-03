@@ -1040,57 +1040,6 @@ How To Make a Release
 Module Index
 ------------
 
-Main scripts
-^^^^^^^^^^^^
-.. toctree::
-   :maxdepth: 2
-
-   src/extractor
-   src/postproc
-   src/probe
-   src/resview
-   src/run_tests
-   src/simple
-
-Utility scripts
-^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 2
-
-   src/build_helpers
-   src/test_install
-
-   src/script/blockgen
-   src/script/convert_mesh
-   src/script/cylindergen
-   src/script/dg_plot_1D
-   src/script/edit_identifiers
-   src/script/eval_ns_forms
-   src/script/eval_tl_forms
-   src/script/extract_edges
-   src/script/extract_surface
-   src/script/gen_gallery
-   src/script/gen_iga_patch
-   src/script/gen_legendre_simplex_base
-   src/script/gen_lobatto1d_c
-   src/script/gen_mesh_prev
-   src/script/gen_release_notes
-   src/script/gen_serendipity_basis
-   src/script/gen_solver_table
-   src/script/gen_term_table
-   src/script/plot_condition_numbers
-   src/script/plot_logs
-   src/script/plot_mesh
-   src/script/plot_quadratures
-   src/script/plot_times
-   src/script/save_basis
-   src/script/show_authors
-   src/script/show_mesh_info
-   src/script/show_terms_use
-   src/script/sync_module_docs
-   src/script/tile_periodic_mesh
-
 sfepy package
 ^^^^^^^^^^^^^
 .. toctree::
@@ -1387,6 +1336,26 @@ sfepy.terms package
 
    src/sfepy/terms/extmods/terms
 
+Scripts
+^^^^^^^
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/scripts/blockgen
+   src/sfepy/scripts/convert_mesh
+   src/sfepy/scripts/cylindergen
+   src/sfepy/scripts/gen_iga_patch
+   src/sfepy/scripts/gen_mesh
+   src/sfepy/scripts/gen_mesh_prev
+   src/sfepy/scripts/plot_condition_numbers
+   src/sfepy/scripts/plot_logs
+   src/sfepy/scripts/plot_mesh
+   src/sfepy/scripts/plot_quadratures
+   src/sfepy/scripts/plot_times
+   src/sfepy/scripts/probe
+   src/sfepy/scripts/resview
+   src/sfepy/scripts/simple
+
 Tests
 ^^^^^
 
@@ -1443,3 +1412,21 @@ Tests
    src/sfepy/tests/test_term_sensitivity
    src/sfepy/tests/test_units
    src/sfepy/tests/test_volume
+
+Tools
+^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/tools/build_helpers
+   src/tools/gen_gallery
+   src/tools/gen_legendre_simplex_base
+   src/tools/gen_lobatto1d_c
+   src/tools/gen_release_notes
+   src/tools/gen_serendipity_basis
+   src/tools/gen_solver_table
+   src/tools/gen_term_table
+   src/tools/show_authors
+   src/tools/show_terms_use
+   src/tools/sync_module_docs
