@@ -28,10 +28,9 @@ import sys, os
 #doc_dir,conf_file = os.path.split(__file__)
 #sfepy_dir = os.path.abspath(os.path.join(doc_dir, os.path.pardir))
 #os.path.walk(sfepy_dir, add_to_sys_path, None)
-sys.path.append(os.path.abspath('sphinxext'))
 
-# This is needed for gen_term_table.
-sys.path.append(os.path.abspath('../script'))
+# This is needed for gen_term_table, gen_solver_table.
+sys.path.append(os.path.abspath('../tools'))
 
 import sfepy
 
