@@ -208,6 +208,10 @@ def main():
 
         return
 
+    if options.plot:
+        if not options.analyze_dispersion:
+            options.detect_band_gaps = True
+
     if options.debug:
         from sfepy.base.base import debug_on_error; debug_on_error()
 
@@ -221,8 +225,9 @@ def main():
     if options.solve_not:
         required.remove('solver_[0-9]+|solvers')
         other.extend(['equations'])
-    if not options.analyze_dispersion:
-        required.remove('solver_[0-9]+|solvers')
+    if options.detect_band_gaps and not options.analyze_dispersion:
+        if 'solver_[0-9]+|solvers' in required:
+            required.remove('solver_[0-9]+|solvers')
     if options.phase_velocity:
         required = [ii for ii in required if 'ebc' not in ii]
 
@@ -316,10 +321,6 @@ def main():
 
     elif app_mode == 'phonon':
         from sfepy.homogenization.band_gaps_app import AcousticBandGapsApp
-
-        if options.plot:
-            if not options.analyze_dispersion:
-                options.detect_band_gaps = True
 
         output_prefix = opts.get('output_prefix', 'phonon:')
         app = AcousticBandGapsApp(conf, options, output_prefix)
