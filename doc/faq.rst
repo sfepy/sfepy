@@ -7,6 +7,9 @@ Useful Code Snippets and FAQ
       :local:
       :backlinks: top
 
+Code examples below that use `sfepy-*` scripts assume the sfepy package to be
+installed, see also :ref:`introduction_installation`.
+
 Miscellaneous
 -------------
 
@@ -85,7 +88,7 @@ Miscellaneous
 
    - Quadrature rules::
 
-       python3 script/plot_quadratures.py
+       python3 sfepy/scripts/plot_quadratures.py
 
    - Facet orientations - run in the source code directory and make sure the
      current directory is in the Python's path list (see
@@ -96,7 +99,7 @@ Miscellaneous
    - Global and local numberings of mesh topological entities (cells, faces,
      edges, vertices)::
 
-       python3 script/plot_mesh.py meshes/elements/2_4_2.mesh
+       python3 sfepy/scripts/plot_mesh.py meshes/elements/2_4_2.mesh
 
      The global numbers serve as indices into connectivities. In the plot, the
      global numbers are on the entities, the cell-local ones are inside the
@@ -146,28 +149,28 @@ Mesh-Related Tasks
    - Show the mesh Euler characteristic, number of components and other
      information::
 
-       python3 script/show_mesh_info.py -d cylinder.mesh
+       sfepy-mesh info -d cylinder.mesh
 
    - Fix double/disconnected vertices::
 
-       python3 script/convert_mesh.py -m bad.mesh maybe-good.mesh
+       sfepy-convert -m bad.mesh maybe-good.mesh
 
 #. Convert a mesh to another format (as supported by meshio).
 
    - Simple conversion::
 
-       python3 script/convert_mesh.py mesh.format1 mesh.format2
+       sfepy-convert mesh.format1 mesh.format2
 
    - Scaling the mesh anisotropically::
 
-       python3 script/convert_mesh.py -s 2,4,3 cylinder.mesh cylinder-scaled.mesh
+       sfepy-convert -s 2,4,3 cylinder.mesh cylinder-scaled.mesh
 
 #. Verify that regions are correctly defined.
 
    - Using the problem description files (declarative API)::
 
-       python3 simple.py sfepy/examples/diffusion/poisson_short_syntax.py --save-regions-as-groups --solve-not
-       python3 resview.py -e cylinder_regions.vtk
+       sfepy-run sfepy/examples/diffusion/poisson_short_syntax.py --save-regions-as-groups --solve-not
+       sfepy-view -e cylinder_regions.vtk
 
    - In a script (imperative API)::
 
@@ -175,7 +178,7 @@ Mesh-Related Tasks
 
 #. Remove lower-dimensional entities from a mesh (e.g. edges).
 
-   Use ``script/convert_mesh.py`` with the ``-d <dimension>`` option, where
+   Use ``sfepy-convert`` with the ``-d <dimension>`` option, where
    ``<dimension>`` is the topological dimension of cells that should be in the
    mesh. For example, ``-d 2`` stores only the 2D cells.
 
