@@ -32,46 +32,13 @@ Users not familiar with the finite element method should start with the
 Invoking *SfePy* from the Command Line
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This section introduces the basics of running *SfePy* from the command line.
+This section introduces the basics of running *SfePy* from the command line,
+assuming it was properly installed, see :ref:`introduction_installation`.
 
-The script `simple.py` is the **most basic starting point** in *SfePy*. It can
-be invoked in many (similar) ways which depends on used OS, Python distribution
-and *SfePy* build method (see :ref:`installing_sfepy` for further info). All
-(working) alternatives described below are interchangeable, so don't panic and
-feel free to pick your preferred choice (see :ref:`basic-usage` for further
-explanation and more usage examples).
+The command `sfepy-run` is the **most basic starting point** in *SfePy*. It can
+be used to run declarative problem description files (see below) as follows::
 
-Depending on selected build method and OS used we recommend for:
-
-* In-place build
-
-  Use the top-level directory of *SfePy* source tree as your working directory
-  and use::
-
-    ./simple.py <problem_description_file>
-
-  or (particularly on Windows based systems) ::
-
-    python ./simple.py <problem_description_file>
-
-* Installed (local or system-wide) build
-
-  Use any working directory including your `problem description file` and use::
-
-    python <path/to/installed/simple.py> <problem_description_file>
-
-  or simply (on Unix based systems) ::
-
-    <path/to/installed/simple.py> <problem_description_file>
-
-  You can also use the simple *SfePy* `command-wrapper` (ensure that *SfePy*
-  installation `executable` directory is included in your PATH)::
-
-    sfepy-run simple <problem_description_file>
-
-Please note, that improper mixing of `in-place` and `install` builds on single
-command line may result in strange runtime errors.
-
+  sfepy-run <problem_description_file>
 
 Using *SfePy* Interactively
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -109,7 +76,7 @@ But let us begin with a slight detour...
 Sneak Peek: What is Going on Under the Hood
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#. A top-level script (usually `simple.py` as in this tutorial) reads
+#. A command (usually `sfepy-run` as in this tutorial) or a script reads
    in an input file.
 
 #. Following the contents of the input file, a `Problem` instance is created
@@ -151,7 +118,7 @@ source tree after compiling the C extension files. See
   solved in terms *SfePy* can understand.
 
 * Use the downloaded file in place of `<problem_description_file.py>` and
-  run `simple.py` as :ref:`described above <invoking_from_command_line>`.
+  run `sfepy-run` as :ref:`described above <invoking_from_command_line>`.
   The successful execution of the command creates output
   file ``cylinder.vtk`` in the *SfePy* top-level directory.
 
@@ -160,13 +127,13 @@ source tree after compiling the C extension files. See
 Postprocessing the Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* The `resview.py` script can be used for quick postprocessing and
+* The sfepy-view command can be used for quick postprocessing and
   visualization of the *SfePy* output files. It requires `pyvista`_ installed
   on your system.
 
 * As a simple example, try::
 
-  ./resview.py cylinder.vtk
+  sfepy-view cylinder.vtk
 
 * The following interactive 3D window should display:
 
@@ -573,8 +540,8 @@ for debugging. Let us try saving the regions into a VTK file.
 
 And view them ::
 
-    python resview.py regions.vtk -2 --grid-vector1 "[2, 0, 0]"
-    
+    In [36]: ! sfepy-view regions.vtk -2 --grid-vector1 "[2, 0, 0]"
+
 You should see this:
 
 .. image:: images/linear_elasticity_regions.png
@@ -602,7 +569,7 @@ automatically.
 
 This ::
 
-    python resview.py linear_elasticity.vtk -2
+    sfepy-view linear_elasticity.vtk -2
 
 is used to produce the resulting image:
 
@@ -613,7 +580,7 @@ is used to produce the resulting image:
 The default view is not very fancy. Let us show the displacements by
 shifting the mesh. Close the previous window and do ::
 
-    python resview.py linear_elasticity.vtk -2 -f u:wu:p0 1:vw:p0
+    sfepy-view linear_elasticity.vtk -2 -f u:wu:p0 1:vw:p0
 
 And the result is:
 
