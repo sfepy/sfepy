@@ -67,11 +67,10 @@ directory.
      - finite element mesh files in various formats shared by the examples
    * - `output/`
      - default output directory for storing results of the examples
-   * - `script/`
-     - various small scripts (simple mesh generators, mesh format
-       convertors etc.)
    * - `sfepy/`
      - the source code including examples and tests
+   * - `tools/`
+     - various helper scripts (build, documentation generation etc.)
 
 New users/developers (after going through the :ref:`sec-tutorial`)
 should explore the `sfepy/examples/` directory. For developers, the principal
@@ -85,8 +84,7 @@ directory is `sfepy/`, which has the following contents:
      - description
      - field-specific
    * - `applications/`
-     - top level application classes (e.g. :class:`PDESolverApp` that
-       implements all that `simple.py` script does)
+     - top level application classes (e.g. :class:`PDESolverApp`)
      -
    * - `base/`
      - common utilities and classes used by most of the other modules
@@ -102,8 +100,9 @@ directory is `sfepy/`, which has the following contents:
        - `fem/` - finite element specific classes
        - `iga/` - isogeometric analysis specific classes
      -
-   * - `mesh/`
-     - some utilities to interface with tetgen and triangle mesh generators
+   * - `examples/`
+     - the examples using both the declarative and imperative problem
+       description API
      -
    * - `homogenization/`
      - the homogenization engine and supporting modules - highly
@@ -116,14 +115,17 @@ directory is `sfepy/`, which has the following contents:
      - modules for (continuum) mechanics: elastic constant
        conversions, tensor, units utilities, etc.
      - *
-   * - `optimize/`
-     - modules for shape optimization based on free-form deformation
-     - *
+   * - `mesh/`
+     - some utilities to interface with tetgen and triangle mesh generators
+     -
    * - `parallel/`
      - modules supporting parallel assembling and solution of problems
      -
    * - `postprocess/`
      - Matplotlib and VTK based post-processing modules
+     -
+   * - `scripts/`
+     - the main as well as auxiliary scripts
      -
    * - `solvers/`
      - interface classes to various internal/external solvers (linear,
@@ -133,11 +135,14 @@ directory is `sfepy/`, which has the following contents:
      - implementation of the terms (weak formulation integrals), see
        :ref:`term_overview`
      -
+   * - `tests/`
+     - the tests
+     -
 
 The directories in the "field-specific" column are mostly interesting
 for specialists working in the respective fields.
 
-The `fem/` is the heart of the code, while the `terms/` contains the
+The `discrete/` is the heart of the code, while the `terms/` contains the
 particular integral forms usable to build equations - new term writers
 should look there.
 
@@ -154,7 +159,7 @@ printing them::
     sfepy: reading mesh [line2, tri3, quad4, tetra4, hexa8] (meshes/2d/rectangle_tri.mesh)...
     sfepy: ...done in 0.00 s
 
-    In [3]: print mesh
+    In [3]: print(mesh)
     Mesh:meshes/2d/rectangle_tri
       cmesh:
         CMesh: n_coor: 258, dim 2, tdim: 2, n_el 454
