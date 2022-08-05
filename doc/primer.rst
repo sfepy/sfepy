@@ -230,15 +230,15 @@ That's it -- we are now ready to solve the problem.
 Running *SfePy*
 ---------------
 
-One option to solve the problem is to run the *SfePy* `simple.py` script
+One option to solve the problem is to run the `sfepy-run`` command:
 from the command line::
 
-    ./simple.py its2D_1.py
+    sfepy-run its2D_1.py
 
-**Note:** For the purpose of this tutorial it is assumed that the
-`problem description file` (``its2D_1.py``) is in the same directory as
-the *simple.py* script. If you have the ``its2D_1.py`` file in another directory
-then make sure you include the path to this file as well.
+**Note:** For the purpose of this tutorial it is assumed that the `problem
+description file` (``its2D_1.py``) is in the current directory. If you have the
+``its2D_1.py`` file in another directory then make sure you include the path to
+this file as well.
 
 *SfePy* solves the problem and outputs the solution to the output path
 (`output_dir`) provided in the script. The output file will be in the VTK
@@ -253,13 +253,13 @@ editor. You'll notice that the output file includes separate sections:
     * CELLS (the model element connectivity),
     * VECTORS (the node displacements in the x-, y- and z- directions).
 
-*SfePy* provides a script (`resview.py`) to quickly view the solution. To run
-this script you need to have `pyvista`_ installed. From the command line issue
-the following (assuming the correct paths)::
+*SfePy* provides a script to quickly view the solution. To run this script you
+need to have `pyvista`_ installed. From the command line issue the following
+(assuming the correct paths)::
 
-    ./resview.py its2D.vtk -2
+    sfepy-view its2D.vtk -2
 
-The `resview.py` script generates the image shown below, which shows by
+The sfepy-view command generates the image shown below, which shows by
 default the displacements in the model as arrows and their magnitude as
 color scale. Cool, but we are more interested in the stresses. To get
 these we need to modify the problem description file and do some
@@ -288,8 +288,8 @@ accordingly. The problem options were also updated to call the
 Run *SfePy* to solve the updated problem and view the solution (assuming
 the correct paths)::
 
-    ./simple.py its2D_2.py
-    ./resview.py its2D.vtk -2 --max-plots 2
+    sfepy-run its2D_2.py
+    sfepy-view its2D.vtk -2 --max-plots 2
 
 In addition to the node displacements, the VTK output shown below now
 also includes the stresses and strains averaged in the elements:
@@ -307,7 +307,7 @@ Let's determine the force vector interactively.
 Running SfePy in interactive mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In addition to solving problems using the `simple.py` script you can also run
+In addition to solving problems using the `sfepy-run` command you can also run
 *SfePy* interactively (we will use `IPython`_ interactive shell in following
 examples).
 
@@ -500,7 +500,7 @@ requires setting `f`  to (a copy of) the variables as follows:
     In [23]: out = variables.create_output()
     In [24]: pb.save_state('file.vtk', out=out)
 
-Running the `resview.py` script on ``file.vtk`` displays the average nodal
+Running the `sfepy-view` command on ``file.vtk`` displays the average nodal
 forces as shown below:
 
 .. image:: images/primer/its2D_3.png
@@ -632,7 +632,7 @@ the model.
 
 Run *SfePy* to solve the problem and apply the probes::
 
-    ./simple.py its2D_5.py
+    sfepy-run its2D_5.py
 
 The probing function will generate the following figures that show the
 displacements, normal stresses and strains as well as shear stresses
