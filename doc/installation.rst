@@ -39,18 +39,18 @@ Python packages required for using *SfePy*:
 - `SciPy`_,
 - `meshio`_ for reading and writing mesh files,
 - `scikit-umfpack`_ for enabling `UMFPACK`_ solver for SciPy >= 0.14.0,
-- `Matplotlib`_ for various plots, GTKAgg for live plotting via log.py,
+- `Matplotlib`_ for various plots,
 - `PyTables`_ for storing results in HDF5 files,
 - `SymPy`_ for some tests and functions,
-- `igakit`_ for sfepy/scripts/gen_iga_patch.py - simple IGA domain generator,
+- `igakit`_ for generating IGA domains,
 - `petsc4py`_ and `mpi4py`_ for running parallel examples and using parallel
   solvers from `PETSc`_,
-- `slepc4py`_ for eigenvalue problem solvers from `SLEPc`_
+- `slepc4py`_ for eigenvalue problem solvers from `SLEPc`_,
 - `pymetis`_ for mesh partitioning using `Metis`_,
-- `wxPython`_ for better `IPython`_ integration.
-- `Read the Docs`_ `Sphinx`_ theme for building documentation
-- `psutil`_ for memory requirements checking
-- `PyVista`_ for post-processing via `resview.py`
+- `wxPython`_ for better `IPython`_ integration,
+- `Read the Docs`_ `Sphinx`_ theme for building documentation,
+- `psutil`_ for memory requirements checking,
+- `PyVista`_ for post-processing.
 
 Make sure the dependencies of those packages are also installed (e.g `igakit`_
 reguires FORTRAN compiler, `scikit-umfpack`_ does not work without UMFPACK,
