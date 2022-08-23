@@ -74,19 +74,19 @@ coordinate frame.
 Use the following command to show a comparison of the FEM solution with the
 above analytical relation (notice the nonlinearity of the dependence)::
 
-  python simple.py sfepy/examples/large_deformation/balloon.py -d 'plot: True'
+  sfepy-run sfepy/examples/large_deformation/balloon.py -d 'plot: True'
 
 The agreement should be very good, even though the mesh is coarse.
 
 View the results using::
 
-  python resview.py unit_ball.h5 -f u:wu:s:19:p0 p:s19:p1
+  sfepy-view unit_ball.h5 -f u:wu:s:19:p0 p:s19:p1
 
 This example uses the adaptive time-stepping solver (``'ts.adaptive'``) with
 the default adaptivity function :func:`adapt_time_step()
 <sfepy.solvers.ts_solvers.adapt_time_step>`. Plot the used time steps by::
 
-  python script/plot_times.py unit_ball.h5
+  python3 sfepy/scripts/plot_times.py unit_ball.h5
 """
 import os
 import numpy as nm

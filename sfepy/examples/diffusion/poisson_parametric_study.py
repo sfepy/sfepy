@@ -19,11 +19,11 @@ Now let's see what happens if :math:`\Omega_1` diameter changes.
 
 Run::
 
-    $ ./simple.py <this file>
+  sfepy-run sfepy/examples/diffusion/poisson_parametric_study.py
 
 and then look in 'output/r_omega1' directory, try for example::
 
-    $ ./resview.py output/r_omega1/circles_in_square*.vtk -2
+  sfepy-view output/r_omega1/circles_in_square*.vtk -2
 
 Remark: this simple case could be achieved also by defining
 :math:`\Omega_1` by a time-dependent function and solve the static

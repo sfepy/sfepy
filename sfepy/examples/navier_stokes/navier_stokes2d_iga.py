@@ -18,11 +18,11 @@ Find :math:`\ul{u}`, :math:`p` such that:
 
 The domain geometry was created by::
 
-  $ ./script/gen_iga_patch.py -2 -d 0.1,0.1 -s 10,10 -o meshes/iga/block2d.iga
+  sfepy-mesh iga-patch -2 -d 0.1,0.1 -s 10,10 -o meshes/iga/block2d.iga
 
 View the results using::
 
-  $ ./resview.py block2d.vtk -2
+  sfepy-view block2d.vtk -2
 """
 from __future__ import absolute_import
 from sfepy import data_dir

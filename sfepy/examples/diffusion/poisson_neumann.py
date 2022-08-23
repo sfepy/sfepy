@@ -27,11 +27,11 @@ Usage Examples
 
 Run with the default settings (no refinement)::
 
-  python simple.py sfepy/examples/diffusion/poisson_neumann.py
+  sfepy-run sfepy/examples/diffusion/poisson_neumann.py
 
 Refine the mesh twice::
 
-  python simple.py sfepy/examples/diffusion/poisson_neumann.py -O "'refinement_level' : 2"
+  sfepy-run sfepy/examples/diffusion/poisson_neumann.py -O "'refinement_level' : 2"
 """
 from __future__ import absolute_import
 import numpy as nm

@@ -23,9 +23,9 @@ solution to this is
 Usage Examples
 --------------
 
-Run with simple.py script::
+Run::
 
-    python simple.py sfepy/examples/dg/laplace_2D.py
+  sfepy-run sfepy/examples/dg/laplace_2D.py
 
 Results are saved to output/dg/laplace_2D folder by default as ``.msh`` files,
 the best way to view them is through GMSH (http://gmsh.info/) version 4.6 or

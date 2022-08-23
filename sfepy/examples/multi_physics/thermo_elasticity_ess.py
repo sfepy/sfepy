@@ -36,7 +36,7 @@ Notes
 -----
 The gallery image was produced by (plus proper view settings)::
 
-    ./resview.py block.vtk -f T:p1 u:wu:f1000:p0 u:vw:p0
+  sfepy-view block.vtk -f T:p1 u:wu:f1000:p0 u:vw:p0
 """
 from __future__ import absolute_import
 import numpy as np

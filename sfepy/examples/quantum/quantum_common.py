@@ -27,13 +27,12 @@ Also try changing approximation order ('approx_order') of the field below.
 Usage Examples
 --------------
 
-The following examples are available and can be run using the `simple.py`
-script::
+The following examples are available and can be run using::
 
-  python simple.py sfepy/examples/quantum/boron.py
-  python simple.py sfepy/examples/quantum/hydrogen.py
-  python simple.py sfepy/examples/quantum/oscillator.py
-  python simple.py sfepy/examples/quantum/well.py
+  sfepy-run sfepy/examples/quantum/boron.py
+  sfepy-run sfepy/examples/quantum/hydrogen.py
+  sfepy-run sfepy/examples/quantum/oscillator.py
+  sfepy-run sfepy/examples/quantum/well.py
 """
 from __future__ import absolute_import
 from sfepy.base.base import output

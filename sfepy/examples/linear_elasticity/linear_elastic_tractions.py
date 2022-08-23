@@ -25,15 +25,15 @@ surface. Try running the example with different approximation orders and/or unif
 
 - the default options::
 
-    python simple.py sfepy/examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=0 -d approx_order=1
+    sfepy-run sfepy/examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=0 -d approx_order=1
 
 - refine once::
 
-    python simple.py sfepy/examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=1 -d approx_order=1
+    sfepy-run sfepy/examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=1 -d approx_order=1
 
 - use the tri-quadratic approximation (Q2)::
 
-    python simple.py sfepy/examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=0 -d approx_order=2
+    sfepy-run sfepy/examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=0 -d approx_order=2
 """
 from __future__ import absolute_import
 import numpy as nm

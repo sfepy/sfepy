@@ -22,7 +22,7 @@ See also :ref:`linear_elasticity-shell10x_cantilever_interactive` example.
 
 View the results using::
 
-  python resview.py shell10x.vtk -f u_disp:wu_disp 1:vw
+  sfepy-view shell10x.vtk -f u_disp:wu_disp 1:vw
 """
 from __future__ import absolute_import
 from sfepy.base.base import output

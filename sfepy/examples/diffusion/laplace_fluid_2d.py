@@ -33,20 +33,18 @@ boundary condition is set at a single vertex to avoid having a singular matrix.
 Usage examples
 --------------
 
-This example can be run with the ``simple.py`` script with the following::
+This example can be run with the following::
 
-    python3 simple.py sfepy/examples/diffusion/laplace_fluid_2d.py
-    python3 resview.py citroen.vtk -f phi:p0 phi:t50:p0 --2d-view
-
+  sfepy-run sfepy/examples/diffusion/laplace_fluid_2d.py
+  sfepy-view citroen.vtk -f phi:p0 phi:t50:p0 --2d-view
 
 Generating the mesh
 -------------------
 
 The mesh can be generated with::
 
-    gmsh -2 -f msh22 meshes/2d/citroen.geo -o meshes/2d/citroen.msh
-    python3 script/convert_mesh.py --2d meshes/2d/citroen.msh meshes/2d/citroen.h5
-
+  gmsh -2 -f msh22 meshes/2d/citroen.geo -o meshes/2d/citroen.msh
+  sfepy-convert --2d meshes/2d/citroen.msh meshes/2d/citroen.h5
 """
 import numpy as nm
 from sfepy import data_dir

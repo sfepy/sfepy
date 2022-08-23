@@ -273,7 +273,7 @@ The results are saved in: %s.%s
 
 Try to display them with:
 
-   python resview.py %s.%s
+   sfepy-view %s.%s
 
 ['q'/other key to quit/continue...]""" % (2 * (name, problem.output_format)))
 

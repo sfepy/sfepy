@@ -35,15 +35,15 @@ Usage Examples
 Run with the default settings (the Newmark method, 3D problem, results stored
 in ``output/ed/``)::
 
-  python simple.py sfepy/examples/linear_elasticity/elastodynamic.py
+  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py
 
 Solve using the Bathe method::
 
-  python simple.py sfepy/examples/linear_elasticity/elastodynamic.py -O "ts='tsb'"
+  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -O "ts='tsb'"
 
 View the resulting deformation using:
 
-  python resview.py output/ed/user_block.h5 -f u:wu:p0 1:vw:p0 cauchy_strain:p1 cauchy_stress:p2 -s 18
+  sfepy-view output/ed/user_block.h5 -f u:wu:p0 1:vw:p0 cauchy_strain:p1 cauchy_stress:p2 -s 18
 """
 from __future__ import absolute_import
 

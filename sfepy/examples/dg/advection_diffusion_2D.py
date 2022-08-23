@@ -12,9 +12,9 @@ Antonietti, P., & Quarteroni, A. (2013). Numerical performance of discontinuous
 Usage Examples
 --------------
 
-Run with simple.py script::
+Run::
 
-    python simple.py sfepy/examples/dg/advection_diffusion_2D.py
+  sfepy-run sfepy/examples/dg/advection_diffusion_2D.py
 
 Results are saved to output/dg/advection_diffusion_2D folder by default as `
 `.msh`` files, the best way to view them is through GMSH (http://gmsh.info/)

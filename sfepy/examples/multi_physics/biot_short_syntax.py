@@ -21,11 +21,11 @@ See :func:`setup_precond()` and try to modify it.
 The PETSc solvers can be configured also using command line options. For
 example, set ``'ls' : 'iterative-p'`` in `options`, and run::
 
-  python simple.py sfepy/examples/multi_physics/biot_short_syntax.py -ksp_monitor
+  sfepy-run sfepy/examples/multi_physics/biot_short_syntax.py -ksp_monitor
 
 or simply run::
 
-  python simple.py sfepy/examples/multi_physics/biot_short_syntax.py -O "ls='iterative-p'"
+  sfepy-run sfepy/examples/multi_physics/biot_short_syntax.py -O "ls='iterative-p'"
 
 to monitor the PETSc iterative solver convergence. It will diverge without
 preconditioning, see :func:`matvec_bj()`, :func:`matvec_j()` for further
