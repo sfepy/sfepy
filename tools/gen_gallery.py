@@ -34,7 +34,7 @@ from sfepy.base.base import (get_default, ordered_iteritems,
                              import_file, output, Struct)
 from sfepy.base.ioutils import (ensure_path, locate_files, remove_files,
                                 edit_filename)
-from resview import pv_plot, get_camera_position
+from sfepy.scripts.resview import pv_plot, get_camera_position
 import pyvista as pv
 
 omits = [
