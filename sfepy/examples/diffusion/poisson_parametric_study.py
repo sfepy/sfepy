@@ -136,7 +136,7 @@ solver_1 = {
 }
 
 functions = {
-    'select_circ': (lambda coors, domain=None: 
+    'select_circ': (lambda coors, domain=None:
                     select_circ(coors[:,0], coors[:,1], 0, default_diameter),),
 }
 
@@ -167,7 +167,7 @@ def vary_omega1_size( problem ):
     """
     from sfepy.discrete import Problem
     from sfepy.solvers.ts import get_print_info
-    
+
     output.prefix = 'vary_omega1_size:'
 
     diameters = nm.linspace( 0.1, 0.6, 7 ) + 0.001
@@ -181,7 +181,7 @@ def vary_omega1_size( problem ):
     for ii, diameter in enumerate( diameters ):
         output( 'iteration %d: diameter %3.2f' % (ii, diameter) )
 
-        cf['select_circ'] = (lambda coors, domain=None: 
+        cf['select_circ'] = (lambda coors, domain=None:
                              select_circ(coors[:,0], coors[:,1], 0, diameter),)
         conf.edit('functions', cf)
         problem = Problem.from_conf(conf)
@@ -212,4 +212,3 @@ def vary_omega1_size( problem ):
         fd.close()
 
         yield None
-

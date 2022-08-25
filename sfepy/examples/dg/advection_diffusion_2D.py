@@ -237,8 +237,3 @@ def define(filename_mesh=None,
         'file_format'     : 'gmsh-dg'
     }
     return locals()
-
-
-globals().update(define())
-pass
-

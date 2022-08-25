@@ -184,5 +184,3 @@ def define(filename_mesh=None,
         # 'pre_process_hook': get_cfl_setup(cfl)
     }
     return locals()
-
-globals().update(define())
