@@ -309,6 +309,7 @@ def main():
     plt.plot(ts.times, displacements, lw=3)
     plt.title('displacement components, node %d' % options.node)
     plt.xlabel('time')
+    plt.tight_layout()
 
     plt.figure(2, figsize=(8, 10))
     plt.subplots_adjust(hspace=0.35,
@@ -321,6 +322,8 @@ def main():
         plt.plot(ts.times, tensor, lw=3)
         plt.title('%s components, element %d' % (tensor_name, options.element))
         plt.xlabel('time')
+
+    plt.tight_layout()
 
     plt.show()
 
