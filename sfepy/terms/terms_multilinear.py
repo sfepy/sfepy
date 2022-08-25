@@ -810,6 +810,9 @@ class ETermBase(Term):
                         earg.arg = arg[0]
                         earg.name = arg[1]
 
+                    elif isinstance(arg, ExpressionArg):
+                        earg.arg = arg.arg
+
                     else:
                         earg.arg = arg
 
