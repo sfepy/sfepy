@@ -360,10 +360,15 @@ def setup(app):
 # -- Options for manual pages output ---------------------------------------------------
 #
 man_pages = [
-    ('manpages',
+    ('man-sfepy-run',
     'sfepy-run',
-    'Simple wrapper for main SfePy commands (scripts)',
-    'Robert Cimrman and Contributors',
-    1)
+    'Run declarative SfePy problem description files',
+    'SfePy developers',
+     1),
+    ('man-sfepy-view',
+    'sfepy-view',
+    'View SfePy meshes or results of SfePy calculations',
+    'SfePy developers',
+     1),
 ]
 #
