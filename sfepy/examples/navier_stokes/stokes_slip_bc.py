@@ -100,7 +100,7 @@ from sfepy.homogenization.utils import define_box_regions
 
 def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
            ls='ls_d', u_inlet=None, mode='lcbc', term_mode='original',
-           backend='numpy', optimize='optimal', verbosity=0, output_dir='',
+           backend='numpy', optimize='optimal', verbosity=0, output_dir='.',
            save_lcbc_vecs=False):
     """
     Parameters

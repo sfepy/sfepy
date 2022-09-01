@@ -172,6 +172,3 @@ def define(filename_mesh=None,
     }
 
     return locals()
-
-
-globals().update(define())
