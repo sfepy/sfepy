@@ -8,12 +8,12 @@ Things to check before a release
 
 #. synchronize module documentation (dry run)::
 
-     $ python3 script/sync_module_docs.py doc/src/ . -n
+     $ python3 tools/sync_module_docs.py doc/src/ . -n
 
 #. regenerate gallery page and examples::
 
     $ rm -rf doc/examples/
-    $ python3 script/gen_gallery.py
+    $ python3 tools/gen_gallery.py
 
 #. create temporary/testing tarball::
 
@@ -47,8 +47,7 @@ Things to check before a release
 
      $ python3 -m pip install . --user
      $ cd
-     $ sfepy-run run_tests
-     $ rm -r output/
+     $ python3 -c "import sfepy; sfepy.test()
 
    then remove the installed files so that they do not interfere with
    the local build
@@ -57,7 +56,7 @@ Things to check before a release
 
    * update doc/release_notes.rst, with the help of::
 
-     $ python3 script/gen_release_notes.py 2019.2
+     $ python3 tools/gen_release_notes.py 2019.2
 
    * update doc/news.rst, doc/archived_news.rst
    * change version number (sfepy/version.py) so that previous release

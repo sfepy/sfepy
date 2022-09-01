@@ -11,7 +11,7 @@ import numpy as nm
 
 from sfepy.examples.dg.example_dg_common import \
     clear_folder, get_gen_1D_mesh_hook
-from script.dg_plot_1D import load_and_plot_fun
+from sfepy.examples.dg.dg_plot_1D import load_and_plot_fun
 
 # sfepy imports
 from sfepy.base.base import IndexedStruct

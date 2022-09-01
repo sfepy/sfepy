@@ -52,7 +52,7 @@ Deforming mesh
 
 Try to run the following::
 
-    $ ./resview.py block.h5 -s 20 -f u:wu:f1e3:p0 1:vw:p0  total_stress:p1
+  sfepy-view block.h5 -s 20 -f u:wu:f1e0:p0 1:vw:p0 total_stress:p1
 
 to see the results.
 
@@ -61,8 +61,8 @@ Time history plots
 
 Run the following::
 
-    $ python sfepy/examples/linear_elasticity/linear_viscoelastic.py -h
-    $ python sfepy/examples/linear_elasticity/linear_viscoelastic.py block.h5
+  python3 sfepy/examples/linear_elasticity/linear_viscoelastic.py -h
+  python3 sfepy/examples/linear_elasticity/linear_viscoelastic.py block.h5
 
 Try comparing 'th' and 'eth' versions, e.g., for n_step = 201, and f_n_step =
 51. There is a visible notch on viscous stress curves in the 'th' mode, as the

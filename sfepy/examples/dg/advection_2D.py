@@ -6,9 +6,9 @@ Transient advection equation in 2D solved by discontinous Galerkin method.
 Usage Examples
 --------------
 
-Run with simple.py script::
+Run::
 
-    python simple.py sfepy/examples/dg/advection_2D.py
+  sfepy-run sfepy/examples/dg/advection_2D.py
 
 Results are saved to output/dg/advection_2D folder by default as ``.msh`` files,
 the best way to view them is through GMSH (http://gmsh.info/) version 4.6 or

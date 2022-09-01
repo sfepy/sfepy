@@ -39,18 +39,18 @@ Python packages required for using *SfePy*:
 - `SciPy`_,
 - `meshio`_ for reading and writing mesh files,
 - `scikit-umfpack`_ for enabling `UMFPACK`_ solver for SciPy >= 0.14.0,
-- `Matplotlib`_ for various plots, GTKAgg for live plotting via log.py,
+- `Matplotlib`_ for various plots,
 - `PyTables`_ for storing results in HDF5 files,
 - `SymPy`_ for some tests and functions,
-- `igakit`_ for script/gen_iga_patch.py - simple IGA domain generator,
+- `igakit`_ for generating IGA domains,
 - `petsc4py`_ and `mpi4py`_ for running parallel examples and using parallel
   solvers from `PETSc`_,
-- `slepc4py`_ for eigenvalue problem solvers from `SLEPc`_
+- `slepc4py`_ for eigenvalue problem solvers from `SLEPc`_,
 - `pymetis`_ for mesh partitioning using `Metis`_,
-- `wxPython`_ for better `IPython`_ integration.
-- `Read the Docs`_ `Sphinx`_ theme for building documentation
-- `psutil`_ for memory requirements checking
-- `PyVista`_ for post-processing via `resview.py`
+- `wxPython`_ for better `IPython`_ integration,
+- `Read the Docs`_ `Sphinx`_ theme for building documentation,
+- `psutil`_ for memory requirements checking,
+- `PyVista`_ for post-processing.
 
 Make sure the dependencies of those packages are also installed (e.g `igakit`_
 reguires FORTRAN compiler, `scikit-umfpack`_ does not work without UMFPACK,
@@ -154,9 +154,9 @@ For available runtime options and further information see
 `sfepy-docker <https://github.com/sfepy/sfepy-docker>`__ project on Github.
 
 As a convenience, use the following Docker compose file, which will start the
-*SfePy* image, run Jupyter Lab, and map the contents of the local directory 
-to the *SfePy* home directory within the image. Just create an empty folder and 
-add the following to a file named ``docker-compose.yml``. Then, run ``docker-compose up`` 
+*SfePy* image, run Jupyter Lab, and map the contents of the local directory
+to the *SfePy* home directory within the image. Just create an empty folder and
+add the following to a file named ``docker-compose.yml``. Then, run ``docker-compose up``
 in the same directory.
 
 .. code-block:: yaml
@@ -203,17 +203,14 @@ In the *SfePy* top-level directory:
 #. Look at ``site_cfg_template.py`` and follow the instructions
    therein. Usually no changes are necessary.
 
-#. Compile the extension modules
+#. For in-place use, compile the extension modules::
 
-   - for in-place use::
+     python setup.py build_ext --inplace
 
-        python setup.py build_ext --inplace
-
-   - for installation::
-
-        python setup.py build
-
-  We recommend starting with the in-place build.
+   After a successful compilation, *SfePy* can be used in-place. However, the
+   the ``sfepy-*`` commands, such as ``sfepy-run`` are only available after
+   installing the package. Their functionality can be accessed by invoking
+   directly the corresponding scripts in ``sfepy/scripts/``.
 
 Installation
 ^^^^^^^^^^^^
@@ -224,11 +221,18 @@ installed *locally* or *system-wide*:
 
 - system-wide (may require root privileges)::
 
-    python setup.py install
+    pip install .
 
-- local (requires write access to ``<installation prefix>``)::
+- local::
 
-    python setup.py install --root=<installation prefix>
+    pip install --user .
+
+- development (editable install)::
+
+    pip install -e .
+
+  The editable install allows working in-place and at the same time the
+  ``sfepy-*`` commands are available.
 
 If all went well, proceed with `Testing Installation`_.
 

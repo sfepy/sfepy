@@ -87,47 +87,47 @@ Usage Examples
 
 Default options::
 
-  $ python sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py
+  python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py
 
 To show a comparison of stress against the analytic formula::
 
-  $ python sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py -p
+  python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py -p
 
 Using different mesh fineness::
 
-  $ python sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py \
+  python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py \
     --shape "5, 5, 5"
 
 Different dimensions of the computational domain::
 
-  $ python sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py \
+  python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py \
     --dims "2, 1, 3"
 
 Different length of time interval and/or number of time steps::
 
-  $ python sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py \
+  python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py \
     -t 0,15,21
 
 Use higher approximation order (the ``-t`` option to decrease the time step is
 required for convergence here)::
 
-  $ python sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py \
+  python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py \
     --order 2 -t 0,2,21
 
 Change material parameters::
 
-  $ python sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py -m 2,1
+  python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py -m 2,1
 
-View the results using ``resview.py``
+View the results using ``sfepy-view``
 -------------------------------------
 
 Show pressure on deformed mesh (use PgDn/PgUp to jump forward/back)::
 
-  $ python resview.py --fields=p:f1:wu:p1 domain.??.vtk
+  sfepy-view --fields=p:f1:wu:p1 domain.??.vtk
 
 Show the axial component of stress (second Piola-Kirchhoff)::
 
-  $ python resview.py --fields=stress:c0 domain.??.vtk
+  sfepy-view --fields=stress:c0 domain.??.vtk
 
 [1] Travis W. Hohenberger, Richard J. Windslow, Nicola M. Pugno, James J. C.
 Busfield. Aconstitutive Model For Both Lowand High Strain Nonlinearities In

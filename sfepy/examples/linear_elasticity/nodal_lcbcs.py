@@ -27,31 +27,31 @@ instance, ``'nlcbc1'`` in the 3D mesh case corresponds to
 that should hold in the ``'Top'`` region.
 
 This example demonstrates how to pass command line options to a problem
-description file using ``--define`` option of ``simple.py``. Try::
+description file using ``--define`` option of ``sfepy-run``. Try::
 
-  python simple.py sfepy/examples/linear_elasticity/nodal_lcbcs.py --define='dim: 3'
+  sfepy-run sfepy/examples/linear_elasticity/nodal_lcbcs.py --define='dim: 3'
 
 to use a 3D mesh, instead of the default 2D mesh. The example also shows that
 the nodal constraints can be used in place of the Dirichlet boundary
 conditions. Try::
 
-  python simple.py sfepy/examples/linear_elasticity/nodal_lcbcs.py --define='use_ebcs: False'
+  sfepy-run sfepy/examples/linear_elasticity/nodal_lcbcs.py --define='use_ebcs: False'
 
 to replace ``ebcs`` with the ``'nlcbc4'`` constraints. The results should be
 the same for the two cases. Both options can be combined::
 
-  python simple.py sfepy/examples/linear_elasticity/nodal_lcbcs.py --define='dim: 3, use_ebcs: False'
+  sfepy-run sfepy/examples/linear_elasticity/nodal_lcbcs.py --define='dim: 3, use_ebcs: False'
 
 The :func:`post_process()` function is used both to compute the von Mises
 stress and to verify the linear combination constraints.
 
 View the 2D results using::
 
-  python resview.py square_quad.vtk -2
+  sfepy-view square_quad.vtk -2
 
 View the 3D results using::
 
-  python resview.py cube_medium_tetra.vtk
+  sfepy-view cube_medium_tetra.vtk
 """
 from __future__ import absolute_import
 import numpy as nm

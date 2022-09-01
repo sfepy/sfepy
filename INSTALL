@@ -26,17 +26,17 @@ Python packages required for using SfePy:
 - SciPy
 - meshio, for reading and writing mesh files
 - scikit-umfpack, for enabling UMFPACK solver for SciPy >= 0.14.0
-- Matplotlib, for various plots; GTKAgg for live plotting via log.py
+- Matplotlib, for various plots
 - PyTables, for storing results in HDF5 files
 - SymPy, for some tests and functions
 - Pysparse, for additional eigenvalue problem solvers
-- igakit, for script/gen_iga_patch.py - simple IGA domain generator
+- igakit, for generating IGA domains
 - petsc4py and mpi4py, for running parallel examples and using parallel
   solvers from PETSc
 - slepc4py, for eigenvalue problem solvers from SLEPc
 - pymetis, for mesh partitioning using Metis
 - psutil, for memory requirements checking
-- PyVista, for post-processing via resview.py
+- PyVista, for post-processing
 
 Make sure the dependencies of those packages are also installed -
 scikit-umfpack does not work without UMFPACK, petsc4py without PETSc, etc.
@@ -77,11 +77,18 @@ Installation
 
 - System-wide (may require root privileges):
 
-    python setup.py install
+    pip install .
 
-- Local (requires write access to ``<installation prefix>``):
+- Local:
 
-    python setup.py install --root=<installation prefix>
+    pip install --user .
+
+- development (editable install)::
+
+    pip install -e .
+
+  The editable install allows working in-place and at the same time the
+  ``sfepy-*`` commands are available.
 
 Testing:
 --------

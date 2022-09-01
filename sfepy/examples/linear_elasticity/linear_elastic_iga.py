@@ -18,11 +18,11 @@ where
 
 The domain geometry was created by::
 
-  $ ./script/gen_iga_patch.py -d [1,0.5,0.1] -s [11,5,3] --degrees [2,2,2] -o meshes/iga/block3d.iga
+  sfepy-mesh iga-patch -d [1,0.5,0.1] -s [11,5,3] --degrees [2,2,2] -o meshes/iga/block3d.iga
 
 View the results using::
 
-  $ ./resview.py block3d.vtk -f u:wu 1:vw
+  sfepy-view block3d.vtk -f u:wu 1:vw
 """
 from __future__ import absolute_import
 from sfepy.mechanics.matcoefs import stiffness_from_lame

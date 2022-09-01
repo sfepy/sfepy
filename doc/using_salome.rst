@@ -3,6 +3,8 @@
 Using Salome with SfePy
 =======================
 
+**NOTE** This tutorial was created in 2014, so it may be obsolete.
+
 Introduction
 ------------
 
@@ -166,7 +168,7 @@ Step 5: Run *SfePy*
 Save your changes to ``linear_elastic.py``. Now it's time to run the
 *SfePy* calculation. In your <work_dir> in your terminal type::
 
-  ./simple.py linear_elastic.py
+  sfepy-run linear_elastic.py
 
 This will run the *SfePy* calculation. Some progress information is
 printed to your screen and the residual (a measure of the convergence
@@ -177,7 +179,7 @@ problem. The results will be saved to ``Mesh_Partition_Hexa.vtk``.
 
 Now we can view the results of our work. In your terminal, type::
 
-  ./resview.py Mesh_Partition_Hexa.vtk -f u:wu:f2.0:p0 0:vw:p0
+  sfepy-view Mesh_Partition_Hexa.vtk -f u:wu:f2.0:p0 0:vw:p0
 
 You should get the plot with the deformed and undeformed meshs. Notice how the
 fish is bending its tail in response to the applied displacement.

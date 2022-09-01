@@ -243,9 +243,9 @@ surface and volumetric elements are stored::
   gmsh -3 -format msh -o screwdriver_handle.msh screwdriver_handle.geo
 
 By converting the *MSH* file into the *VTK* format using
-``script/convert_mesh.py``::
+``sfepy-convert``::
 
-  script/convert_mesh.py -d 3 screwdriver_handle.msh screwdriver_handle.vtk
+  sfepy-convert -d 3 screwdriver_handle.msh screwdriver_handle.vtk
 
 the surface elements are discarded and only the volumetric mesh is preserved.
 
@@ -271,19 +271,19 @@ This, however is not enough to create a truly 2D mesh - the created mesh
 vertices still have the third, :math:`z`, component which is equal to zero. In
 order to remove the third component, use::
 
-  script/convert_mesh.py --2d circle_in_square.msh circle_in_square.h5
+  sfepy-convert --2d circle_in_square.msh circle_in_square.h5
 
 Now, in the resulting ``circle_in_square.h5``, each vertex has only two
 coordinates. Another way of generating the 2D mesh is to use the legacy VTK
 format as follows::
 
   gmsh -2 -format vtk -o circle_in_square.vtk circle_in_square.geo
-  script/convert_mesh.py circle_in_square.vtk circle_in_square.h5
+  sfepy-convert circle_in_square.vtk circle_in_square.h5
 
 This is due to the fact that the legacy VTK does not support 2D vertices and so
 the :class:`VTKMeshIO <sfepy.discrete.fem.meshio.VTKMeshIO>` reader tries to
 detect the planar geometry by comparing the :math:`z` components to zero - the
-``--2d`` option of ``script/convert_mesh.py`` is not needed in this case.
+``--2d`` option of ``sfepy-convert`` is not needed in this case.
 
 Multipart models
 ----------------
@@ -370,12 +370,12 @@ vertices on the handle/shank interface. These duplicate vertices can be removed
 during the conversion to the *VTK* format by giving ``--merge`` (or just ``-m``)
 argument to `convert_mesh.py` script::
 
-  script/convert_mesh.py -m screwdriver_full.msh screwdriver_full.vtk
+  sfepy-convert -m screwdriver_full.msh screwdriver_full.vtk
 
 In order to extract the cells by the physical groups use the conversion script
 with ``--save-per-mat`` argument::
 
-  script/convert_mesh.py --save-per-mat screwdriver_full.vtk screwdriver.vtk
+  sfepy-convert --save-per-mat screwdriver_full.vtk screwdriver.vtk
 
 It produces `screwdriver.vtk` contaning the original mesh and
 `screwdriver_matid_1.vtk`, `screwdriver_matid_2.vtk` files containing only

@@ -37,28 +37,28 @@ Usage Examples
 
 See all options::
 
-  $ python sfepy/examples/diffusion/poisson_parallel_interactive.py -h
+  python3 sfepy/examples/diffusion/poisson_parallel_interactive.py -h
 
 See PETSc options::
 
-  $ python sfepy/examples/diffusion/poisson_parallel_interactive.py -help
+  python3 sfepy/examples/diffusion/poisson_parallel_interactive.py -help
 
 Single process run useful for debugging with :func:`debug()
 <sfepy.base.base.debug>`::
 
-  $ python sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel
+  python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel
 
 Parallel runs::
 
-  $ mpiexec -n 3 python sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101
+  mpiexec -n 3 python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101
 
-  $ mpiexec -n 3 python sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101 --metis
+  mpiexec -n 3 python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101 --metis
 
-  $ mpiexec -n 5 python sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101 --verify --metis -ksp_monitor -ksp_converged_reason
+  mpiexec -n 5 python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101 --verify --metis -ksp_monitor -ksp_converged_reason
 
 View the results using::
 
-  $ python resview.py output-parallel/sol.h5 -f u:wu 1:vw
+  sfepy-view output-parallel/sol.h5 -f u:wu 1:vw
 """
 from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser

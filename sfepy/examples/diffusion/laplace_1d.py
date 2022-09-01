@@ -16,7 +16,7 @@ where the coefficient :math:`c(x) = 0.1 + \sin(2 \pi x)^2` is computed in
 
 View the results using::
 
-  $ ./resview.py laplace_1d.vtk -f t:wt 1:vw
+  sfepy-view laplace_1d.vtk -f t:wt 1:vw
 """
 from __future__ import absolute_import
 import numpy as nm

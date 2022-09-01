@@ -38,16 +38,16 @@ Usage Examples
 
 See all options::
 
-  python sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py -h
+  python3 sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py -h
 
 Apply the bending transformation to the beam domain coordinates, plot
 convergence curves w.r.t. number of elements::
 
-  python sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py output -t bend -p
+  python3 sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py output -t bend -p
 
 Apply the twisting transformation to the beam domain coordinates, change number of cells::
 
-  python sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py output -t twist -n 2,51,3
+  python3 sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py output -t twist -n 2,51,3
 """
 from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser

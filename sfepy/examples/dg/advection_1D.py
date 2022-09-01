@@ -8,20 +8,18 @@ Transient advection equation in 1D solved using discontinous galerkin method.
 
 Usage Examples
 --------------
-Run with simple.py script::
+Run::
 
-    python simple.py sfepy/examples/dg/advection_1D.py
+  sfepy-run sfepy/examples/dg/advection_1D.py
 
-To view animated results use ``script/dg_plot_1D.py`` specifing name of the
-output in ``output/`` folder, default is ``dg/advection_1D``::
+To view animated results use ``sfepy/examples/dg/dg_plot_1D.py`` specifing name
+of the output in ``output/`` folder, default is ``dg/advection_1D``::
 
-    python simple.py script/dg_plot_1D.py dg/advection_1D
+  python3 sfepy/examples/dg/dg_plot_1D.py dg/advection_1D
 
-``script/dg_plot_1D.py`` also accepts full and relative paths::
+``dg_plot_1D.py`` also accepts full and relative paths::
 
-    python ./script/dg_plot_1D.py output/dg/advection_1D
-
-
+  python3 sfepy/examples/dg/dg_plot_1D.py output/dg/advection_1D
 """
 from sfepy.examples.dg.example_dg_common import *
 from sfepy.discrete.dg.limiters import MomentLimiter1D

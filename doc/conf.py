@@ -28,10 +28,9 @@ import sys, os
 #doc_dir,conf_file = os.path.split(__file__)
 #sfepy_dir = os.path.abspath(os.path.join(doc_dir, os.path.pardir))
 #os.path.walk(sfepy_dir, add_to_sys_path, None)
-sys.path.append(os.path.abspath('sphinxext'))
 
-# This is needed for gen_term_table.
-sys.path.append(os.path.abspath('../script'))
+# This is needed for gen_term_table, gen_solver_table.
+sys.path.append(os.path.abspath('../tools'))
 
 import sfepy
 
@@ -361,10 +360,15 @@ def setup(app):
 # -- Options for manual pages output ---------------------------------------------------
 #
 man_pages = [
-    ('manpages',
+    ('man-sfepy-run',
     'sfepy-run',
-    'Simple wrapper for main SfePy commands (scripts)',
-    'Robert Cimrman and Contributors',
-    1)
+    'Run declarative SfePy problem description files',
+    'SfePy developers',
+     1),
+    ('man-sfepy-view',
+    'sfepy-view',
+    'View SfePy meshes or results of SfePy calculations',
+    'SfePy developers',
+     1),
 ]
 #

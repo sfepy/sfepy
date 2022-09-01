@@ -1,15 +1,18 @@
 graft doc
+graft tools
 prune sfepy/examples/*/output
 prune sfepy/examples/*/*/output
 prune doc/_build
-prune doc/html
 prune sfepy/tests/.pytest_cache
 exclude doc/logo/*.vtk
 exclude doc/publish.py
 exclude sfepy/__config__.py
 exclude sfepy/discrete/__config__.py
 
+include AUTHORS MANIFEST.in README.rst Makefile site_cfg_template.py
 include sfepy/discrete/common/extmods/version.h.in
 include sfepy/discrete/fem/extmods/lobatto1d_template.c
 include sfepy/discrete/fem/extmods/lobatto1d_template.h
 include sfepy/solvers/matlab_eig.m
+
+global-exclude *.py[cod]

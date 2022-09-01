@@ -14,7 +14,7 @@ domain (``'Gamma1'``, ..., ``'Gamma4'``).
 
 View the results using::
 
-  $ ./resview.py patch2d.vtk -f t:wt:f0.4 1:vw
+  sfepy-view patch2d.vtk -f t:wt:f0.4 1:vw
 """
 from __future__ import absolute_import
 from sfepy import data_dir

@@ -2,25 +2,23 @@ r"""
 Diametrically point loaded 2-D disk with postprocessing and probes. See
 :ref:`sec-primer`.
 
-Use it as follows (assumes running from the sfepy directory; on Windows, you
-may need to prefix all the commands with "python " and remove "./"):
-
 1. solve the problem::
 
-   ./simple.py sfepy/examples/linear_elasticity/its2D_4.py
+   sfepy-run sfepy/examples/linear_elasticity/its2D_4.py
 
 2. optionally, view the results::
 
-   ./resview.py its2D.h5 -2
+   sfepy-view its2D.h5 -2
 
-3. optionally, convert results to VTK, and view again::
+3. optionally, convert results to VTK, and view again ((assumes running from
+   the sfepy directory)::
 
-   ./extractor.py -d its2D.h5
-   ./resview.py its2D.0.vtk -2
+   python3 sfepy/scripts/extractor.py -d its2D.h5
+   sfepy-view its2D.0.vtk -2
 
 4. probe the data::
 
-   ./probe.py sfepy/examples/linear_elasticity/its2D_4.py its2D.h5
+   sfepy-probe sfepy/examples/linear_elasticity/its2D_4.py its2D.h5
 
 Find :math:`\ul{u}` such that:
 

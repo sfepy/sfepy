@@ -22,14 +22,14 @@ g_N(\ul{u}) \rangle` are the Macaulay's brackets of the gap function
 
 Usage examples::
 
-  ./simple.py sfepy/examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
+  sfepy-run sfepy/examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
 
-  ./resview.py two_bodies.mesh.vtk -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
+  sfepy-view two_bodies.mesh.vtk -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
 
-  ./script/plot_logs.py log.txt
+  python3 sfepy/scripts/plot_logs.py log.txt
 
-  ./resview.py two_bodies.mesh_ebc_nodes.vtk -2
-  ./resview.py two_bodies.mesh_regions.vtk -2
+  sfepy-view two_bodies.mesh_ebc_nodes.vtk -2
+  sfepy-view two_bodies.mesh_regions.vtk -2
 """
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.meshio import UserMeshIO
