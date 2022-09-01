@@ -1249,7 +1249,7 @@ class Problem(Struct):
                 variables.apply_ebc()
 
             if update_materials:
-                self.update_materials(verbose=self.conf.get('verbose', True))
+                self.update_materials(ts, verbose=self.conf.get('verbose', True))
 
         def poststep_fun(ts, vec):
             variables = self.equations.variables

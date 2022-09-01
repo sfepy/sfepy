@@ -120,6 +120,7 @@ Miscellaneous
      pb.set_ics(Conditions([...])) # Set initial conditions (if any).
      variables = pb.get_initial_state()
      pb.time_update()
+     pb.update_materials()
      variables.apply_ebc()
      r = pb.equations.eval_residuals(variables())
      K = pb.equations.eval_tangent_matrices(variables(), pb.mtx_a)
