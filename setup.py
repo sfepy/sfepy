@@ -169,6 +169,17 @@ def setup_package():
     fdi.close()
     fdo.close()
 
+    install_requires = [
+        'matplotlib',
+        'meshio',
+        'numpy',
+        'pyparsing',
+        'pyvista',
+        'scipy',
+        'sympy',
+        'tables',
+    ]
+
     try:
         setup(name='sfepy',
               maintainer="Robert Cimrman",
@@ -189,6 +200,7 @@ def setup_package():
                       'sfepy-view=sfepy.scripts.resview:main',
                   ],
               },
+              install_requires=install_requires,
               cmdclass=cmdclass,
               configuration=configuration)
 
