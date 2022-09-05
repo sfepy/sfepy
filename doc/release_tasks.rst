@@ -111,8 +111,8 @@ Web update and file uploading
       python3 -m venv venv
       source venv/bin/activate
       python3 -m pip install -U -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ sfepy
-      # python3 -c "import sfepy; sfepy.test('-v', '--durations=0', '-m not slow')"
-      python3 sfepy/scripts/test_install.py
+      python3 -m pip install pytest
+      python3 -c "import sfepy; sfepy.test('-v', '--durations=0')"
       deactivate
       # rm -rf venv
 
@@ -128,8 +128,8 @@ Web update and file uploading
       python3 -m venv venv
       source venv/bin/activate
       python3 -m pip install -U sfepy
-      # python3 -c "import sfepy; sfepy.test('-v', '--durations=0', '-m not slow')"
-      python3 sfepy/scripts/test_install.py
+      python3 -m pip install pytest
+      python3 -c "import sfepy; sfepy.test('-v', '--durations=0')"
       deactivate
       # rm -rf venv
 
