@@ -98,6 +98,41 @@ Useful Git commands
 Web update and file uploading
 -----------------------------
 
+* upload the sources to TestPyPI and test:
+
+  - bump version number as needed when testing
+  - upload commands::
+
+      python3 setup.py sdist # set ``is_release = True`` in site_cfg.py
+      python3 -m twine upload --repository https://test.pypi.org/legacy/ dist/sfepy-2022.3[.-]*
+
+  - testing::
+
+      python3 -m venv venv
+      source venv/bin/activate
+      python3 -m pip install -U -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ sfepy
+      # python3 -c "import sfepy; sfepy.test('-v', '--durations=0', '-m not slow')"
+      python3 sfepy/scripts/test_install.py
+      deactivate
+      # rm -rf venv
+
+* upload the sources to PyPI and test:
+
+  - upload commands::
+
+      python3 setup.py sdist # set ``is_release = True`` in site_cfg.py
+      python3 -m twine upload dist/sfepy-2022.3[.-]*
+
+  - testing::
+
+      python3 -m venv venv
+      source venv/bin/activate
+      python3 -m pip install -U sfepy
+      # python3 -c "import sfepy; sfepy.test('-v', '--durations=0', '-m not slow')"
+      python3 sfepy/scripts/test_install.py
+      deactivate
+      # rm -rf venv
+
 * make a pull request with the updated version in
   ``sfepy-feedstock/recipe/meta.yaml`` from a fork
   (e.g. https://github.com/rc/sfepy-feedstock) of
