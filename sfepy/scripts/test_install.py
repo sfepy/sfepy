@@ -136,29 +136,49 @@ def report_tests(out, return_item=False):
     Check that all tests in the output string `out` passed.
     If not, print the output.
     """
-    search = re.compile(
-        '(?:([0-9]+) failed, )*([0-9]+) passed'
-        '(?:, ([0-9]+) warnings)*.* in ([0-9.]+) seconds'
-    ).search
+    from pyparsing import (Word, Combine, Suppress, Optional, OneOrMore,
+                           delimitedList, nums, Literal)
+    from functools import partial
+    integer = Word(nums).setName('integer')
+    real = Combine(Word(nums) + '.' + Optional(Word(nums))).setName('real')
 
-    try:
-        stats = search(out).groups()
-        stats = [stat if stat is not None else '0' for stat in stats]
+    equals = Suppress(OneOrMore('='))
+    _stats = {}
+    def add_stat(s, loc, toks, key=None):
+        if key is None:
+            key = toks[1]
+        _stats[key] = toks[0]
+        return toks
 
-    except AttributeError:
-        stats = '0', '0', '0', '-1'
-        ok = False
+    word = ((integer + 'failed') |
+            (integer + 'passed') |
+            (integer + 'deselected') |
+            (integer + 'warnings')).setParseAction(add_stat)
 
-    ok = stats[0] == '0'
+    line = (equals +
+            Optional(delimitedList(word)) +
+            'in' +
+            (real + (Literal('s') | 'seconds'))
+            .setParseAction(partial(add_stat, key='seconds')) +
+            equals)
 
-    logger.info('  %s failed, %s passed, %s warnings in %s seconds'
-                % tuple(stats))
+    line.searchString(out)
+
+    keys = ['failed', 'passed', 'deselected', 'warnings', 'seconds']
+    stats = {key : _stats.get(key, '0') for key in keys}
+
+    ok = stats['failed'] == '0'
+
+    logger.info(
+        ('  {failed} failed, {passed} passed, {deselected} deselected,'
+         ' {warnings} warnings in {seconds} seconds').format(**stats)
+    )
 
     if not ok:
         logger.debug(DEBUG_FMT, out)
 
     if return_item:
-        return ok, stats[0]
+        return ok, stats['failed']
 
     else:
         return ok
