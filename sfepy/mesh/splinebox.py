@@ -459,7 +459,7 @@ class SplineRegion2D(SplineBox):
             x0 = nm.array([idx % rho, idx // rho]) / (rho - 1.)
             ts[ii] = minimize(lambda x: ptdist(x, ic, self), x0,
                               method='nelder-mead',
-                              options={'xtol': 1e-5, 'disp': False}).x
+                              options={'xatol': 1e-5, 'disp': False}).x
 
         return ts
 
