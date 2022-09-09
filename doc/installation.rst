@@ -37,7 +37,7 @@ Multi-platform Python Distributions`_ for further details.
 
 On different platforms the following options can be recommended:
 
-- **Linux**: `Anaconda`_, OS native installation, if available, or `pip`.
+- **Linux**: `Anaconda`_, OS native installation, if available, or `pip`_.
 
 - **macOS**: `Anaconda`_.
 
@@ -45,34 +45,22 @@ On different platforms the following options can be recommended:
   `Anaconda`_ or `Enthought Canopy`_ . In addition a completely free
   open-source portable distribution `WinPython`_ can be used.
 
-Note: all *SfePy* releases are regularly tested on recent Linux distributions
-(Debian and (K)Ubuntu) using OS Python installation and Anaconda, macOS 10.12+
-using Anaconda and Windows 8.1+ using Anaconda.
-
 .. _installing_sfepy:
 
 Installing SfePy
 ----------------
 
-Using pip::
+The released versions of SfePy can be installed as follows.
 
-  pip install sfepy
+- Using `pip`_::
 
-For `Anaconda`_ and `.deb` based Linux distributions (Debian, (K)Ubuntu),
-pre-built *SfePy* packages are available. You may directly install them with:
+    pip install sfepy
 
-- `Anaconda`_ distribution: install `sfepy` from `conda-forge`_ channel::
+- Using `Anaconda`_: install `sfepy` from `conda-forge`_ channel::
 
     conda install -c conda-forge sfepy
 
   See `Notes on Multi-platform Python Distributions`_ for additional notes.
-
-- Debian/(K)Ubuntu: install `python3-sfepy`::
-
-    sudo apt-get install python3-sfepy
-
-  However, the version available in the system package manager is usually not
-  very recent.
 
 .. _running_sfepy_docker_images:
 
