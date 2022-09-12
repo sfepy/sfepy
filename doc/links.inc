@@ -42,6 +42,7 @@
 .. _conda-forge: https://conda-forge.github.io/
 .. _Pre-built *SfePy* packages: https://anaconda.org/conda-forge/sfepy
 .. _sfepy-feedstock: https://github.com/conda-forge/sfepy-feedstock
+.. _pip: https://pip.pypa.io/en/stable/
 .. _enthought canopy: https://www.enthought.com/products/canopy/
 .. _epd: http://www.enthought.com/products/epd.php
 .. _WinPython: https://winpython.github.io/

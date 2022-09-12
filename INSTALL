@@ -1,5 +1,5 @@
-This text contains short installation instructions for SfePy. The full
-instructions are given in doc/installation.rst, see also [1, 2].
+This text contains short installation instructions of SfePy from sources.
+The full instructions are given in doc/installation.rst, see also [1, 2].
 
 [1] https://sfepy.org
 [2] https://sfepy.org/doc-devel/installation.html
