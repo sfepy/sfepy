@@ -104,13 +104,13 @@ Web update and file uploading
   - upload commands::
 
       python3 setup.py sdist # set ``is_release = True`` in site_cfg.py
-      python3 -m twine upload --repository https://test.pypi.org/legacy/ dist/sfepy-2022.3[.-]*
+      python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/sfepy-2022.3[.-]*
 
   - testing::
 
       python3 -m venv venv
       source venv/bin/activate
-      python3 -m pip install -U -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ sfepy
+      python3 -m pip install -U --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ sfepy
       python3 -m pip install pytest
       python3 -c "import sfepy; sfepy.test('-v', '--durations=0')"
       deactivate
