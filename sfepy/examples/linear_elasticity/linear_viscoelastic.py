@@ -68,7 +68,6 @@ Try comparing 'th' and 'eth' versions, e.g., for n_step = 201, and f_n_step =
 51. There is a visible notch on viscous stress curves in the 'th' mode, as the
 fading memory kernel is cut off before it goes close enough to zero.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 import sys
@@ -78,7 +77,6 @@ from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 from sfepy.homogenization.utils import interp_conv_mat
 from sfepy import data_dir
-import six
 
 def linear_tension(ts, coors, mode=None, verbose=True, **kwargs):
     if mode == 'qp':
@@ -107,33 +105,6 @@ def get_th_pars(ts, coors, mode=None, times=None, kernel=None, **kwargs):
 
     return out
 
-filename_mesh = data_dir + '/meshes/3d/block.mesh'
-
-## Configure below. ##
-
-# Time stepping times.
-t0 = 0.0
-t1 = 20.0
-n_step = 21
-
-# Fading memory times.
-f_t0 = 0.0
-f_t1 = 5.0
-f_n_step = 6
-
-decay = 0.8
-mode = 'eth'
-
-## Configure above. ##
-
-times = nm.linspace(f_t0, f_t1, f_n_step)
-kernel = get_exp_fading_kernel(stiffness_from_lame(3, lam=1.0, mu=1.0),
-                               decay, times)
-
-dt = (t1 - t0) / (n_step - 1)
-fading_memory_length = min(int((f_t1 - f_t0) / dt) + 1, n_step)
-output('fading memory length:', fading_memory_length)
-
 def post_process(out, pb, state, extend=False):
     """
     Calculate and output strain and stress for given displacements.
@@ -150,7 +121,7 @@ def post_process(out, pb, state, extend=False):
                                   data=estress, dofs=None)
 
     ts = pb.get_timestepper()
-    if mode == 'th':
+    if pb.conf.mode == 'th':
         vstress = ev('ev_cauchy_stress_th.2.Omega(ts, th.H, du/dt)',
                      ts=ts, mode='el_avg')
         out['viscous_stress'] = Struct(name='output_data', mode='cell',
@@ -169,83 +140,113 @@ def post_process(out, pb, state, extend=False):
 
     return out
 
-options = {
-    'ts' : 'ts',
-    'nls' : 'newton',
-    'ls' : 'ls',
+def define(verbose=False):
+    filename_mesh = data_dir + '/meshes/3d/block.mesh'
 
-    'output_format'     : 'h5',
-    'post_process_hook' : 'post_process',
-}
+    ## Configure below. ##
 
-functions = {
-    'linear_tension' : (linear_tension,),
-    'get_pars' : (lambda ts, coors, mode=None, **kwargs:
-                  get_th_pars(ts, coors, mode, times=times, kernel=kernel,
-                              **kwargs),),
-}
+    # Time stepping times.
+    t0 = 0.0
+    t1 = 20.0
+    n_step = 21
 
-fields = {
-    'displacement': ('real', 3, 'Omega', 1),
-}
+    # Fading memory times.
+    f_t0 = 0.0
+    f_t1 = 5.0
+    f_n_step = 6
 
-materials = {
-    'solid' : ({
-        'D' : stiffness_from_lame(3, lam=5.769, mu=3.846),
-    },),
-    'th' : 'get_pars',
-    'load' : 'linear_tension',
-}
+    decay = 0.8
+    mode = 'eth'
 
-variables = {
-    'u' : ('unknown field', 'displacement', 0, fading_memory_length),
-    'v' : ('test field', 'displacement', 'u'),
-}
+    ## Configure above. ##
 
-regions = {
-    'Omega' : 'all',
-    'Left' : ('vertices in (x < -4.99)', 'facet'),
-    'Right' : ('vertices in (x > 4.99)', 'facet'),
-}
+    times = nm.linspace(f_t0, f_t1, f_n_step)
+    kernel = get_exp_fading_kernel(stiffness_from_lame(3, lam=1.0, mu=1.0),
+                                   decay, times)
 
-ebcs = {
-    'fixb' : ('Left', {'u.all' : 0.0}),
-    'fixt' : ('Right', {'u.[1,2]' : 0.0}),
-}
+    dt = (t1 - t0) / (n_step - 1)
+    fading_memory_length = min(int((f_t1 - f_t0) / dt) + 1, n_step)
+    output('fading memory length:', fading_memory_length, verbose=verbose)
 
-if mode == 'th':
-    # General form with tabulated kernel.
-    equations = {
-        'elasticity' :
-        """dw_lin_elastic.2.Omega( solid.D, v, u )
-         + dw_lin_elastic_th.2.Omega( ts, th.H, v, du/dt )
-         = - dw_surface_ltr.2.Right( load.val, v )""",
+    options = {
+        'ts' : 'ts',
+        'nls' : 'newton',
+        'ls' : 'ls',
+
+        'output_format'     : 'h5',
+        'post_process_hook' : 'post_process',
     }
 
-else:
-    # Fast form that is exact for exponential kernels.
-    equations = {
-        'elasticity' :
-        """dw_lin_elastic.2.Omega( solid.D, v, u )
-         + dw_lin_elastic_eth.2.Omega( ts, th.H0, th.Hd, v, du/dt )
-         = - dw_surface_ltr.2.Right( load.val, v )""",
+    functions = {
+        'linear_tension' : (linear_tension,),
+        'get_pars' : (lambda ts, coors, mode=None, **kwargs:
+                      get_th_pars(ts, coors, mode, times=times, kernel=kernel,
+                                  **kwargs),),
     }
 
-solvers = {
-    'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton', {
-        'i_max' : 1,
-        'eps_a' : 1e-10,
-    }),
-    'ts' : ('ts.simple', {
-        't0' : t0,
-        't1' : t1,
-        'dt' : None,
-        'n_step' : n_step,
-        'quasistatic' : True,
-        'verbose' : 1,
-    }),
-}
+    fields = {
+        'displacement': ('real', 3, 'Omega', 1),
+    }
+
+    materials = {
+        'solid' : ({
+            'D' : stiffness_from_lame(3, lam=5.769, mu=3.846),
+        },),
+        'th' : 'get_pars',
+        'load' : 'linear_tension',
+    }
+
+    variables = {
+        'u' : ('unknown field', 'displacement', 0, fading_memory_length),
+        'v' : ('test field', 'displacement', 'u'),
+    }
+
+    regions = {
+        'Omega' : 'all',
+        'Left' : ('vertices in (x < -4.99)', 'facet'),
+        'Right' : ('vertices in (x > 4.99)', 'facet'),
+    }
+
+    ebcs = {
+        'fixb' : ('Left', {'u.all' : 0.0}),
+        'fixt' : ('Right', {'u.[1,2]' : 0.0}),
+    }
+
+    if mode == 'th':
+        # General form with tabulated kernel.
+        equations = {
+            'elasticity' :
+            """dw_lin_elastic.2.Omega( solid.D, v, u )
+             + dw_lin_elastic_th.2.Omega( ts, th.H, v, du/dt )
+             = - dw_surface_ltr.2.Right( load.val, v )""",
+        }
+
+    else:
+        # Fast form that is exact for exponential kernels.
+        equations = {
+            'elasticity' :
+            """dw_lin_elastic.2.Omega( solid.D, v, u )
+             + dw_lin_elastic_eth.2.Omega( ts, th.H0, th.Hd, v, du/dt )
+             = - dw_surface_ltr.2.Right( load.val, v )""",
+        }
+
+    solvers = {
+        'ls' : ('ls.scipy_direct', {}),
+        'newton' : ('nls.newton', {
+            'i_max' : 1,
+            'eps_a' : 1e-10,
+        }),
+        'ts' : ('ts.simple', {
+            't0' : t0,
+            't1' : t1,
+            'dt' : None,
+            'n_step' : n_step,
+            'quasistatic' : True,
+            'verbose' : 1,
+        }),
+    }
+
+    return locals()
 
 def main():
     """
@@ -254,6 +255,7 @@ def main():
     from argparse import ArgumentParser, RawDescriptionHelpFormatter
     import matplotlib.pyplot as plt
 
+    from sfepy.base.base import Struct
     import sfepy.postprocess.time_history as th
 
     msgs = {
@@ -287,14 +289,15 @@ def main():
             for ii in ts]
     load = nm.array(load)
 
-    normalized_kernel = kernel[:, 0, 0] / kernel[0, 0, 0]
+    conf = Struct(**define(verbose=True))
+    normalized_kernel = conf.kernel[:, 0, 0] / conf.kernel[0, 0, 0]
 
     plt.figure(1, figsize=(8, 10))
     plt.subplots_adjust(hspace=0.3,
                         top=0.95, bottom=0.05, left=0.07, right=0.95)
 
     plt.subplot(311)
-    plt.plot(times, normalized_kernel, lw=3)
+    plt.plot(conf.times, normalized_kernel, lw=3)
     plt.title('fading memory decay')
     plt.xlabel('time')
 
