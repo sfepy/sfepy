@@ -6,8 +6,10 @@ matrix with embedded metalic electrodes, see [1] for details.
 porous media. International Journal of Solids and Structures 147, 2018,
 pages 110-125. https://doi.org/10.1016/j.ijsolstr.2018.05.017
 """
-
+import os
 import numpy as nm
+
+from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.homogenization.utils import coor_to_sym, define_box_regions
 from sfepy.discrete.fem.mesh import Mesh
@@ -89,7 +91,7 @@ def recovery_micro(pb, corrs, macro):
 # Define the local problems and the homogenized coefficients,
 # eps0 is the real size of the reference cell.
 def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
-
+    filename_mesh = os.path.join(data_dir, filename_mesh)
     mesh = Mesh.from_file(filename_mesh)
     bbox = mesh.get_bounding_box()
     regions = define_box_regions(mesh.dim, bbox[0], bbox[1], eps=1e-3)
