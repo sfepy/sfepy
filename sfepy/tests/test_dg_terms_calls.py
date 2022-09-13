@@ -14,7 +14,7 @@ from sfepy.discrete.common.dof_info import EquationMap
 from sfepy.terms.terms_dg import AdvectionDGFluxTerm, \
     NonlinearHyperbolicDGFluxTerm, NonlinearScalarDotGradTerm, \
     DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
-from test_dg_field import prepare_dgfield_1D, prepare_field_2D
+from sfepy.tests.test_dg_field import prepare_dgfield_1D, prepare_field_2D
 
 
 class DGTermTestEnvornment:
