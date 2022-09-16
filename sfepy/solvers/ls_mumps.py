@@ -448,7 +448,7 @@ class mumps_struc_c_5_2(ctypes.Structure):  # MUMPS 5.2.x
     ]
 
 
-class mumps_struc_c_5_4(ctypes.Structure):  # MUMPS 5.4.x
+class mumps_struc_c_5_3(ctypes.Structure):  # MUMPS 5.3.x
     _fields_ = [
         ('sym', mumps_int),
         ('par', mumps_int),
@@ -608,10 +608,10 @@ class MumpsSolver(object):
             mumps_struc_c = mumps_struc_c_5_0
         elif version >= 5.01 and version < 5.02:
             mumps_struc_c = mumps_struc_c_5_1
-        elif version >= 5.02 and version < 5.04:
+        elif version >= 5.02 and version < 5.03:
             mumps_struc_c = mumps_struc_c_5_2
-        elif version >= 5.04:
-            mumps_struc_c = mumps_struc_c_5_4
+        elif version >= 5.03:
+            mumps_struc_c = mumps_struc_c_5_3
 
         self.struct.job = -2
 
@@ -728,7 +728,7 @@ class MumpsSolver(object):
         schur_arr : array
             The Schur matrix of order 'schur_size'.
         schur_rhs : array
-            The reduced right-hand side vector. 
+            The reduced right-hand side vector.
         """
         # Schur
         slist = schur_list + 1
