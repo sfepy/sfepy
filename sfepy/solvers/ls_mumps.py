@@ -448,6 +448,107 @@ class mumps_struc_c_5_2(ctypes.Structure):  # MUMPS 5.2.x
     ]
 
 
+class mumps_struc_c_5_3(ctypes.Structure):  # MUMPS 5.3.x
+    _fields_ = [
+        ('sym', mumps_int),
+        ('par', mumps_int),
+        ('job', mumps_int),
+        ('comm_fortran', mumps_int),
+        ('icntl', mumps_int * 60),
+        ('keep', mumps_int * 500),
+        ('cntl', mumps_real * 15),
+        ('dkeep', mumps_real * 230),
+        ('keep8', mumps_int8 * 150),
+        ('n', mumps_int),
+        ('nbl', mumps_int),
+        #
+        ('nz_alloc', mumps_int),
+        # /* Assembled entry */
+        ('nz', mumps_int),
+        ('nnz', mumps_int8),
+        ('irn', mumps_pint),
+        ('jcn', mumps_pint),
+        ('a', mumps_pcomplex),
+        # /* Distributed entry */
+        ('nz_loc', mumps_int),
+        ('nnz_loc', mumps_int8),
+        ('irn_loc', mumps_pint),
+        ('jcn_loc', mumps_pint),
+        ('a_loc', mumps_pcomplex),
+        # /* Element entry */
+        ('nelt', mumps_int),
+        ('eltptr', mumps_pint),
+        ('eltvar', mumps_pint),
+        ('a_elt', mumps_pcomplex),
+        # /* Matrix by blocks */
+        ('blkptr', mumps_pint),
+        ('blkvar', mumps_pint),
+        # /* Ordering, if given by user */
+        ('perm_in', mumps_pint),
+        # /* Orderings returned to user */
+        ('sym_perm', mumps_pint),
+        ('uns_perm', mumps_pint),
+        # /* Scaling (input only in this version) */
+        ('colsca', mumps_preal),
+        ('rowsca', mumps_preal),
+        ('colsca_from_mumps', mumps_int),
+        ('rowsca_from_mumps', mumps_int),
+        # /* RHS, solution, ouptput data and statistics */
+        ('rhs', mumps_pcomplex),
+        ('redrhs', mumps_pcomplex),
+        ('rhs_sparse', mumps_pcomplex),
+        ('sol_loc', mumps_pcomplex),
+        ('rhs_loc', mumps_pcomplex),
+        ('irhs_sparse', mumps_pint),
+        ('irhs_ptr', mumps_pint),
+        ('isol_loc', mumps_pint),
+        ('irhs_loc', mumps_pint),
+        ('nrhs', mumps_int),
+        ('lrhs', mumps_int),
+        ('lredrhs', mumps_int),
+        ('nz_rhs', mumps_int),
+        ('lsol_loc', mumps_int),
+        ('nloc_rhs', mumps_int),
+        ('lrhs_loc', mumps_int),
+        ('schur_mloc', mumps_int),
+        ('schur_nloc', mumps_int),
+        ('schur_lld', mumps_int),
+        ('mblock', mumps_int),
+        ('nblock', mumps_int),
+        ('nprow', mumps_int),
+        ('npcol', mumps_int),
+        ('info', mumps_int * 80),
+        ('infog', mumps_int * 80),
+        ('rinfo', mumps_real * 40),
+        ('rinfog', mumps_real * 40),
+        # /* Null space */
+        ('deficiency', mumps_int),
+        ('pivnul_list', mumps_pint),
+        ('mapping', mumps_pint),
+        # /* Schur */
+        ('size_schur', mumps_int),
+        ('listvar_schur', mumps_pint),
+        ('schur', mumps_pcomplex),
+        # /* Internal parameters */
+        ('instance_number', mumps_int),
+        ('wk_user', mumps_pcomplex),
+        # /* Version number:
+        #  length=30 in FORTRAN + 1 for final \0 + 1 for alignment */
+        ('version_number', ctypes.c_char * (30 + 1 + 1)),
+        # /* For out-of-core */
+        ('ooc_tmpdir', ctypes.c_char * 256),
+        ('ooc_prefix', ctypes.c_char * 64),
+        # /* To save the matrix in matrix market format */
+        ('write_problem', ctypes.c_char * 256),
+        ('lwk_user', mumps_int),
+        # /* For save/restore feature */
+        ('save_dir', ctypes.c_char * 256),
+        ('save_prefix', ctypes.c_char * 256),
+        # /* Metis options */
+        ('metis_options', mumps_int * 40),
+    ]
+
+
 class MumpsSolver(object):
     """MUMPS object."""
 
@@ -507,8 +608,10 @@ class MumpsSolver(object):
             mumps_struc_c = mumps_struc_c_5_0
         elif version >= 5.01 and version < 5.02:
             mumps_struc_c = mumps_struc_c_5_1
-        elif version >= 5.02:
+        elif version >= 5.02 and version < 5.03:
             mumps_struc_c = mumps_struc_c_5_2
+        elif version >= 5.03:
+            mumps_struc_c = mumps_struc_c_5_3
 
         self.struct.job = -2
 
@@ -625,7 +728,7 @@ class MumpsSolver(object):
         schur_arr : array
             The Schur matrix of order 'schur_size'.
         schur_rhs : array
-            The reduced right-hand side vector. 
+            The reduced right-hand side vector.
         """
         # Schur
         slist = schur_list + 1
