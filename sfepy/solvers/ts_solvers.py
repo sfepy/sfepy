@@ -404,6 +404,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
         M = self.get_matrices(nls, vec)[0]
         a0 = nls.lin_solver(-r, mtx=M)
+        nls.lin_solver.clear()
         output_array_stats(a0, 'initial acceleration', verbose=self.verbose)
         return a0
 
