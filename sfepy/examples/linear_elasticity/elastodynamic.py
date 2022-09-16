@@ -204,8 +204,13 @@ equations = {
 }
 
 solvers = {
-    'ls' : ('ls.scipy_direct', {
+    'ls' : ('ls.auto_direct', {
+        # Reuse the factorized linear system from the first time step.
         'use_presolve' : True,
+        # Speed up the above by omitting the matrix digest check used normally
+        # for verification that the current matrix corresponds to the
+        # factorized matrix stored in the solver instance. Use with care!
+        'use_mtx_digest' : False,
     }),
     'ls-i' : ('ls.petsc', {
         'method' : 'cg',
