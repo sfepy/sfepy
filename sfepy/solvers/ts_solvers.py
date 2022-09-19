@@ -723,31 +723,57 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
          r'The Newmark-like parameter :math:`\gamma`.'),
     ]
 
+    def _create_nlst_a(self, nls, dt, ufun, vfun, afun, cm, cc, ck, cache_name):
+        nlst = nls.copy()
+
+        def fun(at):
+            vec = nm.r_[ufun(at), vfun(at), afun(at)]
+
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        @_cache(self, cache_name, self.conf.is_linear)
+        def fun_grad(at):
+            vec = (None if self.conf.is_linear
+                   else nm.r_[ufun(at), vfun(at), afun(at)])
+            M, C, K = self.get_matrices(nls, vec)
+
+            Kt = cm * M + cc * C + ck * K
+            return Kt
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+
+        return nlst
+
     def create_nlst(self, nls, dt, alpha_m, alpha_f, gamma, beta, u0, v0, a0):
         dt2 = dt**2
-
-        def v1(a):
-            return v0 + dt * ((1.0 - gamma) * a0 + gamma * a)
 
         def u1(a):
             return u0 + dt * v0 + dt2 * ((0.5 - beta) * a0 + beta * a)
 
-        def v(a):
-            return (1.0 - alpha_f) * v1(a) + alpha_f * v0
+        def v1(a):
+            return v0 + dt * ((1.0 - gamma) * a0 + gamma * a)
 
-        def u(a):
+        def um(a):
             return (1.0 - alpha_f) * u1(a) + alpha_f * u0
 
-        def a1(am):
-            return (am - alpha_m * a0) / (1.0 - alpha_m)
+        def vm(a):
+            return (1.0 - alpha_f) * v1(a) + alpha_f * v0
 
-        nlst = self._create_nlst_a(nls, dt, u, v,
+        def am(a):
+            return (1.0 - alpha_m) * a + alpha_m * a0
+
+        nlst = self._create_nlst_a(nls, dt, um, vm, am,
+                                   (1.0 - alpha_m),
                                    (1.0 - alpha_f) * gamma * dt,
                                    (1.0 - alpha_f) * beta * dt2,
                                    'matrix')
-        nlst.u1 = u1
-        nlst.v1 = v1
-        nlst.a1 = a1
+        nlst.u = u1
+        nlst.v = v1
 
         return nlst
 
@@ -781,20 +807,27 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
                    verbose=self.verbose)
             dt = ts.dt
 
+            # Notation: a = \alpha_f, t = t_{n+1}, t - dt = t_n.
+            # TODO: EBCs for current time t_{n+1}. but loads should be applied
+            # in the mid-step time t_{n+1-a}.
             prestep_fun(ts, vec)
+
+            # Previous step state q(t_n).
             ut, vt, at = unpack(vec)
 
             nlst = self.create_nlst(nls, dt, alpha_m, alpha_f, gamma, beta,
                                     ut, vt, at)
 
-            ts.set_substep_time((1.0 - alpha_f) * dt)
-            am = nlst(at)
+            # Set time to t_{n+1-a} = (1 - a) t + a (t - dt) = t - a dt
+            ts.set_substep_time(- alpha_f * dt)
+            atp = nlst(at)
+            # Restore t_{n+1}.
             ts.restore_step_time()
 
-            atp = nlst.a1(am)
-            vtp = nlst.v1(atp)
-            utp = nlst.u1(atp)
+            vtp = nlst.v(atp)
+            utp = nlst.u(atp)
 
+            # Current step state q(t_{n+1}).
             vect = pack(utp, vtp, atp)
             poststep_fun(ts, vect)
 
