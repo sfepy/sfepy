@@ -404,6 +404,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
         M = self.get_matrices(nls, vec)[0]
         a0 = nls.lin_solver(-r, mtx=M)
+        nls.lin_solver.clear()
         output_array_stats(a0, 'initial acceleration', verbose=self.verbose)
         return a0
 
@@ -831,6 +832,8 @@ class BatheTS(ElastodynamicsBaseTS):
         ElastodynamicsBaseTS.__init__(self, conf, nls=nls, context=context,
                                       **kwargs)
         self.matrix1 = None
+        self.ls1 = None
+        self.ls2 = None
 
     def create_nlst1(self, nls, dt, u0, v0, a0):
         """
@@ -845,6 +848,10 @@ class BatheTS(ElastodynamicsBaseTS):
             return dt4 * (v - v0) - a0
 
         nlst = self._create_nlst_u(nls, dt, v, a, dt4 * dt4, dt4, 'matrix1')
+        if self.ls1 is None:
+            self.ls1 = nls.lin_solver.copy()
+
+        nlst.lin_solver = self.ls1
         return nlst
 
     def create_nlst2(self, nls, dt, u0, u1, v0, v1):
@@ -862,6 +869,10 @@ class BatheTS(ElastodynamicsBaseTS):
             return dt1 * v0 - dt4 * v1 + dt3 * v
 
         nlst = self._create_nlst_u(nls, dt, v, a, dt3 * dt3, dt3, 'matrix')
+        if self.ls2 is None:
+            self.ls2 = nls.lin_solver.copy()
+
+        nlst.lin_solver = self.ls2
         return nlst
 
     @standard_ts_call

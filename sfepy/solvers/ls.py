@@ -145,6 +145,10 @@ class ScipyDirect(LinearSolver):
          'The actual solver to use.'),
         ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
+        ('use_mtx_digest', 'bool', True, False,
+         """If True, determine automatically a reused matrix using its
+            SHA1 digest. If False, .clear() has to be called
+            manually whenever the matrix changes - expert use only!"""),
     ]
 
     def __init__(self, conf, method=None, **kwargs):
@@ -179,22 +183,37 @@ class ScipyDirect(LinearSolver):
         else:
             self.sls.use_solver(useUmfpack=False)
 
+        self.clear()
+
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
+        if not conf.use_presolve:
+            self.clear()
 
         if conf.use_presolve:
-            self.presolve(mtx)
+            self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest)
 
-        if self.solve is not None:
             # Matrix is already prefactorized.
             return self.solve(rhs)
+
         else:
             return self.sls.spsolve(mtx, rhs)
 
-    def presolve(self, mtx):
-        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
-        if is_new:
+    def clear(self):
+        if self.solve is not None:
+            del self.solve
+
+        self.solve = None
+
+    def presolve(self, mtx, use_mtx_digest=True):
+        if use_mtx_digest:
+            is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
+
+        else:
+            is_new, mtx_digest = False, None
+
+        if is_new or (self.solve is None):
             self.solve = self.sls.factorized(mtx)
             self.mtx_digest = mtx_digest
 
@@ -208,6 +227,10 @@ class ScipySuperLU(ScipyDirect):
     _parameters = [
         ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
+        ('use_mtx_digest', 'bool', True, False,
+         """If True, determine automatically a reused matrix using its
+            SHA1 digest. If False, .clear() has to be called
+            manually whenever the matrix changes - expert use only!"""),
     ]
 
     def __init__(self, conf, **kwargs):
@@ -223,6 +246,10 @@ class ScipyUmfpack(ScipyDirect):
     _parameters = [
         ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
+        ('use_mtx_digest', 'bool', True, False,
+         """If True, determine automatically a reused matrix using its
+            SHA1 digest. If False, .clear() has to be called
+            manually whenever the matrix changes - expert use only!"""),
     ]
 
     def __init__(self, conf, **kwargs):
@@ -761,6 +788,10 @@ class MUMPSSolver(LinearSolver):
     _parameters = [
         ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
+        ('use_mtx_digest', 'bool', True, False,
+         """If True, determine automatically a reused matrix using its
+            SHA1 digest. If False, .clear() has to be called
+            manually whenever the matrix changes - expert use only!"""),
         ('memory_relaxation', 'int', 20, False,
          'The percentage increase in the estimated working space.'),
     ]
@@ -768,7 +799,6 @@ class MUMPSSolver(LinearSolver):
     def __init__(self, conf, **kwargs):
         import sfepy.solvers.ls_mumps as mumps
 
-        self.mumps_ls = None
         if not mumps.use_mpi:
             raise AttributeError('No mpi4py found! Required by MUMPS solver.')
 
@@ -776,12 +806,15 @@ class MUMPSSolver(LinearSolver):
 
         LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
                               mumps_presolved=False, **kwargs)
+        self.clear()
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        if not self.mumps_presolved:
-            self.presolve(mtx, presolve_flag=conf.use_presolve)
+        if not conf.use_presolve:
+            self.clear()
+
+        self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest)
 
         out = rhs.copy()
         self.mumps_ls.set_rhs(out)
@@ -789,33 +822,40 @@ class MUMPSSolver(LinearSolver):
 
         return out
 
-    def presolve(self, mtx, presolve_flag=False):
-        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
-        if not isinstance(mtx, sps.coo_matrix):
-            mtx = mtx.tocoo()
-        if self.mumps_ls is None:
-            system = 'complex' if mtx.dtype.name.startswith('complex')\
-                else 'real'
-            is_sym = self.mumps.coo_is_symmetric(mtx)
-            mem_relax = self.conf.memory_relaxation
-            self.mumps_ls = self.mumps.MumpsSolver(system=system,
-                                                   is_sym=is_sym,
-                                                   mem_relax=mem_relax)
+    def clear(self):
+        if self.mumps_ls is not None:
+            del(self.mumps_ls)
 
-        if is_new:
+        self.mumps_ls = None
+
+    def presolve(self, mtx, use_mtx_digest=True):
+        if use_mtx_digest:
+            is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
+
+        else:
+            is_new, mtx_digest = False, None
+
+        if is_new or (self.mumps_ls is None):
+            if not isinstance(mtx, sps.coo_matrix):
+                mtx = mtx.tocoo()
+
+            if self.mumps_ls is None:
+                system = 'complex' if mtx.dtype.name.startswith('complex')\
+                    else 'real'
+                is_sym = self.mumps.coo_is_symmetric(mtx)
+                mem_relax = self.conf.memory_relaxation
+                self.mumps_ls = self.mumps.MumpsSolver(system=system,
+                                                       is_sym=is_sym,
+                                                       mem_relax=mem_relax)
             if self.conf.verbose:
                 self.mumps_ls.set_verbose()
 
             self.mumps_ls.set_mtx_centralized(mtx)
             self.mumps_ls(4)  # analyze + factorize
-            if presolve_flag:
-                self.mumps_presolved = True
             self.mtx_digest = mtx_digest
 
     def __del__(self):
-        if self.mumps_ls is not None:
-            del(self.mumps_ls)
-
+        self.clear()
 
 class MUMPSParallelSolver(LinearSolver):
     """
