@@ -42,7 +42,7 @@ On different platforms the following options can be recommended:
 - **macOS**: `Anaconda`_.
 
 - **Windows**: free versions of commercial scientific Python distributions
-  `Anaconda`_ or `Enthought Canopy`_ . In addition a completely free
+  `Anaconda`_ or `Enthought Deployment Manager`_ . In addition a completely free
   open-source portable distribution `WinPython`_ can be used.
 
 .. _installing_sfepy:
