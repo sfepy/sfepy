@@ -6,6 +6,7 @@ prune doc/_build
 prune sfepy/tests/.pytest_cache
 exclude doc/logo/*.vtk
 exclude doc/publish.py
+exclude doc/sfepy_manual.pdf
 exclude sfepy/__config__.py
 exclude sfepy/discrete/__config__.py
 

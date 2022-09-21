@@ -193,7 +193,7 @@ def resview_plot(filename, filename_out, options):
 
     if options.view_2d:
         plotter.view_xy()
-        plotter.show(screenshot=filename_out)
+        plotter.show(screenshot=filename_out, window_size=(800, 600))
     else:
         if options.camera:
             zoom = options.camera[2] if len(options.camera) > 2 else 1.
@@ -203,7 +203,7 @@ def resview_plot(filename, filename_out, options):
         else:
             cpos = None
 
-        plotter.show(cpos=cpos, screenshot=filename_out)
+        plotter.show(cpos=cpos, screenshot=filename_out, window_size=(800, 600))
 
 
 def _omit(filename):
