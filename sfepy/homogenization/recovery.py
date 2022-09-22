@@ -511,7 +511,8 @@ def get_recovery_points(region, eps0):
     rcmax = nm.max(rcoors, axis=0)
     nn = nm.round((rcmax - rcmin) / eps0)
     if nm.prod(nn) == 0:
-        raise ValueError('incompatible recovery region and microstructure size!')
+        raise ValueError(
+            'incompatible recovery region and microstructure size!')
 
     cs = []
     for ii, n in enumerate(nn):
