@@ -130,7 +130,7 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
         'coefs': 'coefs',
         'requirements': 'requirements',
         'output_dir': 'output',
-        'file_per_var': True,
+        'file_split_by': 'region',
         'absolute_mesh_path': True,
         'multiprocessing': False,
         'recovery_hook': recovery_micro,

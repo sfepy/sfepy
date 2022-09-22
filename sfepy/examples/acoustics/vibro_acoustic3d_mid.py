@@ -62,15 +62,15 @@ wc = w * c
 wc2 = w * c2
 
 regions = {
-    'Gamma0': 'all',
+    'Gamma0_1': 'all',
     'Left': ('vertices in (x < 0.001)', 'facet'),
     'Right': ('vertices in (x > 0.299)', 'facet'),
     }
 
 fields = {
-    'deflection': ('complex', 'scalar', 'Gamma0', 1),
-    'rotation': ('complex', 'vector', 'Gamma0', 1),
-    'tvelocity': ('complex', 'scalar', 'Gamma0', 1),
+    'deflection': ('complex', 'scalar', 'Gamma0_1', 1),
+    'rotation': ('complex', 'vector', 'Gamma0_1', 1),
+    'tvelocity': ('complex', 'scalar', 'Gamma0_1', 1),
     }
 
 variables = {
@@ -100,18 +100,18 @@ materials = {
 
 equations = {
     'eq_3': """
-        %e * dw_dot.5.Gamma0(ac.c, z, g0)
-      - %e * dw_dot.5.Gamma0(ac.T, z, w)
-      - %e * dw_dot.5.Gamma0(ac.hR, z, w)
-           + dw_diffusion.5.Gamma0(ac.hG, z, w)
-           - dw_v_dot_grad_s.5.Gamma0(ac.hG, theta, z)
+        %e * dw_dot.5.Gamma0_1(ac.c, z, g0)
+      - %e * dw_dot.5.Gamma0_1(ac.T, z, w)
+      - %e * dw_dot.5.Gamma0_1(ac.hR, z, w)
+           + dw_diffusion.5.Gamma0_1(ac.hG, z, w)
+           - dw_v_dot_grad_s.5.Gamma0_1(ac.hG, theta, z)
       = 0"""\
         % (w2, w2, w2),
     'eq_4': """
-      - %e * dw_dot.5.Gamma0(ac.h3R, nu, theta)
-           + dw_lin_elastic.5.Gamma0(ac.h3C, nu, theta)
-           - dw_v_dot_grad_s.5.Gamma0(ac.hG, nu, w)
-           + dw_dot.5.Gamma0(ac.hG, nu, theta)
+      - %e * dw_dot.5.Gamma0_1(ac.h3R, nu, theta)
+           + dw_lin_elastic.5.Gamma0_1(ac.h3C, nu, theta)
+           - dw_v_dot_grad_s.5.Gamma0_1(ac.hG, nu, w)
+           + dw_dot.5.Gamma0_1(ac.hG, nu, theta)
       = 0"""\
         % (w2, ),
     }

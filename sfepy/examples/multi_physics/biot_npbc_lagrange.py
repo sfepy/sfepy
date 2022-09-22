@@ -66,8 +66,6 @@ def define_input(filename, output_dir):
         'output_dir' : output_dir,
         'output_format' : 'vtk',
         'post_process_hook' : 'post_process',
-        ## 'file_per_var' : True,
-
         'ls' : 'ls',
         'nls' : 'newton',
     }
