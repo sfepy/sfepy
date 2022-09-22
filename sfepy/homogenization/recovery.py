@@ -677,7 +677,7 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
 
         # Collect output data - by region
         outregs_data = {}
-        outregs_info = {None: ('ALL', slice(0, pb.domain.cmesh.n_el))}
+        outregs_info = {None: ('ALL', nm.arange(pb.domain.cmesh.n_el))}
         vn_reg = {None: None}
         for k, v in outs[0].items():
 
