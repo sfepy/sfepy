@@ -604,7 +604,8 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
 
         # Recover micro. region
         mesh = pb.domain.mesh
-        mic_coors = (mesh.coors - mesh.get_bounding_box()[0, :]) * eps0
+        bbox = mesh.get_bounding_box()
+        mic_coors = (mesh.coors - 0.5 * (bbox[1, :] + bbox[0, :])) * eps0
         coors, conn, ndoffset, rec_ids = [], [], 0, []
 
         if eval_vars is not None and eval_mode == 'constant':
