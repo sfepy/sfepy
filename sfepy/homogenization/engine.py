@@ -269,7 +269,7 @@ class HomogenizationWorker(object):
             mini_app = MiniAppBase.any_from_conf(name, problem, rargs)
             mini_app.setup_output(save_formats=opts.save_formats,
                                   post_process_hook=post_process_hook,
-                                  file_per_var=opts.file_per_var)
+                                  file_split_by=opts.file_split_by)
             if mini_app.save_name is not None:
                 mini_app.save_name += time_tag
 

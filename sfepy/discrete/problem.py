@@ -341,7 +341,7 @@ class Problem(Struct):
                          output_dir=self.output_dir,
                          output_format=self.output_format,
                          file_format=self.file_format,
-                         file_per_var=self.file_per_var,
+                         file_split_by=self.file_split_by,
                          linearization=self.linearization)
 
         return obj
@@ -398,7 +398,7 @@ class Problem(Struct):
             default_output_format = conf.options.get('output_format', None)
 
         default_file_format = conf.options.get('file_format', None)
-        default_file_per_var = conf.options.get('file_per_var', None)
+        default_file_split_by = conf.options.get('file_split_by', None)
         default_float_format = conf.options.get('float_format', None)
         default_linearization = Struct(kind='strip')
 
@@ -407,12 +407,12 @@ class Problem(Struct):
                           output_format=default_output_format,
                           file_format=default_file_format,
                           float_format=default_float_format,
-                          file_per_var=default_file_per_var,
+                          file_split_by=default_file_split_by,
                           linearization=default_linearization)
 
     def setup_output(self, output_filename_trunk=None, output_dir=None,
                      output_format=None, file_format=None, float_format=None,
-                     file_per_var=None, linearization=None):
+                     file_split_by=None, linearization=None):
         """
         Sets output options to given values, or uses the defaults for
         each argument that is None.
@@ -432,7 +432,7 @@ class Problem(Struct):
             check_format_suffix(self.file_format, self.output_format)
 
         self.float_format = get_default(float_format, None)
-        self.file_per_var = get_default(file_per_var, False)
+        self.file_split_by = get_default(file_split_by, None)
         self.linearization = get_default(linearization, Struct(kind='strip'))
 
         if ((self.output_format == 'h5') and
@@ -792,28 +792,41 @@ class Problem(Struct):
         self.update_time_stepper(ts)
         self.equations.advance(self.ts)
 
+    def get_meshes_from_region(self, reg_names):
+        meshes = {}
+        for rname in reg_names:
+            if rname not in meshes:
+                reg = self.domain.regions[rname]
+                is_surface = reg.kind != 'cell'
+                mesh = Mesh.from_region(reg, self.domain.mesh,
+                                        localize=True, is_surface=is_surface)
+                meshes[rname] = mesh
+
+        return meshes
+
     def save_state(self, filename, state=None, out=None,
                    fill_value=None, post_process_hook=None,
-                   linearization=None, file_per_var=False, **kwargs):
+                   linearization=None, file_split_by=None, **kwargs):
         """
         Parameters
         ----------
-        file_per_var : bool or None
-            If True, data of each variable are stored in a separate
-            file. If None, it is set to the application option value.
+        file_split_by : None, 'region', 'variable'
+            If 'region' or 'variable', data of each region/variable are
+            stored in a separate file.
+            If None, it is set to the application option value.
         linearization : Struct or None
             The linearization configuration for higher order
-            approximations. If its kind is 'adaptive', `file_per_var` is
-            assumed True.
+            approximations. If its kind is 'adaptive', `file_split_by` is
+            assumed 'variable'.
         """
         linearization = get_default(linearization, self.linearization)
         if linearization.kind != 'adaptive':
-            file_per_var = get_default(file_per_var, self.file_per_var)
+            file_split_by = get_default(file_split_by, self.file_split_by)
 
         else:
-            file_per_var = True
+            file_split_by = 'variable'
 
-        extend = not file_per_var
+        extend = not file_split_by
         if (out is None) and (state is not None):
             out = state.create_output(fill_value=fill_value,
                                       extend=extend,
@@ -831,12 +844,10 @@ class Problem(Struct):
                 if hasattr(val, 'levels'):
                     output('max. refinement per group:', val.levels)
 
-        elif file_per_var:
-            meshes = {}
-
+        elif file_split_by == 'variable':
             if self.equations is None:
                 varnames = {}
-                for key, val in six.iteritems(out):
+                for key, val in out.items():
                     varnames[val.var_name] = 1
                 varnames = list(varnames.keys())
                 outvars = self.create_variables(varnames)
@@ -844,18 +855,13 @@ class Problem(Struct):
             else:
                 itervars = self.equations.variables.iter_state
 
-            for var in itervars():
-                rname = var.field.region.name
-                if rname in meshes:
-                    mesh = meshes[rname]
-                else:
-                    mesh = Mesh.from_region(var.field.region, self.domain.mesh,
-                                            localize=True,
-                                            is_surface=var.is_surface)
-                    meshes[rname] = mesh
+            varss = [var for var in itervars()]
+            rnames = [var.field.region.name for var in itervars()]
+            meshes = self.get_meshes_from_region(rnames)
 
+            for var in itervars():
                 vout = {}
-                for key, val in six.iteritems(out):
+                for key, val in out.items():
                     try:
                         if val.var_name == var.name:
                             vout[key] = val
@@ -864,9 +870,25 @@ class Problem(Struct):
                         msg = 'missing var_name attribute in output!'
                         raise ValueError(msg)
 
-                aux = io.edit_filename(filename, suffix='_' + var.name)
-                mesh.write(aux, io='auto', out=vout,
+                if len(vout) > 0:
+                    mesh = meshes[var.field.region.name]
+                    aux = io.edit_filename(filename, suffix='_' + var.name)
+                    mesh.write(aux, io='auto', out=vout,
+                            float_format=self.float_format, **kwargs)
+
+        elif file_split_by == 'region':
+            rnames = [v.region_name for v in out.values()]
+            meshes = self.get_meshes_from_region(rnames)
+
+            for rname, mesh in meshes.items():
+                rout = {}
+                out_keys = [key for key, val in out.items()
+                            if val.region_name == rname]
+
+                aux = io.edit_filename(filename, suffix='_' + rname)
+                mesh.write(aux, io='auto', out=rout,
                            float_format=self.float_format, **kwargs)
+
         else:
             mesh = out.pop('__mesh__', self.domain.mesh)
             mesh.write(filename, io='auto', out=out,
@@ -1271,7 +1293,7 @@ class Problem(Struct):
                 filename = self.get_output_name(suffix=suffix)
                 self.save_state(filename, variables,
                                 post_process_hook=post_process_hook,
-                                file_per_var=None,
+                                file_split_by=None,
                                 ts=ts,
                                 file_format=self.file_format)
 
@@ -1509,7 +1531,7 @@ class Problem(Struct):
         if save_results:
             self.save_state(self.get_output_name(), variables,
                             post_process_hook=post_process_hook,
-                            file_per_var=None)
+                            file_split_by=None)
 
         return variables
 

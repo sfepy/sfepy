@@ -800,9 +800,11 @@ class FEField(Field):
         linearization = get_default(linearization, Struct(kind='strip'))
 
         out = {}
+        reg_name = self.region.name
         if linearization.kind is None:
             out[key] = Struct(name='output_data', mode='full',
                               data=dofs, var_name=var_name,
+                              region_name=reg_name,
                               dofs=dof_names, field_name=self.name)
 
         elif linearization.kind == 'strip':
@@ -819,13 +821,13 @@ class FEField(Field):
                     # Has vertex data.
                     out[key] = Struct(name='output_data', mode='vertex',
                                       data=ext, var_name=var_name,
-                                      dofs=dof_names)
+                                      dofs=dof_names, region_name=reg_name)
 
                 else:
                     ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
                     out[key] = Struct(name='output_data', mode='cell',
                                       data=ext, var_name=var_name,
-                                      dofs=dof_names)
+                                      dofs=dof_names, region_name=reg_name)
 
         else:
             mesh, vdofs, levels = self.linearize(dofs,
@@ -834,7 +836,7 @@ class FEField(Field):
                                                  linearization.eps)
             out[key] = Struct(name='output_data', mode='vertex',
                               data=vdofs, var_name=var_name, dofs=dof_names,
-                              mesh=mesh, levels=levels)
+                              mesh=mesh, levels=levels, region_name=reg_name)
 
         out = convert_complex_output(out)
 

@@ -114,7 +114,7 @@ class PDESolverApp(Application):
                       # the region of its definition only.
                       linearization=dict_to_struct(get('linearization',
                                                        {'kind' : 'strip'})),
-                      file_per_var=get('file_per_var', False),
+                      file_split_by=get('file_split_by', None),
                       output_format=get('output_format', 'vtk'),
                       file_format=get('file_format', None),
                       output_dir=output_dir,
@@ -189,7 +189,7 @@ class PDESolverApp(Application):
                              output_dir=self.app_options.output_dir,
                              output_format=output_format,
                              file_format=self.app_options.file_format,
-                             file_per_var=self.app_options.file_per_var,
+                             file_split_by=self.app_options.file_split_by,
                              linearization=self.app_options.linearization)
 
     def call(self, status=None):
