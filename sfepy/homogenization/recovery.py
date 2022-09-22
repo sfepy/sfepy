@@ -529,6 +529,44 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
                        region_mode='el_centers', eval_mode='constant',
                        eval_vars=None, corrs=None, recovery_file_tag='',
                        define_args=None, output_dir=None, verbose=False):
+    """
+    Parameters
+    ----------
+    micro_filename : str
+        The definition file of the microproblem.
+    region : Region or array
+        The macroscopic region to be recovered. If array, the centers of
+        microscopic RVEs (Representative Volume Element) are assumed to be
+        stored in it. If Region, the RVE centers are computed according to
+        `region_mode`, see below.
+    macro : dict of arrays or tuples
+        Either macroscopic values (if array) or the tuple
+        (mode, eval_var, nodal_values) is expected. The tuple is used to
+        evaluate the macroscopic values in given points of RVEs (see
+        'eval_mode`). `mode` can be 'val', 'grad', 'div', or 'cauchy_strain'.
+    eps0 : float
+        The size of the microstructures (RVE).
+    region_mode : {'el_centers', 'tiled'}
+        If 'el_centers', the RVE centers are idential to the centers of the
+        macroscopic FE mesh. If 'tiled', the recovered region is tiled
+        by rescaled RVEs.
+    eval_mode : {'constant', 'continuous'}
+        If 'constant', the macroscopic fields are evaluated only at the RVE
+        centers. If 'continuous', the fields are evaluated at all points of
+        the RVE mesh.
+    eval_vars : list of variables
+        The list of variables use to evaluate the macroscopic fields.
+    corrs : dict of CorrSolution
+        The correctors for recovery.
+    recovery_file_tag : str
+        The tag which is appended to the output file.
+    define_args : dict
+        The define arguments for the microscopic problem.
+    output_dir : str
+        The output directory.
+    verbose : bool
+        The verbose terminal output?
+    """
     import sfepy.base.multiproc_proc as multi
 
     if 'micro_problem' not in _recovery_global_dict:
