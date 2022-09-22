@@ -2,7 +2,8 @@ from __future__ import absolute_import
 
 import numpy as nm
 
-from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr
+from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr,\
+    assert_
 from sfepy.base.timing import Timer
 import six
 
@@ -349,9 +350,9 @@ class Field(Struct):
             The coordinates the source values should be interpolated into.
         source_vals : array, shape ``(n_nod, n_components)``
             The source DOF values corresponding to the field.
-        mode : {'val', 'grad'}, optional
-            The evaluation mode: the field value (default) or the field value
-            gradient.
+        mode : {'val', 'grad', 'div', 'cauchy_strain'}, optional
+            The evaluation mode: the field value (default), the field value
+            gradient, divergence, or cauchy strain.
         strategy : {'general', 'convex'}, optional
             The strategy for finding the elements that contain the
             coordinates. For convex meshes, the 'convex' strategy might be
@@ -419,18 +420,16 @@ class Field(Struct):
 
         timer = Timer(start=True)
 
+        n_comp, nc, dim = source_vals.shape[1], coors.shape[0], coors.shape[1]
         # Interpolate to the reference coordinates.
         source_dtype = nm.float64 if source_vals.dtype in complex_types\
             else source_vals.dtype
         if mode == 'val':
-            vals = nm.empty((coors.shape[0], source_vals.shape[1], 1),
-                            dtype=source_dtype)
+            vals = nm.empty((nc, n_comp, 1), dtype=source_dtype)
             cmode = 0
 
-        elif mode == 'grad':
-            vals = nm.empty((coors.shape[0], source_vals.shape[1],
-                             coors.shape[1]),
-                            dtype=source_dtype)
+        elif mode in ['grad', 'div', 'cauchy_strain']:
+            vals = nm.empty((nc, n_comp, dim), dtype=source_dtype)
             cmode = 1
 
         ctx = self.create_basis_context()
@@ -453,7 +452,31 @@ class Field(Struct):
         output('...done',verbose=verbose)
 
         if mode == 'val':
-            vals.shape = (coors.shape[0], source_vals.shape[1])
+            vals.shape = (nc, n_comp)
+
+        elif mode == 'div':
+            assert_(n_comp == dim)
+            vals = nm.trace(vals, axis1=1, axis2=2).reshape(nc, 1, 1)
+
+        elif mode == 'cauchy_strain':
+            assert_(n_comp == dim)
+            sym = (dim + 1) * dim // 2
+            aux = nm.empty((nc, sym, 1), dtype=source_dtype)
+
+            strain_tab = {
+                1: (0, ),
+                2: (0, 3, (1, 2)),
+                3: (0, 4, 8, (1, 3), (2, 6), (5, 8)),
+            }
+
+            vals_ = vals.reshape((nc, -1))
+            for ii, idx in enumerate(strain_tab[dim]):
+                if isinstance(idx, tuple):
+                    aux[:, ii, 0] = nm.sum(vals_[:, nm.array(idx)], axis=1)
+                else:
+                    aux[:, ii, 0] = vals_[:, idx]
+
+            vals = aux
 
         if not ret_status:
             ii = nm.where(status > 1)[0]
