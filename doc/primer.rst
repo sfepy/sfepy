@@ -449,11 +449,13 @@ One would expect the shape of the global stiffness matrix :math:`K` to be
 :math:`(110,110)` i.e. to have the same number of rows and columns as `u`. This
 matrix has been reduced by the fixed degrees of freedom imposed by the
 boundary conditions set at the nodes on symmetry axes. To restore the
-matrix, temporarily remove the imposed boundary conditions:
+shape of the matrix, temporarily remove the imposed boundary conditions:
 
 .. sourcecode:: ipython
 
     In [14]: pb.remove_bcs()
+
+Note that the matrix is reallocated, so it contains only zeros at this moment.
 
 Now we can calculate the force vector :math:`f`:
 
@@ -465,11 +467,11 @@ This leads to::
 
   ValueError: shape mismatch: value array of shape (55,2) could not be broadcast to indexing result of shape (110,)
 
-- the original shape of the DOF vector needs to be restored:
+-- the original shape of the DOF vector needs to be restored:
 
 .. sourcecode:: ipython
 
-    In [16]: variables.vec.shape = (110,)
+    In [16]: u.shape = variables.vec.shape = (110,)
 
     In [17]: f = pb.evaluator.eval_residual(u)
 
@@ -495,13 +497,18 @@ requires setting `f`  to (a copy of) the variables as follows:
 
 .. sourcecode:: ipython
 
-    In [21]: fvars = variables.copy()
-    In [22]: fvars.set_state(f, reduced=False)
-    In [23]: out = variables.create_output()
+    In [21]: fvars = variables.copy() # Shallow copy, .vec is shared!
+    In [22]: fvars.init_state(f) # Initialize new .vec with f.
+    In [23]: out = fvars.create_output()
     In [24]: pb.save_state('file.vtk', out=out)
 
-Running the `sfepy-view` command on ``file.vtk`` displays the average nodal
-forces as shown below:
+Running the `sfepy-view` command on ``file.vtk``, i.e.
+
+.. sourcecode:: ipython
+
+    In [25]: ! sfepy-view file.vtk
+
+displays the average nodal forces as shown below:
 
 .. image:: images/primer/its2D_3.png
    :width: 40 %
@@ -510,13 +517,15 @@ The forces in the x- and y-directions at node 2 are:
 
 .. sourcecode:: ipython
 
-    In [25]: f.shape = (55, 2)
-    In [26]: f[2]
-    Out[26]: array([  6.20373272e+02,  -1.13686838e-13])
+    In [26]: f.shape = (55, 2)
+    In [27]: f[2]
+    Out[27]: array([  6.20373272e+02,  -1.13686838e-13])
 
-Great, we have an almost zero residual vertical load or force apparent
-at node 2 i.e. -1.13686838e-13 Newton. Let us now check the stress at
-node 0, the centre of the specimen.
+Great, we have an almost zero residual vertical load or force apparent at node
+2 i.e. -1.13686838e-13 Newton. Note that these relatively very small numbers
+can be slightly different, depending on the linear solver kind and version.
+
+Let us now check the stress at node 0, the centre of the specimen.
 
 Generating output at element nodes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
