@@ -32,10 +32,10 @@ def post_process(out, pb, state, extend=False):
             save_recovery_region(pb, rname, filename=filename);
 
             rstrain = pb.evaluate('ev_cauchy_strain.i.%s(u)' % rname,
-                                  mode='el_avg')
+                                  mode='el_avg')[:, 0, ...]
 
             recover_micro_hook(pb.conf.options.micro_filename,
-                               region, {'strain' : rstrain},
+                               region, {'strain': rstrain}, 0.01,
                                output_dir=pb.conf.options.output_dir)
 
     return out
