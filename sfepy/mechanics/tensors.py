@@ -98,6 +98,10 @@ def get_deviator(tensor, sym_storage=True):
 
 
 def get_cauchy_strain(grad):
+    """
+    Given a gradient, return the corresponding Cauchy strain (symmetric
+    gradient).
+    """
     nc, _, dim = grad.shape
     sym = dim2sym(dim)
     out = nm.empty((nc, sym, 1), dtype=grad.dtype)
