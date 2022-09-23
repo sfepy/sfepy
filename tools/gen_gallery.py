@@ -38,10 +38,13 @@ from sfepy.scripts.resview import pv_plot, get_camera_position
 import pyvista as pv
 
 omits = [
+    '__init__.py',
+]
+
+omit_images = [
     'vibro_acoustic3d_mid.py',
     'its2D_5.py',
     'linear_elastic_probes.py',
-    '__init__.py',
 ]
 
 omit_dirs = [
@@ -206,7 +209,7 @@ def resview_plot(filename, filename_out, options):
         plotter.show(cpos=cpos, screenshot=filename_out, window_size=(800, 600))
 
 
-def _omit(filename):
+def _omit(filename, omits, omit_dirs):
     omit = False
 
     base = os.path.basename(filename)
@@ -321,7 +324,7 @@ def generate_images(images_dir, examples_dir):
     ensure_path(images_dir + os.path.sep)
 
     for ex_filename in locate_files('*.py', examples_dir):
-        if _omit(ex_filename):
+        if _omit(ex_filename, omits + omit_images, omit_dirs):
             continue
 
         output.level = 0
@@ -455,7 +458,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
     dir_map = {}
     for ex_filename in locate_files('*.py', examples_dir):
-        if _omit(ex_filename):
+        if _omit(ex_filename, omits, omit_dirs):
             continue
 
         ebase = ex_filename.replace(examples_dir, '')[1:]
