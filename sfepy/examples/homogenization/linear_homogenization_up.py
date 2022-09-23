@@ -43,12 +43,9 @@ def recovery_le(pb, corrs, macro):
     mic_p = - compute_micro_u(corrs['corrs_le'], macro['strain'], 'p', dim)
 
     out['u_mic'] = Struct(name='output_data',
-                          mode='vertex', data=mic_u,
-                          var_name='u', dofs=None)
-    out['p_mic'] = Struct(name='output_data',
-                          mode='cell', data=mic_p[:, nm.newaxis,
-                                                  :, nm.newaxis],
-                          var_name='p', dofs=None)
+                          mode='vertex', data=mic_u)
+    out['p_mic'] = Struct(name='output_data', mode='cell',
+                          data=mic_p[:, nm.newaxis, :, nm.newaxis])
 
     stress_Y, strain_Y = \
         compute_stress_strain_u(pb, 'i', 'Y', 'mat.D', 'u', mic_u)
@@ -59,11 +56,10 @@ def recovery_le(pb, corrs, macro):
     strain = macro['strain'] + strain_Y
 
     out['cauchy_strain'] = Struct(name='output_data',
-                                  mode='cell', data=strain,
-                                  dofs=None)
+                                  mode='cell', data=strain)
     out['cauchy_stress'] = Struct(name='output_data',
-                                  mode='cell', data=stress_Y,
-                                  dofs=None)
+                                  mode='cell', data=stress_Y)
+
     return out
 
 

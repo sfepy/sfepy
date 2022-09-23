@@ -139,6 +139,32 @@ class CorrSolution(Struct):
 
         return out
 
+    def get_output(self, is_dump=False, var_map=None):
+
+        out = {}
+        for key, sol in self.iter_solutions():
+            for var_name in sol.keys():
+                if var_map is not None and var_name in var_map:
+                    vname = var_map[var_name]
+                else:
+                    vname = var_name
+
+                dof_vector = sol[var_name]
+                if len(dof_vector.shape) == 1:
+                    dof_vector = dof_vector[:, None]
+
+                if is_dump:
+                    skey = var_name + '_' + key if key else var_name
+                    out[skey] = Struct(name='dump', mode='vertex',
+                                       data=dof_vector,
+                                       shape=dof_vector.shape,
+                                       var_name=vname)
+                else:
+                    new_key = var_name + '_' + key if key else var_name
+                    out[new_key] = dof_vector
+
+        return out
+
 
 class CorrMiniApp(MiniAppBase):
 

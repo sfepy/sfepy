@@ -12,18 +12,7 @@ from sfepy import data_dir, base_dir
 from sfepy.base.base import Struct
 from sfepy.homogenization.micmac import get_homog_coefs_linear
 import os.path as osp
-from sfepy.homogenization.recovery import recover_micro_hook_eps
-from sfepy.discrete.projections import make_l2_projection_data
-
-
-def linear_projection(pb, data_qp):
-    svar = pb.create_variables(['svar'])['svar']
-    aux = []
-    for ii in range(data_qp.shape[2]):
-        make_l2_projection_data(svar, data_qp[..., ii, :].copy())
-        aux.append(svar())
-
-    return nm.ascontiguousarray(nm.array(aux).T)
+from sfepy.homogenization.recovery import recover_micro_hook
 
 
 def post_process(out, pb, state, extend=False):
@@ -38,24 +27,25 @@ def post_process(out, pb, state, extend=False):
 
     state_dict = state.get_state_parts()
     displ = state_dict['u']
-    strain_qp = pb.evaluate('ev_cauchy_strain.i2.Omega(u)', mode='qp')
 
-    nodal_data = {
-        'u': displ.reshape((displ.shape[0] // dim, dim)),  # displacement
-        'strain': linear_projection(pb, strain_qp),  # strain
+    displ = displ.reshape((displ.shape[0] // dim, dim))
+    macro = {
+        'u': ('val', 'svar', displ),
+        'strain': ('cauchy_strain', 'svar', displ),
+        '_phi': pb.conf.phi,
     }
-    const_data = {
-        'phi': pb.conf.phi,  # el. potentials
-    }
+
     def_args = {
         'eps0': pb.conf.eps0,
         'filename_mesh': pb.conf.filename_mesh_micro,
     }
+
     pvar = pb.create_variables(['svar'])
 
-    recover_micro_hook_eps(pb.conf.filename_micro, rreg,
-                           pvar['svar'], nodal_data, const_data, pb.conf.eps0,
-                           define_args=def_args)
+    recover_micro_hook(pb.conf.filename_micro, rreg, macro, pb.conf.eps0,
+                       region_mode=pb.conf.region_mode,
+                       eval_mode=pb.conf.eval_mode,
+                       eval_vars=pvar, define_args=def_args)
 
     return out
 
@@ -93,7 +83,13 @@ def get_homog(coors, mode, pb, micro_filename, **kwargs):
     return out
 
 
-def define():
+def define(region_mode='el_centers', eval_mode='constant'):
+    """
+    Parameters
+    ----------
+    region_mode : {'el_centers', 'tiled')
+    eval_mode : {'constant', 'continuous'}
+    """
     eps0 = 1. / 30  # real size of the reference cell
 
     phi = nm.array([1, -1]) * 1e4  # prescribed el. potential

@@ -24,38 +24,48 @@ def recovery_micro(pb, corrs, macro):
     mesh = pb.domain.mesh
     regions = pb.domain.regions
     dim = mesh.dim
-    Ymc_map = regions['Ymc'].get_entities(0)
-    Ym_map = regions['Ym'].get_entities(0)
+
+    if len(macro['u'].shape) == 2:
+        mac_strain_Ymc = mac_strain_Ym = macro['strain'][None, ...]
+        mac_u_Ymc = macro['u'][None, ...]
+    else:
+        Ymc_map = regions['Ymc'].get_entities(0)
+        Ym_map = regions['Ym'].get_entities(0)
+        mac_strain_Ymc = macro['strain'][Ymc_map, ...]
+        mac_strain_Ym = macro['strain'][Ym_map, ...]
+        mac_u_Ymc = macro['u'][Ymc_map, ...]
+
     # deformation
     u1, phi = 0, 0
 
     for ii in range(2):
-        u1 += corrs['corrs_k%d' % ii]['u'] * macro['phi'][ii]
-        phi += corrs['corrs_k%d' % ii]['r'] * macro['phi'][ii]
+        u1 += corrs['corrs_k%d' % ii]['u'] * macro['_phi'][ii]
+        phi += corrs['corrs_k%d' % ii]['r'] * macro['_phi'][ii]
 
     for ii in range(dim):
         for jj in range(dim):
             kk = coor_to_sym(ii, jj, dim)
-            phi += corrs['corrs_rs']['r_%d%d' % (ii, jj)]\
-                * nm.expand_dims(macro['strain'][Ym_map, kk], axis=1)
-            u1 += corrs['corrs_rs']['u_%d%d' % (ii, jj)]\
-                * nm.expand_dims(macro['strain'][Ymc_map, kk], axis=1)
+            sidx = f'_{ii}{jj}'
+            phi += corrs['corrs_rs']['r' + sidx] * mac_strain_Ym[:, kk]
+            u1 += corrs['corrs_rs']['u' + sidx] * mac_strain_Ymc[:, kk]
 
-    u = macro['u'][Ymc_map, :] + eps0 * u1
+    u = mac_u_Ymc[..., 0] + eps0 * u1
     mvar = pb.create_variables(['u', 'r', 'svar'])
     e_mac_Ymc = [None] * macro['strain'].shape[1]
 
-    for ii in range(dim):
-        for jj in range(dim):
-            kk = coor_to_sym(ii, jj, dim)
-            mvar['svar'].set_data(macro['strain'][:, kk])
-            mac_e_Ymc = pb.evaluate('ev_integrate.i2.Ymc(svar)',
-                                    mode='el_avg',
-                                    var_dict={'svar': mvar['svar']})
+    if mac_strain_Ymc.shape[0] > 1:
+        for ii in range(dim):
+            for jj in range(dim):
+                kk = coor_to_sym(ii, jj, dim)
+                mvar['svar'].set_data(mac_strain_Ymc[:, kk])
+                aux = pb.evaluate('ev_integrate.i2.Ymc(svar)',
+                                  mode='el_avg',
+                                  var_dict={'svar': mvar['svar']})
+                e_mac_Ymc[kk] = aux.squeeze()
 
-            e_mac_Ymc[kk] = mac_e_Ymc.squeeze()
-
-    e_mac_Ymc = nm.vstack(e_mac_Ymc).T[:, nm.newaxis, :, nm.newaxis]
+        e_mac_Ymc = nm.vstack(e_mac_Ymc).T[:, nm.newaxis, :, nm.newaxis]
+    else:
+        e_mac_Ymc = mac_strain_Ymc
 
     mvar['r'].set_data(phi)
     E_mic = pb.evaluate('ev_grad.i2.Ym(r)',
@@ -69,7 +79,6 @@ def recovery_micro(pb, corrs, macro):
     e_mic += e_mac_Ymc
 
     out = {
-        'u0': (macro['u'][Ymc_map, :], 'u', 'p'),
         'u': (u, 'u', 'p'),
         'u1': (u1, 'u', 'p'),
         'e_mic': (e_mic, 'u', 'c'),
