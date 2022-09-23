@@ -96,6 +96,28 @@ def get_deviator(tensor, sym_storage=True):
 
     return dev
 
+
+def get_cauchy_strain(grad):
+    nc, _, dim = grad.shape
+    sym = dim2sym(dim)
+    out = nm.empty((nc, sym, 1), dtype=grad.dtype)
+
+    strain_tab = {
+        1: (0, ),
+        2: (0, 3, (1, 2)),
+        3: (0, 4, 8, (1, 3), (2, 6), (5, 7)),
+    }
+
+    vals_ = grad.reshape((nc, -1))
+    for ii, idx in enumerate(strain_tab[dim]):
+        if isinstance(idx, tuple):
+            out[:, ii, 0] = nm.sum(vals_[:, nm.array(idx)], axis=1)
+        else:
+            out[:, ii, 0] = vals_[:, idx]
+
+    return out
+
+
 def get_von_mises_stress(stress, sym_storage=True):
     r"""
     Given a symmetric stress tensor, compute the von Mises stress (also known

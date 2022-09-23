@@ -6,6 +6,7 @@ from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr,\
     assert_
 from sfepy.base.timing import Timer
 import six
+from sfepy.mechanics.tensors import get_cauchy_strain
 
 
 def parse_approx_order(approx_order):
@@ -460,23 +461,7 @@ class Field(Struct):
 
         elif mode == 'cauchy_strain':
             assert_(n_comp == dim)
-            sym = (dim + 1) * dim // 2
-            aux = nm.empty((nc, sym, 1), dtype=source_dtype)
-
-            strain_tab = {
-                1: (0, ),
-                2: (0, 3, (1, 2)),
-                3: (0, 4, 8, (1, 3), (2, 6), (5, 8)),
-            }
-
-            vals_ = vals.reshape((nc, -1))
-            for ii, idx in enumerate(strain_tab[dim]):
-                if isinstance(idx, tuple):
-                    aux[:, ii, 0] = nm.sum(vals_[:, nm.array(idx)], axis=1)
-                else:
-                    aux[:, ii, 0] = vals_[:, idx]
-
-            vals = aux
+            vals = get_cauchy_strain(vals)
 
         if not ret_status:
             ii = nm.where(status > 1)[0]
