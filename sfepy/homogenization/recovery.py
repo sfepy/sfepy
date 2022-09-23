@@ -547,7 +547,7 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
     eps0 : float
         The size of the microstructures (RVE).
     region_mode : {'el_centers', 'tiled'}
-        If 'el_centers', the RVE centers are idential to the element centers
+        If 'el_centers', the RVE centers are identical to the element centers
         of the macroscopic FE mesh. If 'tiled', the recovered region is tiled
         by rescaled RVEs.
     eval_mode : {'constant', 'continuous'}
