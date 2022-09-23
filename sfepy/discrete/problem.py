@@ -855,7 +855,6 @@ class Problem(Struct):
             else:
                 itervars = self.equations.variables.iter_state
 
-            varss = [var for var in itervars()]
             rnames = [var.field.region.name for var in itervars()]
             meshes = self.get_meshes_from_region(rnames)
 
@@ -874,16 +873,15 @@ class Problem(Struct):
                     mesh = meshes[var.field.region.name]
                     aux = io.edit_filename(filename, suffix='_' + var.name)
                     mesh.write(aux, io='auto', out=vout,
-                            float_format=self.float_format, **kwargs)
+                               float_format=self.float_format, **kwargs)
 
         elif file_split_by == 'region':
             rnames = [v.region_name for v in out.values()]
             meshes = self.get_meshes_from_region(rnames)
 
             for rname, mesh in meshes.items():
-                rout = {}
-                out_keys = [key for key, val in out.items()
-                            if val.region_name == rname]
+                rout = {key: val for key, val in out.items()
+                        if val.region_name == rname}
 
                 aux = io.edit_filename(filename, suffix='_' + rname)
                 mesh.write(aux, io='auto', out=rout,
