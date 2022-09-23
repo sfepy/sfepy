@@ -547,8 +547,8 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
     eps0 : float
         The size of the microstructures (RVE).
     region_mode : {'el_centers', 'tiled'}
-        If 'el_centers', the RVE centers are idential to the centers of the
-        macroscopic FE mesh. If 'tiled', the recovered region is tiled
+        If 'el_centers', the RVE centers are idential to the element centers
+        of the macroscopic FE mesh. If 'tiled', the recovered region is tiled
         by rescaled RVEs.
     eval_mode : {'constant', 'continuous'}
         If 'constant', the macroscopic fields are evaluated only at the RVE
@@ -565,7 +565,7 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
     output_dir : str
         The output directory.
     verbose : bool
-        The verbose terminal output?
+        The verbose terminal output.
     """
     import sfepy.base.multiproc_proc as multi
 
