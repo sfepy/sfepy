@@ -43,8 +43,8 @@ def post_process(out, pb, state, extend=False):
     pvar = pb.create_variables(['svar'])
 
     recover_micro_hook(pb.conf.filename_micro, rreg, macro, pb.conf.eps0,
-                       region_mode='el_centers', eval_mode='constant',
-                    #    region_mode='tiled', eval_mode='constant',
+                       region_mode=pb.conf.region_mode,
+                       eval_mode=pb.conf.eval_mode,
                        eval_vars=pvar, define_args=def_args)
 
     return out
@@ -83,7 +83,13 @@ def get_homog(coors, mode, pb, micro_filename, **kwargs):
     return out
 
 
-def define():
+def define(region_mode='el_centers', eval_mode='constant'):
+    """
+    Parameters
+    ----------
+    region_mode : {'el_centers', 'tiled')
+    eval_mode : {'constant', 'continuous'}
+    """
     eps0 = 1. / 30  # real size of the reference cell
 
     phi = nm.array([1, -1]) * 1e4  # prescribed el. potential
