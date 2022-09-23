@@ -51,8 +51,8 @@ def recovery_hook(pb, ncoors, region, ts,
         micro_name = pb.get_output_name(extra='recovered_'
                                         + recovery_file_tag + suffix)
         filename = op.join(output_dir, op.basename(micro_name))
-        fpv = pb.conf.options.get('file_split_by', None)
-        pb.save_state(filename, out=out, file_split_by=fpv)
+        fpv = pb.conf.options.get('split_results_by', None)
+        pb.save_state(filename, out=out, split_results_by=fpv)
 
 
 def def_mat(ts, mode, coors, term, pb):

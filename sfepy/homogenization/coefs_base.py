@@ -178,11 +178,11 @@ class CorrMiniApp(MiniAppBase):
                                                            self.save_name))
 
     def setup_output(self, save_formats=None, post_process_hook=None,
-                     file_split_by=None):
+                     split_results_by=None):
         """Instance attributes have precedence!"""
         self.set_default('save_formats', save_formats)
         self.set_default('post_process_hook', post_process_hook)
-        self.set_default('file_split_by', file_split_by)
+        self.set_default('split_results_by', split_results_by)
 
     def get_save_name_base(self):
         return self.save_name
@@ -254,17 +254,17 @@ class CorrMiniApp(MiniAppBase):
             if self.get_save_name_base() is not None:
                 if save_format in ['h5']:
                     save_name = self.get_save_name(save_format)
-                    is_dump, file_split_by, extend = True, None, False
+                    is_dump, split_results_by, extend = True, None, False
                 else:
                     save_name = self.get_save_name(save_format, time_stamp)
-                    file_split_by, is_dump = self.file_split_by, False
-                    extend = file_split_by is None
+                    split_results_by, is_dump = self.split_results_by, False
+                    extend = split_results_by is None
 
                 out = self.get_output(state, extend=extend, is_dump=is_dump,
                                       variables=variables, var_map=var_map)
 
                 problem.save_state(save_name, out=out,
-                                   file_split_by=file_split_by, ts=ts)
+                                   split_results_by=split_results_by, ts=ts)
 
 class ShapeDimDim(CorrMiniApp):
 

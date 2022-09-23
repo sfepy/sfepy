@@ -393,7 +393,7 @@ options = {
         }
     },
     'output_dir': './output',
-    'file_split_by': 'region',
+    'split_results_by': 'region',
     'coefs_filename': 'coefs_perf_' + pb_def['name'],
     'coefs_info': {'eps0': eps0},
     'recovery_hook': 'recovery_perf',
