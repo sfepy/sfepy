@@ -96,7 +96,8 @@ ebcs = {
     }
 
 options = {
-    'file_per_var': True,
+    'split_results_by': 'region',
+    'output_dir': 'output',
     }
 
 functions = {

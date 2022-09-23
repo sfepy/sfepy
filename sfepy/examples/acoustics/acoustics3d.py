@@ -100,7 +100,8 @@ equations = {
 options = {
     'nls': 'newton',
     'ls': 'ls',
-    'file_per_var': True,
+    'split_results_by': 'region',
+    'output_dir': 'output',
 }
 
 solvers = {
