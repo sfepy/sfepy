@@ -689,8 +689,6 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
 
                         local_macro[k] = efield.evaluate_at(local_coors, val,
                                                             mode=emode)
-                        if len(local_macro[k].shape) == 2:
-                            local_macro[k].shape = local_macro[k].shape + (1,)
                     else:
                         local_macro[k] = v
             else:
@@ -699,8 +697,6 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
                         local_macro[k] = v
                     else:
                         local_macro[k] = v[ii, ...]
-                        if len(local_macro[k].shape) == 1:
-                            local_macro[k].shape = (-1, 1)
 
             if is_multiproc:
                 multi_local_macro.append((ii, label, local_macro, verbose))

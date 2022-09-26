@@ -57,9 +57,7 @@ def make_l2_projection(target, source, ls=None, nls_options=None):
     variable using the :math:`L^2` dot product.
     """
     def eval_variable(ts, coors, mode, **kwargs):
-        val = source.evaluate_at(coors)
-        val.shape = val.shape + (1,)
-        return val
+        return source.evaluate_at(coors)
 
     make_l2_projection_data(target, eval_variable,
                             ls=ls, nls_options=nls_options)
