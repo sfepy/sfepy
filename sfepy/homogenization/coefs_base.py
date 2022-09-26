@@ -254,7 +254,7 @@ class CorrMiniApp(MiniAppBase):
             if self.get_save_name_base() is not None:
                 if save_format in ['h5']:
                     save_name = self.get_save_name(save_format)
-                    is_dump, split_results_by, extend = True, None, False
+                    is_dump, split_results_by, extend = True, 'none', False
                 else:
                     save_name = self.get_save_name(save_format, time_stamp)
                     split_results_by, is_dump = self.split_results_by, False
