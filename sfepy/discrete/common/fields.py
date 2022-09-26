@@ -452,10 +452,7 @@ class Field(Struct):
 
         output('...done',verbose=verbose)
 
-        if mode == 'val':
-            vals.shape = (nc, n_comp)
-
-        elif mode == 'div':
+        if mode == 'div':
             assert_(n_comp == dim)
             vals = nm.trace(vals, axis1=1, axis2=2).reshape(nc, 1, 1)
 

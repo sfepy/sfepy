@@ -105,7 +105,7 @@ def test_variables(data):
     u.set_from_function(fun)
 
     coors = u.field.get_coor()
-    eu = u.evaluate_at(coors)
+    eu = u.evaluate_at(coors)[..., 0]
 
     _ok = nm.allclose(eu, fun(coors), rtol=0.0, atol=1e-13)
     tst.report('set from function:', _ok)

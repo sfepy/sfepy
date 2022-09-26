@@ -278,8 +278,8 @@ def test_field_gradient():
         agrad = nm.dot(grad[:, :, :], nm.ones((grad.shape[2], 1)))[..., 0]
 
         eps = 1e-5
-        val0 = u.evaluate_at(coors - eps, close_limit=0.0)
-        val1 = u.evaluate_at(coors + eps, close_limit=0.0)
+        val0 = u.evaluate_at(coors - eps, close_limit=0.0)[..., 0]
+        val1 = u.evaluate_at(coors + eps, close_limit=0.0)[..., 0]
 
         ngrad = 0.5 * (val1 - val0) / eps
 
