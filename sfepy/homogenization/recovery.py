@@ -716,15 +716,21 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
         outregs_info = {None: ('ALL', nm.arange(pb.domain.cmesh.n_el))}
         vn_reg = {None: None}
         for k, v in outs[0].items():
-
-            vn = getattr(v, 'var_name', None)
-            if vn not in vn_reg:
-                reg = pb.create_variables(vn)[vn].field.region
-                rn = reg.name
-                vn_reg[vn] = rn
-                outregs_info[rn] = (rn, reg.get_entities(-1))
+            if hasattr(v, 'region_name'):
+                rn = v.region_name
+                if rn not in outregs_info:
+                    reg = pb.domain.regions[rn]
+                    outregs_info[rn] = (rn, reg.get_entities(-1))
             else:
-                rn = vn_reg[vn]
+                vn = getattr(v, 'var_name', None)
+                if vn not in vn_reg:
+                    reg = pb.create_variables(vn)[vn].field.region
+                    rn = reg.name
+                    vn_reg[vn] = rn
+                    if rn not in outregs_info:
+                        outregs_info[rn] = (rn, reg.get_entities(-1))
+                else:
+                    rn = vn_reg[vn]
 
             if rn in outregs_data:
                 outregs_data[rn].append(k)
