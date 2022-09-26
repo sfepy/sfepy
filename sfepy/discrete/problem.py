@@ -827,8 +827,8 @@ class Problem(Struct):
         else:
             split_results_by = 'variable'
 
-        extend = not split_results_by
         if (out is None) and (state is not None):
+            extend = split_results_by not in ['variable', 'region']
             out = state.create_output(fill_value=fill_value,
                                       extend=extend,
                                       linearization=linearization)
