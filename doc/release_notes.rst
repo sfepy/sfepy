@@ -1,5 +1,290 @@
 # created: 20.07.2007 (-1)
 
+.. _2022.2-2022.3:
+
+from 2022.2 to 2022.3
+=====================
+
+- merge pull request #839 from rc/fix-active-bcs
+
+  - fix active BCs in EquationMap.map_equations() for no key set
+
+- merge pull request #840 from rc/fix-test-docstring
+
+  - fix docstring of test()
+
+- merge pull request #841 from rc/improve-material-constructor-doc-pr737 -
+  finishes and closes #737 by @burnpanck
+
+  - tried to improve documentation of Material constructor. Made values= and
+    kwargs completely equivalent instead of almost equivalent
+  - fix Material.__init__() formatting
+  - fix link in Material.__init__() docstring
+  - document special material parameters in Material.__init__() docstring
+
+- merge pull request #842 from rc/remove-simple-homog-mpi
+
+  - simple.py: new bvp-mM mode, new --debug-mpi option
+  - document application kinds in simple.py docstring
+  - remove simple_homog_mpi.py
+  - fix micro_filename path in nonlinear_hyperelastic_mM.py example
+  - update materials in nonlinear_homogenization.py for new Material
+    constructor
+
+    - see #841 (#737)
+    - fix def_mat()
+
+  - fix get_slaves() for Python 3
+  - docs: sync module index of developer guide with current sources
+  - add basic description to nonlinear_hyperelastic_mM.py example
+
+- merge pull request #843 rc/resview-any-sfepy-format
+
+  - new make_grid_from_mesh(), use it in read_mesh()
+  - resview.py: update read_mesh() to support any SfePy mesh format
+  - distinguish sfepy and pyvista mesh variables in read_data()
+  - resview.py: update print_camera_position() to work with subprocess.call()
+
+- merge pull request #845 from rc/reorganize-scripts-entry-points
+
+  - remove old scripts edit_identifiers.py, eval_ns_forms.py, eval_tl_forms.py
+  - move script/convert_mesh.py -> sfepy/scripts/convert_mesh.py
+  - new sfepy-convert entry point in setup.py
+  - update docstring of convert_mesh.py
+  - move simple.py -> sfepy/scripts/simple.py
+  - new sfepy-run entry point in setup.py, remove sfepy-run script
+  - update docstring of simple.py
+  - move probe.py -> sfepy/scripts/probe.py
+  - new sfepy-probe entry point in setup.py
+  - update docstring of probe.py
+  - move resview.py -> sfepy/scripts/resview.py
+  - new sfepy-view entry point in setup.py
+  - update docstring of resview.py
+  - move extractor.py -> sfepy/scripts/extractor.py
+  - update docstring of extractor.py
+  - move mesh generator scripts to sfepy/scripts/
+
+    - move script/blockgen.py -> sfepy/scripts/blockgen.py,
+      script/cylindergen.py -> sfepy/scripts/cylindergen.py,
+      script/gen_iga_patch.py -> sfepy/scripts/gen_iga_patch.py,
+
+  - blockgen.py: split main() into new gen_block(), add_args()
+  - cylindergen.py: split main() into new gen_cylinder(), add_args()
+  - gen_iga_patch.py: split main() into new gen_iga_patch(), add_args()
+  - new sfepy/scripts/gen_mesh.py
+  - new sfepy-mesh entry point in setup.py
+  - convert_mesh.py: new --extract-edges option in main()
+
+    - move merge_lines(), extract_edges() into mesh_tools.py
+    - remove extract_edges.py
+
+  - convert_mesh.py: new --extract-surface, --print-surface options in main()
+
+    - move _get_facets(), get_surface_faces(), surface_graph(),
+      surface_components() into mesh_tools.py
+    - remove extract_surface.py
+
+  - convert_mesh.py: new --tile option in main()
+
+    - remove tile_periodic_mesh.py
+
+  - move script/show_mesh_info.py -> sfepy/scripts/show_mesh_info.py
+  - show_mesh_info.py: split main() into new show_mesh_info(), add_args()
+  - gen_mesh.py: add show_mesh_info.py as subcommand in main()
+  - move script/dg_plot_1D.py -> sfepy/examples/dg/dg_plot_1D.py
+  - update DG examples for moved dg_plot_1D.py
+  - move script/save_basis.py -> sfepy/scripts/save_basis.py
+  - move script/plot_* scripts into sfepy/scripts/
+  - move script/gen_mesh_prev.py -> sfepy/scripts/gen_mesh_prev.py
+
+    - to be integrated with resview.py after fixing
+
+  - rename script/ -> tools/ (not-to-be-installed/development scripts)
+  - move build_helpers.py -> tools/build_helpers.py
+  - move test_install.py -> sfepy/scripts/test_install.py
+  - remove homogen.py compatibility script
+  - update docstrings for script/ -> tools/
+  - new sfepy/scripts/__init__.py, update sfepy/setup.py
+  - update setup.py for reorganized scripts, update get_basic_info()
+
+    - do not install unnecessary files
+
+  - test_install.py: update main() for reorganized scripts
+  - update MANIFEST.in
+  - fix get_basic_info() to check for LICENSE instead of generated VERSION
+  - update installed/sdist contents in setup.py, MANIFEST.in
+  - update sphinx extension paths in doc/conf.py
+  - sync_module_docs.py: update for reorganized scripts
+  - docs: sync module index of developer guide with current sources
+  - simple.py: fix phonon options handling in main()
+  - docs: update INSTALL, README.rst for reorganized scripts
+  - docs: update developer guide for reorganized scripts
+  - docs: update FAQ for reorganized scripts
+  - docs: update installation doc for reorganized scripts
+  - docs: update preprocessing doc for reorganized scripts
+  - docs: update primer for reorganized scripts
+  - docs: update tutorial for reorganized scripts
+  - docs: update release tasks for reorganized scripts
+  - docs: update users guide for reorganized scripts
+  - docs: update requirements list
+  - update docstrings of examples for reorganized scripts
+  - gen_gallery.py: update for reorganized scripts
+  - docs: make using salome doc obsolete, update for reorganized scripts
+  - docs: update man pages (sfepy-run, sfepy-view)
+
+- merge pull request #849 from rc/update-authors
+
+  - update AUTHORS
+
+- merge pull request #850 from rc/materials-fixes
+
+  - pass ts to .update_material() in Problem.get_tss_functions()'s
+    prestep_fun()
+  - docs: fix FAQ example
+  - docs: auto-document special methods to have Material.__init__() in docs
+  - docs: fix typo in FAQ
+
+- merge pull request #851 from rc/fix-multilinear-terms-with-computed-arguments
+
+  - fix ETermBase.make_function() for repeated call of de_non_penetration_p
+    term - treat correctly ExpressionArg arguments
+
+- merge pull request #852 from rc/fix-examples
+
+  - fix default output_dir in define() of stokes_slip_bc.py example
+  - improve plots in main() of linear_viscoelastic.py example
+  - fix solve_problem() in shell10x_cantilever_interactive.py example - use
+    AutoDirect solver
+  - clean up several examples
+
+- merge pull request #856 from vlukes/fix_splineregion2d, closes #854
+
+  - fix SplineRegion2D.find_ts(): depreciated 'xtol' parameter
+
+- merge pull request #855 from rc/fix-test-install-parsing
+
+  - test_install.py: fix parsing in report_tests()
+
+- merge pull request #853 from rc/support-pip-install, closes #320
+
+  - new pyproject.toml, update MANIFEST.in
+  - specify install_requires in setup_package() of setup.py
+  - docs: update release tasks
+  - docs: update installation instructions
+  - docs: fix venv testing instructions in release tasks
+  - docs: simplify installation instructions
+  - docs: fix/update TestPyPI upload instructions in release tasks
+
+- merge pull request #858 from rc/add-missing-tutorial-image
+
+  - docs: add missing tutorial image
+
+- merge pull request #859 from rc/fix-for-docs-generation
+
+  - use absolute import in test_dg_terms_calls.py
+  - prepend data_dir to mesh name in recovery_micro() of
+    piezo_elasticity_micro.py
+  - new define() in linear_viscoelastic.py example, silence output on import -
+    update main()
+
+- merge pull request #861 from vlukes/update_mumps_interface, closes #860
+
+  - update interface for mumps library version 5.4.x
+  - fix for library version 5.3
+
+- merge pull request #862 from rc/speedup-ls-reuse-unify-presolve
+
+  - new LinearSolver.clear()
+  - new use_mtx_digest parameter in ScipyDirect, new .clear()
+
+    - update .__init__(), .__call__(), .presolve()
+    - new use_mtx_digest parameter in ScipySuperLU, ScipyUmfpack
+    - update presolve behaviour
+
+  - new use_mtx_digest parameter in MUMPSSolver, new .clear()
+
+    - update .__init__(), .__call__(), .presolve(), .__del__()
+    - new use_mtx_digest parameter in ScipySuperLU, ScipyUmfpack
+    - update presolve behaviour
+
+  - clear linear solver in ElastodynamicsBaseTS.get_a0() - allows factorization
+    reuse without matrix digest (conf.use_mtx_digest = False)
+  - use separate linear solver instances in BatheTS
+
+    - update .__init__(), .create_nlst1(), .create_nlst2()
+    - allows factorization reuse without matrix digest (conf.use_mtx_digest =
+      False)
+
+  - use and describe use_mtx_digest in elastodynamic.py example
+
+- merge pull request #863 from rc/fix-generalized-alpha-tss
+
+  - fix GeneralizedAlphaTS: missing M coefficient, wrong state update
+
+    - new ._create_nlst_a()
+    - update .create_nlst(), .__call__()
+
+- merge pull request #864 from rc/decrease-sdist-size
+
+  - gen_gallery.py: set screenshot size to (800, 600) in resview_plot()
+  - exclude PDF docs (sfepy_manual.pdf) from source tarball
+
+- merge pull request #866 from rc/docs-update-enthought-link, closes #688
+
+  - docs: replace Enthought Canopy link by Enthought Deployment Manager
+
+- merge pull request #867 from rc/fix-primer-interactive, closes #629
+
+  - docs: fix/update interactive mode part of primer
+
+- merge pull request #868 from vlukes/update_homog_recovery
+
+  - update CorrSolution: new get_output() for exporting states
+  - unify recover_micro_hook() and recover_micro_hook_eps()
+  - new 'div' and 'cauchy_strain' modes of fields.evaluate_at()
+  - update piezo-elasticity example
+  - fix recover_micro_hook(): slice -> nm.arange
+  - update linear elasticity example
+  - fix micro cell center
+  - fix format
+  - add docstring to 'recover_micro_hook()'
+  - new mechanics.tensors.get_cauchy_strain()
+  - region_mode and eval_mode as define() arguments
+  - update docstring of recover_micro_hook()
+  - fix typo
+  - add docstring to get_causchy_strain()
+
+- merge pull request #869 from vlukes/save_files_per_region
+
+  - update save_state(): split file by region, file_per_var -> file_split_by
+  - update examples
+  - fix save_state()
+  - change `file_split_by` to `split_results_by`
+
+- merge pull request #870 from rc/gen-gallery-all-sources
+
+  - update gen_gallery.py to include all examples sources in docs
+
+    - new omit_images
+    - update _omit(), generate_images(), generate_rst_files()
+
+- merge pull request #871 from vlukes/fix_save_files_by_region
+
+  - fix 'extend' value in save_state()
+  - do not split h5 files
+
+- merge pull request #872 from rc/fix-custom-views-files-by-region
+
+  - fix custom views in gen_gallery.py for files by region
+
+- merge pull request #873 from vlukes/update_evaluate_at
+
+  - update evalauate_at(): return three-dimensional array
+
+- merge pull request #874 from vlukes/fix_recovery_micro_hook
+
+  - use region_name if available
+
 .. _2022.1-2022.2:
 
 from 2022.1 to 2022.2
