@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **29.06.2021** Version 2021.2 released (new sensitivity analysis terms,
+  positive FE basis based on Bernstein polynomials, smaller memory footprint of
+  terms with constant material parameters, etc.), see :ref:`release notes
+  <2021.1-2021.2>`.
+
 * **29.03.2021** Version 2021.1 released (non-square homogenized coefficient
   matrices, new implementation of multi-linear terms, improved handling of
   Dirichlet and periodic boundary conditions in common nodes, terms in the term
