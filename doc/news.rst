@@ -1,6 +1,11 @@
 News
 ====
 
+* **29.09.2022** Version 2022.3 released (reorganized scripts, PyPI support,
+  speed-up of linear elastodynamics problems, improved homogenization-based
+  recovery of micro-scale solutions, etc.), see :ref:`release notes
+  <2022.2-2022.3>`.
+
 * **29.06.2022** Version 2022.2 released (custom testing code replaced by
   pytest, improved pyvista-based visualization script, etc.), see :ref:`release
   notes <2022.1-2022.2>`.
@@ -18,10 +23,5 @@ News
 * **29.09.2021** Version 2021.3 released (unified volume and surface
   integration terms, improved pyvista-based visualization script, etc.), see
   :ref:`release notes <2021.2-2021.3>`.
-
-* **29.06.2021** Version 2021.2 released (new sensitivity analysis terms,
-  positive FE basis based on Bernstein polynomials, smaller memory footprint of
-  terms with constant material parameters, etc.), see :ref:`release notes
-  <2021.1-2021.2>`.
 
 For historians: see :ref:`archived_news`.
