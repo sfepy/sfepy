@@ -250,7 +250,7 @@ def test_base_functions_values(gels):
     assert ok
 
 def test_base_functions_delta(gels):
-    """
+    r"""
     Test :math:`\delta` property of base functions evaluated in the
     reference element nodes.
     """
