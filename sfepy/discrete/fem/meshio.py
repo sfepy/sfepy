@@ -1383,14 +1383,14 @@ class Mesh3DMeshIO(MeshIO):
     format = "mesh3d"
 
     def read(self, mesh, **kwargs):
-        f = open(self.filename)
         # read the whole file:
-        vertices = self._read_section(f, integer=False)
-        tetras = self._read_section(f)
-        hexes = self._read_section(f)
-        prisms = self._read_section(f)
-        tris = self._read_section(f)
-        quads = self._read_section(f)
+        with open(self.filename) as f:
+            vertices = self._read_section(f, integer=False)
+            tetras = self._read_section(f)
+            hexes = self._read_section(f)
+            prisms = self._read_section(f)
+            tris = self._read_section(f)
+            quads = self._read_section(f)
 
         # substract 1 from all elements, because we count from 0:
         conns = []
