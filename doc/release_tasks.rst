@@ -25,7 +25,7 @@ Things to check before a release
      $ # cd into
 
      $ python3 setup.py build_ext --inplace
-     $ python3 test_install.py
+     $ python3 sfepy/scripts/test_install.py
 
 #. check that documentation can be built::
 
