@@ -214,7 +214,7 @@ class ScipyDirect(LinearSolver):
             is_new, mtx_digest = False, None
 
         if is_new or (self.solve is None):
-            self.solve = self.sls.factorized(mtx)
+            self.solve = self.sls.factorized(mtx.tocsc())
             self.mtx_digest = mtx_digest
 
 
