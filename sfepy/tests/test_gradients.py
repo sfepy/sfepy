@@ -89,28 +89,24 @@ def test_gradients(problem):
 
     outs['evaluate_at(p)'] =\
         vars['p'].field.evaluate_at(ecoors, values['p'],
-                                    mode='grad') * volume
+                                    mode='grad')[0, ...] * volume
     outs['evaluate_at(u)'] =\
         vars['u'].field.evaluate_at(ecoors, values['u'],
-                                    mode='grad') * volume
+                                    mode='grad')[0, ...] * volume
 
     ok = True
     for k, v in outs.items():
         vn = k[-2]
         exp_v = expected_grad[vn]
-        if vn == 'u':
-            exp_v = exp_v.reshape((dim, dim))
-            v = v.reshape((dim, dim))
-        elif vn == 'p':
-            exp_v = exp_v.reshape((dim,))
-            v = v.reshape((dim,))
 
-        _ok = nm.allclose(exp_v, v, atol=1e-12)
+        _ok = nm.allclose(exp_v, v, atol=1e-12) and exp_v.shape == v.shape
 
         tst.report(f'{k}:')
         tst.report(f'  expected values: {exp_v}')
-        tst.report(f'  calculated values: {v}')
+        tst.report(f'  received values: {v}')
         tst.report(f'  difference: {nm.abs(exp_v - v)}')
+        tst.report(f'  expected shape: {exp_v.shape}')
+        tst.report(f'  received shape: {v.shape}')
         ok = ok and _ok
 
     assert ok
