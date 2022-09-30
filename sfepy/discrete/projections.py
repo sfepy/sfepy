@@ -227,7 +227,7 @@ def project_to_facets(region, fun, dpn, field):
     rows = nm.concatenate(rows)
     cols = nm.concatenate(cols)
     mvals = nm.concatenate(mvals)
-    mtx = sps.coo_matrix((mvals, (rows, cols)), shape=(n_dof, n_dof))
+    mtx = sps.coo_matrix((mvals, (rows, cols)), shape=(n_dof, n_dof)).tocsc()
 
     vals = nm.zeros((n_dof, dpn), dtype=nm.float64)
 
