@@ -361,8 +361,9 @@ def test_hdf5_meshio():
         assert_(_compare_meshes(out['mesh3'], mesh0),
                 'Failed to restore mesh')
 
-        assert_((out['struct'].sparse == data['struct'].sparse).todense()
-                .all(), 'Sparse matrix restore failed')
+        assert_((out['struct'].sparse.todense()
+                 == data['struct'].sparse.todense()).all(),
+                'Sparse matrix restore failed')
 
         ts.advance()
         io.write(fil.name, mesh0, {
