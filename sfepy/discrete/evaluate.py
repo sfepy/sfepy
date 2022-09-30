@@ -23,13 +23,18 @@ def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
                 data[ic] = 1.0
 
     if epbc_rows is not None:
+        import warnings
+        from scipy.sparse import SparseEfficiencyWarning
+
         master, slave = epbc_rows
 
-        # Changes sparsity pattern in-place - allocates new entries! The master
-        # DOFs are not allocated by Equations.create_matrix_graph(), see
-        # create_adof_conns().
-        mtx[master, master] = 1.0
-        mtx[master, slave] = -1.0
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SparseEfficiencyWarning)
+            # Changes sparsity pattern in-place - allocates new entries! The master
+            # DOFs are not allocated by Equations.create_matrix_graph(), see
+            # create_adof_conns().
+            mtx[master, master] = 1.0
+            mtx[master, slave] = -1.0
 
 ##
 # 02.10.2007, c
