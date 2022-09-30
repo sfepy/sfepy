@@ -2359,7 +2359,7 @@ class XYZMeshIO(MeshIO):
 
         conn_ext = '.IEN' if op.splitext(filename)[1].isupper() else '.ien'
         nm.savetxt(edit_filename(self.filename, new_ext=conn_ext),
-                   conns[0] + 1)
+                   conns[0] + 1, fmt='%d')
 
         if out is not None:
             raise NotImplementedError
