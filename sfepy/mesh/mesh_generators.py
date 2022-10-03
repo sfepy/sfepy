@@ -314,7 +314,7 @@ def _get_extension_side(side, grading_fun, mat_id,
 
 def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
                             grading_fun=None, name=None):
-    """
+    r"""
     Generate a 3D mesh with a central block and (coarse) extending side meshes.
 
     The resulting mesh is again a block. Each of the components has a different

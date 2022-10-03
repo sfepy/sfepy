@@ -34,7 +34,7 @@ class Coefficients(Struct):
         write_dict_hdf5(filename, self.__dict__)
 
     def _escape_latex(self, txt):
-        return txt.replace('_', '\_').replace('%', '\%')
+        return txt.replace('_', r'\_').replace('%', r'\%')
 
     def _format(self, val):
         out = self._a_format % val
@@ -44,7 +44,7 @@ class Coefficients(Struct):
                 out = '0'
 
             else:
-                out = '%s \cdot 10^{%s}' % (a1, int(a2))
+                out = r'%s \cdot 10^{%s}' % (a1, int(a2))
 
         return out
 
@@ -89,7 +89,7 @@ class Coefficients(Struct):
                 lname = names[key]
             except:
                 lname = self._escape_latex(key)
-            fd.write('\item %s:' % lname)
+            fd.write(r'\item %s:' % lname)
             fd.write('\n')
 
             if isinstance(val, list):

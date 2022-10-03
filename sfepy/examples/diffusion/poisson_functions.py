@@ -102,7 +102,7 @@ def get_pars(ts, coors, mode=None, **kwargs):
         return {'f' : val}
 
 def get_middle_ball(coors, domain=None):
-    """
+    r"""
     Get the :math:`\Omega_L` region as a function of mesh coordinates.
     """
     x, y, z = coors[:, 0], coors[:, 1], coors[:, 2]

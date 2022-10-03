@@ -482,7 +482,7 @@ class PETScNonlinearSolver(NonlinearSolver):
          """The relative tolerance for the residual, i.e. :math:`||f(x^i)|| /
             ||f(x^0)||`."""),
         ('eps_s', 'float', 0.0, False,
-         """The convergence tolerance in terms of the norm of the change in
+         r"""The convergence tolerance in terms of the norm of the change in
             the solution between steps,
             i.e. $||delta x|| < \epsilon_s ||x||$"""),
     ]

@@ -1279,7 +1279,7 @@ class VolumeField(FEField):
         return conn
 
     def average_qp_to_vertices(self, data_qp, integral):
-        """
+        r"""
         Average data given in quadrature points in region elements into
         region vertices.
 
@@ -1444,7 +1444,7 @@ class SurfaceField(FEField):
         return conn
 
     def average_qp_to_vertices(self, data_qp, integral):
-        """
+        r"""
         Average data given in quadrature points in region elements into
         region vertices.
 
