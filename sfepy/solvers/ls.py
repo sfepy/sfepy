@@ -353,7 +353,12 @@ class ScipyIterative(LinearSolver):
 
         solver_kwargs.update(prec_args)
         if conf.method == 'gmres':
-            solver_kwargs.update({'callback_type' : 'legacy'})
+            import scipy as sp
+            from distutils.version import LooseVersion
+
+            if LooseVersion(sp.__version__) >= '1.4.0':
+                solver_kwargs.update({'callback_type' : 'legacy'})
+
         try:
             sol, info = self.solver(mtx, rhs, x0=x0, atol=eps_a, tol=eps_r,
                                     maxiter=i_max, callback=iter_callback,
