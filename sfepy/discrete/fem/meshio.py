@@ -1171,6 +1171,10 @@ class HDF5MeshIO(MeshIO):
                     fd.create_array(data_group, 'field_name',
                                     enc(val.field_name), 'field name')
 
+                reg_name = val.get('region_name', '')
+                fd.create_array(data_group, 'region_name',
+                                enc(reg_name), 'region name')
+
                 name_dict[key] = group_name
 
             step_group._v_attrs.name_dict = name_dict
