@@ -91,7 +91,7 @@ def define(filename_mesh=None,
     }
 
     def gsmooth(x):
-        """
+        r"""
         .. :math: C_0^{\inf}
         """
         return .3 * nm.piecewise(x, [x <= 0.1, x >= 0.1, .3 < x],

@@ -599,8 +599,8 @@ class MumpsSolver(object):
 
         arr = nm.ctypeslib.as_array(self.struct.aux)
         idxs = nm.where(nm.logical_and(arr >= ord('.'), arr <= ord('9')))[0]
-        s = dec(arr[idxs].tostring())
-        vnums = re.findall('^.*(\d)\.(\d+)\.\d+.*$', s)[-1]
+        s = dec(arr[idxs].tobytes())
+        vnums = re.findall(r'^.*(\d)\.(\d+)\.\d+.*$', s)[-1]
         version = int(vnums[0]) + int(vnums[1]) * 1e-2
         if version < 5:
             mumps_struc_c = mumps_struc_c_4

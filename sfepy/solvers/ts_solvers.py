@@ -585,7 +585,7 @@ class VelocityVerletTS(ElastodynamicsBaseTS):
         return vec
 
 class NewmarkTS(ElastodynamicsBaseTS):
-    """
+    r"""
     Solve elastodynamics problems by the Newmark method.
 
     The method was introduced in [1]. Common settings [2]:

@@ -97,7 +97,7 @@ def _simplify_fraction(a_b):
     return (a//gcd, b//gcd)
 
 def get_simplex_cubature(order, dimension):
-    """
+    r"""
     Cubature on an M{n}-simplex.
 
     cf.

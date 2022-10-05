@@ -369,7 +369,7 @@ class StressTransform(Struct):
         assert_(nm.allclose(stress[:,:,i1], stress[:,:,i2]))
 
     def get_cauchy_from_2pk(self, stress_in):
-        """
+        r"""
         Get the Cauchy stress given the second Piola-Kirchhoff stress.
 
         .. math::

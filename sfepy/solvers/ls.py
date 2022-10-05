@@ -214,7 +214,7 @@ class ScipyDirect(LinearSolver):
             is_new, mtx_digest = False, None
 
         if is_new or (self.solve is None):
-            self.solve = self.sls.factorized(mtx)
+            self.solve = self.sls.factorized(mtx.tocsc())
             self.mtx_digest = mtx_digest
 
 
@@ -352,6 +352,12 @@ class ScipyIterative(LinearSolver):
             prec_args = {'M' : precond}
 
         solver_kwargs.update(prec_args)
+        if conf.method == 'gmres':
+            import scipy as sp
+            from distutils.version import LooseVersion
+
+            if LooseVersion(sp.__version__) >= '1.4.0':
+                solver_kwargs.update({'callback_type' : 'legacy'})
 
         try:
             sol, info = self.solver(mtx, rhs, x0=x0, atol=eps_a, tol=eps_r,
@@ -802,10 +808,10 @@ class MUMPSSolver(LinearSolver):
         if not mumps.use_mpi:
             raise AttributeError('No mpi4py found! Required by MUMPS solver.')
 
-        mumps.load_mumps_libraries()  # try to load MUMPS libraries
-
         LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
                               mumps_presolved=False, **kwargs)
+        mumps.load_mumps_libraries()  # try to load MUMPS libraries
+
         self.clear()
 
     @standard_call

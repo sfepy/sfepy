@@ -14,13 +14,13 @@ import six
 from six.moves import range
 from functools import reduce
 
-_match_args = re.compile('^([^\(\}]*)\((.*)\)$').match
+_match_args = re.compile(r'^([^\(\}]*)\((.*)\)$').match
 _match_virtual = re.compile('^virtual$').match
 _match_state = re.compile('^state(_[_a-zA-Z0-9]+)?$').match
 _match_parameter = re.compile('^parameter(_[_a-zA-Z0-9]+)?$').match
 _match_material = re.compile('^material(_[_a-zA-Z0-9]+)?$').match
 _match_material_opt = re.compile('^opt_material(_[_a-zA-Z0-9]+)?$').match
-_match_material_root = re.compile('(.+)\.(.*)').match
+_match_material_root = re.compile(r'(.+)\.(.*)').match
 _match_ts = re.compile('^ts$').match
 
 def get_arg_kinds(arg_types):
