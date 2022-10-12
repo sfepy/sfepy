@@ -197,6 +197,7 @@ def setup_package():
                       'sfepy-mesh=sfepy.scripts.gen_mesh:main',
                       'sfepy-probe=sfepy.scripts.probe:main',
                       'sfepy-run=sfepy.scripts.simple:main',
+                      'sfepy-test=sfepy.scripts.run_tests:main',
                       'sfepy-view=sfepy.scripts.resview:main',
                   ],
               },
