@@ -62,6 +62,8 @@ The released versions of SfePy can be installed as follows.
 
   See `Notes on Multi-platform Python Distributions`_ for additional notes.
 
+If the installation succeeded, proceed with `Testing Installation`_.
+
 .. _running_sfepy_docker_images:
 
 Using SfePy Docker Images
@@ -233,18 +235,39 @@ functions are working properly by running the automated tests.
 Running Automated Test Suite
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The tests can be run using::
+The test suite is based on `pytest`_. Install it by::
+
+  pip install pytest
+
+or::
+
+  conda install pytest
+
+when working in `Anaconda`_. If *SfePy* was installed, it can be tested using
+the command::
+
+  sfepy-test
+
+that accepts all of the `pytest`_ options, for example::
+
+  sfepy-test -vv --durations=0 -m 'not slow' -k test_assembling.py
+
+The tests output directory can also be specified::
+
+  sfepy-test --output-dir=output-tests
+
+In general. the tests can be run using::
 
   python -c "import sfepy; sfepy.test()"
 
 in the *SfePy* top-level directory in case of the in-place build and anywhere
-else when testing the installed package. The testing function is based on
-`pytest`_. Additional `pytest`_ options can be passed as arguments to
-``sfepy.test()``, for example::
+else when testing the installed package. Additional `pytest`_ options can be
+passed as arguments to ``sfepy.test()``, for example::
 
-  python -c "import sfepy; sfepy.test('-v', '--durations=0', '-m not slow', '-k test_assembling.py')"
+  python -c "import sfepy; sfepy.test('-vv', '--durations=0', '-m not slow', '-k test_assembling.py')"
 
-The tests output directory can be specified using::
+Analogously to ``sfepy-test``, the tests output directory can be specified
+using::
 
   python -c "import sfepy; sfepy.test('--output-dir=output-tests')"
 
