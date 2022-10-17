@@ -502,7 +502,7 @@ class AcousticBandGapsApp(HomogenizationApp):
                             bg.freq_range_initial,
                             plot_range,
                             show_legend=plot_opts['legend'],
-                            new_axes=True)
+                            new_axes=False)
             plt.tight_layout()
 
             if opts.fig_name is not None:
