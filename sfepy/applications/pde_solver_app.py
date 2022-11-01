@@ -5,7 +5,7 @@ from sfepy.base.base import output, dict_to_struct, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 import sfepy.base.ioutils as io
 from sfepy.discrete import Problem
-from sfepy.discrete.fem.meshio import MeshIO
+from sfepy.discrete.fem import MeshIO, Mesh
 from .application import Application
 
 def solve_pde(conf, options=None, status=None, **app_options):
@@ -163,6 +163,9 @@ class PDESolverApp(Application):
                 filename_mesh = self.conf.filename_mesh
                 if isinstance(filename_mesh, MeshIO):
                     ofn_trunk = filename_mesh.get_filename_trunk()
+
+                elif isinstance(filename_mesh, Mesh):
+                    ofn_trunk = filename_mesh.name
 
                 else:
                     ofn_trunk = io.get_trunk(filename_mesh)
