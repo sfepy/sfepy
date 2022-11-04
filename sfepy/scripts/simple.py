@@ -208,9 +208,8 @@ def main():
 
         return
 
-    if options.plot:
-        if not options.analyze_dispersion:
-            options.detect_band_gaps = True
+    if not (options.analyze_dispersion or options.detect_band_gaps):
+            options.plot = False
 
     if options.debug:
         from sfepy.base.base import debug_on_error; debug_on_error()
