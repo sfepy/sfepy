@@ -373,7 +373,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
     def call(self):
         """
-        Construct and call the homogenization engine accoring to options.
+        Construct and call the homogenization engine according to options.
         """
         options = self.options
 
