@@ -3,19 +3,19 @@ from __future__ import absolute_import
 import numpy as nm
 import scipy.sparse as sps
 
-from sfepy.base.base import output, get_default, try_imports, Struct
+from sfepy.base.base import get_default, try_imports, Struct
 from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import Solver, EigenvalueSolver
 import six
 from six.moves import range
 
 def eig(mtx_a, mtx_b=None, n_eigs=None, eigenvectors=True,
-        return_time=None, method='eig.scipy', **ckwargs):
+        return_time=None, solver_kind='eig.scipy', **ckwargs):
     """
     Utility function that constructs an eigenvalue solver given by
-    `method`, calls it and returns solution.
+    `solver_kind`, calls it and returns its output.
     """
-    kwargs = {'name' : 'aux', 'kind' : method}
+    kwargs = {'name' : 'aux', 'kind' : solver_kind}
     kwargs.update(ckwargs)
     conf = Struct(**kwargs)
     solver = Solver.any_from_conf(conf)
