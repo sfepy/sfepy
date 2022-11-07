@@ -365,7 +365,7 @@ class AcousticBandGapsApp(HomogenizationApp):
     def setup_options(self):
         HomogenizationApp.setup_options(self)
 
-        if self.options.phase_velocity:
+        if self.options.phase_velocity and not self.options.plot:
             process_options = AcousticBandGapsApp.process_options_pv
         else:
             process_options = AcousticBandGapsApp.process_options
