@@ -201,7 +201,7 @@ def main():
 
     if options.detect_band_gaps and (
             options.analyze_dispersion or options.phase_velocity):
-        raise RuntimeError(
+        parser.error(
             'The option --phonon-band-gaps can not be used together with '
             '--phonon-dispersion or --phonon-phase-velocity.')
 
