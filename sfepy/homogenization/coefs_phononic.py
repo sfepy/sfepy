@@ -282,7 +282,7 @@ def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
 
     return slogs, gaps, kinds
 
-def get_callback(mass, method, mtx_b=None, mode='trace'):
+def get_callback(mass, solver_kind, mtx_b=None, mode='trace'):
     """
     Return callback to solve band gaps or dispersion eigenproblem P.
 
@@ -302,21 +302,21 @@ def get_callback(mass, method, mtx_b=None, mode='trace'):
       omega^2 M w = \eta B w"""
 
     def find_zero_callback(f):
-        meigs = eig(mass(f), eigenvectors=False, method=method)
+        meigs = eig(mass(f), eigenvectors=False, solver_kind=solver_kind)
         return meigs
 
     def find_zero_full_callback(f):
         meigs = eig((f**2) * mass(f), mtx_b=mtx_b,
-                    eigenvectors=False, method=method)
+                    eigenvectors=False, solver_kind=solver_kind)
         return meigs
 
     def trace_callback(f):
-        meigs = eig(mass(f), eigenvectors=False, method=method)
+        meigs = eig(mass(f), eigenvectors=False, solver_kind=solver_kind)
         return meigs,
 
     def trace_full_callback(f):
         meigs, mvecs = eig((f**2) * mass(f), mtx_b=mtx_b,
-                           eigenvectors=True, method=method)
+                           eigenvectors=True, solver_kind=solver_kind)
 
         return meigs, mvecs
 
@@ -553,7 +553,7 @@ class SimpleEVP(CorrMiniApp):
             mtx_m = mtx_m.toarray()
 
         eigs, mtx_s_phi = eig(mtx_a, mtx_m, return_time=tt,
-                              method=opts.eigensolver)
+                              solver_kind=opts.eigensolver)
         eigs[eigs<0.0] = 0.0
         output('...done in %.2f s' % tt[0])
         output('original eigenfrequencies:')
@@ -1231,7 +1231,7 @@ class PhaseVelocity(MiniAppBase):
         mtx_mass = eye * dv_info.average_density
 
         meigs, mvecs = eig(mtx_mass, mtx_b=cat,
-                           eigenvectors=True, method=opts.eigensolver)
+                           eigenvectors=True, solver_kind=opts.eigensolver)
         phase_velocity = 1.0 / nm.sqrt(meigs)
 
         return phase_velocity

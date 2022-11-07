@@ -661,7 +661,7 @@ class PressureEigenvalueProblem(CorrMiniApp):
         mtx['G'] = mtx_g
         output(mtx_c.shape, mtx_g.shape)
 
-        eigs, mtx_q = eig(mtx_c.toarray(), mtx_g, method='eig.sgscipy')
+        eigs, mtx_q = eig(mtx_c.toarray(), mtx_g, solver_kind='eig.sgscipy')
 
         if check:
             ee = nm.diag(sc.dot(mtx_q.T * mtx_c, mtx_q)).squeeze()

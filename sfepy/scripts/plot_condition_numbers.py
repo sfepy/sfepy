@@ -132,7 +132,7 @@ def main():
 
         output('matrix shape:', mtx.shape)
 
-        eigs = eig(mtx, method='eig.sgscipy', eigenvectors=False)
+        eigs = eig(mtx, solver_kind='eig.sgscipy', eigenvectors=False)
         eigs.sort()
 
         # Zero 'true' zeros.
