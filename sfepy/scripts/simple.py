@@ -199,6 +199,12 @@ def main():
     group.add_argument('filename_in', nargs='?')
     options, petsc_opts = parser.parse_known_args()
 
+    if options.detect_band_gaps and (
+            options.analyze_dispersion or options.phase_velocity):
+        raise RuntimeError(
+            'The option --phonon-band-gaps can not be used together with '
+            '--phonon-dispersion or --phonon-phase-velocity.')
+
     if options._list is not None:
         if options._list == 'terms':
             print_terms()
