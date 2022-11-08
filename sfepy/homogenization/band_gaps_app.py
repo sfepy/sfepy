@@ -384,11 +384,12 @@ class AcousticBandGapsApp(HomogenizationApp):
                              'missing "%s" in problem description!'
                              % opts.coefs)
 
+        keys = []
         if options.detect_band_gaps:
             # Compute band gaps coefficients and data.
-            keys = [key for key in coef_info if key.startswith('band_gaps')]
+            keys += [key for key in coef_info if key.startswith('band_gaps')]
 
-        elif options.analyze_dispersion or options.phase_velocity:
+        if options.analyze_dispersion or options.phase_velocity:
 
             # Insert incident wave direction to coefficients that need it.
             for key, val in six.iteritems(coef_info):
@@ -401,16 +402,16 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             if options.analyze_dispersion:
                 # Compute dispersion coefficients and data.
-                keys = [key for key in coef_info
+                keys += [key for key in coef_info
                         if key.startswith('dispersion')
                         or key.startswith('polarization_angles')]
 
-            else:
+            if options.phase_velocity:
                 # Compute phase velocity and its requirements.
-                keys = [key for key in coef_info
+                keys += [key for key in coef_info
                         if key.startswith('phase_velocity')]
 
-        else:
+        if not keys:
             # Compute only the eigenvalue problems.
             names = [req for req in conf.get(opts.requirements, [''])
                      if req.startswith('evp')]
@@ -464,10 +465,10 @@ class AcousticBandGapsApp(HomogenizationApp):
             if options.detect_band_gaps:
                 self.plot_band_gaps(coefs)
 
-            elif options.analyze_dispersion:
+            if options.analyze_dispersion:
                 self.plot_dispersion(coefs)
 
-        elif options.phase_velocity:
+        if options.phase_velocity:
             keys = [key for key in coefs.to_dict()
                     if key.startswith('phase_velocity')]
             for key in keys:
