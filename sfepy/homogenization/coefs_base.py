@@ -404,7 +404,8 @@ class CorrNN(CorrMiniApp):
                 else:
                     self.set_variables(variables, ir, ic, **data)
 
-                state = problem.solve(update_materials=False)
+                state = problem.solve(update_materials=False,
+                                      save_results=False)
                 assert_(state.has_ebc())
                 states[ir,ic] = state.get_state_parts()
 
@@ -453,7 +454,8 @@ class CorrN(CorrMiniApp):
                                            self.set_variables, data)
             else:
                 self.set_variables(variables, ir, **data)
-            state = problem.solve()
+            state = problem.solve(update_materials=False,
+                                  save_results=False)
             assert_(state.has_ebc())
             states[ir] = state.get_state_parts()
 
@@ -502,7 +504,8 @@ class CorrOne(CorrMiniApp):
             else:
                 self.set_variables(variables, **data)
 
-        state = problem.solve()
+        state = problem.solve(update_materials=False,
+                              save_results=False)
         assert_(state.has_ebc())
 
         corr_sol = CorrSolution(name=self.name,
@@ -588,7 +591,8 @@ class CorrEqPar(CorrOne):
                 else:
                     self.set_variables(variables, **data)
 
-            state = problem.solve()
+            state = problem.solve(update_materials=False,
+                                  save_results=False)
             assert_(state.has_ebc())
 
             states[ir] = state.get_state_parts()
