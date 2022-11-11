@@ -231,6 +231,9 @@ class BandGapsConf(Struct):
         ema_options = copy(self.eigenmomenta_options)
         ema_options.update({'var_name' : 'u_c'})
 
+        dispersion_options = copy(self.band_gaps_options)
+        dispersion_options.update({'log_save_name' : 'dispersion.log'})
+
         coefs = {
             # Basic.
             'VF' : {
@@ -278,7 +281,7 @@ class BandGapsConf(Struct):
             },
             'dispersion' : {
                 'requires' : ['evp', 'c.eigenmomenta', 'c.M', 'c.Gamma'],
-                'options' : self.band_gaps_options,
+                'options' : dispersion_options,
                 'class' : cp.BandGaps,
             },
             'polarization_angles' : {
