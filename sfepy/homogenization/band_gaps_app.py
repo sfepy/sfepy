@@ -61,8 +61,7 @@ def transform_plot_data(datas, plot_transform, conf):
     dmin, dmax = min(dmax - 1e-8, dmin), max(dmin + 1e-8, dmax)
     return (dmin, dmax), tdatas
 
-def plot_eigs(fig_num, plot_rsc, plot_labels, valid, freq_range, plot_range,
-              show=False, clear=False, new_axes=False):
+def plot_eigs(ax, plot_rsc, plot_labels, valid, freq_range, plot_range):
     """
     Plot resonance/eigen-frequencies.
 
@@ -73,14 +72,6 @@ def plot_eigs(fig_num, plot_rsc, plot_labels, valid, freq_range, plot_range,
     """
     if plt is None: return
     assert_(len(valid) == len(freq_range))
-
-    fig = plt.figure(fig_num)
-    if clear:
-        fig.clf()
-    if new_axes:
-        ax = fig.add_subplot(111)
-    else:
-        ax = fig.gca()
 
     l0 = l1 = None
     for ii, f in enumerate(freq_range):
@@ -94,34 +85,16 @@ def plot_eigs(fig_num, plot_rsc, plot_labels, valid, freq_range, plot_range,
     if l1:
         l1.set_label(plot_labels['masked'])
 
-    if new_axes:
-        ax.set_xlim([freq_range[0], freq_range[-1]])
-        ax.set_ylim(plot_range)
-
-    if show:
-        plt.show()
-    return fig
-
-def plot_logs(fig_num, plot_rsc, plot_labels,
+def plot_logs(ax, plot_rsc, plot_labels,
               freqs, logs, valid, freq_range, plot_range,
-              draw_eigs=True, show_legend=True, show=False,
-              clear=False, new_axes=False):
+              draw_eigs=True, show_legend=True):
     """
     Plot logs of min/middle/max eigs of a mass matrix.
     """
     if plt is None: return
 
-    fig = plt.figure(fig_num)
-    if clear:
-        fig.clf()
-    if new_axes:
-        ax = fig.add_subplot(111)
-    else:
-        ax = fig.gca()
-
     if draw_eigs:
-        plot_eigs(fig_num, plot_rsc, plot_labels, valid, freq_range,
-                  plot_range)
+        plot_eigs(ax, plot_rsc, plot_labels, valid, freq_range, plot_range)
 
     for ii, log in enumerate(logs):
         l1 = ax.plot(freqs[ii], log[:, -1], **plot_rsc['eig_max'])
@@ -148,16 +121,8 @@ def plot_logs(fig_num, plot_rsc, plot_labels,
     ax.set_xlabel(plot_labels['x_axis'])
     ax.set_ylabel(plot_labels['y_axis'])
 
-    if new_axes:
-        ax.set_xlim([fmin, fmax])
-        ax.set_ylim(plot_range)
-
     if show_legend:
         ax.legend()
-
-    if show:
-        plt.show()
-    return fig
 
 def plot_gap(ax, ranges, kind, kind_desc, plot_range, plot_rsc):
     """
@@ -196,20 +161,11 @@ def plot_gap(ax, ranges, kind, kind_desc, plot_range, plot_rsc):
     else:
         raise ValueError('unknown band gap kind! (%s)' % kind)
 
-def plot_gaps(fig_num, plot_rsc, gaps, kinds, gap_ranges, freq_range,
-              plot_range, show=False, clear=False, new_axes=False):
+def plot_gaps(ax, plot_rsc, gaps, kinds, gap_ranges, freq_range, plot_range):
     """
     Plot band gaps as rectangles.
     """
     if plt is None: return
-
-    fig = plt.figure(fig_num)
-    if clear:
-        fig.clf()
-    if new_axes:
-        ax = fig.add_subplot(111)
-    else:
-        ax = fig.gca()
 
     for ii in range(len(freq_range) - 1):
         f0, f1 = freq_range[[ii, ii+1]]
@@ -229,14 +185,6 @@ def plot_gaps(fig_num, plot_rsc, gaps, kinds, gap_ranges, freq_range,
             plot_gap(ax, ranges, kind, kind_desc, plot_range, plot_rsc)
             output(ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1)
             output(' -> %s\n    %s' %(kind_desc, ranges))
-
-    if new_axes:
-        ax.set_xlim([freq_range[0], freq_range[-1]])
-        ax.set_ylim(plot_range)
-
-    if show:
-        plt.show()
-    return fig
 
 def _get_fig_name(output_dir, fig_name, key, common, fig_suffix):
     """
@@ -365,7 +313,7 @@ class AcousticBandGapsApp(HomogenizationApp):
     def setup_options(self):
         HomogenizationApp.setup_options(self)
 
-        if self.options.phase_velocity:
+        if self.options.phase_velocity and not self.options.plot:
             process_options = AcousticBandGapsApp.process_options_pv
         else:
             process_options = AcousticBandGapsApp.process_options
@@ -373,7 +321,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
     def call(self):
         """
-        Construct and call the homogenization engine accoring to options.
+        Construct and call the homogenization engine according to options.
         """
         options = self.options
 
@@ -384,11 +332,12 @@ class AcousticBandGapsApp(HomogenizationApp):
                              'missing "%s" in problem description!'
                              % opts.coefs)
 
+        keys = []
         if options.detect_band_gaps:
             # Compute band gaps coefficients and data.
-            keys = [key for key in coef_info if key.startswith('band_gaps')]
+            keys += [key for key in coef_info if key.startswith('band_gaps')]
 
-        elif options.analyze_dispersion or options.phase_velocity:
+        if options.analyze_dispersion or options.phase_velocity:
 
             # Insert incident wave direction to coefficients that need it.
             for key, val in six.iteritems(coef_info):
@@ -401,16 +350,16 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             if options.analyze_dispersion:
                 # Compute dispersion coefficients and data.
-                keys = [key for key in coef_info
+                keys += [key for key in coef_info
                         if key.startswith('dispersion')
                         or key.startswith('polarization_angles')]
 
-            else:
+            if options.phase_velocity:
                 # Compute phase velocity and its requirements.
-                keys = [key for key in coef_info
+                keys += [key for key in coef_info
                         if key.startswith('phase_velocity')]
 
-        else:
+        if not keys:
             # Compute only the eigenvalue problems.
             names = [req for req in conf.get(opts.requirements, [''])
                      if req.startswith('evp')]
@@ -448,7 +397,7 @@ class AcousticBandGapsApp(HomogenizationApp):
         bg_keys = [key for key in coefs.to_dict()
                    if key.startswith('band_gaps')
                    or key.startswith('dispersion')]
-        for ii, key in enumerate(bg_keys):
+        for key in bg_keys:
             bg = coefs.get(key)
             log_save_name = bg.get('log_save_name', None)
             if log_save_name is not None:
@@ -464,10 +413,13 @@ class AcousticBandGapsApp(HomogenizationApp):
             if options.detect_band_gaps:
                 self.plot_band_gaps(coefs)
 
-            elif options.analyze_dispersion:
+            if options.analyze_dispersion:
                 self.plot_dispersion(coefs)
 
-        elif options.phase_velocity:
+            if opts.plot_options['show']:
+                plt.show()
+
+        if options.phase_velocity:
             keys = [key for key in coefs.to_dict()
                     if key.startswith('phase_velocity')]
             for key in keys:
@@ -486,7 +438,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
         plt.rcParams.update(plot_rsc['params'])
 
-        for ii, key in enumerate(bg_keys):
+        for key in bg_keys:
             bg = coefs.get(key)
 
             plot_labels =  opts.plot_labels.get(key, opts.plot_labels)
@@ -494,24 +446,23 @@ class AcousticBandGapsApp(HomogenizationApp):
             plot_range, teigs = transform_plot_data(bg.logs.eigs,
                                                     opts.plot_transform,
                                                     self.conf)
-            fig = plot_gaps(ii, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
-                            bg.freq_range_margins, plot_range,
-                            clear=True)
-            fig = plot_logs(ii, plot_rsc, plot_labels, bg.logs.freqs, teigs,
-                            bg.valid[bg.eig_range],
-                            bg.freq_range_initial,
-                            plot_range,
-                            show_legend=plot_opts['legend'],
-                            new_axes=True)
+            fig, ax = plt.subplots()
+            plot_gaps(ax, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
+                      bg.freq_range_margins, plot_range)
+            plot_logs(ax, plot_rsc, plot_labels, bg.logs.freqs, teigs,
+                      bg.valid[bg.eig_range],
+                      bg.freq_range_initial,
+                      plot_range,
+                      show_legend=plot_opts['legend'])
+
+            ax.set_xlim([bg.logs.freqs[0][0], bg.logs.freqs[-1][-1]])
+            ax.set_ylim(plot_range)
             plt.tight_layout()
 
             if opts.fig_name is not None:
                 fig_name = _get_fig_name(self.problem.output_dir, opts.fig_name,
                                          key, 'band_gaps', opts.fig_suffix)
                 fig.savefig(fig_name)
-
-        if plot_opts['show']:
-            plt.show()
 
     def plot_dispersion(self, coefs):
         opts = self.app_options
@@ -525,7 +476,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
         plot_labels =  opts.plot_labels_angle
 
-        for ii, key in enumerate(bg_keys):
+        for key in bg_keys:
             pas_key = key.replace('dispersion', 'polarization_angles')
             pas = coefs.get(pas_key)
 
@@ -537,22 +488,25 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             bg = coefs.get(key)
 
-            fig = plot_gaps(1, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
-                            bg.freq_range_margins, plot_range,
-                            clear=True)
-            fig = plot_logs(1, plot_rsc, plot_labels, bg.logs.freqs, pas,
-                            bg.valid[bg.eig_range],
-                            bg.freq_range_initial,
-                            plot_range,
-                            show_legend=plot_opts['legend'],
-                            new_axes=True)
+            fig_1, ax_1 = plt.subplots()
+            plot_gaps(ax_1, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
+                      bg.freq_range_margins, plot_range)
+            plot_logs(ax_1, plot_rsc, plot_labels, bg.logs.freqs, pas,
+                      bg.valid[bg.eig_range],
+                      bg.freq_range_initial,
+                      plot_range,
+                      show_legend=plot_opts['legend'])
+
+            ax_1.set_xlim(
+                [bg.logs.freqs[0][0], bg.logs.freqs[-1][-1]])
+            ax_1.set_ylim(plot_range)
             plt.tight_layout()
 
             fig_name = opts.fig_name_angle
             if fig_name is not None:
                 fig_name = _get_fig_name(self.problem.output_dir, fig_name,
                                          key, 'dispersion', opts.fig_suffix)
-                fig.savefig(fig_name)
+                fig_1.savefig(fig_name)
 
             aux = transform_plot_data(bg.logs.eigs,
                                       opts.plot_transform_wave,
@@ -561,22 +515,24 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             plot_labels =  opts.plot_labels_wave
 
-            fig = plot_gaps(2, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
-                            bg.freq_range_margins, plot_range,
-                            clear=True)
-            fig = plot_logs(2, plot_rsc, plot_labels, bg.logs.freqs, teigs,
-                            bg.valid[bg.eig_range],
-                            bg.freq_range_initial,
-                            plot_range,
-                            show_legend=plot_opts['legend'],
-                            new_axes=True)
+            fig_2, ax_2 = plt.subplots()
+            plot_gaps(ax_2, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
+                      bg.freq_range_margins, plot_range)
+            plot_logs(ax_2, plot_rsc, plot_labels, bg.logs.freqs, teigs,
+                      bg.valid[bg.eig_range],
+                      bg.freq_range_initial,
+                      plot_range,
+                      show_legend=plot_opts['legend'])
+
+            ax_2.set_xlim([bg.logs.freqs[0][0], bg.logs.freqs[-1][-1]])
+            ax_2.set_ylim(plot_range)
             plt.tight_layout()
 
             fig_name = opts.fig_name_wave
             if fig_name is not None:
                 fig_name = _get_fig_name(self.problem.output_dir, fig_name,
                                          key, 'dispersion', opts.fig_suffix)
-                fig.savefig(fig_name)
+                fig_2.savefig(fig_name)
 
         if plot_opts['show']:
             plt.show()
