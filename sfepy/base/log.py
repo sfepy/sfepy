@@ -6,10 +6,10 @@ import six
 from six.moves import range
 
 try:
-    from multiprocessing import Process, Pipe
+    import multiprocessing as mp
 
 except ImportError:
-    Process = None
+    mp = None
 
 import numpy as nm
 
@@ -401,7 +401,7 @@ class Log(Struct):
                            yscales[ig], xlabels[ig], ylabels[ig],
                            formats[ig])
 
-        self.can_plot = (mpl is not None) and (Process is not None)
+        self.can_plot = (mpl is not None) and (mp is not None)
 
         if log_filename is not None:
             self.output = Output('', filename=log_filename)
@@ -532,16 +532,18 @@ class Log(Struct):
 
                 self.__class__.count += 1
 
-                self.plot_pipe, plotter_pipe = Pipe()
+                ctx = mp.get_context('spawn')
+
+                self.plot_pipe, plotter_pipe = ctx.Pipe()
                 self.plotter = LogPlotter(self.aggregate, self.sleep)
-                self.plot_process = Process(target=self.plotter,
-                                            args=(plotter_pipe,
-                                                  self.get_log_name(),
-                                                  self.data_names,
-                                                  self.yscales,
-                                                  self.xlabels,
-                                                  self.ylabels,
-                                                  self.plot_kwargs))
+                self.plot_process = ctx.Process(target=self.plotter,
+                                                args=(plotter_pipe,
+                                                      self.get_log_name(),
+                                                      self.data_names,
+                                                      self.yscales,
+                                                      self.xlabels,
+                                                      self.ylabels,
+                                                      self.plot_kwargs))
                 self.plot_process.daemon = True
                 self.plot_process.start()
 
@@ -559,6 +561,8 @@ class Log(Struct):
             self.plot_process.join()
             self.n_calls = 0
             output('terminated')
+
+        atexit.unregister(self.terminate)
 
     def plot_data(self, igs):
         send = self.plot_pipe.send
