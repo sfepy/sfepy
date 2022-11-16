@@ -560,6 +560,8 @@ class Log(Struct):
             self.n_calls = 0
             output('terminated')
 
+        atexit.unregister(self.terminate)
+
     def plot_data(self, igs):
         send = self.plot_pipe.send
 
