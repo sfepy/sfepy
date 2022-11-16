@@ -135,11 +135,11 @@ class LogPlotter(Struct):
                 for x, kwargs in self.vlines[ig]:
                     ax.axvline(x, **kwargs)
 
-            try:
-                self.plt.tight_layout(pad=0.5)
+        try:
+            self.plt.tight_layout(pad=0.5)
 
-            except:
-                pass
+        except:
+            pass
 
     def terminate(self):
         if self.ii:
