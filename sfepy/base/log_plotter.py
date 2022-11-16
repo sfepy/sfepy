@@ -176,6 +176,8 @@ class LogPlotter(Struct):
                 self.apply_commands()
                 self.fig.canvas.draw()
                 self.output('processed %d commands' % self.ii)
+
+            self.fig.canvas.flush_events()
             time.sleep(self.sleep)
 
         return True
@@ -201,12 +203,8 @@ class LogPlotter(Struct):
     def __call__(self, pipe, log_file, data_names, yscales, xlabels, ylabels,
                  plot_kwargs):
         """
-        Sets-up the plotting window, starts a thread calling self.poll_draw()
+        Sets-up the non-blocking plotting window and calls self.poll_draw()
         that does the actual plotting, taking commands out of `pipe`.
-
-        Note that pyplot _must_ be imported here and not in this module so that
-        the import occurs _after_ the plotting process is started in that
-        process.
         """
         import matplotlib.pyplot as plt
 
@@ -227,11 +225,6 @@ class LogPlotter(Struct):
         self.fig = self.plt.figure()
         self.make_axes()
 
-        import threading
-        draw_thread = threading.Thread(target=self.poll_draw)
-        draw_thread.start()
-
         self.output('...done')
-        self.plt.show()
-
-        draw_thread.join()
+        self.plt.show(block=False)
+        self.poll_draw()
