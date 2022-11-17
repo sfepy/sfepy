@@ -120,20 +120,20 @@ class LogPlotter(Struct):
                 yminor_locator = AutoLocator()
                 self.ax[ig].yaxis.set_minor_locator(yminor_locator)
 
-        if self.show_legends:
-            for ig, ax in enumerate(self.ax):
+        for ig, ax in enumerate(self.ax):
+            if self.show_legends:
                 try:
                     ax.legend()
                 except:
                     pass
 
-                if self.xlabels[ig]:
-                    ax.set_xlabel(self.xlabels[ig])
-                if self.ylabels[ig]:
-                    ax.set_ylabel(self.ylabels[ig])
+            if self.xlabels[ig]:
+                ax.set_xlabel(self.xlabels[ig])
+            if self.ylabels[ig]:
+                ax.set_ylabel(self.ylabels[ig])
 
-                for x, kwargs in self.vlines[ig]:
-                    ax.axvline(x, **kwargs)
+            for x, kwargs in self.vlines[ig]:
+                ax.axvline(x, **kwargs)
 
         try:
             self.plt.tight_layout(pad=0.5)
