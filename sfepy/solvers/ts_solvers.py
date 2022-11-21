@@ -800,6 +800,7 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
         alpha_f = get_default(conf.alpha_f, rho_inf / (rho_inf + 1.0))
         beta = get_default(conf.beta, 0.25 * (1.0 - alpha_m + alpha_f)**2)
         gamma = get_default(conf.gamma, 0.5 - alpha_m + alpha_f)
+        pars = (alpha_m, alpha_f, gamma, beta)
 
         output('parameters rho_inf, alpha_m, alpha_f, beta, gamma:',
                verbose=self.verbose)
@@ -813,35 +814,63 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
         for step, time in ts.iter_from(ts.step):
             output(self.format % (time, step + 1, ts.n_step),
                    verbose=self.verbose)
-            dt = ts.dt
-
-            # Notation: a = \alpha_f, t = t_{n+1}, t - dt = t_n.
+            # step, time = time step to compute = n+1
+            # step-1, time-ts.dt = previous known step data = n
+            # adaptivity modifies dt and time.
             # TODO: EBCs for current time t_{n+1}. but loads should be applied
             # in the mid-step time t_{n+1-a}.
-            prestep_fun(ts, vec)
+            while 1:
+                # Previous step state q(t_n).
+                prestep_fun(ts, vec)
+                vect = self.step(ts, vec, nls, pack, unpack, pars)
 
-            # Previous step state q(t_n).
-            ut, vt, at = unpack(vec)
+                if isinstance(self.tsc, FixedTCS):
+                    break
 
-            nlst = self.create_nlst(nls, dt, alpha_m, alpha_f, gamma, beta,
-                                    ut, vt, at)
+                new_dt, status = self.tsc(Struct(
+                    ts=ts,
+                    vec0=vec, vec1=vect,
+                    pack=pack, unpack=unpack,
+                ))
+                output('dt:', ts.dt, 'new dt:', new_dt, 'status:', status,
+                       verbose=self.verbose)
+                ts.set_time_step(new_dt, update_time=True)
+                self.nls.lin_solver.clear()
+                self.matrix = None
 
-            # Set time to t_{n+1-a} = (1 - a) t + a (t - dt) = t - a dt
-            ts.set_substep_time(- alpha_f * dt)
-            atp = nlst(at)
-            # Restore t_{n+1}.
-            ts.restore_step_time()
-
-            vtp = nlst.v(atp)
-            utp = nlst.u(atp)
+                if status.result == 'accept':
+                    break
 
             # Current step state q(t_{n+1}).
-            vect = pack(utp, vtp, atp)
             poststep_fun(ts, vect)
 
             vec = vect
 
-        return vec
+    def step(self, ts, vec, nls, pack, unpack, pars):
+        """
+        Solve a single time step.
+        """
+        dt = ts.dt
+        alpha_m, alpha_f, gamma, beta = pars
+        # Previous step state q(t_n).
+        ut, vt, at = unpack(vec)
+
+        nlst = self.create_nlst(nls, dt, alpha_m, alpha_f, gamma, beta,
+                                ut, vt, at)
+
+        # Notation: a = \alpha_f, t = t_{n+1}, t - dt = t_n.
+        # Set time to t_{n+1-a} = (1 - a) t + a (t - dt) = t - a dt
+        ts.set_substep_time(- alpha_f * dt)
+        atp = nlst(at)
+        # Restore t_{n+1}.
+        ts.restore_step_time()
+
+        vtp = nlst.v(atp)
+        utp = nlst.u(atp)
+        # Current step state q(t_{n+1}).
+        vect = pack(utp, vtp, atp)
+
+        return vect
 
 class BatheTS(ElastodynamicsBaseTS):
     """
