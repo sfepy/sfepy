@@ -9,6 +9,7 @@ from sfepy.base.base import (get_default, output, assert_,
 from sfepy.base.timing import Timer
 from sfepy.linalg.utils import output_array_stats
 from sfepy.solvers.solvers import TimeSteppingSolver
+from sfepy.solvers.ts_controllers import FixedTCS
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 
 def standard_ts_call(call):
@@ -357,11 +358,18 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
     Assumes block-diagonal matrix in `u`, `v`, `a`.
     """
-    def __init__(self, conf, nls=None, context=None, **kwargs):
-        TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
-                                    **kwargs)
+    def __init__(self, conf, nls=None, tsc=None, context=None, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, nls=nls, tsc=tsc,
+                                    context=context, **kwargs)
         self.conf.quasistatic = False
-        self.ts = TimeStepper.from_conf(self.conf)
+        if self.tsc is None:
+            self.tsc = FixedTCS({})
+
+        if isinstance(self.tsc, FixedTCS):
+            self.ts = TimeStepper.from_conf(self.conf)
+
+        else:
+            self.ts = VariableTimeStepper.from_conf(self.conf)
 
         nd = self.ts.n_digit
         format = '====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
