@@ -811,34 +811,47 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
             nls, vec0, init_fun, prestep_fun, poststep_fun)
 
         ts = self.ts
-        for step, time in ts.iter_from(ts.step):
-            output(self.format % (time, step + 1, ts.n_step),
+        dt0 = self.tsc.get_initial_dt(ts, vec, unpack=unpack)
+        if not isinstance(self.tsc, FixedTCS):
+            ts.set_time_step(dt0, update_time=True)
+        while 1:
+            output(self.format % (ts.time, ts.step + 1, ts.n_step),
                    verbose=self.verbose)
             # step, time = time step to compute = n+1
             # step-1, time-ts.dt = previous known step data = n
             # adaptivity modifies dt and time.
-            # TODO: EBCs for current time t_{n+1}. but loads should be applied
-            # in the mid-step time t_{n+1-a}.
             while 1:
                 # Previous step state q(t_n).
+                # TODO: EBCs for current time t_{n+1}. but loads should be
+                # applied in the mid-step time t_{n+1-a}.
                 prestep_fun(ts, vec)
                 vect = self.step(ts, vec, nls, pack, unpack, pars)
 
                 if isinstance(self.tsc, FixedTCS):
+                    new_dt = ts.dt
                     break
 
                 new_dt, status = self.tsc(ts, vec, vect, unpack=unpack)
                 output('dt:', ts.dt, 'new dt:', new_dt, 'status:', status,
                        verbose=self.verbose)
-                ts.set_time_step(new_dt, update_time=True)
-                self.nls.lin_solver.clear()
-                self.matrix = None
+                if new_dt != ts.dt:
+                    self.nls.lin_solver.clear()
+                    self.matrix = None
 
                 if status.result == 'accept':
                     break
 
+                ts.set_time_step(new_dt, update_time=True)
+
             # Current step state q(t_{n+1}).
             poststep_fun(ts, vect)
+
+            if ts.nt >= 1:
+                break
+
+            if new_dt != ts.dt:
+                ts.set_time_step(new_dt, update_time=False)
+            ts.advance()
 
             vec = vect
 
