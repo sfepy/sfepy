@@ -302,6 +302,9 @@ class TimeStepController(Solver):
     def __init__(self, conf, **kwargs):
         Solver.__init__(self, conf=conf, **kwargs)
 
+    def get_initial_dt(self, ts, vec, **kwargs):
+        return ts.dt
+
     def __call__(self, ts, vec0, vec1, **kwargs):
         raise ValueError('called an abstract TimeStepController instance!')
 
