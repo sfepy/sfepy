@@ -9,6 +9,43 @@ class FixedTCS(TimeStepController):
     """
     name = 'tsc.fixed'
 
+class TimesSequenceTCS(TimeStepController):
+    """
+    Given times sequence time step controller.
+    """
+    name = 'tsc.time_sequence'
+
+    _parameters = [
+        ('times', 'iterable', range(1, 6), True,
+         'A sequence of times to generate.'),
+    ]
+
+    def __init__(self, conf, **kwargs):
+        TimeStepController.__init__(self, conf=conf, **kwargs)
+
+        self.iter_times = iter(self.conf.times)
+
+    def get_initial_dt(self, ts, vec, **kwargs):
+        # This cannot be called repeatedly!
+        self.t0 = ts.t0
+        return next(self.iter_times) - self.t0
+
+    def __call__(self, ts, vec0, vec1, **kwargs):
+        self.t0 = ts.time
+        try:
+            t1 = next(self.iter_times)
+
+        except StopIteration:
+            t1 = ts.t1
+
+        new_dt = t1 - self.t0
+        if new_dt == 0.0:
+            new_dt = 1.0
+
+        status = Struct(u_err=None, v_err=None, emax=None, result='accept')
+
+        return new_dt, status
+
 class ElastodynamicsBasicTCS(TimeStepController):
     """
     Adaptive time step controller for elastodynamics by [1].
