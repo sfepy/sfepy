@@ -34,16 +34,16 @@ class ElastodynamicsBasicTCS(TimeStepController):
          'Step size change safety factor.'),
     ]
 
-    def __call__(self, tsc_state, **kwargs):
+    def __call__(self, ts, vec0, vec1, unpack, **kwargs):
         conf = self.conf
-        dt = tsc_state.ts.dt
+        dt = ts.dt
         u_eps_a, u_eps_r, v_eps_a, v_eps_r, fmin, fmax, fsafety = (
             conf.eps_a[0], conf.eps_r[0],
             conf.eps_a[1], conf.eps_r[1],
             conf.fmin, conf.fmax, conf.fsafety,
         )
-        u0, v0, a0 = tsc_state.unpack(tsc_state.vec0)
-        u1, v1, a1 = tsc_state.unpack(tsc_state.vec1)
+        u0, v0, a0 = unpack(vec0)
+        u1, v1, a1 = unpack(vec1)
 
         # Backward Euler step.
         u1_be = u0 + dt * v1

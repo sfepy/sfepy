@@ -827,11 +827,7 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
                 if isinstance(self.tsc, FixedTCS):
                     break
 
-                new_dt, status = self.tsc(Struct(
-                    ts=ts,
-                    vec0=vec, vec1=vect,
-                    pack=pack, unpack=unpack,
-                ))
+                new_dt, status = self.tsc(ts, vec, vect, unpack=unpack)
                 output('dt:', ts.dt, 'new dt:', new_dt, 'status:', status,
                        verbose=self.verbose)
                 ts.set_time_step(new_dt, update_time=True)
