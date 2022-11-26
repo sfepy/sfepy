@@ -366,6 +366,8 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
             self.tsc = FixedTCS({})
 
         if isinstance(self.tsc, FixedTCS):
+            # Using TimeStepper instead of VariableTimeStepper ensures the
+            # final time is reached "exactly".
             self.ts = TimeStepper.from_conf(self.conf)
 
         else:
