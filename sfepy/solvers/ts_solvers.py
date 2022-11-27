@@ -443,6 +443,57 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
         return vec, unpack, pack
 
+    @standard_ts_call
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
+        vec, unpack, pack = self.get_initial_vec(
+            nls, vec0, init_fun, prestep_fun, poststep_fun)
+
+        ts = self.ts
+        dt0 = self.tsc.get_initial_dt(ts, vec, unpack=unpack)
+        if not isinstance(self.tsc, FixedTCS):
+            ts.set_time_step(dt0, update_time=True)
+        while 1:
+            output(self.format % (ts.time, ts.step + 1, ts.n_step),
+                   verbose=self.verbose)
+            # step, time = time step to compute = n+1
+            # step-1, time-ts.dt = previous known step data = n
+            # adaptivity modifies dt and time.
+            while 1:
+                # Previous step state q(t_n).
+                # TODO: EBCs for current time t_{n+1}. but loads should be
+                # applied in the mid-step time t_{n+1-a}.
+                prestep_fun(ts, vec)
+                vect = self.step(ts, vec, nls, pack, unpack)
+
+                if isinstance(self.tsc, FixedTCS):
+                    new_dt = ts.dt
+                    break
+
+                new_dt, status = self.tsc(ts, vec, vect, unpack=unpack)
+                output('dt:', ts.dt, 'new dt:', new_dt, 'status:', status,
+                       verbose=self.verbose)
+                if new_dt != ts.dt:
+                    self.nls.lin_solver.clear()
+                    self.matrix = None
+
+                if status.result == 'accept':
+                    break
+
+                ts.set_time_step(new_dt, update_time=True)
+
+            # Current step state q(t_{n+1}).
+            poststep_fun(ts, vect)
+
+            if ts.nt >= 1:
+                break
+
+            if new_dt != ts.dt:
+                ts.set_time_step(new_dt, update_time=False)
+            ts.advance()
+
+            vec = vect
+
 class VelocityVerletTS(ElastodynamicsBaseTS):
     """
     Solve elastodynamics problems by the velocity-Verlet method.
@@ -698,6 +749,24 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
          r'The Newmark-like parameter :math:`\gamma`.'),
     ]
 
+    def __init__(self, conf, nls=None, tsc=None, context=None, **kwargs):
+        ElastodynamicsBaseTS.__init__(self, conf, nls=nls, tsc=tsc,
+                                      context=context, **kwargs)
+        conf = self.conf
+
+        rho_inf = conf.rho_inf
+        alpha_m = get_default(conf.alpha_m,
+                              (2.0 * rho_inf - 1.0) / (rho_inf + 1.0))
+        alpha_f = get_default(conf.alpha_f, rho_inf / (rho_inf + 1.0))
+        beta = get_default(conf.beta, 0.25 * (1.0 - alpha_m + alpha_f)**2)
+        gamma = get_default(conf.gamma, 0.5 - alpha_m + alpha_f)
+        self.pars = (alpha_m, alpha_f, gamma, beta)
+
+        output('parameters rho_inf, alpha_m, alpha_f, beta, gamma:',
+               verbose=self.verbose)
+        output(rho_inf, alpha_m, alpha_f, beta, gamma,
+               verbose=self.verbose)
+
     def _create_nlst_a(self, nls, dt, ufun, vfun, afun, cm, cc, ck, cache_name):
         nlst = nls.copy()
 
@@ -752,82 +821,12 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
 
         return nlst
 
-    @standard_ts_call
-    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
-                 poststep_fun=None, status=None, **kwargs):
-        """
-        Solve elastodynamics problems by the generalized :math:`\alpha` method.
-        """
-        conf = self.conf
-        nls = get_default(nls, self.nls)
-
-        rho_inf = conf.rho_inf
-        alpha_m = get_default(conf.alpha_m,
-                              (2.0 * rho_inf - 1.0) / (rho_inf + 1.0))
-        alpha_f = get_default(conf.alpha_f, rho_inf / (rho_inf + 1.0))
-        beta = get_default(conf.beta, 0.25 * (1.0 - alpha_m + alpha_f)**2)
-        gamma = get_default(conf.gamma, 0.5 - alpha_m + alpha_f)
-        pars = (alpha_m, alpha_f, gamma, beta)
-
-        output('parameters rho_inf, alpha_m, alpha_f, beta, gamma:',
-               verbose=self.verbose)
-        output(rho_inf, alpha_m, alpha_f, beta, gamma,
-               verbose=self.verbose)
-
-        vec, unpack, pack = self.get_initial_vec(
-            nls, vec0, init_fun, prestep_fun, poststep_fun)
-
-        ts = self.ts
-        dt0 = self.tsc.get_initial_dt(ts, vec, unpack=unpack)
-        if not isinstance(self.tsc, FixedTCS):
-            ts.set_time_step(dt0, update_time=True)
-        while 1:
-            output(self.format % (ts.time, ts.step + 1, ts.n_step),
-                   verbose=self.verbose)
-            # step, time = time step to compute = n+1
-            # step-1, time-ts.dt = previous known step data = n
-            # adaptivity modifies dt and time.
-            while 1:
-                # Previous step state q(t_n).
-                # TODO: EBCs for current time t_{n+1}. but loads should be
-                # applied in the mid-step time t_{n+1-a}.
-                prestep_fun(ts, vec)
-                vect = self.step(ts, vec, nls, pack, unpack, pars)
-
-                if isinstance(self.tsc, FixedTCS):
-                    new_dt = ts.dt
-                    break
-
-                new_dt, status = self.tsc(ts, vec, vect, unpack=unpack)
-                output('dt:', ts.dt, 'new dt:', new_dt, 'status:', status,
-                       verbose=self.verbose)
-                if new_dt != ts.dt:
-                    self.nls.lin_solver.clear()
-                    self.matrix = None
-
-                if status.result == 'accept':
-                    break
-
-                ts.set_time_step(new_dt, update_time=True)
-
-            # Current step state q(t_{n+1}).
-            poststep_fun(ts, vect)
-
-            if ts.nt >= 1:
-                break
-
-            if new_dt != ts.dt:
-                ts.set_time_step(new_dt, update_time=False)
-            ts.advance()
-
-            vec = vect
-
-    def step(self, ts, vec, nls, pack, unpack, pars):
+    def step(self, ts, vec, nls, pack, unpack):
         """
         Solve a single time step.
         """
         dt = ts.dt
-        alpha_m, alpha_f, gamma, beta = pars
+        alpha_m, alpha_f, gamma, beta = self.pars
         # Previous step state q(t_n).
         ut, vt, at = unpack(vec)
 
