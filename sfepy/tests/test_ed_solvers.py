@@ -157,6 +157,23 @@ def define(t1=3e-5, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
 
             'verbose' : 1,
         }),
+        'tscedb' : ('tsc.ed_basic', {
+            'eps_r' : (1e-3, 1e-1),
+            'eps_a' : (1e-6, 1e-2),
+            'fmin' : 0.3,
+            'fmax' : 2.5,
+            'fsafety' : 0.85,
+        }),
+        'tscedpid' : ('tsc.ed_pid', {
+            'eps_r' : (1e-3, 1e-1),
+            'eps_a' : (1e-6, 1e-2),
+            'fmin' : 0.3,
+            'fmax' : 2.5,
+            'fsafety' : 0.85,
+            'pcoef' : 0.4,
+            'icoef' : 0.3,
+            'dcoef' : 0,
+        }),
     }
 
     options = {
@@ -207,12 +224,15 @@ def _list_elastodynamic_solvers(confs):
 def test_ed_solvers(problem, output_dir):
     from scipy.integrate import simpson
     from sfepy.base.base import IndexedStruct
+    from sfepy.solvers import Solver
 
     solver_confs = _list_elastodynamic_solvers(problem.solver_confs)
 
     vu = problem.get_variables()['u']
     sensor = problem.domain.regions['Sensor']
     isens = 3 * vu.field.get_dofs_in_region(sensor)[0] + 2
+
+    nls = problem.solver.nls
 
     ths = []
     def store_ths(pb, ts, variables):
@@ -226,20 +246,35 @@ def test_ed_solvers(problem, output_dir):
 
     all_ths = []
     stats = []
-    for solver_conf in solver_confs:
-        problem.init_solvers(ts_conf=solver_conf,
-                             force=True)
-        ths[:] = []
-        status = IndexedStruct()
-        problem.solve(status=status, save_results=False, step_hook=store_ths)
-        all_ths.append(nm.array(ths))
-        stats.append((solver_conf.kind, status.n_step, status.time))
+    t1s = []
+    for tsc_name in [None, 'tscedb', 'tscedpid']:
+        if tsc_name is not None:
+            tsc = Solver.any_from_conf(problem.solver_confs[tsc_name])
 
-    kinds = [val[0] for val in stats]
+        else:
+            tsc = None
+
+        for solver_conf in solver_confs:
+            if tsc_name is not None:
+                problem.solver.tsc = tsc
+
+            status = IndexedStruct()
+            tss = Solver.any_from_conf(solver_conf, nls=nls, tsc=tsc,
+                                       context=problem, status=status)
+            problem.set_solver(tss)
+
+            ths[:] = []
+            problem.solve(status=status, save_results=False, step_hook=store_ths)
+            all_ths.append(nm.array(ths))
+            stats.append((problem.solver.tsc.conf.kind, solver_conf.kind,
+                          status.n_step, status.time))
+            t1s.append(tss.ts.time)
+
+    kinds = [val[0:2] for val in stats]
     stats.sort(key=lambda x: x[-1])
     tst.report('solution times / numbers of time steps:')
     for row in stats:
-        tst.report('%.2f [s] / % 4d' % (row[2], row[1]), ':', row[0])
+        tst.report('%.2f [s] / % 4d' % (row[3], row[2]), ':', row[:2])
 
     # import matplotlib.pyplot as plt
     # for ii, ths in enumerate(all_ths):
@@ -258,14 +293,22 @@ def test_ed_solvers(problem, output_dir):
     iths_ref = all_iths[0]
     e0 = all_ths[0][0, -1]
     e_rtols = {
-        'ts.bathe' : 1e-1,
-        'ts.generalized_alpha' : 1e-2,
-        'ts.newmark' : 1e-5,
-        'ts.velocity_verlet' : 1e-2
+        ('tsc.fixed', 'ts.bathe') : 1e-1,
+        ('tsc.fixed', 'ts.generalized_alpha') : 1e-2,
+        ('tsc.fixed', 'ts.newmark') : 1e-12,
+        ('tsc.fixed', 'ts.velocity_verlet') : 1e-2,
+        ('tsc.ed_basic', 'ts.bathe') : 1e-1,
+        ('tsc.ed_basic', 'ts.generalized_alpha') : 1e-3,
+        ('tsc.ed_basic', 'ts.newmark') : 1e-12,
+        ('tsc.ed_basic', 'ts.velocity_verlet') : 2e-2,
+        ('tsc.ed_pid', 'ts.bathe') : 1e-2,
+        ('tsc.ed_pid', 'ts.generalized_alpha') : 1e-4,
+        ('tsc.ed_pid', 'ts.newmark') : 1e-12,
+        ('tsc.ed_pid', 'ts.velocity_verlet') : 1e-2,
     }
-    ienergy = e0 * problem.conf.t1
     ok = True
     for ii, iths in enumerate(all_iths):
+        ienergy = e0 * t1s[ii]
         _ok = ((abs(iths[0] - iths_ref[0]) < 2e-9) and
                nm.isclose(iths[-1], ienergy, atol=0, rtol=e_rtols[kinds[ii]]))
         print(iths[-1] - ienergy)
