@@ -221,6 +221,7 @@ def _list_elastodynamic_solvers(confs):
 
     return d
 
+@pytest.mark.slow
 def test_ed_solvers(problem, output_dir):
     from scipy.integrate import simpson
     from sfepy.base.base import IndexedStruct
