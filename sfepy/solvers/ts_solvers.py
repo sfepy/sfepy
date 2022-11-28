@@ -927,6 +927,12 @@ class BatheTS(ElastodynamicsBaseTS):
         nlst.lin_solver = self.ls2
         return nlst
 
+    def clear_lin_solver(self):
+        self.nls.lin_solver.clear()
+        self.ls1 = self.ls2 = None
+        self.matrix1 = None
+        self.matrix = None
+
     def step(self, ts, vec, nls, pack, unpack, prestep_fun):
         """
         Solve a single time step.
