@@ -464,7 +464,8 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
                 # TODO: EBCs for current time t_{n+1}. but loads should be
                 # applied in the mid-step time t_{n+1-a}.
                 prestep_fun(ts, vec)
-                vect = self.step(ts, vec, nls, pack, unpack)
+                vect = self.step(ts, vec, nls, pack, unpack,
+                                 prestep_fun=prestep_fun)
 
                 if isinstance(self.tsc, FixedTCS):
                     new_dt = ts.dt
@@ -821,7 +822,7 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
 
         return nlst
 
-    def step(self, ts, vec, nls, pack, unpack):
+    def step(self, ts, vec, nls, pack, unpack, **kwargs):
         """
         Solve a single time step.
         """
