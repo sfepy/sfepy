@@ -71,14 +71,10 @@ class ElastodynamicsBasicTCS(TimeStepController):
          'Step size change safety factor.'),
     ]
 
-    def __call__(self, ts, vec0, vec1, unpack, **kwargs):
-        conf = self.conf
-        dt = ts.dt
-        u_eps_a, u_eps_r, v_eps_a, v_eps_r, fmin, fmax, fsafety = (
-            conf.eps_a[0], conf.eps_r[0],
-            conf.eps_a[1], conf.eps_r[1],
-            conf.fmin, conf.fmax, conf.fsafety,
-        )
+    @staticmethod
+    def get_scaled_errors(dt, vec0, vec1, eps_as, eps_rs, unpack):
+        u_eps_a, v_eps_a = eps_as
+        u_eps_r, v_eps_r = eps_rs
         u0, v0, a0 = unpack(vec0)
         u1, v1, a1 = unpack(vec1)
 
@@ -96,6 +92,19 @@ class ElastodynamicsBasicTCS(TimeStepController):
             )
         u_err = get_err(u_terr, u_eps_a, u_eps_r)
         v_err = get_err(v_terr, v_eps_a, v_eps_r)
+
+        return u_err, v_err
+
+    def __call__(self, ts, vec0, vec1, unpack, **kwargs):
+        conf = self.conf
+        dt = ts.dt
+        fmin, fmax, fsafety = conf.fmin, conf.fmax, conf.fsafety
+        u0, v0, a0 = unpack(vec0)
+        u1, v1, a1 = unpack(vec1)
+
+        u_err, v_err = self.get_scaled_errors(
+            dt, vec0, vec1, conf.eps_a, conf.eps_r, unpack,
+        )
         emax = max(u_err, v_err)
         status = Struct(u_err=u_err, v_err=v_err, emax=emax)
         if emax <= 1:
