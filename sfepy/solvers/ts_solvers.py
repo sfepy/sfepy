@@ -552,37 +552,21 @@ class VelocityVerletTS(ElastodynamicsBaseTS):
 
         return nlst
 
-    @standard_ts_call
-    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
-                 poststep_fun=None, status=None, **kwargs):
+    def step(self, ts, vec, nls, pack, unpack, **kwargs):
         """
-        Solve elastodynamics problems by the velocity-Verlet method.
+        Solve a single time step.
         """
-        nls = get_default(nls, self.nls)
+        dt = ts.dt
+        ut, vt, at = unpack(vec)
 
-        vec, unpack, pack = self.get_initial_vec(
-            nls, vec0, init_fun, prestep_fun, poststep_fun)
+        nlst = self.create_nlst(nls, dt, ut, vt, at)
+        atp = nlst(at)
+        vtp = nlst.v1(atp)
+        utp = nlst.u1
 
-        ts = self.ts
-        for step, time in ts.iter_from(ts.step):
-            output(self.format % (time, step + 1, ts.n_step),
-                   verbose=self.verbose)
-            dt = ts.dt
+        vect = pack(utp, vtp, atp)
 
-            prestep_fun(ts, vec)
-            ut, vt, at = unpack(vec)
-
-            nlst = self.create_nlst(nls, dt, ut, vt, at)
-            atp = nlst(at)
-            vtp = nlst.v1(atp)
-            utp = nlst.u1
-
-            vect = pack(utp, vtp, atp)
-            poststep_fun(ts, vect)
-
-            vec = vect
-
-        return vec
+        return vect
 
 class NewmarkTS(ElastodynamicsBaseTS):
     r"""
@@ -663,38 +647,22 @@ class NewmarkTS(ElastodynamicsBaseTS):
                                    'matrix')
         return nlst
 
-    @standard_ts_call
-    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
-                 poststep_fun=None, status=None, **kwargs):
+    def step(self, ts, vec, nls, pack, unpack, **kwargs):
         """
-        Solve elastodynamics problems by the Newmark method.
+        Solve a single time step.
         """
+        dt = ts.dt
         conf = self.conf
-        nls = get_default(nls, self.nls)
+        ut, vt, at = unpack(vec)
 
-        vec, unpack, pack = self.get_initial_vec(
-            nls, vec0, init_fun, prestep_fun, poststep_fun)
+        nlst = self.create_nlst(nls, dt, conf.gamma, conf.beta, ut, vt, at)
+        atp = nlst(at)
+        vtp = nlst.v(atp)
+        utp = nlst.u(atp)
 
-        ts = self.ts
-        for step, time in ts.iter_from(ts.step):
-            output(self.format % (time, step + 1, ts.n_step),
-                   verbose=self.verbose)
-            dt = ts.dt
+        vect = pack(utp, vtp, atp)
 
-            prestep_fun(ts, vec)
-            ut, vt, at = unpack(vec)
-
-            nlst = self.create_nlst(nls, dt, conf.gamma, conf.beta, ut, vt, at)
-            atp = nlst(at)
-            vtp = nlst.v(atp)
-            utp = nlst.u(atp)
-
-            vect = pack(utp, vtp, atp)
-            poststep_fun(ts, vect)
-
-            vec = vect
-
-        return vec
+        return vect
 
 class GeneralizedAlphaTS(ElastodynamicsBaseTS):
     r"""
@@ -956,45 +924,29 @@ class BatheTS(ElastodynamicsBaseTS):
         nlst.lin_solver = self.ls2
         return nlst
 
-    @standard_ts_call
-    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
-                 poststep_fun=None, status=None, **kwargs):
+    def step(self, ts, vec, nls, pack, unpack, prestep_fun):
         """
-        Solve elastodynamics problems by the Bathe method.
+        Solve a single time step.
         """
-        nls = get_default(nls, self.nls)
+        dt = ts.dt
+        ut, vt, at = unpack(vec)
+        nlst1 = self.create_nlst1(nls, dt, ut, vt, at)
+        ut1 = nlst1(ut)
+        vt1 = nlst1.v(ut1)
+        at1 = nlst1.a(vt1)
 
-        vec, unpack, pack = self.get_initial_vec(
-            nls, vec0, init_fun, prestep_fun, poststep_fun)
+        ts.set_substep_time(0.5 * dt)
 
-        ts = self.ts
-        for step, time in ts.iter_from(ts.step):
-            output(self.format % (time, step + 1, ts.n_step),
-                   verbose=self.verbose)
-            dt = ts.dt
+        vec1 = pack(ut1, vt1, at1)
+        prestep_fun(ts, vec1)
 
-            prestep_fun(ts, vec)
-            ut, vt, at = unpack(vec)
-            nlst1 = self.create_nlst1(nls, dt, ut, vt, at)
-            ut1 = nlst1(ut)
-            vt1 = nlst1.v(ut1)
-            at1 = nlst1.a(vt1)
+        nlst2 = self.create_nlst2(nls, dt, ut, ut1, vt, vt1)
+        ut2 = nlst2(ut1)
+        vt2 = nlst2.v(ut2)
+        at2 = nlst2.a(vt2)
 
-            ts.set_substep_time(0.5 * dt)
+        ts.restore_step_time()
 
-            vec1 = pack(ut1, vt1, at1)
-            prestep_fun(ts, vec1)
+        vec2 = pack(ut2, vt2, at2)
 
-            nlst2 = self.create_nlst2(nls, dt, ut, ut1, vt, vt1)
-            ut2 = nlst2(ut1)
-            vt2 = nlst2.v(ut2)
-            at2 = nlst2.a(vt2)
-
-            ts.restore_step_time()
-
-            vec2 = pack(ut2, vt2, at2)
-            poststep_fun(ts, vec2)
-
-            vec = vec2
-
-        return vec
+        return vec2
