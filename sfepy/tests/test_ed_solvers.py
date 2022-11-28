@@ -6,7 +6,7 @@ from sfepy.mesh.mesh_generators import gen_block_mesh
 import sfepy.mechanics.matcoefs as mc
 import sfepy.base.testing as tst
 
-def define(t1=3e-5, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
+def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
            young=70e9, poisson=0.3, density=2700):
 
     def mesh_hook(mesh, mode):
@@ -312,7 +312,6 @@ def test_ed_solvers(problem, output_dir):
         ienergy = e0 * t1s[ii]
         _ok = ((abs(iths[0] - iths_ref[0]) < 2e-9) and
                nm.isclose(iths[-1], ienergy, atol=0, rtol=e_rtols[kinds[ii]]))
-        print(iths[-1] - ienergy)
         tst.report(('%d % 20s:' + (6 * ' % .2e'))
                    % ((_ok, kinds[ii]) + tuple(iths)))
         ok = _ok and ok
