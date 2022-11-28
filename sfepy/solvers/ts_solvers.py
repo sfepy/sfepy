@@ -9,7 +9,7 @@ from sfepy.base.base import (get_default, output, assert_,
 from sfepy.base.timing import Timer
 from sfepy.linalg.utils import output_array_stats
 from sfepy.solvers.solvers import TimeSteppingSolver
-from sfepy.solvers.ts_controllers import FixedTCS
+from sfepy.solvers.ts_controllers import FixedTSC
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 
 def standard_ts_call(call):
@@ -363,9 +363,9 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
                                     context=context, **kwargs)
         self.conf.quasistatic = False
         if self.tsc is None:
-            self.tsc = FixedTCS({})
+            self.tsc = FixedTSC({})
 
-        if isinstance(self.tsc, FixedTCS):
+        if isinstance(self.tsc, FixedTSC):
             # Using TimeStepper instead of VariableTimeStepper ensures the
             # final time is reached "exactly".
             self.ts = TimeStepper.from_conf(self.conf)
@@ -451,7 +451,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
         ts = self.ts
         dt0 = self.tsc.get_initial_dt(ts, vec, unpack=unpack)
-        if not isinstance(self.tsc, FixedTCS):
+        if not isinstance(self.tsc, FixedTSC):
             ts.set_time_step(dt0, update_time=True)
         while 1:
             output(self.format % (ts.time, ts.step + 1, ts.n_step),
@@ -467,7 +467,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
                 vect = self.step(ts, vec, nls, pack, unpack,
                                  prestep_fun=prestep_fun)
 
-                if isinstance(self.tsc, FixedTCS):
+                if isinstance(self.tsc, FixedTSC):
                     new_dt = ts.dt
                     break
 

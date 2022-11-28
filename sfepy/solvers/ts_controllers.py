@@ -3,13 +3,13 @@ import numpy as nm
 from sfepy.base.base import Struct
 from sfepy.solvers.solvers import TimeStepController
 
-class FixedTCS(TimeStepController):
+class FixedTSC(TimeStepController):
     """
     Fixed (do-nothing) time step controller.
     """
     name = 'tsc.fixed'
 
-class TimesSequenceTCS(TimeStepController):
+class TimesSequenceTSC(TimeStepController):
     """
     Given times sequence time step controller.
     """
@@ -46,7 +46,7 @@ class TimesSequenceTCS(TimeStepController):
 
         return new_dt, status
 
-class ElastodynamicsBasicTCS(TimeStepController):
+class ElastodynamicsBasicTSC(TimeStepController):
     """
     Adaptive time step controller for elastodynamics by [1].
 
