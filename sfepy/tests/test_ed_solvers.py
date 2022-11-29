@@ -215,8 +215,8 @@ def problem():
 
     return pb
 
-def _list_elastodynamic_solvers(confs):
-    d = [val for val in confs.values() if val.kind.startswith('ts.')]
+def _list_solvers(confs, kind='ts'):
+    d = [val for val in confs.values() if val.kind.startswith(kind+'.')]
     d.sort(key=lambda a: a.name)
 
     return d
@@ -225,15 +225,13 @@ def _list_elastodynamic_solvers(confs):
 def test_ed_solvers(problem, output_dir):
     from scipy.integrate import simpson
     from sfepy.base.base import IndexedStruct
-    from sfepy.solvers import Solver
 
-    solver_confs = _list_elastodynamic_solvers(problem.solver_confs)
+    tss_confs = _list_solvers(problem.solver_confs)
+    tsc_confs = _list_solvers(problem.solver_confs, kind='tsc')
 
     vu = problem.get_variables()['u']
     sensor = problem.domain.regions['Sensor']
     isens = 3 * vu.field.get_dofs_in_region(sensor)[0] + 2
-
-    nls = problem.solver.nls
 
     ths = []
     def store_ths(pb, ts, variables):
@@ -248,28 +246,18 @@ def test_ed_solvers(problem, output_dir):
     all_ths = []
     stats = []
     t1s = []
-    for tsc_name in [None, 'tscedb', 'tscedpid']:
-        if tsc_name is not None:
-            tsc = Solver.any_from_conf(problem.solver_confs[tsc_name])
-
-        else:
-            tsc = None
-
-        for solver_conf in solver_confs:
-            if tsc_name is not None:
-                problem.solver.tsc = tsc
-
+    for tsc_conf in [None] + tsc_confs:
+        problem.tsc_conf = None
+        for tss_conf in tss_confs:
             status = IndexedStruct()
-            tss = Solver.any_from_conf(solver_conf, nls=nls, tsc=tsc,
-                                       context=problem, status=status)
-            problem.set_solver(tss)
-
+            problem.init_solvers(tsc_conf=tsc_conf, ts_conf=tss_conf,
+                                 status=status, force=True)
             ths[:] = []
             problem.solve(status=status, save_results=False, step_hook=store_ths)
             all_ths.append(nm.array(ths))
-            stats.append((problem.solver.tsc.conf.kind, solver_conf.kind,
+            stats.append((problem.solver.tsc.conf.kind, tss_conf.kind,
                           status.n_step, status.time))
-            t1s.append(tss.ts.time)
+            t1s.append(problem.solver.ts.time)
 
     kinds = [val[0:2] for val in stats]
     stats.sort(key=lambda x: x[-1])
