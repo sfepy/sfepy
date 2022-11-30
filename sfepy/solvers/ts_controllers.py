@@ -75,6 +75,8 @@ class ElastodynamicsBasicTSC(TimeStepController):
          'Maximum step size change on step acceptance.'),
         ('fsafety', 'float', 0.8, False,
          'Step size change safety factor.'),
+        ('error_order', 'float', 2, False,
+         'The order of the solver error estimate.'),
     ]
 
     @staticmethod
@@ -104,7 +106,9 @@ class ElastodynamicsBasicTSC(TimeStepController):
     def __call__(self, ts, vec0, vec1, unpack, **kwargs):
         conf = self.conf
         dt = ts.dt
-        fmin, fmax, fsafety = conf.fmin, conf.fmax, conf.fsafety
+        fmin, fmax, fsafety, error_order = (
+            conf.fmin, conf.fmax, conf.fsafety, conf.error_order,
+        )
         u0, v0, a0 = unpack(vec0)
         u1, v1, a1 = unpack(vec1)
 
@@ -115,11 +119,11 @@ class ElastodynamicsBasicTSC(TimeStepController):
         status = Struct(u_err=u_err, v_err=v_err, emax=emax)
         if emax <= 1:
             # Step accepted.
-            new_dt = dt * min(fmax, fsafety / nm.sqrt(emax))
+            new_dt = dt * min(fmax, fsafety / emax**(1.0 / error_order))
             status.result = 'accept'
 
         else:
-            new_dt = dt * max(fmin, fsafety / nm.sqrt(emax))
+            new_dt = dt * max(fmin, fsafety / emax**(1.0 / error_order))
             status.result = 'reject'
 
         return new_dt, status
@@ -153,8 +157,6 @@ class ElastodynamicsPIDTSC(ElastodynamicsBasicTSC):
          'Intregral (I) coefficient of the step size control.'),
         ('dcoef', 'float', 0.0, False,
          'Derivative (D) coefficient of the step size control.'),
-        ('error_order', 'float', 2, False,
-         'The order of the solver error estimate.'),
     ]
 
     def __init__(self, conf, **kwargs):
