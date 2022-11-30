@@ -49,6 +49,12 @@ class TimesSequenceTSC(TimeStepController):
 
         return new_dt, status
 
+def eval_scaled_norm(terr, eps_a, eps_r):
+    return nm.sqrt(
+        1 / len(terr) *
+        nm.sum((terr / (eps_r * nm.abs(terr) + eps_a))**2)
+    )
+
 class ElastodynamicsBasicTSC(TimeStepController):
     """
     Adaptive time step I-controller for elastodynamics.
@@ -77,6 +83,8 @@ class ElastodynamicsBasicTSC(TimeStepController):
          'Step size change safety factor.'),
         ('error_order', 'float', 2, False,
          'The order of the solver error estimate.'),
+        ('guess_dt0', 'bool', False, False,
+         'Guess a good initial time step from initial conditions.'),
     ]
 
     @staticmethod
@@ -93,15 +101,41 @@ class ElastodynamicsBasicTSC(TimeStepController):
         u_terr = u1 - u1_be
         v_terr = v1 - v1_be
 
-        def get_err(terr, eps_a, eps_r):
-            return nm.sqrt(
-                1 / len(terr) *
-                nm.sum((terr / (eps_r * nm.abs(terr) + eps_a))**2)
-            )
-        u_err = get_err(u_terr, u_eps_a, u_eps_r)
-        v_err = get_err(v_terr, v_eps_a, v_eps_r)
+        u_err = eval_scaled_norm(u_terr, u_eps_a, u_eps_r)
+        v_err = eval_scaled_norm(v_terr, v_eps_a, v_eps_r)
 
         return u_err, v_err
+
+    def get_initial_dt(self, ts, vec, unpack, **kwargs):
+        """
+        Adapted from [1] for second order ODEs.
+
+        [1] Hairer, Ernst, Gerhard Wanner, and Syvert P. Nørsett. Solving
+        Ordinary Differential Equations I: Nonstiff Problems. Vol. 8. Springer
+        Series in Computational Mathematics. Berlin, Heidelberg: Springer,
+        1993. https://doi.org/10.1007/978-3-540-78862-1.
+        """
+        conf = self.conf
+        if not conf.guess_dt0:
+            return ts.dt
+
+        error_order = conf.error_order
+        eps_a = min(*conf.eps_a)
+        eps_r = min(*conf.eps_r)
+
+        u0, v0, a0 = unpack(vec)
+
+        d0 = eval_scaled_norm(u0, eps_a, eps_r)
+        d1 = eval_scaled_norm(v0, eps_a, eps_r)
+        d2 = eval_scaled_norm(a0, eps_a, eps_r)
+        md1d2 = max(d1, d2)
+
+        h0 = 1e-6 if (d0 < 1e-5) or (d1 < 1e-5) else 0.01 * (d0 / d1)
+        h1 = (max(1e-6, h0 * 1e-3) if md1d2 < 1e-15
+              else (0.01 / md1d2) ** (1 / error_order))
+
+        dt0 = min(100 * h0, h1)
+        return dt0
 
     def __call__(self, ts, vec0, vec1, unpack, **kwargs):
         conf = self.conf
