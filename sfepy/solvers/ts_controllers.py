@@ -227,3 +227,69 @@ class ElastodynamicsPIDTSC(ElastodynamicsBasicTSC):
         self.emax0 = emax
 
         return new_dt, status
+
+class ElastodynamicsLinearTSC(ElastodynamicsBasicTSC):
+    """
+    Adaptive time step controller for elastodynamics and linear problems.
+
+    Simple heuristics around :class:`ElastodynamicsBasicTSC` that increases the
+    step size only after a sufficient number of accepted iterations passed and
+    the increase is large enough. In particular:
+
+    - Let new_dt be the step size proposed by `tsc.ed_basic` and dt the current
+      step size.
+    - If the current step is rejected, the count attribute is reset to zero and
+      fred * new_dt is returned.
+    - If the current step is accepted:
+
+      - If the count is lower than inc_wait, it is incremented and dt is
+        returned.
+      - Otherwise, if (new_dt / dt) >= min_finc (>= 1), the count
+        is reset to zero and new_dt is returned.
+      - Else, if (new_dt / dt) < min_finc, dt is returned.
+    """
+    name = 'tsc.ed_linear'
+
+    _parameters = ElastodynamicsBasicTSC._parameters + [
+        ('fred', 'float', 1.0, False,
+         'Additional step size reduction factor w.r.t. `tsc.ed_basic`.'),
+        ('inc_wait', 'int', 10, False,
+         """The number of consecutive accepted steps to wait before increasing
+            the step size."""),
+        ('min_finc', 'float >= 1', 1.5, False,
+         'Minimum step size increase factor.'),
+    ]
+
+    def __init__(self, conf, **kwargs):
+        ElastodynamicsBasicTSC.__init__(self, conf=conf, **kwargs)
+
+        if self.conf.min_finc < 1.0:
+            raise ValueError(
+                f'min_finc must be >= 1! (is {conf.min_finc})'
+            )
+        self.count = 0
+
+    def __call__(self, ts, vec0, vec1, unpack, **kwargs):
+        conf = self.conf
+        dt = ts.dt
+
+        new_dt, status = ElastodynamicsBasicTSC.__call__(
+            self, ts, vec0, vec1, unpack, **kwargs
+        )
+        if status.result == 'reject':
+            self.count = 0
+            new_dt *= conf.fred
+
+        else: # accept
+            if self.count >= conf.inc_wait:
+                if (new_dt / dt) >= conf.min_finc:
+                    self.count = 0
+
+                else:
+                    new_dt = dt
+
+            else:
+                self.count += 1
+                new_dt = dt
+
+        return new_dt, status
