@@ -76,15 +76,15 @@ class ElastodynamicsBasicTSC(TimeStepController):
         ('eps_a', 'list of floats or float', None, True,
          'Absolute tolerance(s).'),
         ('fmin', 'float', 0.3, False,
-         'Minimum step size change on step rejection.'),
+         'Minimum step size change factor on step rejection.'),
         ('fmax', 'float', 2.5, False,
-         'Maximum step size change on step acceptance.'),
+         'Maximum step size change factor on step acceptance.'),
         ('fsafety', 'float', 0.8, False,
          'Step size change safety factor.'),
         ('error_order', 'float', 2, False,
          'The order of the solver error estimate.'),
         ('guess_dt0', 'bool', False, False,
-         'Guess a good initial time step from initial conditions.'),
+         'Guess a good initial step size from initial conditions.'),
     ]
 
     @staticmethod
