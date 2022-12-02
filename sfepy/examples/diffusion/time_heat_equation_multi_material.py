@@ -15,7 +15,7 @@ The PDE for this physical process implies to find :math:`T(x, t)` for :math:`x \
 .. math::
     \left\lbrace
     \begin{aligned}
-    \rho(x)c_p(x)\frac{\partial T}{\partial t}(x, t) = \nabla \cdot \left( -k(x) \underline{\nabla} T(x, t) \right) && \forall x \in \Omega, \forall t \in [0, T_{max}] \\
+    \rho(x)c_p(x)\frac{\partial T}{\partial t}(x, t) = -\nabla \cdot \left( -k(x) \underline{\nabla} T(x, t) \right) && \forall x \in \Omega, \forall t \in [0, T_{max}] \\
     -k \underline{\nabla} T(x, t)\cdot \underline{n} = q(t)+h(T-T_\infty) && \forall x \in \Gamma_{source} \\
     -k \underline{\nabla} T(x, t)\cdot \underline{n} = q(t)+h(T-T_\infty) && \forall x \in \Gamma_{plate} \\
     \underline{\nabla} T(x, t)\cdot \underline{n} = 0 && \forall x \in \Gamma \setminus(\Gamma_{source} \cap\Gamma_{plate}  )
@@ -25,6 +25,22 @@ The PDE for this physical process implies to find :math:`T(x, t)` for :math:`x \
 The weak formulation solved using `sfepy` is to find a discretized field :math:`T` that satisfies:
 
 .. math::
+    \begin{align}
+    \int_\Omega\rho c_p \frac{\partial T}{\partial t}(x, t) \, s  + \int_\Omega \underline{\nabla} s \cdot (k(x) \underline{\nabla}
+    T)  =  \int_\Gamma -k \underline{\nabla} T \cdot \underline{n} s \\    = \int_{\Gamma_{source}} q(t)   + \int_{\Gamma_{source}} h(T-T_\infty)  + \int_{\Gamma_{plate}} h(T-T_\infty)  && \forall s
+    \end{align}
+
+Uniform initial conditions are used as a starting point of the simulation.
+
+Usage examples
+--------------
+The script can be run with:
+
+    sfepy-run time_heat_equation_multi_material.py
+
+The last time-step result field can then be visualized as isosurfaces with:
+
+    sfepy-view multi_material_cylinder_plate.119.vtk -i 10 -l
 
 
 This script uses SI units (meters, kilograms, Joules...) except for temperature, which is expressed in degrees Celsius.
@@ -64,8 +80,7 @@ regions = {
     'Omega_Powder': 'cells of group 3',
     'Omega_Plate': 'cells of group 1 +v cells of group 2',
     'Gamma_Plate': ('vertices in (z < -9.95e-3)', 'facet'),
-    'Gamma_Cylinder': ('vertices of surface *v r.Omega_Cylinder', 'face'),
-    'Gamma_Plate_Cylinder': ('vertices of surface *v cells of group 2', 'face'),
+    'Gamma_Source': ('vertices of surface *v r.Omega_Cylinder', 'face'),
 }
 
 
@@ -109,9 +124,9 @@ equations = {
            dw_laplace.i.Omega_Cylinder(cylinder.lam, s, T)
            dw_laplace.i.Omega_Plate(plate.lam, s, T)
            dw_laplace.i.Omega_Powder(powder.lam, s, T)
-         = dw_integrate.i.Gamma_Cylinder(heat_flux_defined_by_func.val, s)
+         = dw_integrate.i.Gamma_Source(heat_flux_defined_by_func.val, s)
+           dw_bc_newton.i.Gamma_Source(heat_loss.h_top, heat_loss.T_top_inf, s, T)
            dw_bc_newton.i.Gamma_Plate(heat_loss.h_bot, heat_loss.T_bot_inf, s, T)
-           dw_bc_newton.i.Gamma_Cylinder(heat_loss.h_top, heat_loss.T_top_inf, s, T)
     """
 }
 
