@@ -59,6 +59,17 @@ Plot the adaptive time steps (available at times according to 'save_times'
 option!)::
 
   python3 sfepy/scripts/plot_times.py output/ed/user_block.h5 -l
+
+Again, solve in 2D using the explicit Velocity-Verlet method with adaptive
+time-stepping and save all time steps. Now the used time step control is
+suitable for linear problems solved by a direct solver: it employs a heuristic
+that tries to keep the time step size constant for several consecutive steps,
+reducing so the need for a new matrix factorization. Run::
+
+  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -d "dims=(5e-3, 5e-3), shape=(61, 61), tss_name='tsvv', tsc_name='tscedl', adaptive=True, save_times='all'"
+
+The resulting velocities and adaptive time steps can again be plotted by the
+commands shown above.
 """
 from __future__ import absolute_import
 
@@ -76,6 +87,7 @@ def define(
         v0=1.0,
         ct1=1.5,
         tss_name='tsn',
+        tsc_name='tscedb',
         adaptive=False,
         ls_name='lsd',
         save_times=20,
@@ -296,11 +308,21 @@ def define(
             'fmax' : 2.5,
             'fsafety' : 0.85,
         }),
+        'tscedl' : ('tsc.ed_linear', {
+            'eps_r' : (1e-4, 1e-1),
+            'eps_a' : (1e-8, 5e-2),
+            'fmin' : 0.3,
+            'fmax' : 2.5,
+            'fsafety' : 0.85,
+            'red_factor' : 0.9,
+            'inc_wait' : 10,
+            'min_inc_factor' : 1.5,
+        }),
     }
 
     options = {
         'ts' : tss_name,
-        'tsc' : 'tscedb' if adaptive else None,
+        'tsc' : tsc_name if adaptive else None,
         'nls' : 'newton',
         'ls' : ls_name,
 
