@@ -50,11 +50,11 @@ Uniform initial conditions are used as a starting point of the simulation.
 
 Usage examples
 --------------
-The script can be run with:
+The script can be run with::
 
     sfepy-run time_heat_equation_multi_material.py
 
-The last time-step result field can then be visualized as isosurfaces with:
+The last time-step result field can then be visualized as isosurfaces with::
 
     sfepy-view multi_material_cylinder_plate.119.vtk -i 10 -l
 
