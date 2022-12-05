@@ -53,6 +53,8 @@ This script uses SI units (meters, kilograms, Joules...) except for temperature,
 """
 import numpy as nm
 from sfepy import data_dir
+from sfepy.discrete.probes import LineProbe
+import matplotlib.pyplot as plt
 
 nominal_heat_flux = 6.36e5
 alpha = 0.25
@@ -69,8 +71,8 @@ materials = {
     'powder': ({'lam': 0.16,
                 'rho_cp': 1330. * 650.},),
     'cylinder': ({'lam': 153.,
-                  'rho_cp': 2660. * 927.,
-                  'lam_vec': 153. * nm.eye(3)},),
+                  'rho_cp': 2760. * 935.,
+                  'lam_vec': 173. * nm.eye(3)},),
     'plate': ({'lam': 153.,
                'rho_cp': 2660. * 927.,
                'lam_vec': 153. * nm.eye(3)},),
@@ -142,14 +144,54 @@ ics = {
     'ic3': ('Omega_Cylinder', {'T.0': T0}),
 }
 
+
+def gen_probe():
+    """Instantiates a line probe used later by the `step_hook` function."""
+    p0, p1 = nm.array([0., 0., -10. * mm]), nm.array([0.0, 0.0, 15. * mm])
+    line_probe = LineProbe(p0, p1, n_point=100, share_geometry=True)
+    return line_probe
+
+
+line_probe = gen_probe()
+# inits an empty list that will hold the probe results
+probe_results = []
+
+
+def step_hook(pb, ts, variables):
+    """This implements a function that gets called at every step from the time-solver."""
+    T_field = pb.get_variables()['T']
+    pars, vals = line_probe(T_field)
+    probe_results.append(vals)
+
+
+def post_process_hook(out, pb, state, extend=False):
+    ts = pb.ts
+    if ts.step == ts.n_step - 1:
+        print(len(probe_results))
+        fig, (ax1, ax2) = plt.subplots(nrows=2)
+        temperature_image = nm.array(probe_results).squeeze()
+        m = ax1.imshow(temperature_image.T, origin='lower', aspect='auto')
+        ax1.set_xlabel("time step")
+        ax1.set_ylabel("distance across build\nplate and cylinder")
+        plt.colorbar(m, label="temperature")
+        ax2.plot(temperature_image.T[0], label="bottom")
+        ax2.plot(temperature_image.T[-1], label="top")
+        ax2.set_xlabel("time step")
+        ax2.set_ylabel("temperature (°C)")
+        ax2.legend()
+        fig.tight_layout()
+        plt.show()
+    return out
+
+
 solvers = {
     'ls': ('ls.auto_direct', {
         # Reuse the factorized linear system from the first time step.
-        'use_presolve' : True,
+        'use_presolve': True,
         # Speed up the above by omitting the matrix digest check used normally
         # for verification that the current matrix corresponds to the
         # factorized matrix stored in the solver instance. Use with care!
-        'use_mtx_digest' : False,
+        'use_mtx_digest': False,
     }),
     'newton': ('nls.newton', {
         'i_max': 1,
@@ -163,6 +205,10 @@ solvers = {
         'n_step': 120,
         'verbose': True,
         'is_linear': True,
-    })
+    }),
 }
 
+options = {
+    'step_hook': 'step_hook',
+    'post_process_hook': 'post_process_hook',
+}
