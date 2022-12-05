@@ -1,39 +1,49 @@
 r"""
-Transient heat equation with time-dependent source term, three different material domains
-and Newton type boundary condition loss term.
+Transient heat equation with time-dependent source term, three different
+material domains and Newton type boundary condition loss term.
 
 Description
 -----------
 
-This example is inspired by the Laser Powder Bed Fusion additive manufacturing process.
-A laser source deposits a flux on a circular surface (a full layer of the cylinder being built) at regular time
-intervals. The heat propagates into the build plate and to the sides of the cylinder into powder which is relatively bad
- at conductiong heat. Heat losses through Newton type heat exchange occur both at the surface where the heat is being
- deposited and at the bottom plate.
+This example is inspired by the Laser Powder Bed Fusion additive manufacturing
+process. A laser source deposits a flux on a circular surface (a full layer of
+the cylinder being built) at regular time intervals. The heat propagates into
+the build plate and to the sides of the cylinder into powder which is
+relatively bad at conductiong heat. Heat losses through Newton type heat
+exchange occur both at the surface where the heat is being deposited and at the
+bottom plate.
 
-The PDE for this physical process implies to find :math:`T(x, t)` for :math:`x \in \Omega, t \in [0, t_{\rm final}]`
-such that:
+The PDE for this physical process implies to find :math:`T(x, t)` for :math:`x
+\in \Omega, t \in [0, t_{\rm final}]` such that:
 
 .. math::
     \left\lbrace
     \begin{aligned}
-    \rho(x)c_p(x)\frac{\partial T}{\partial t}(x, t) = -\nabla \cdot \left( -k(x) \underline{\nabla} T(x, t) \right) &&
+    \rho(x)c_p(x)\frac{\partial T}{\partial t}(x, t)
+    = -\nabla \cdot \left( -k(x) \underline{\nabla} T(x, t) \right) &&
     \forall x \in \Omega, \forall t \in [0, T_{max}] \\
-    -k \underline{\nabla} T(x, t)\cdot \underline{n} = q(t)+h(T-T_\infty) && \forall x \in \Gamma_{source} \\
-    -k \underline{\nabla} T(x, t)\cdot \underline{n} = q(t)+h(T-T_\infty) && \forall x \in \Gamma_{plate} \\
-    \underline{\nabla} T(x, t)\cdot \underline{n} = 0 && \forall x \in \Gamma \setminus(\Gamma_{source}
-    \cap\Gamma_{plate}  )
+    -k \underline{\nabla} T(x, t)\cdot \underline{n}
+    = q(t)+h(T-T_\infty) && \forall x \in \Gamma_{source} \\
+    -k \underline{\nabla} T(x, t)\cdot \underline{n}
+    = q(t)+h(T-T_\infty) && \forall x \in \Gamma_{plate} \\
+    \underline{\nabla} T(x, t)\cdot \underline{n}
+    = 0 && \forall x \in \Gamma \setminus(\Gamma_{source}
+    \cap\Gamma_{plate})
     \end{aligned}
     \right.
 
-The weak formulation solved using `sfepy` is to find a discretized field :math:`T` that satisfies:
+The weak formulation solved using `sfepy` is to find a discretized field
+:math:`T` that satisfies:
 
 .. math::
     \begin{aligned}
-    \int_\Omega\rho c_p \frac{\partial T}{\partial t}(x, t) \, s  + \int_\Omega \underline{\nabla} s \cdot (k(x)
+    \int_\Omega\rho c_p \frac{\partial T}{\partial t}(x, t) \, s
+    + \int_\Omega \underline{\nabla} s \cdot (k(x)
     \underline{\nabla}
-    T)  =  \int_\Gamma -k \underline{\nabla} T \cdot \underline{n} s \\    = \int_{\Gamma_{source}} q(t)   +
-    \int_{\Gamma_{source}} h(T-T_\infty)  + \int_{\Gamma_{plate}} h(T-T_\infty)  && \forall s
+    T) =  \int_\Gamma -k \underline{\nabla} T \cdot \underline{n} s \\
+    = \int_{\Gamma_{source}} q(t)   +
+    \int_{\Gamma_{source}} h(T-T_\infty)
+    + \int_{\Gamma_{plate}} h(T-T_\infty)  && \forall s
     \end{aligned}
 
 Uniform initial conditions are used as a starting point of the simulation.
@@ -48,8 +58,8 @@ The last time-step result field can then be visualized as isosurfaces with:
 
     sfepy-view multi_material_cylinder_plate.119.vtk -i 10 -l
 
-
-This script uses SI units (meters, kilograms, Joules...) except for temperature, which is expressed in degrees Celsius.
+This script uses SI units (meters, kilograms, Joules...) except for
+temperature, which is expressed in degrees Celsius.
 """
 import numpy as nm
 from sfepy import data_dir
@@ -126,15 +136,15 @@ integrals = {
 
 equations = {
     'Temperature': """
-            dw_dot.i.Omega_Cylinder(cylinder.rho_cp, s, dT/dt )
-          + dw_dot.i.Omega_Plate(plate.rho_cp, s, dT/dt )
-          + dw_dot.i.Omega_Powder(powder.rho_cp, s, dT/dt )
-          + dw_laplace.i.Omega_Cylinder(cylinder.lam, s, T)
-          + dw_laplace.i.Omega_Plate(plate.lam, s, T)
-          + dw_laplace.i.Omega_Powder(powder.lam, s, T)
-          = dw_integrate.i.Gamma_Source(heat_flux_defined_by_func.val, s)
-          + dw_bc_newton.i.Gamma_Source(heat_loss.h_top, heat_loss.T_top_inf, s, T)
-          + dw_bc_newton.i.Gamma_Plate(heat_loss.h_bot, heat_loss.T_bot_inf, s, T)
+      dw_dot.i.Omega_Cylinder(cylinder.rho_cp, s, dT/dt )
+    + dw_dot.i.Omega_Plate(plate.rho_cp, s, dT/dt )
+    + dw_dot.i.Omega_Powder(powder.rho_cp, s, dT/dt )
+    + dw_laplace.i.Omega_Cylinder(cylinder.lam, s, T)
+    + dw_laplace.i.Omega_Plate(plate.lam, s, T)
+    + dw_laplace.i.Omega_Powder(powder.lam, s, T)
+    = dw_integrate.i.Gamma_Source(heat_flux_defined_by_func.val, s)
+    + dw_bc_newton.i.Gamma_Source(heat_loss.h_top, heat_loss.T_top_inf, s, T)
+    + dw_bc_newton.i.Gamma_Plate(heat_loss.h_bot, heat_loss.T_bot_inf, s, T)
     """
 }
 
@@ -158,7 +168,10 @@ probe_results = []
 
 
 def step_hook(pb, ts, variables):
-    """This implements a function that gets called at every step from the time-solver."""
+    """
+    This implements a function that gets called at every step from the
+    time-solver.
+    """
     T_field = pb.get_variables()['T']
     pars, vals = line_probe(T_field)
     probe_results.append(vals)
