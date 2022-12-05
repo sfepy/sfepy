@@ -52,7 +52,7 @@ Usage examples
 --------------
 The script can be run with::
 
-    sfepy-run time_heat_equation_multi_material.py
+    sfepy-run sfepy/examples/diffusion/time_heat_equation_multi_material.py
 
 The last time-step result field can then be visualized as isosurfaces with::
 
