@@ -36,5 +36,10 @@ def test(*args):
     """
     import pytest  # pylint: disable=import-outside-toplevel
 
-    path = os.path.join(os.path.split(__file__)[0], 'tests')
-    return pytest.main(args=[path] + list(args))
+    args = list(args)
+    if all(arg.startswith('-') for arg in args):
+        # Add the default path only if no path is given explicitly.
+        path = os.path.join(os.path.split(__file__)[0], 'tests')
+        args = [path] + args
+
+    return pytest.main(args=args)
