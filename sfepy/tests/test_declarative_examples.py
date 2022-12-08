@@ -25,6 +25,7 @@ examples = [
     'diffusion/sinbc.py',
     'diffusion/time_advection_diffusion.py',
     'diffusion/time_poisson.py',
+    'diffusion/time_heat_equation_multi_material.py',
     'homogenization/linear_elastic_mM.py',
     'large_deformation/active_fibres.py',
     'large_deformation/balloon.py',
