@@ -489,7 +489,6 @@ def pv_plot(filenames, options, plotter=None, step=None,
             pipe[-1][field] *= factor
             pipe[-1].set_active_vectors(field)
             pipe.append(pipe[-1].arrows)
-            style = ''
             plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
         elif 'c' in opts and is_vector_field:  # select field component
             comp = opts['c']
@@ -529,7 +528,6 @@ def pv_plot(filenames, options, plotter=None, step=None,
             field_data = pipe[-1][scalar]
             pars = (nm.min(field_data), nm.max(field_data), isosurfaces + 1)
             pipe.append(pipe[-1].contour(nm.linspace(*pars)))
-            style = ''
 
         plotter.add_mesh(pipe[-1], scalars=scalar, color=color,
                          style=style, show_edges=show_edges,
