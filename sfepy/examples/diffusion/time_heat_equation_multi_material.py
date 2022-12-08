@@ -58,6 +58,9 @@ The last time-step result field can then be visualized as isosurfaces with::
 
     sfepy-view multi_material_cylinder_plate.119.vtk -i 10 -l
 
+The resulting time evolution of temperatures is saved as an image file in the
+output directory (heat_probe_time_evolution.png).
+
 This script uses SI units (meters, kilograms, Joules...) except for
 temperature, which is expressed in degrees Celsius.
 """
@@ -65,6 +68,7 @@ import numpy as nm
 from sfepy import data_dir
 from sfepy.discrete.probes import LineProbe
 import matplotlib.pyplot as plt
+import os
 
 nominal_heat_flux = 6.36e5
 alpha = 0.25
@@ -180,7 +184,6 @@ def step_hook(pb, ts, variables):
 def post_process_hook(out, pb, state, extend=False):
     ts = pb.ts
     if ts.step == ts.n_step - 1:
-        print(len(probe_results))
         fig, (ax1, ax2) = plt.subplots(nrows=2)
         temperature_image = nm.array(probe_results).squeeze()
         m = ax1.imshow(temperature_image.T, origin='lower', aspect='auto')
@@ -193,7 +196,8 @@ def post_process_hook(out, pb, state, extend=False):
         ax2.set_ylabel("temperature (°C)")
         ax2.legend()
         fig.tight_layout()
-        plt.show()
+        fig.savefig(os.path.join(pb.output_dir, 'heat_probe_time_evolution.png'),
+                    bbox_inches='tight')
     return out
 
 
