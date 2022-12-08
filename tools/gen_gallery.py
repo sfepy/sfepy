@@ -105,6 +105,13 @@ custom = {
             'camera': [0, -45, 1.5],
         },
     },
+    'diffusion/time_heat_equation_multi_material.py': {
+        '': {
+            'isosurfaces': 10,
+            'outline': True,
+            'camera': [-50, -230, 1],
+        },
+    },
     'linear_elasticity/elastic_contact_planes.py': {
         '': {
             'fields': ['u:wu:p0', '1:vw:p0'],

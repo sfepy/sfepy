@@ -24,6 +24,7 @@ examples = [
     'diffusion/poisson_periodic_boundary_condition.py',
     'diffusion/sinbc.py',
     'diffusion/time_advection_diffusion.py',
+    'diffusion/time_heat_equation_multi_material.py',
     'diffusion/time_poisson.py',
     'homogenization/linear_elastic_mM.py',
     'large_deformation/active_fibres.py',
