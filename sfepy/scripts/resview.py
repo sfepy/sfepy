@@ -374,7 +374,6 @@ def pv_plot(filenames, options, plotter=None, step=None,
                 scale = mesh_size * 0.15 / nm.linalg.norm(fval, axis=1).max()
                 if not nm.isfinite(scale):
                     scale = 1.0
-                fields.append((field, 'vw:p%d' % position))
                 fields.append((field, 'vs:o.4:p%d' % position))
                 fields.append((field, 'g:f%e:p%d' % (scale, position)))
             else:
@@ -489,6 +488,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
             pipe[-1][field] *= factor
             pipe[-1].set_active_vectors(field)
             pipe.append(pipe[-1].arrows)
+            show_edges = False
             plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
         elif 'c' in opts and is_vector_field:  # select field component
             comp = opts['c']
