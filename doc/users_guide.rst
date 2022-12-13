@@ -1251,6 +1251,15 @@ The following solvers are available:
 See :mod:`sfepy.solvers.ts_solvers` for available *time-stepping* solvers and
 their options.
 
+The following time step controllers are available:
+
+.. include:: solver_table.rst
+    :start-after:   <Time Step Controllers>
+    :end-before:    </Time Step Controllers>
+
+See :mod:`sfepy.solvers.ts_controllers` for available time step controllers and
+their options.
+
 Nonlinear Solvers
 ^^^^^^^^^^^^^^^^^
 

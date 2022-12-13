@@ -294,16 +294,31 @@ class NonlinearSolver(Solver):
                  lin_solver=None, iter_hook=None, status=None):
         raise ValueError('called an abstract NonlinearSolver instance!')
 
+class TimeStepController(Solver):
+    """
+    Abstract time step controller class.
+    """
+
+    def __init__(self, conf, **kwargs):
+        Solver.__init__(self, conf=conf, **kwargs)
+
+    def get_initial_dt(self, ts, vec, **kwargs):
+        return ts.dt
+
+    def __call__(self, ts, vec0, vec1, **kwargs):
+        raise ValueError('called an abstract TimeStepController instance!')
+
 class TimeSteppingSolver(Solver):
     """
     Abstract time stepping solver class.
     """
 
-    def __init__(self, conf, nls=None, status=None, context=None, **kwargs):
-        Solver.__init__(self, conf=conf, nls=nls, status=status,
+    def __init__(self, conf, nls=None, status=None, tsc=None, context=None,
+                 **kwargs):
+        Solver.__init__(self, conf=conf, nls=nls, tsc=tsc, status=status,
                         context=context, **kwargs)
 
-    def __call__(self, vec0=None, nls=None, init_fun=None,
+    def __call__(self, vec0=None, nls=None, tsc=None, init_fun=None,
                  prestep_fun=None, poststep_fun=None,
                  status=None, **kwargs):
         raise ValueError('called an abstract TimeSteppingSolver instance!')

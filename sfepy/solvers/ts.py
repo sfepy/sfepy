@@ -153,16 +153,15 @@ class VariableTimeStepper(TimeStepper):
         self.set_from_data(ts.t0, ts.t1, ts.dt, ts.n_step0, step=0)
 
     def get_state(self):
-        return {'step' : self.step, 'dts' : self.dts, 'times' : self.times}
+        return {'step' : self.step, 'dt' : self.dt, 'times' : self.times}
 
-    def set_state(self, step=0, dts=None, times=None, **kwargs):
-        assert_(len(dts) == len(times) == (step + 1))
+    def set_state(self, step=0, dt=None, times=None, **kwargs):
+        assert_(len(times) == (step + 1))
 
         self.step = step
-        self.dts = dts
+        self.dt = dt
         self.times = times
 
-        self.dt = self.dts[-1]
         self.time = self.times[-1]
         self.normalize_time()
 
@@ -182,7 +181,6 @@ class VariableTimeStepper(TimeStepper):
             self.step = 0
             self.time = self.t0
             self.nt = 0.0
-            self.dts = [self.dt]
             self.times = [self.time]
             self.n_step = 1
 
@@ -203,7 +201,6 @@ class VariableTimeStepper(TimeStepper):
         self.normalize_time()
 
         self.times.append(self.time)
-        self.dts.append(self.dt)
 
         self.n_step = self.step + 1
 

@@ -127,6 +127,12 @@ custom = {
     'linear_elasticity/elastic_shifted_periodic.py': {
         '': {'fields': ['von_mises_stress:r:wu:p0', '1:vw:p0']},
     },
+    'linear_elasticity/elastodynamic.py': {
+        '': {
+            'fields': ['u:wu:f1e3:p0', '1:vw:p0',
+                       'cauchy_strain:p1', 'cauchy_stress:p2'],
+        },
+    },
     'linear_elasticity/linear_elastic_iga.py': {
         '': {
             'fields': ['u:wu:p0', '1:vw:p0'],

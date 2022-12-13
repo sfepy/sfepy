@@ -250,7 +250,7 @@ class Problem(Struct):
         self.functions = functions
 
         self.reset()
-        self.ls_conf = self.nls_conf = self.ts_conf = None
+        self.ls_conf = self.nls_conf = self.tsc_conf = self.ts_conf = None
         self.conf_variables = self.conf_materials = None
 
         if auto_conf:
@@ -1027,10 +1027,10 @@ class Problem(Struct):
 
     def set_conf_solvers(self, conf_solvers=None, options=None):
         """
-        Choose which solvers should be used. If solvers are not set in
-        `options`, use the ones named `ls`, `nls` or `ts`. If such solver names
-        do not exist, use the first of each required solver kind listed in
-        `conf_solvers`.
+        Choose which solvers should be used. If solvers are not set in `options`,
+        use the ones named `ls`, `nls`, `ts` and optionally `tsc`. If such
+        solver names do not exist, use the first of each required solver kind
+        listed in `conf_solvers`.
         """
         conf_solvers = get_default(conf_solvers, self.conf.solvers)
         self.solver_confs = {}
@@ -1065,13 +1065,15 @@ class Problem(Struct):
         self.ts_conf = _get_solver_conf('ts')
         if self.ts_conf is None:
             self.ts_conf = Struct(name='no ts', kind='ts.stationary')
-
+        self.tsc_conf = _get_solver_conf('tsc')
         self.nls_conf = _get_solver_conf('nls')
         self.ls_conf = _get_solver_conf('ls')
 
         info = 'using solvers:'
         if self.ts_conf:
             info += '\n                ts: %s' % self.ts_conf.name
+        if self.tsc_conf:
+            info += '\n               tsc: %s' % self.tsc_conf.name
         if self.nls_conf:
             info += '\n               nls: %s' % self.nls_conf.name
         if self.ls_conf:
@@ -1083,7 +1085,7 @@ class Problem(Struct):
         return self.solver_confs[name]
 
     def init_solvers(self, status=None, ls_conf=None, nls_conf=None,
-                     ts_conf=None, force=False):
+                     tsc_conf=None, ts_conf=None, force=False):
         """
         Create and initialize solver instances.
 
@@ -1096,6 +1098,10 @@ class Problem(Struct):
             The linear solver options.
         nls_conf : Struct, optional
             The nonlinear solver options.
+        tsc_conf : Struct, optional
+            The time step contoller options.
+        ts_conf : Struct, optional
+            The time stepping solver options.
         force : bool
             If True, re-create the solver instances even if they already exist
             in `self.nls` attribute.
@@ -1140,8 +1146,15 @@ class Problem(Struct):
                 self.set_solver(nls, status=status)
 
             else:
-                tss = Solver.any_from_conf(ts_conf, nls=nls, context=self,
-                                           status=status)
+                tsc_conf = get_default(tsc_conf, self.tsc_conf)
+                if tsc_conf is not None:
+                    tsc = Solver.any_from_conf(tsc_conf)
+
+                else:
+                    tsc = None
+
+                tss = Solver.any_from_conf(ts_conf, nls=nls, tsc=tsc,
+                                           context=self, status=status)
                 self.set_solver(tss)
 
     def get_default_ts(self, t0=None, t1=None, dt=None, n_step=None,

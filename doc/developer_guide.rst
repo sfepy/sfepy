@@ -1302,6 +1302,7 @@ sfepy.solvers package
    src/sfepy/solvers/semismooth_newton
    src/sfepy/solvers/solvers
    src/sfepy/solvers/ts
+   src/sfepy/solvers/ts_controllers
    src/sfepy/solvers/ts_solvers
 
 sfepy.terms package
@@ -1376,6 +1377,7 @@ Tests
    src/sfepy/tests/test_dg_field
    src/sfepy/tests/test_dg_terms_calls
    src/sfepy/tests/test_domain
+   src/sfepy/tests/test_ed_solvers
    src/sfepy/tests/test_eigenvalue_solvers
    src/sfepy/tests/test_elasticity_small_strain
    src/sfepy/tests/test_fem
