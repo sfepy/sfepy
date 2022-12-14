@@ -49,7 +49,7 @@ Point(34) = {-0.42, -0.19, 0, 1.0};
 Point(35) = {-0.42, -0.68, 0, 1.0};
 Point(36) = {-1.65, -0.68, 0, 1.0};
 
-// source
+// circular source
 Circle(41) = {-1.475, -0.515, 0, 0.04, 0, 2*Pi};
 
 
@@ -126,8 +126,20 @@ Physical Surface("source", 43) = {3};
 
 // mesh parameters
 Field[1] = MathEval;
-Field[1].F = "0.2";
-Background Field = 1;
+Field[1].F = "0.5";
+
+// finer mesh for circle
+Field[2] = MathEval;
+Field[2].F = "0.05";
+Field[3] = Restrict;
+Field[3].InField = 2;
+Field[3].CurvesList = {41};
+
+// overall background field is the minimum of other fields
+Field[4] = Min;
+Field[4].FieldsList = {3, 1};
+Background Field = 4;
+Mesh.Algorithm = 5;
 
 // to export
 // gmsh -2 helmholtz_apartment.geo -format mesh -clscale 1
