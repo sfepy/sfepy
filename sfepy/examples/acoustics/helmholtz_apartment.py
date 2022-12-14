@@ -1,8 +1,10 @@
 """
 A script demonstrating the solution of the scalar Helmholtz equation for a situation inspired by the physical
-problem of WiFi propagation in an apartment.
+problem of WiFi propagation in an apartment. The example is an adaptation of the project found here:
+https://bthierry.pages.math.cnrs.fr/course-fem/projet/2017-2018/
 
-The boundary conditions are defined as perfect radiation conditions.
+The boundary conditions are defined as perfect radiation conditions, meaning that on the boundary waves will radiate
+outside.
 
 The PDE for this physical process implies to find :math:`E(x, t)` for :math:`x
 \in \Omega` such that:
@@ -10,10 +12,28 @@ The PDE for this physical process implies to find :math:`E(x, t)` for :math:`x
 .. math::
     \left\lbrace
     \begin{aligned}
-      \Delta E+ k²n(x)²E = -f_s && \forall x \in \Omega \\
+      \Delta E+ k²n(x)²E = f_s && \forall x \in \Omega \\
       \partial_n E(x)-ikn(x)E(x)=0 && \forall x \text{ on } \partial \Omega
     \end{aligned}
     \right.
+
+
+Usage
+-----
+
+The mesh of the appartement and the different material ids can be visualized with the following::
+
+    sfepy-view meshes/2d/helmholtz_apartment.vtk -e -2
+
+The example is run from the top level directory as::
+
+    sfepy-run sfepy/examples/acoustics/helmholtz_apartment.py
+
+The result of the computation can be visualized as follows::
+
+    sfepy-view helmholtz_apartment.vtk --color-map=seismic -f imag.E:wimag.E:f10%:p0 --camera-position="-5.14968,-7.27948,7.08783,-0.463265,-0.23358,-0.350532,0.160127,0.664287,0.730124"
+
+
 """
 import numpy as nm
 from sfepy import data_dir
@@ -23,9 +43,7 @@ f = 2.4 * 1e9  # change this to 2.4 or 5 if you want to simulate frequencies typ
 c0 = 3e8  # m/s
 k = 2 * nm.pi * f / c0
 
-refinement_level = 3
 filename_mesh = data_dir + "/meshes/2d/helmholtz_apartment.vtk"
-filename_mesh = refine_mesh(filename_mesh, refinement_level)
 
 regions = {
     'Omega': 'all',
@@ -83,13 +101,17 @@ equations = {
         + dw_dot.i.Air(air.kn_square, q, E)
         + dw_dot.i.Source(air.kn_square, q, E)
         + dw_dot.i.Gamma(walls.kn, q, E)
-        = - dw_integrate.i.Source(source_func.val, q)
+        = dw_integrate.i.Source(source_func.val, q)
         """
 }
 
 solvers = {
-    'ls': ('ls.scipy_direct', {}),
+    'ls': ('ls.auto_direct', {}),
     'newton': ('nls.newton', {
         'i_max': 1,
     }),
+}
+
+options = {
+    'refinement_level': 3,
 }
