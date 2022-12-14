@@ -38,4 +38,4 @@ jobs:
         pip install -e .
     - name: Test with pytest and coverage
       run: |
-              coverage run --source=sfepy/ -m pytest sfepy/tests -v -x --durations=10
+        coverage run --source=sfepy/ -m pytest sfepy/tests -v -x --durations=10
