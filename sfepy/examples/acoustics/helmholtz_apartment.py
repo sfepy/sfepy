@@ -1,4 +1,4 @@
-"""
+r"""
 A script demonstrating the solution of the scalar Helmholtz equation for a
 situation inspired by the physical problem of WiFi propagation in an apartment.
 
@@ -14,7 +14,7 @@ The PDE for this physical process implies to find :math:`E(x, t)` for :math:`x
 .. math::
     \left\lbrace
     \begin{aligned}
-      \Delta E+ k²n(x)²E = f_s && \forall x \in \Omega \\
+      \Delta E+ k^2 n(x)^2 E = f_s && \forall x \in \Omega \\
       \partial_n E(x)-ikn(x)E(x)=0 && \forall x \text{ on } \partial \Omega
     \end{aligned}
     \right.
