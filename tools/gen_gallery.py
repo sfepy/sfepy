@@ -27,6 +27,7 @@ import glob
 import re
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
+import numpy as nm
 import matplotlib.image as image
 
 import sfepy
@@ -207,7 +208,10 @@ def resview_plot(filename, filename_out, options):
         plotter.view_xy()
         plotter.show(screenshot=filename_out, window_size=(800, 600))
     else:
-        if options.camera:
+        if options.camera_position is not None:
+            cpos = nm.array(options.camera_position)
+            cpos = cpos.reshape((3, 3))
+        elif options.camera:
             zoom = options.camera[2] if len(options.camera) > 2 else 1.
             cpos = get_camera_position(plotter.bounds,
                                        options.camera[0], options.camera[1],
@@ -327,6 +331,7 @@ def generate_images(images_dir, examples_dir):
                           scalar_bar_position=[0.04, 0.92, 0, -1.5],
                           show_scalar_bars=True,
                           camera=[225, 75, 1],
+                          camera_position=None,
                           view_2d=False,
                           force_view_3d=False)
 
