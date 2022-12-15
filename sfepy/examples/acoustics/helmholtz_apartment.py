@@ -1,10 +1,12 @@
 """
-A script demonstrating the solution of the scalar Helmholtz equation for a situation inspired by the physical
-problem of WiFi propagation in an apartment. The example is an adaptation of the project found here:
+A script demonstrating the solution of the scalar Helmholtz equation for a
+situation inspired by the physical problem of WiFi propagation in an apartment.
+
+The example is an adaptation of the project found here:
 https://bthierry.pages.math.cnrs.fr/course-fem/projet/2017-2018/
 
-The boundary conditions are defined as perfect radiation conditions, meaning that on the boundary waves will radiate
-outside.
+The boundary conditions are defined as perfect radiation conditions, meaning
+that on the boundary waves will radiate outside.
 
 The PDE for this physical process implies to find :math:`E(x, t)` for :math:`x
 \in \Omega` such that:
@@ -21,7 +23,8 @@ The PDE for this physical process implies to find :math:`E(x, t)` for :math:`x
 Usage
 -----
 
-The mesh of the appartement and the different material ids can be visualized with the following::
+The mesh of the appartement and the different material ids can be visualized
+with the following::
 
     sfepy-view meshes/2d/helmholtz_apartment.vtk -e -2
 
@@ -32,14 +35,13 @@ The example is run from the top level directory as::
 The result of the computation can be visualized as follows::
 
     sfepy-view helmholtz_apartment.vtk --color-map=seismic -f imag.E:wimag.E:f10%:p0 --camera-position="-5.14968,-7.27948,7.08783,-0.463265,-0.23358,-0.350532,0.160127,0.664287,0.730124"
-
-
 """
 import numpy as nm
 from sfepy import data_dir
 from sfepy.discrete.fem.utils import refine_mesh
 
-f = 2.4 * 1e9  # change this to 2.4 or 5 if you want to simulate frequencies typically used by your Wifi
+f = 2.4 * 1e9  # change this to 2.4 or 5 if you want to simulate frequencies
+               # typically used by your Wifi
 c0 = 3e8  # m/s
 k = 2 * nm.pi * f / c0
 
