@@ -57,9 +57,10 @@ regions = {
 
 # air and walls have different material parameters, hence the 1. and 2.4 factors
 materials = {
-    'air': ({'kn_square': (k * 1.) ** 2},),
-    'walls': ({'kn_square': (k * 2.4) ** 2,
-               'kn': 1j * k * 2.4},),
+    'material': ({'kn_square': {
+        'Air': (k * 1.) ** 2,
+        'Walls': (k * 2.4) ** 2}, },),
+    'boundary': ({'kn': 1j * k * 2.4},),
     'source_func': 'source_func',
 }
 
@@ -96,13 +97,9 @@ integrals = {
 
 equations = {
     'Helmholtz equation':
-        """- dw_laplace.i.Walls(q, E)
-        - dw_laplace.i.Air(q, E)
-        - dw_laplace.i.Source(q, E)
-        + dw_dot.i.Walls(walls.kn_square, q, E)
-        + dw_dot.i.Air(air.kn_square, q, E)
-        + dw_dot.i.Source(air.kn_square, q, E)
-        + dw_dot.i.Gamma(walls.kn, q, E)
+        """- dw_laplace.i.Omega(q, E)
+        + dw_dot.i.Omega(material.kn_square, q, E)
+        + dw_dot.i.Gamma(boundary.kn, q, E)
         = dw_integrate.i.Source(source_func.val, q)
         """
 }
