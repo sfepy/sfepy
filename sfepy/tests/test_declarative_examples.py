@@ -11,6 +11,7 @@ def inedir(filename):
 examples = [
     'acoustics/acoustics.py',
     'acoustics/acoustics3d.py',
+    'acoustics/helmholtz_apartment.py',
     'acoustics/vibro_acoustic3d.py',
     'diffusion/cube.py',
     'diffusion/darcy_flow_multicomp.py',
