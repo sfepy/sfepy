@@ -107,8 +107,20 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'eps_r'      : 1e-6,
         }),
         'tsvv' : ('ts.velocity_verlet', {
-            # Excplicit method -> requires at least 10x smaller dt than the other
-            # time-stepping solvers.
+            # Excplicit method -> requires (without time step control) at least
+            # 10x smaller dt than the other time-stepping solvers.
+            't0' : 0.0,
+            't1' : t1,
+            'dt' : 0.1 * dt,
+            'n_step' : None,
+
+            'is_linear'  : True,
+
+            'verbose' : 1,
+        }),
+        'tscd' : ('ts.central_difference', {
+            # Excplicit method -> requires (without time step control) at least
+            # 10x smaller dt than the other time-stepping solvers.
             't0' : 0.0,
             't1' : t1,
             'dt' : 0.1 * dt,
@@ -295,18 +307,22 @@ def test_ed_solvers(problem, output_dir):
         ('tsc.fixed', 'ts.bathe') : 1e-1,
         ('tsc.fixed', 'ts.generalized_alpha') : 1e-2,
         ('tsc.fixed', 'ts.newmark') : 1e-12,
+        ('tsc.fixed', 'ts.central_difference') : 1e-2,
         ('tsc.fixed', 'ts.velocity_verlet') : 1e-2,
         ('tsc.ed_basic', 'ts.bathe') : 1e-1,
         ('tsc.ed_basic', 'ts.generalized_alpha') : 1e-3,
         ('tsc.ed_basic', 'ts.newmark') : 1e-12,
+        ('tsc.ed_basic', 'ts.central_difference') : 2e-2,
         ('tsc.ed_basic', 'ts.velocity_verlet') : 2e-2,
         ('tsc.ed_linear', 'ts.bathe') : 1e-1,
         ('tsc.ed_linear', 'ts.generalized_alpha') : 1e-3,
         ('tsc.ed_linear', 'ts.newmark') : 1e-12,
+        ('tsc.ed_linear', 'ts.central_difference') : 2e-2,
         ('tsc.ed_linear', 'ts.velocity_verlet') : 2e-2,
         ('tsc.ed_pid', 'ts.bathe') : 1e-2,
         ('tsc.ed_pid', 'ts.generalized_alpha') : 1e-4,
         ('tsc.ed_pid', 'ts.newmark') : 1e-12,
+        ('tsc.ed_pid', 'ts.central_difference') : 1e-2,
         ('tsc.ed_pid', 'ts.velocity_verlet') : 1e-2,
     }
     ok = True
