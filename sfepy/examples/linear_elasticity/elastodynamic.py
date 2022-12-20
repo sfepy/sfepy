@@ -232,9 +232,10 @@ def define(
         'lsd' : ('ls.auto_direct', {
             # Reuse the factorized linear system from the first time step.
             'use_presolve' : True,
-            # Speed up the above by omitting the matrix digest check used normally
-            # for verification that the current matrix corresponds to the
-            # factorized matrix stored in the solver instance. Use with care!
+            # Speed up the above by omitting the matrix digest check used
+            # normally for verification that the current matrix corresponds to
+            # the factorized matrix stored in the solver instance. Use with
+            # care!
             'use_mtx_digest' : False,
         }),
         'lsi' : ('ls.petsc', {
@@ -251,8 +252,20 @@ def define(
             'eps_r'      : 1e-6,
         }),
         'tsvv' : ('ts.velocity_verlet', {
-            # Excplicit method -> requires at least 10x smaller dt than the other
-            # time-stepping solvers, or an adaptive time step control.
+            # Excplicit method -> requires at least 10x smaller dt than the
+            # other time-stepping solvers, or an adaptive time step control.
+            't0' : 0.0,
+            't1' : t1,
+            'dt' : dt,
+            'n_step' : None,
+
+            'is_linear'  : True,
+
+            'verbose' : 1,
+        }),
+        'tscd' : ('ts.central_difference', {
+            # Excplicit method -> requires at least 10x smaller dt than the
+            # other time-stepping solvers, or an adaptive time step control.
             't0' : 0.0,
             't1' : t1,
             'dt' : dt,
