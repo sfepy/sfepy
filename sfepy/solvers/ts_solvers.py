@@ -593,11 +593,11 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
          'If True, the problem is considered to be linear.'),
     ]
 
-    def _create_nlst_a(self, nls, dt, u1, vfun, cc, cache_name):
+    def _create_nlst_a(self, nls, dt, ufun, vfun, cc, cache_name):
         nlst = nls.copy()
 
         def fun(at):
-            vec = nm.r_[u1, vfun(at), at]
+            vec = nm.r_[ufun(), vfun(at), at]
 
             aux = nls.fun(vec)
 
@@ -607,15 +607,15 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
 
         @_cache(self, cache_name, self.conf.is_linear)
         def fun_grad(at):
-            vec = None if self.conf.is_linear else nm.r_[u1, vfun(at), at]
-            M, C, K = self.get_matrices(nls, vec)
+            vec = None if self.conf.is_linear else nm.r_[ufun(), vfun(at), at]
+            M, C = self.get_matrices(nls, vec)[:2]
 
             Kt = M + cc * C
             return Kt
 
         nlst.fun = fun
         nlst.fun_grad = fun_grad
-        nlst.u = u1
+        nlst.u = ufun
         nlst.v = vfun
 
         return nlst
@@ -629,8 +629,7 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
         def u():
             return u0 + dt * v0 + dt2 * 0.5 * a0
 
-        nlst = self._create_nlst_a(nls, dt, u(), v, 0.5 * dt,
-                                   'matrix')
+        nlst = self._create_nlst_a(nls, dt, u, v, 0.5 * dt, 'matrix')
         return nlst
 
     def step(self, ts, vec, nls, pack, unpack, **kwargs):
@@ -643,7 +642,7 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
         nlst = self.create_nlst(nls, dt, ut, vt, at)
         atp = nlst(at)
         vtp = nlst.v(atp)
-        utp = nlst.u
+        utp = nlst.u()
 
         vect = pack(utp, vtp, atp)
 
