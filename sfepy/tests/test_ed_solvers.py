@@ -96,9 +96,10 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
         'ls' : ('ls.auto_direct', {
             # Reuse the factorized linear system from the first time step.
             'use_presolve' : True,
-            # Speed up the above by omitting the matrix digest check used normally
-            # for verification that the current matrix corresponds to the
-            # factorized matrix stored in the solver instance. Use with care!
+            # Speed up the above by omitting the matrix digest check used
+            # normally for verification that the current matrix corresponds to
+            # the factorized matrix stored in the solver instance. Use with
+            # care!
             'use_mtx_digest' : False,
         }),
         'newton' : ('nls.newton', {
@@ -107,8 +108,8 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'eps_r'      : 1e-6,
         }),
         'tsvv' : ('ts.velocity_verlet', {
-            # Excplicit method -> requires (without time step control) at least
-            # 10x smaller dt than the other time-stepping solvers.
+            # Excplicit method -> requires at least 10x smaller dt than the
+            # other time-stepping solvers, or an adaptive time step control.
             't0' : 0.0,
             't1' : t1,
             'dt' : 0.1 * dt,
@@ -119,8 +120,8 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
-            # Excplicit method -> requires (without time step control) at least
-            # 10x smaller dt than the other time-stepping solvers.
+            # Excplicit method -> requires at least 10x smaller dt than the
+            # other time-stepping solvers, or an adaptive time step control.
             't0' : 0.0,
             't1' : t1,
             'dt' : 0.1 * dt,
