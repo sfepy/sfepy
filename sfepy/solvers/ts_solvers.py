@@ -575,8 +575,8 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
     r"""
     Solve elastodynamics problems by the central difference method.
 
-    Should be more efficient than the corresponding NewmarkTS
-    with :math:`\beta = 0`, :math:`\gamma = 1/2`.
+    It is the same method as obtained by using :class:`NewmarkTS` with
+    :math:`\beta = 0`, :math:`\gamma = 1/2`, but uses a simpler code.
     """
     name = 'ts.central_difference'
 
