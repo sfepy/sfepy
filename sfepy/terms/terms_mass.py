@@ -4,7 +4,7 @@ from sfepy.terms.terms_multilinear import ETermBase
 
 class MassTerm(ETermBase):
     r"""
-    Mass term with lumping and RMM support [1].
+    Mass term with lumping and RMM support [1]_.
 
     The lumping parameter can be 'row_sum', 'hrz' or 'none' (default). It
     applies for beta > 0:
@@ -16,16 +16,16 @@ class MassTerm(ETermBase):
     `term_mode` can be None (default), 'DPM' (diagonal projection matrix), or
     'RMM' (reciprocal mass matrix).
 
-    [1] González, J.A., Kolman, R., Cho, S.S., Felippa, C.A., Park, K.C., 2018.
-    Inverse mass matrix via the method of localized lagrange multipliers.
-    International Journal for Numerical Methods in Engineering 113, 277–295.
-    https://doi.org/10.1002/nme.5613
+    .. [1] González, J.A., Kolman, R., Cho, S.S., Felippa, C.A., Park, K.C.,
+           2018. Inverse mass matrix via the method of localized lagrange
+           multipliers. International Journal for Numerical Methods in
+           Engineering 113, 277–295. https://doi.org/10.1002/nme.5613
 
     :Definition:
 
     .. math::
         \int_{\cal{D}} \rho \ul{v} \cdot \ul{u} \\
-        M_e^A \\
+        A_e \\
         A_e^T (M_e^A)^{-1} A_e
 
     :Arguments:
