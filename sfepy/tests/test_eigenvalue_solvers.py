@@ -142,8 +142,19 @@ def test_eigenvalue_solvers(data):
                     raise
 
             status = IndexedStruct()
-            eigs, vecs = eig_solver(data.mtx, n_eigs=n_eigs,
-                                    eigenvectors=True, status=status)
+            try:
+                eigs, vecs = eig_solver(data.mtx, n_eigs=n_eigs,
+                                        eigenvectors=True, status=status)
+
+            except KeyboardInterrupt:
+                raise
+
+            except:
+                if eig_conf.kind in can_fail:
+                    continue
+
+                else:
+                    raise
             tt.append([' '.join((eig_conf.name, eig_conf.kind)),
                        status.time, n_eigs])
 
