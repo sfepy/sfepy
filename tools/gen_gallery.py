@@ -68,6 +68,17 @@ custom = {
             'grid_vector1': [1.2, 0, 0],
         },
     },
+    'acoustics/helmholtz_apartment.py': {
+        '': {
+            'fields': ['imag.E:wimag.E:f10%:p0', 'mat_id:p1'],
+            'force_view_3d': True,
+            'grid_vector1': [1.1, 0, 0],
+            'camera_position': [-9.22684,-8.37688,10.7623,
+                                1.51653,0.122742,-0.646791,
+                                0.472758,0.432784,0.767593],
+            'color_map': 'seismic',
+        },
+    },
     'diffusion/cube.py': {
         '': {'camera': [225, 55, 0.7]},
     },
