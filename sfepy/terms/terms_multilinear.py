@@ -490,7 +490,9 @@ class ExpressionBuilder(Struct):
             ifree = [ii for ii in find_free_indices(subscripts)
                      if ii not in self.out_subscripts[ia]]
             if ifree:
-                self.out_subscripts[ia] += ''.join(ifree)
+                # Lexicographic ordering of output indices, i.e.
+                # (n_comp, dim) or (dim, n_comp) <=> i.j or j.i
+                self.out_subscripts[ia] += ''.join(sorted(ifree))
 
     @staticmethod
     def join_subscripts(subscripts, out_subscripts):
