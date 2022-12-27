@@ -38,7 +38,6 @@ The result of the computation can be visualized as follows::
 """
 import numpy as nm
 from sfepy import data_dir
-from sfepy.discrete.fem.utils import refine_mesh
 
 f = 2.4 * 1e9  # change this to 2.4 or 5 if you want to simulate frequencies
                # typically used by your Wifi
