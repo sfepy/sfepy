@@ -1360,6 +1360,7 @@ Scripts
    src/sfepy/scripts/plot_times
    src/sfepy/scripts/probe
    src/sfepy/scripts/resview
+   src/sfepy/scripts/run_tests
    src/sfepy/scripts/simple
 
 Tests
