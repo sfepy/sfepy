@@ -571,6 +571,83 @@ class VelocityVerletTS(ElastodynamicsBaseTS):
 
         return vect
 
+class CentralDifferenceTS(ElastodynamicsBaseTS):
+    r"""
+    Solve elastodynamics problems by the central difference method.
+
+    It is the same method as obtained by using :class:`NewmarkTS` with
+    :math:`\beta = 0`, :math:`\gamma = 1/2`, but uses a simpler code.
+    """
+    name = 'ts.central_difference'
+
+    _parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
+    ]
+
+    def _create_nlst_a(self, nls, dt, ufun, vfun, cc, cache_name):
+        nlst = nls.copy()
+
+        def fun(at):
+            vec = nm.r_[ufun(), vfun(at), at]
+
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        @_cache(self, cache_name, self.conf.is_linear)
+        def fun_grad(at):
+            vec = None if self.conf.is_linear else nm.r_[ufun(), vfun(at), at]
+            M, C = self.get_matrices(nls, vec)[:2]
+
+            Kt = M + cc * C
+            return Kt
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.u = ufun
+        nlst.v = vfun
+
+        return nlst
+
+    def create_nlst(self, nls, dt, u0, v0, a0):
+        dt2 = dt**2
+
+        def v(a):
+            return v0 + dt * 0.5 * (a0 + a)
+
+        def u():
+            return u0 + dt * v0 + dt2 * 0.5 * a0
+
+        nlst = self._create_nlst_a(nls, dt, u, v, 0.5 * dt, 'matrix')
+        return nlst
+
+    def step(self, ts, vec, nls, pack, unpack, **kwargs):
+        """
+        Solve a single time step.
+        """
+        dt = ts.dt
+        ut, vt, at = unpack(vec)
+
+        nlst = self.create_nlst(nls, dt, ut, vt, at)
+        atp = nlst(at)
+        vtp = nlst.v(atp)
+        utp = nlst.u()
+
+        vect = pack(utp, vtp, atp)
+
+        return vect
+
 class NewmarkTS(ElastodynamicsBaseTS):
     r"""
     Solve elastodynamics problems by the Newmark method.
