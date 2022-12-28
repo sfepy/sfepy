@@ -1,5 +1,204 @@
 # created: 20.07.2007 (-1)
 
+.. _2022.3-2022.4:
+
+from 2022.3 to 2022.4
+=====================
+
+- merge pull request #880 from vlukes/update_hdf5meshio_write
+
+  - update HDF5MeshIO.write(): dump region_name
+
+- merge pull request #878 from rc/fix-warnings
+
+  - fix warning in test_base_functions_delta()
+  - fix file not closed in Mesh3DMeshIO.read()
+  - store connectivity in XYZMeshIO.write() as integers, update xyz meshes
+  - fix sparse matrix comparison warning in test_hdf5_meshio()
+  - fix MumpsSolver.__init__()
+  - fix MUMPSSolver.__init__() for MUMPS not installed
+  - silence SparseEfficiencyWarning in apply_ebc_to_matrix()
+  - update gmres callback setup in ScipyIterative.__call__()
+  - silence SparseEfficiencyWarning in project_to_facets()
+  - silence SparseEfficiencyWarning in ScipyDirect.presolve()
+  - new pytest.ini
+  - clean up coefficients.py
+  - fix remaining invalid escape sequence warnings
+  - update pytest.ini
+  - fix ScipyIterative.__call__() for scipy < 1.4.0
+  - update pytest.ini: do not raise error on warnings
+
+- merge pull request #881 from rc/sfepy-test
+
+  - new sfepy/scripts/run_tests.py
+  - new sfepy-test entry point in setup.py
+  - docs: update installation/testing instructions
+
+- merge pull request #888 from rc/allow-mesh-in-place-filename
+
+  - allow Mesh instance in place of filename in
+    PDESolverApp.setup_output_info()
+
+- merge pull request #892 from rc/fix-eig-arguments
+
+  - rename method argument of eig() to solver_kind, fixes shadowing method
+    parameter
+  - update eig() calls
+
+- merge pull request #887 from rc/no-save-in-corrector-calls
+
+  - do not save results in problem.solve() calls in corrector classes - update
+    CorrNN, CorrN, CorrOne, CorrEqPar
+
+- merge pull request #891 from heczis/fix_simple_phonon_args, closes #883, #884
+
+  - Fix typo in docstring
+  - Do not plot without band gaps or dispersion
+  - Make band-gaps exclusive to dispersion and phase-velocity
+  - Fix AcousticBandGapsApp.setup_options
+  - Use parser.error instead of raise
+  - Make all band-gaps related options available simultaneously
+  - Facelift plotting functions
+  - Remove show and new_axes from plotting functions
+  - Separate log files for band_gaps and dispersion
+
+- merge pull request #895 from rc/fix-simplify-log-plot
+
+  - use plt.tight_layout() in every LogPlotter.apply_commands() call
+  - unregister Log.terminate() in atexit on successful termination
+  - do not use threading in LogPlotter.__call__(), update .apply_commands()
+  - use spawn start method instead of fork in Log.__call__() to start
+    LogPlotter - update .__init__()
+
+- merge pull request #897 from rc/fix-log-plotter-labels
+
+  - plot labels and vlines in every LogPlotter.apply_commands() call - fixes
+    not plotting labels and vlines when show_legends was False
+
+- merge pull request #906 from rc/fix-sfepy-test-explicit-paths
+
+  - fix test() for explicit paths passed to run_tests.py (sfepy-test)
+
+- merge pull request #904 from flothesof/transient_poisson_multimaterial_example
+
+  - first version of example
+  - finish docstring of example
+  - take into account comments from PR
+  - adding post processing
+  - fix line lengths
+  - fix run examples sphinx formatting
+  - make usage path relative to sfepy package dir like in other examples
+  - adding example to list of examples to be tested
+  - removing plt.show call to make example testable
+  - add custom gallery view for time_heat_equation_multi_material.py example
+  - change ordering in test
+
+- merge pull request #908 from fix-pyvista-mesh-style
+
+  - fix pv_plot() for pyvista 0.37.0
+  - show edges with glyphs in pv_plot() only when requested explicitly
+
+- merge pull request #902 from rc/elastodynamics-time-step-control
+
+  - new TimeStepController
+  - add tsc argument to TimeSteppingSolver.__init__(), .__call__()
+  - new FixedTCS, ElastodynamicsBasicTCS in new
+    sfepy/solvers/ts_controllers.py - update solver_table
+  - create VariableTimeStepper in ElastodynamicsBaseTS.__init__() when
+    adapting - for non-fixed TimeStepController subclasses
+  - support time step control in GeneralizedAlphaTS, new .step(), split
+    .__call__()
+  - remove .dts attribute of VariableTimeStepper
+  - de-struct arguments of
+    {TimeStepController,ElastodynamicsBasicTCS}.__call__() - update
+    GeneralizedAlphaTS.__call__()
+  - new TimeStepController.get_initial_dt()
+  - fix adaptive time stepping in GeneralizedAlphaTS.__call__() - do not update
+    dt in-place when the step is accepted
+  - add comment to ElastodynamicsBaseTS.__init__()
+  - new TimesSequenceTCS, new .__init__(), get_initial_dt(), .__call__()
+  - move ElastodynamicsBaseTS._create_nlst_*() to particular classes
+
+    - move ._create_nlst_a() to NewmarkTS
+    - move ._create_nlst_u() to BatheTS
+
+  - split/move GeneralizedAlphaTS.__call__() into new
+    ElastodynamicsBaseTS.__call__() - new GeneralizedAlphaTS.__init__(), update
+    .step()
+  - new define(), test_ed_solvers() in new
+    sfepy/tests/test_elastodynamic_solvers.py
+  - pass prestep_fun to .step() in ElastodynamicsBaseTS.__call__() - update
+    GeneralizedAlphaTS.step()
+  - new {VelocityVerletTS, NewmarkTS, BatheTS}.step() replacing .__call__() -
+    use ElastodynamicsBaseTS.__call__() for all elastodynamics solvers
+  - new ElastodynamicsBasicTCS.get_scaled_errors(), update .__call__()
+  - fix typo (TCS -> TSC)
+  - new ElastodynamicsPIDTSC, new .__init__(), .__call__() - update docstrings
+  - rename test_elastodynamic_solvers.py -> test_ed_solvers.py
+  - new ElastodynamicsBaseTS.clear_lin_solver(), update .__call__()
+  - new BatheTS.clear_lin_solver() - fix for adaptive time step control
+  - test time step controllers in test_ed_solvers(), update define()
+  - mark test_ed_solvers() as slow
+  - halve t1, clean up test_ed_solvers()
+  - gen_solver_table.py: update for TimeStepController
+  - docs: sync module index of developer guide with current sources
+  - docs: add time step controllers table to users guide
+  - update Problem.set_conf_solvers(), .init_solvers() for time step
+    controllers
+
+    - update .__init__()
+    - support time step controllers in problem definition files
+
+  - simplify test_ed_solvers() by using Problem.init_solvers() - rename
+    _list_elastodynamic_solvers() -> _list_solvers()
+  - illustrate time step control in elastodynamic.py example, new define()
+  - gen_gallery.py: add custom view for elastodynamic.py example
+  - use error_order parameter in ElastodynamicsBasicTSC.__call__() - update
+    ElastodynamicsPIDTSC._parameters
+  - new ElastodynamicsBasicTSC.get_initial_dt(), guess_dt0 parameter - new
+    eval_scaled_norm(), update .get_scaled_errors()
+  - tweak ElastodynamicsBasicTSC parameter description
+  - new ElastodynamicsLinearTSC, new .__init__(), .__call__()
+  - update test_ed_solvers(), define()
+  - show ElastodynamicsLinearTSC use in elastodynamic.py example, update
+    define()
+
+- merge pull request #912 from rc/gallery-camera-position
+
+  - gen_gallery.py: support camera_position option in custom settings - update
+    resview_plot(), generate_images()
+
+- merge pull request #909 from flothesof/helmholtz_example, closes #907
+
+  - first version helmholtz
+  - improve example following review
+  - mesh improvement around source region
+  - add to test_declarative_examples
+  - format long lines
+  - fix LaTeX in docstring
+  - gen_gallery.py: add custom view for helmholtz_apartment.py example
+  - merge materials into a single materials dictionary to reduce number of
+    terms in equations
+  - remove unused import
+
+- merge pull request #913 from rc/misc-fixes
+
+  - fix test_eigenvalue_solvers() to obey can_fail when solving
+  - docs: sync module index of developer guide with current sources
+
+- merge pull request #914 from rc/central-difference-tss
+
+  - new CentralDifferenceTS - new ._create_nlst_a(), .create_nlst(), .step()
+  - test CentralDifferenceTS in test_ed_solvers(), update define()
+  - store u as function in CentralDifferenceTS like in other ED solvers
+  - add ts.central_difference to elastodynamic.py example, fix line lengths
+  - fix line length, update comments in define() of test_ed_solvers.py
+  - update CentralDifferenceTS docstring
+
+- merge pull request #915 from rc/fix-multilinear-terms-output-axes-order
+
+  - fix undefined output axes order in ExpressionBuilder.build()
+
 .. _2022.2-2022.3:
 
 from 2022.2 to 2022.3
