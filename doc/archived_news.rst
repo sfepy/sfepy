@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **29.09.2021** Version 2021.3 released (unified volume and surface
+  integration terms, improved pyvista-based visualization script, etc.), see
+  :ref:`release notes <2021.2-2021.3>`.
+
 * **29.06.2021** Version 2021.2 released (new sensitivity analysis terms,
   positive FE basis based on Bernstein polynomials, smaller memory footprint of
   terms with constant material parameters, etc.), see :ref:`release notes
