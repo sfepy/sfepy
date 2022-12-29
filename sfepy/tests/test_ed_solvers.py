@@ -108,7 +108,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'eps_r'      : 1e-6,
         }),
         'tsvv' : ('ts.velocity_verlet', {
-            # Excplicit method -> requires at least 10x smaller dt than the
+            # Explicit method -> requires at least 10x smaller dt than the
             # other time-stepping solvers, or an adaptive time step control.
             't0' : 0.0,
             't1' : t1,
@@ -120,7 +120,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
-            # Excplicit method -> requires at least 10x smaller dt than the
+            # Explicit method -> requires at least 10x smaller dt than the
             # other time-stepping solvers, or an adaptive time step control.
             't0' : 0.0,
             't1' : t1,
