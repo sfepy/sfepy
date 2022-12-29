@@ -252,7 +252,7 @@ def define(
             'eps_r'      : 1e-6,
         }),
         'tsvv' : ('ts.velocity_verlet', {
-            # Excplicit method -> requires at least 10x smaller dt than the
+            # Explicit method -> requires at least 10x smaller dt than the
             # other time-stepping solvers, or an adaptive time step control.
             't0' : 0.0,
             't1' : t1,
@@ -264,7 +264,7 @@ def define(
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
-            # Excplicit method -> requires at least 10x smaller dt than the
+            # Explicit method -> requires at least 10x smaller dt than the
             # other time-stepping solvers, or an adaptive time step control.
             't0' : 0.0,
             't1' : t1,
