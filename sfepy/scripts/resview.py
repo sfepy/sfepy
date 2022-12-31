@@ -608,6 +608,28 @@ def print_camera_position(plotter):
     print(f'--camera-position="{cp}"')
 
 
+def _get_cpos(plotter, options, camera_default=(225, 75, 0.9)):
+    """
+    Uses `plotter.bounds`, so call only after adding all meshes to the plotter.
+    """
+    if options.camera_position is not None:
+        cpos = nm.array(options.camera_position)
+        cpos = cpos.reshape((3, 3))
+    elif options.camera:
+        zoom = options.camera[2] if len(options.camera) > 2 else 1.
+        cpos = get_camera_position(plotter.bounds,
+                                   options.camera[0],
+                                   options.camera[1],
+                                   zoom=zoom)
+    elif options.view_2d:
+        cpos = None
+    else:
+        cpos = get_camera_position(plotter.bounds, camera_default[0],
+                                   camera_default[1], zoom=camera_default[2])
+
+    return cpos
+
+
 class OptsToListAction(Action):
     separator = '='
 
@@ -775,7 +797,7 @@ def main():
                         help=helps['scalar_bar_position'])
     parser.add_argument('-v', '--view', metavar='position',
                         action=StoreNumberAction, dest='camera',
-                        default=[225, 75, 0.9], help=helps['view'])
+                        default=None, help=helps['view'])
     parser.add_argument('--camera-position', metavar='camera_position',
                         action=StoreNumberAction, dest='camera_position',
                         default=None, help=helps['camera_position'])
@@ -821,14 +843,15 @@ def main():
             for k, v in sb_limits.items():
                 scalar_bar_limits[k].append(v)
 
-        if options.camera:
-            zoom = options.camera[2] if len(options.camera) > 2 else 1.
-            cpos = get_camera_position(plotter.bounds,
-                                       options.camera[0], options.camera[1],
-                                       zoom=zoom)
+        cpos = _get_cpos(plotter, options)
+
+        if cpos is not None:
             plotter.set_position(cpos[0])
             plotter.set_focus(cpos[1])
             plotter.set_viewup(cpos[2])
+
+        elif options.view_2d:
+            plotter.view_xy()
 
         anim_filename = options.anim_output_file
         plotter.open_movie(anim_filename, options.framerate)
@@ -871,29 +894,17 @@ def main():
                                     plotter=plotter)
         )
 
+        # Does not work for meshes with no z component.
         plotter.add_key_event(
             'c', lambda: print_camera_position(plotter)
         )
 
-        if options.view_2d:
+        cpos = _get_cpos(plotter, options)
+        if (cpos is None) and options.view_2d:
             plotter.view_xy()
-            plotter.show(screenshot=options.screenshot,
-                         window_size=options.window_size)
-        else:
-            if options.camera_position is not None:
-                cpos = nm.array(options.camera_position)
-                cpos = cpos.reshape((3, 3))
-            elif options.camera:
-                zoom = options.camera[2] if len(options.camera) > 2 else 1.
-                cpos = get_camera_position(plotter.bounds,
-                                           options.camera[0],
-                                           options.camera[1],
-                                           zoom=zoom)
-            else:
-                cpos = None
 
-            plotter.show(cpos=cpos, screenshot=options.screenshot,
-                         window_size=options.window_size)
+        plotter.show(cpos=cpos, screenshot=options.screenshot,
+                     window_size=options.window_size)
 
         if options.screenshot is not None and osp.exists(options.screenshot):
             print(f'saved: {options.screenshot}')
