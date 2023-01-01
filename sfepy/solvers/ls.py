@@ -1253,3 +1253,82 @@ class MultiProblem(ScipyDirect):
             res.append(resi)
 
         return res[-1]
+
+
+class ReciprocalMassMatrixSolver(LinearSolver):
+    """
+    Solver for explicit transient elastodynamics that uses lumped and/or
+    reciprocal mass matrix algorithms.
+
+    Limitations:
+    - Assumes that the density is constant in time.
+    - Uses the direct EBC application, i.e., no EBC projection matrix.
+    """
+    name = 'ls.rmm'
+
+    _parameters = [
+        ('rmm_term', 'str', None, True,
+         'The RMM term definition.'),
+        ('debug', 'bool', False, False,
+         'If True, run in debug mode.'),
+    ]
+
+    def __init__(self, conf, context=None, **kwargs):
+        LinearSolver.__init__(self, conf, context=context, mtx_im=None,
+                              **kwargs)
+
+    def init_rmm(self):
+        from sfepy.discrete.evaluate import eval_equations, apply_ebc_to_matrix
+
+        problem = self.context
+        equations, variables = problem.create_evaluable(
+            self.conf.rmm_term, preserve_caches=True,
+            copy_materials=False, mode='weak',
+            active_only=problem.active_only,
+        )
+        vu = next(variables.iter_state())
+
+        mtx_a = eval_equations(equations, variables, preserve_caches=True,
+                               mode='weak', dw_mode='matrix', term_mode='DPM',
+                               active_only=problem.active_only)
+        apply_ebc_to_matrix(mtx_a, vu.eq_map.eq_ebc,
+                            (vu.eq_map.master, vu.eq_map.slave))
+        mtx_a.eliminate_zeros()
+        mtx_ia = mtx_a.copy()
+        mtx_ia.setdiag(1.0 / mtx_a.diagonal())
+
+        mtx_c = eval_equations(equations, variables, preserve_caches=True,
+                               mode='weak', dw_mode='matrix', term_mode='RMM',
+                               active_only=problem.active_only)
+        apply_ebc_to_matrix(mtx_c, vu.eq_map.eq_ebc,
+                            (vu.eq_map.master, vu.eq_map.slave))
+        mtx_c.eliminate_zeros()
+
+        mtx_im = mtx_ia @ (mtx_c @ mtx_ia)
+        apply_ebc_to_matrix(mtx_im, vu.eq_map.eq_ebc,
+                            (vu.eq_map.master, vu.eq_map.slave))
+
+        if self.conf.debug:
+            mtx_m = eval_equations(
+                equations, variables, preserve_caches=True,
+                mode='weak', dw_mode='matrix', term_mode=None,
+                active_only=problem.active_only,
+            )
+
+            mtx_r = vu.eq_map.get_operator()
+            mtx_imr = mtx_r.T @ mtx_im @ mtx_r
+
+            dim = problem.domain.shape.dim
+            output('total mass check: AMM:', mtx_m.sum()/ dim,
+                   'RMM:', nm.linalg.inv(mtx_imr.toarray()).sum() / dim)
+
+        return mtx_im
+
+    @standard_call
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+
+        if self.mtx_im is None:
+            self.mtx_im = self.init_rmm()
+
+        return self.mtx_im @ rhs
