@@ -334,6 +334,8 @@ github, then submit a "pull request" (PR):
    changes to the maintainers for review. Continuous integration (CI) will
    run and check that the changes pass tests on Windows, Linux and Mac using
    Github Actions. The results will be displayed in the Pull Request discussion.
+   The CI setup is located in the file
+   `.github/workflows/build_and_test_matrix.yml`.
    It is recommended to check that your contribution complies with the
    :ref:`notes_patches`.
 
