@@ -331,8 +331,11 @@ github, then submit a "pull request" (PR):
 
 #. Finally, when your feature is ready, and all tests pass, go to the github
    page of your sfepy repository fork, and click "Pull request" to send your
-   changes to the maintainers for review. It is recommended to check that your
-   contribution complies with the :ref:`notes_patches`.
+   changes to the maintainers for review. Continuous integration (CI) will
+   run and check that the changes pass tests on Windows, Linux and Mac using
+   Github Actions. The results will be displayed in the Pull Request discussion.
+   It is recommended to check that your contribution complies with the
+   :ref:`notes_patches`.
 
 In the above setup, your origin remote repository points to
 ``YourLogin/sfepy.git``. If you wish to fetch/merge from the main repository
