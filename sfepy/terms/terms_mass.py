@@ -46,11 +46,20 @@ class MassTerm(ETermBase):
     def get_function(self, rho, lumping, beta, virtual, state,
                      mode=None, term_mode=None, diff_var=None, **kwargs):
 
-        _fun = self.make_function(
-            '00,i,i', rho, virtual, state, diff_var=diff_var,
-        )
+        if ((term_mode is None)
+            and ((lumping == 'none') or (beta == 0.0))):
+            # Consistent mass matrix.
+            fun = self.make_function(
+                '00,i,i', rho, virtual, state, diff_var=diff_var,
+            )
+            return fun
 
-        if (term_mode == 'RMM') and (lumping == 'none'):
+        _fun = self.make_function(
+            '00,i,i', rho, virtual, state, diff_var=state.name,
+        )
+        self.einfos[None] = self.einfos[state.name]
+
+        if (term_mode in ('RMM', 'DPM')) and (lumping == 'none'):
             lumping = 'row_sum'
 
         if (term_mode == 'DPM'):
@@ -58,14 +67,16 @@ class MassTerm(ETermBase):
 
         def fun(out, *fargs):
             # Compute M_C.
-            status = _fun(out, *fargs)
-            if ((term_mode is None)
-                and ((lumping == 'none') or (beta == 0.0))):
-                return status
+            if diff_var is None:
+                sh = out.shape
+                _out = nm.zeros((sh[0], sh[1], sh[2], sh[2]), dtype=out.dtype)
+
+            else:
+                _out = out
+            status = _fun(_out, *fargs)
 
             # Consistent element mass matrices M_C.
-            mc = out if beta == 1.0 else out.copy()
-
+            mc = _out if beta == 1.0 else _out.copy()
             # Diagonals of lumped element mass matrices M_L.
             if lumping == 'row_sum':
                 mld = mc.sum(-1)
@@ -87,20 +98,30 @@ class MassTerm(ETermBase):
             if beta == 1.0:
                 # M_A = M_L.
                 eye = nm.eye(mld.shape[-1])
-                out[:] = nm.einsum('can,nm->canm', mld, eye)
+                _out[:] = nm.einsum('can,nm->canm', mld, eye)
 
             else:
                 # M_A = (1 - beta) * M_C + beta * M_L.
-                out[:] = (1.0 - beta) * mc
-                outd = nm.einsum('...ii->...i', out) # View to diagonal.
+                _out[:] = (1.0 - beta) * mc
+                outd = nm.einsum('...ii->...i', _out) # View to diagonal.
                 outd += beta * mld
 
             if term_mode == 'RMM':
                 # out contains M_A, mld contains A_e diagonal.
-                ime = nm.linalg.inv(out)
+                ime = nm.linalg.inv(_out)
 
                 # ce = nm.einsum('cik,ckl,clj->cij', ae, ime, ae)
-                out[:] =  mld[..., None] * ime * mld[:, None, :]
+                _out[:] =  mld[..., None] * ime * mld[:, None, :]
+
+            if diff_var is None:
+                earg = self.einfos[None].eargs[2]
+                step_cache = earg.arg.evaluate_cache.setdefault('dofs', {})
+                cache = step_cache.setdefault(0, {})
+                dofs = earg.get_dofs(cache, step_cache, state.name + '.dofs')
+                dofs = dofs.reshape((sh[0], sh[2])) # Does a copy!
+
+                # Could be faster by exploiting that mld is a vector.
+                out[..., 0] = nm.einsum('caij,cj->cai', _out, dofs)
 
             return status
 
