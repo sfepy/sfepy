@@ -1255,14 +1255,20 @@ class MultiProblem(ScipyDirect):
         return res[-1]
 
 
-class ReciprocalMassMatrixSolver(LinearSolver):
+class RMMSolver(LinearSolver):
     """
-    Solver for explicit transient elastodynamics that uses lumped and/or
-    reciprocal mass matrix algorithms.
+    Pseudo-solver for explicit transient elastodynamics that uses the
+    reciprocal mass matrix algorithm [1]_ to directly construct a sparse inverse
+    mass matrix.
 
     Limitations:
     - Assumes that the density is constant in time.
     - Uses the direct EBC application, i.e., no EBC projection matrix.
+
+    .. [1] González, J.A., Kolman, R., Cho, S.S., Felippa, C.A., Park, K.C.,
+           2018. Inverse mass matrix via the method of localized lagrange
+           multipliers. International Journal for Numerical Methods in
+           Engineering 113, 277–295. https://doi.org/10.1002/nme.5613
     """
     name = 'ls.rmm'
 
