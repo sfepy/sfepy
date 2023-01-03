@@ -1280,10 +1280,10 @@ class RMMSolver(LinearSolver):
     ]
 
     def __init__(self, conf, context=None, **kwargs):
-        LinearSolver.__init__(self, conf, context=context, mtx_im=None,
+        LinearSolver.__init__(self, conf, context=context, mtx_im=None, a0=None,
                               **kwargs)
 
-    def init_rmm(self):
+    def init_rmm(self, mtx):
         from sfepy.discrete.evaluate import eval_equations, apply_ebc_to_matrix
 
         problem = self.context
@@ -1297,8 +1297,9 @@ class RMMSolver(LinearSolver):
         mtx_a = eval_equations(equations, variables, preserve_caches=True,
                                mode='weak', dw_mode='matrix', term_mode='DPM',
                                active_only=problem.active_only)
-        apply_ebc_to_matrix(mtx_a, vu.eq_map.eq_ebc,
-                            (vu.eq_map.master, vu.eq_map.slave))
+        if not problem.active_only:
+            apply_ebc_to_matrix(mtx_a, vu.eq_map.eq_ebc,
+                                (vu.eq_map.master, vu.eq_map.slave))
         mtx_a.eliminate_zeros()
         mtx_ia = mtx_a.copy()
         mtx_ia.setdiag(1.0 / mtx_a.diagonal())
@@ -1306,13 +1307,12 @@ class RMMSolver(LinearSolver):
         mtx_c = eval_equations(equations, variables, preserve_caches=True,
                                mode='weak', dw_mode='matrix', term_mode='RMM',
                                active_only=problem.active_only)
-        apply_ebc_to_matrix(mtx_c, vu.eq_map.eq_ebc,
-                            (vu.eq_map.master, vu.eq_map.slave))
         mtx_c.eliminate_zeros()
 
         mtx_im = mtx_ia @ (mtx_c @ mtx_ia)
-        apply_ebc_to_matrix(mtx_im, vu.eq_map.eq_ebc,
-                            (vu.eq_map.master, vu.eq_map.slave))
+        if not problem.active_only:
+            apply_ebc_to_matrix(mtx_im, vu.eq_map.eq_ebc,
+                                (vu.eq_map.master, vu.eq_map.slave))
 
         if self.conf.debug:
             mtx_m = eval_equations(
@@ -1321,12 +1321,21 @@ class RMMSolver(LinearSolver):
                 active_only=problem.active_only,
             )
 
-            mtx_r = vu.eq_map.get_operator()
-            mtx_imr = mtx_r.T @ mtx_im @ mtx_r
+            if not problem.active_only:
+                mtx_r = vu.eq_map.get_operator()
+                mtx_imr = mtx_r.T @ mtx_im @ mtx_r
+                mtx_mr = mtx_r.T @ mtx_m @ mtx_r
+                mtx_mor = mtx_r.T @ mtx @ mtx_r
+
+            else:
+                mtx_imr = mtx_im
+                mtx_mr = mtx_m
+                mtx_mor = mtx
 
             dim = problem.domain.shape.dim
-            output('total mass check: AMM:', mtx_m.sum()/ dim,
-                   'RMM:', nm.linalg.inv(mtx_imr.toarray()).sum() / dim)
+            output('total mass check: AMM:', mtx_mr.sum() / dim,
+                   'RMM:', nm.linalg.inv(mtx_imr.toarray()).sum() / dim,
+                   'M:', mtx_mor.sum() / dim)
 
         return mtx_im
 
@@ -1335,6 +1344,6 @@ class RMMSolver(LinearSolver):
                  i_max=None, mtx=None, status=None, **kwargs):
 
         if self.mtx_im is None:
-            self.mtx_im = self.init_rmm()
+            self.mtx_im = self.init_rmm(mtx)
 
         return self.mtx_im @ rhs
