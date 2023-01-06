@@ -8,7 +8,8 @@ from sfepy.base.base import (get_default, output, assert_,
                              Struct, IndexedStruct)
 from sfepy.base.timing import Timer
 from sfepy.linalg.utils import output_array_stats
-from sfepy.solvers.solvers import TimeSteppingSolver
+from sfepy.solvers.solvers import TimeSteppingSolver, NonlinearSolver
+from sfepy.solvers.ls import RMMSolver
 from sfepy.solvers.ts_controllers import FixedTSC
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 
@@ -593,25 +594,45 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
          'If True, the problem is considered to be linear.'),
     ]
 
-    def _create_nlst_a(self, nls, dt, ufun, vfun, cc, cache_name):
+    def _create_nlst_a(self, nls, dt, ufun, vfun, cc, cache_name, is_rmm=False):
         nlst = nls.copy()
 
-        def fun(at):
-            vec = nm.r_[ufun(), vfun(at), at]
+        if is_rmm:
+            def fun(at):
+                ut = ufun()
+                zz = nm.zeros_like(ut)
+                vec = nm.r_[ut, zz, zz]
 
-            aux = nls.fun(vec)
+                aux = nls.fun(vec)
 
-            i3 = len(at)
-            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
-            return rt
+                i3 = len(at)
+                rt = aux[:i3]
+                return rt
 
-        @_cache(self, cache_name, self.conf.is_linear)
-        def fun_grad(at):
-            vec = None if self.conf.is_linear else nm.r_[ufun(), vfun(at), at]
-            M, C = self.get_matrices(nls, vec)[:2]
+            @_cache(self, cache_name, self.conf.is_linear)
+            def fun_grad(at):
+                M = self.get_matrices(nls, None)[0]
 
-            Kt = M + cc * C
-            return Kt
+                return M
+
+        else:
+            def fun(at):
+                vec = nm.r_[ufun(), vfun(at), at]
+
+                aux = nls.fun(vec)
+
+                i3 = len(at)
+                rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+                return rt
+
+            @_cache(self, cache_name, self.conf.is_linear)
+            def fun_grad(at):
+                vec = (None if self.conf.is_linear
+                       else nm.r_[ufun(), vfun(at), at])
+                M, C = self.get_matrices(nls, vec)[:2]
+
+                Kt = M + cc * C
+                return Kt
 
         nlst.fun = fun
         nlst.fun_grad = fun_grad
@@ -629,7 +650,29 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
         def u():
             return u0 + dt * v0 + dt2 * 0.5 * a0
 
-        nlst = self._create_nlst_a(nls, dt, u, v, 0.5 * dt, 'matrix')
+        if isinstance(nls.lin_solver, RMMSolver):
+            import scipy.sparse as sps
+            class NoNLS(NonlinearSolver):
+
+                def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
+                             lin_solver=None, iter_hook=None, status=None):
+                    vec_r = self.fun(vec_x0)
+                    # Dummy all-zero matrix to make standard_call() happy.
+                    mtx_a = sps.csr_matrix((vec_r.shape[0], vec_r.shape[0]))
+                    return self.lin_solver(-vec_r, mtx=mtx_a)
+
+            nlst = self._create_nlst_a(nls, dt, u, v, 0.5 * dt, 'matrix',
+                                       is_rmm=True)
+            nlst = NoNLS(Struct(name='nonls', kind='nls.nonls'),
+                         fun=nlst.fun, fun_grad=nlst.fun_grad,
+                         lin_solver=nlst.lin_solver, iter_hook=nlst.iter_hook,
+                         status=nlst.status, context=nlst.context,
+                         u=nlst.u, v=nlst.v)
+            # nlst.lin_solver.a0 = a0
+
+        else:
+            nlst = self._create_nlst_a(nls, dt, u, v, 0.5 * dt, 'matrix')
+
         return nlst
 
     def step(self, ts, vec, nls, pack, unpack, **kwargs):
