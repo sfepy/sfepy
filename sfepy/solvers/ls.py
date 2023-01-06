@@ -1346,4 +1346,12 @@ class RMMSolver(LinearSolver):
         if self.mtx_im is None:
             self.mtx_im = self.init_rmm(mtx)
 
-        return self.mtx_im @ rhs
+        sol = self.mtx_im @ rhs
+        if self.a0 is not None:
+            # To make RMMSolver work with the standard Newton solver, a0 has to
+            # be set to the previous acceleration and M term has to be
+            # nullified (use dw_zero). This option is not used in the current
+            # implementation of CentralDifferenceTS.
+            sol += self.a0
+
+        return sol
