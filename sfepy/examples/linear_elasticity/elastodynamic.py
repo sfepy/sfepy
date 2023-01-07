@@ -87,7 +87,7 @@ def define(
         v0=1.0,
         ct1=1.5,
         tss_name='tsn',
-        tsc_name='tscedb',
+        tsc_name='tscedl',
         adaptive=False,
         ls_name='lsd',
         mass_beta=0.0,
@@ -106,6 +106,7 @@ def define(
     v0: initial impact velocity
     ct1: final time in L / "longitudinal wave speed" units
     tss_name: time stepping solver name (see "solvers" section)
+    tsc_name: time step controller name (see "solvers" section)
     adaptive: use adaptive time step control
     ls_name: linear system solver name (see "solvers" section)
     mass_beta: averaged mass matrix parameter 0 <= beta <= 1
