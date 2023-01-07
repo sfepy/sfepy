@@ -91,6 +91,7 @@ def define(
         adaptive=False,
         ls_name='lsd',
         save_times=20,
+        output_dir='output/ed',
 ):
     """
     Parameters
@@ -344,7 +345,7 @@ def define(
         'active_only' : False,
 
         'output_format' : 'h5',
-        'output_dir' : 'output/ed',
+        'output_dir' : output_dir,
         'post_process_hook' : 'post_process',
     }
 
