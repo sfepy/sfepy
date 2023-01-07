@@ -90,6 +90,9 @@ def define(
         tsc_name='tscedb',
         adaptive=False,
         ls_name='lsd',
+        mass_beta=0.0,
+        mass_lumping='none',
+        fast_rmm=False,
         save_times=20,
         output_dir='output/ed',
 ):
@@ -105,7 +108,11 @@ def define(
     tss_name: time stepping solver name (see "solvers" section)
     adaptive: use adaptive time step control
     ls_name: linear system solver name (see "solvers" section)
+    mass_beta: averaged mass matrix parameter 0 <= beta <= 1
+    mass_lumping: mass matrix lumping ('row_sum', 'hrz' or 'none')
+    fast_rmm: use zero inertia term with lsrmm
     save_times: number of solutions to save
+    output_dir: output directory
     """
     dim = len(dims)
 
@@ -169,10 +176,12 @@ def define(
     # Iron.
     materials = {
         'solid' : ({
-                'D': mc.stiffness_from_youngpoisson(dim=dim, young=E, poisson=nu,
-                                                    plane=plane),
-                'rho': rho,
-         },),
+            'D': mc.stiffness_from_youngpoisson(dim=dim, young=E, poisson=nu,
+                                                plane=plane),
+            'rho': rho,
+            '.lumping' : mass_lumping,
+            '.beta' : mass_beta,
+        },),
     }
 
     fields = {
@@ -222,9 +231,16 @@ def define(
         'ic' : ('Omega', {'u.all' : 'get_ic_u', 'du.all' : 'get_ic_du'}),
     }
 
+    if (ls_name == 'lsrmm') and fast_rmm:
+        # Speed up residual calculation, as M is not used with lsrmm.
+        term = 'dw_zero.i.Omega(ddv, ddu)'
+
+    else:
+        term = 'de_mass.i.Omega(solid.rho, solid.lumping, solid.beta, ddv, ddu)'
+
     equations = {
         'balance_of_forces' :
-        """dw_dot.i.Omega(solid.rho, ddv, ddu)
+        term + """
          + dw_zero.i.Omega(dv, du)
          + dw_lin_elastic.i.Omega(solid.D, v, u) = 0""",
     }
@@ -246,6 +262,11 @@ def define(
             'eps_a' : 1e-32,
             'eps_r' : 1e-8,
             'verbose' : 2,
+        }),
+        'lsrmm' : ('ls.rmm', {
+            'rmm_term' : """de_mass.i.Omega(solid.rho, solid.lumping,
+                                            solid.beta, ddv, ddu)""",
+            'debug' : False,
         }),
         'newton' : ('nls.newton', {
             'i_max'      : 1,
