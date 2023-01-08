@@ -7,26 +7,29 @@ class MassTerm(ETermBase):
     Mass term with lumping and RMM support [1]_.
 
     The lumping parameter can be 'row_sum', 'hrz' or 'none' (default). It
-    applies for beta > 0:
+    applies for :math:`\beta` > 0:
 
-    - beta = 0 correponds to the consistent mass matrix;
-    - beta = 1 corresponds to the lumped mass matrix;
-    - 0 < beta < 1 corresponds to the averaged mass matrix.
+    - :math:`\beta` = 0 correponds to the consistent mass matrix :math:`M^C`;
+    - 0 < :math:`\beta` < 1 corresponds to the averaged mass matrix
+      :math:`M^A`.
+    - :math:`\beta` = 1 corresponds to the lumped mass matrix :math:`M^L`;
 
-    `term_mode` can be None (default), 'DPM' (diagonal projection matrix), or
-    'RMM' (reciprocal mass matrix).
+    `term_mode` can be None (default), 'DPM' (diagonal projection matrix
+    :math:`A`), or 'RMM' (reciprocal mass matrix :math:`C`).
 
     .. [1] González, J.A., Kolman, R., Cho, S.S., Felippa, C.A., Park, K.C.,
-           2018. Inverse mass matrix via the method of localized lagrange
+           2018. Inverse mass matrix via the method of localized Lagrange
            multipliers. International Journal for Numerical Methods in
            Engineering 113, 277–295. https://doi.org/10.1002/nme.5613
 
     :Definition:
 
     .. math::
-        \int_{\cal{D}} \rho \ul{v} \cdot \ul{u} \\
-        A_e \\
-        A_e^T (M_e^A)^{-1} A_e
+        M^C = \int_{\cal{D}} \rho \ul{v} \cdot \ul{u} \\
+        M^L = \mathrm{lumping}(M^C) \\
+        M^A = (1 - \beta) M^C + \beta M^L \\
+        A = \sum_e A_e \\
+        C = \sum_e A_e^T (M_e^A)^{-1} A_e
 
     :Arguments:
         - material: :math:`\rho`
