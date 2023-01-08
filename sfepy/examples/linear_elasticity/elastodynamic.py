@@ -39,7 +39,7 @@ in ``output/ed/``)::
 
 Solve using the Bathe method::
 
-  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -O "ts='tsb'"
+  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -O "tss_name='tsb'"
 
 View the resulting displacements on the deforming mesh (1000x magnified),
 Cauchy strain and stress using::
@@ -70,6 +70,18 @@ reducing so the need for a new matrix factorization. Run::
 
 The resulting velocities and adaptive time steps can again be plotted by the
 commands shown above.
+
+Use the Reciprocal Mass Matrix Algorithm [1]_ and view the resulting stress
+waves::
+
+  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -d "dims=(5e-3, 5e-3), shape=(61, 61), tss_name=tscd, tsc_name=tscedl, adaptive=False, ls_name=lsrmm, mass_beta=0.5, mass_lumping=row_sum, fast_rmm=True, save_times=all"
+
+  sfepy-view output/ed/user_block.h5 -2 --grid-vector1=1.2,0,0 -f cauchy_stress:wu:f1e3:p0 1:vw:p0
+
+.. [1] González, J.A., Kolman, R., Cho, S.S., Felippa, C.A., Park, K.C., 2018.
+       Inverse mass matrix via the method of localized Lagrange multipliers.
+       International Journal for Numerical Methods in Engineering 113, 277–295.
+       https://doi.org/10.1002/nme.5613
 """
 from __future__ import absolute_import
 
@@ -86,6 +98,8 @@ def define(
         shape=(21, 6, 6),
         v0=1.0,
         ct1=1.5,
+        dt=None,
+        edt_safety=0.2,
         tss_name='tsn',
         tsc_name='tscedl',
         adaptive=False,
@@ -105,6 +119,9 @@ def define(
     shape: numbers of mesh vertices along each axis
     v0: initial impact velocity
     ct1: final time in L / "longitudinal wave speed" units
+    dt: time step (None means automatic)
+    edt_safety: safety factor time step multiplier for explicit schemes,
+                if dt is None
     tss_name: time stepping solver name (see "solvers" section)
     tsc_name: time step controller name (see "solvers" section)
     adaptive: use adaptive time step control
@@ -124,11 +141,16 @@ def define(
 
     # Element size.
     L, d = dims[:2]
-    H = L / (shape[0] - 1)
+    H = L / (nm.max(shape) - 1)
 
     # Time-stepping parameters.
-    # Note: the Courant number C0 =  dt * cl / H
-    dt = H / cl # C0 = 1
+    if dt is None:
+        # For implicit schemes, dt based on the Courant number C0 = dt * cl / H
+        # equal to 1.
+        dt = H / cl # C0 = 1
+        if tss_name in ('tsvv', 'tscd'):
+            # For explicit schemes, use a safety margin.
+            dt *= edt_safety
 
     t1 = ct1 * L / cl
 
@@ -275,8 +297,7 @@ def define(
             'eps_r'      : 1e-6,
         }),
         'tsvv' : ('ts.velocity_verlet', {
-            # Explicit method -> requires at least 10x smaller dt than the
-            # other time-stepping solvers, or an adaptive time step control.
+            # Explicit method.
             't0' : 0.0,
             't1' : t1,
             'dt' : dt,
@@ -287,8 +308,7 @@ def define(
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
-            # Explicit method -> requires at least 10x smaller dt than the
-            # other time-stepping solvers, or an adaptive time step control.
+            # Explicit method.
             't0' : 0.0,
             't1' : t1,
             'dt' : dt,
