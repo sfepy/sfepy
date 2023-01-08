@@ -1257,24 +1257,34 @@ class MultiProblem(ScipyDirect):
 
 class RMMSolver(LinearSolver):
     """
-    Pseudo-solver for explicit transient elastodynamics that uses the
-    reciprocal mass matrix algorithm [1]_ to directly construct a sparse inverse
-    mass matrix.
+    Special solver for explicit transient elastodynamics.
+
+    The solver uses the reciprocal mass matrix algorithm [1]_, [2]_ to directly
+    construct a sparse inverse mass matrix. Instead of solving a linear system,
+    calling the solver simply performs a sparse matrix multiplication.
 
     Limitations:
+
     - Assumes that the density is constant in time.
     - Uses the direct EBC application, i.e., no EBC projection matrix.
 
     .. [1] González, J.A., Kolman, R., Cho, S.S., Felippa, C.A., Park, K.C.,
-           2018. Inverse mass matrix via the method of localized lagrange
+           2018. Inverse mass matrix via the method of localized Lagrange
            multipliers. International Journal for Numerical Methods in
            Engineering 113, 277–295. https://doi.org/10.1002/nme.5613
+
+    .. [2] González, J.A., Kopačka, J., Kolman, R., Cho, S.S., Park, K.C.,
+           2019. Inverse mass matrix for isogeometric explicit transient
+           analysis via the method of localized Lagrange multipliers.
+           International Journal for Numerical Methods in Engineering 117,
+           939–966. https://doi.org/10.1002/nme.5986
     """
     name = 'ls.rmm'
 
     _parameters = [
         ('rmm_term', 'str', None, True,
-         'The RMM term definition.'),
+         """The RMM term definition, see
+         :class:`MassTerm <sfepy.terms.terms_mass.MassTerm>`."""),
         ('debug', 'bool', False, False,
          'If True, run in debug mode.'),
     ]
