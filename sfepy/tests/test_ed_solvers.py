@@ -1,3 +1,5 @@
+from functools import partial
+
 import numpy as nm
 import pytest
 
@@ -7,7 +9,8 @@ import sfepy.mechanics.matcoefs as mc
 import sfepy.base.testing as tst
 
 def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
-           young=70e9, poisson=0.3, density=2700):
+           young=70e9, poisson=0.3, density=2700, mass_lumping='row_sum',
+           mass_beta=0.2):
 
     def mesh_hook(mesh, mode):
         """
@@ -40,6 +43,8 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
                 dim=dim, young=young, poisson=poisson, plane='strain'
             ),
             'rho': density,
+            '.lumping' : mass_lumping,
+            '.beta' : mass_beta,
          },),
     }
 
@@ -102,14 +107,18 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             # care!
             'use_mtx_digest' : False,
         }),
+        'lsrmm' : ('ls.rmm', {
+            'rmm_term' : """de_mass.i.Omega(solid.rho, solid.lumping,
+                                            solid.beta, ddv, ddu)""",
+            'debug' : False,
+        }),
         'newton' : ('nls.newton', {
             'i_max'      : 1,
             'eps_a'      : 1e-6,
             'eps_r'      : 1e-6,
         }),
         'tsvv' : ('ts.velocity_verlet', {
-            # Explicit method -> requires at least 10x smaller dt than the
-            # other time-stepping solvers, or an adaptive time step control.
+            # Explicit method.
             't0' : 0.0,
             't1' : t1,
             'dt' : 0.1 * dt,
@@ -120,8 +129,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
-            # Explicit method -> requires at least 10x smaller dt than the
-            # other time-stepping solvers, or an adaptive time step control.
+            # Explicit method.
             't0' : 0.0,
             't1' : t1,
             'dt' : 0.1 * dt,
@@ -337,3 +345,66 @@ def test_ed_solvers(problem, output_dir):
 
     assert ok
     assert nm.isclose(e0, 1.8e-4, atol=0, rtol=1e-12)
+
+def test_rmm_solver(problem, output_dir):
+    from sfepy.base.base import IndexedStruct
+
+    ls_conf = problem.solver_confs['ls']
+    lsr_conf = problem.solver_confs['lsrmm']
+    tss_conf = problem.solver_confs['tscd']
+
+    vu = problem.get_variables()['u']
+    sensor = problem.domain.regions['Sensor']
+    isens = 3 * vu.field.get_dofs_in_region(sensor)[0] + 2
+
+    def store_ths(pb, ts, variables, ths):
+        sp = variables.get_state_parts()
+        u1, v1 = sp['u'], sp['du']
+
+        e_u = 0.5 * u1 @ pb.Kf @ u1
+        e_t = 0.5 * v1 @ pb.Mf @ v1
+        ths.append((ts.time, u1[isens], v1[isens], e_u, e_t))
+
+    problem.tsc_conf = None
+
+    status = IndexedStruct()
+    problem.init_solvers(ls_conf=ls_conf, ts_conf=tss_conf, status=status,
+                         force=True)
+    ths = []
+    problem.solve(status=status, save_results=False,
+                  step_hook=partial(store_ths, ths=ths))
+    ths = nm.array(ths)
+
+    statusr = IndexedStruct()
+    problem.init_solvers(ls_conf=lsr_conf, ts_conf=tss_conf, status=statusr,
+                         force=True)
+    thsr = []
+    problem.solve(status=statusr, save_results=False,
+                  step_hook=partial(store_ths, ths=thsr))
+    thsr = nm.array(thsr)
+
+    tst.report(f'solution times: CMM: {status.time}, RMM: {statusr.time}')
+
+    ratio = abs(ths[:,2].max() / ths[:,1].max())
+
+    # import matplotlib.pyplot as plt
+    # colors = plt.cm.tab10.colors
+    # fig, ax = plt.subplots()
+    # ax.plot(ths[:,0], ths[:,3], color=colors[0], ls='-')
+    # ax.plot(ths[:,0], ths[:,4], color=colors[1], ls='-')
+    # ax.plot(thsr[:,0], thsr[:,3], color=colors[0], ls='--')
+    # ax.plot(thsr[:,0], thsr[:,4], color=colors[1], ls='--')
+    # fig, ax = plt.subplots()
+    # ax.plot(ths[:,0], ratio * ths[:,1], color=colors[0], ls='-')
+    # ax.plot(ths[:,0], ths[:,2], color=colors[1], ls='-')
+    # ax.plot(thsr[:,0], ratio * thsr[:,1], color=colors[0], ls='--')
+    # ax.plot(thsr[:,0], thsr[:,2], color=colors[1], ls='--')
+    # plt.show()
+
+    dt = ths[1, 0] - ths[0, 0]
+    ierrs = nm.linalg.norm(ths[:, 1:] - thsr[:, 1:], axis=0) * dt
+
+    assert ierrs[0] < 1e-13
+    assert ierrs[1] < 3 * ratio * 1e-13
+    assert ierrs[2] < 1e-11
+    assert ierrs[3] < 1e-11
