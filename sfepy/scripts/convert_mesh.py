@@ -31,6 +31,7 @@ helps = {
     'tri-tetra' : 'convert elements: quad->tri, hexa->tetra',
     '2d' : 'force a 2D mesh by removing the z coordinates - assumes a 3D mesh'
     ' in the xy plane',
+    '3d' : 'force a 3D mesh by adding zero (y,) z coordinates',
     'cell-dim' : 'write only cells of a given dimension,'
     ' use a comma-separated list for several values',
     'save-per-mat': 'extract cells by material id and save them into'
@@ -112,8 +113,11 @@ def main():
                         dest='merge', help=helps['merge'])
     parser.add_argument('-t', '--tri-tetra', action='store_true',
                         dest='tri_tetra', help=helps['tri-tetra'])
-    parser.add_argument('-2', '--2d', action='store_true',
-                        dest='force_2d', help=helps['2d'])
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-2', '--2d', action='store_true',
+                       dest='force_2d', help=helps['2d'])
+    group.add_argument('-3', '--3d', action='store_true',
+                       dest='force_3d', help=helps['3d'])
     parser.add_argument('-d', '--cell-dim', metavar='cell_dim',
                         action='store', dest='cell_dim',
                         default=None, help=helps['cell-dim'])
@@ -200,6 +204,11 @@ def main():
     if options.force_2d:
         data = list(mesh._get_io_data(cell_dim_only=2))
         data[0] = data[0][:, :2]
+        mesh = Mesh.from_data(mesh.name, *data)
+
+    elif options.force_3d:
+        data = list(mesh._get_io_data())
+        data[0] = nm.pad(data[0], [(0, 0), (0, 3 - data[0].shape[1])])
         mesh = Mesh.from_data(mesh.name, *data)
 
     if scale is not None:
