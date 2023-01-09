@@ -855,7 +855,6 @@ def main():
 
         anim_filename = options.anim_output_file
         plotter.open_movie(anim_filename, options.framerate)
-        plotter.show(auto_close=False)
 
         for k in scalar_bar_limits.keys():
             lims = scalar_bar_limits[k]
@@ -873,6 +872,7 @@ def main():
 
             plotter.write_frame()
 
+        plotter.show()
         plotter.close()
     else:
         plotter = pv_plot(options.filenames, options, plotter=plotter)
