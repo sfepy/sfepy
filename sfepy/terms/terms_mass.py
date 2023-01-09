@@ -79,7 +79,7 @@ class MassTerm(ETermBase):
             status = _fun(_out, *fargs)
 
             # Consistent element mass matrices M_C.
-            mc = _out if beta == 1.0 else _out.copy()
+            mc = _out if beta in (0.0, 1.0) else _out.copy()
             # Diagonals of lumped element mass matrices M_L.
             if lumping == 'row_sum':
                 mld = mc.sum(-1)
@@ -103,11 +103,15 @@ class MassTerm(ETermBase):
                 eye = nm.eye(mld.shape[-1])
                 _out[:] = nm.einsum('can,nm->canm', mld, eye)
 
-            else:
+            elif beta > 0.0:
                 # M_A = (1 - beta) * M_C + beta * M_L.
                 _out[:] = (1.0 - beta) * mc
                 outd = nm.einsum('...ii->...i', _out) # View to diagonal.
                 outd += beta * mld
+
+            else:
+                # beta == 0.0, so M_A = M_C in RMM term_mode -> do nothing.
+                pass
 
             if term_mode == 'RMM':
                 # out contains M_A, mld contains A_e diagonal.
