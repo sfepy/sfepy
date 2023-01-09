@@ -501,15 +501,20 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
 class VelocityVerletTS(ElastodynamicsBaseTS):
     """
-    Solve elastodynamics problems by the velocity-Verlet method.
+    Solve elastodynamics problems by the explicit velocity-Verlet method.
 
-    The algorithm can be found in [1].
+    The algorithm can be found in [1]_.
 
-    [1] Swope, William C.; H. C. Andersen; P. H. Berens; K. R. Wilson (1
-    January 1982). "A computer simulation method for the calculation of
-    equilibrium constants for the formation of physical clusters of molecules:
-    Application to small water clusters". The Journal of Chemical Physics. 76
-    (1): 648 (Appendix). doi:10.1063/1.442716
+    It is mathematically equivalent to the :class:`CentralDifferenceTS` method.
+    The current implementation code is essentially the same, as the mid-time
+    velocities are not used for anything other than computing the new time
+    velocities.
+
+    .. [1] Swope, William C.; H. C. Andersen; P. H. Berens; K. R. Wilson (1
+           January 1982). "A computer simulation method for the calculation of
+           equilibrium constants for the formation of physical clusters of
+           molecules: Application to small water clusters". The Journal of
+           Chemical Physics. 76 (1): 648 (Appendix). doi:10.1063/1.442716
     """
     name = 'ts.velocity_verlet'
 
@@ -574,10 +579,17 @@ class VelocityVerletTS(ElastodynamicsBaseTS):
 
 class CentralDifferenceTS(ElastodynamicsBaseTS):
     r"""
-    Solve elastodynamics problems by the central difference method.
+    Solve elastodynamics problems by the explicit central difference method.
 
     It is the same method as obtained by using :class:`NewmarkTS` with
     :math:`\beta = 0`, :math:`\gamma = 1/2`, but uses a simpler code.
+
+    It is also mathematically equivalent to the :class:`VelocityVerletTS`
+    method. The current implementation code is essentially the same.
+
+    This solver supports, when used with :class:`RMMSolver
+    <sfepy.solvers.ls.RMMSolver>`, the reciprocal mass matrix algorithm, see
+    :class:`MassTerm <sfepy.terms.terms_mass.MassTerm>`.
     """
     name = 'ts.central_difference'
 
