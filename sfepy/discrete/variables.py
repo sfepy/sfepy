@@ -674,28 +674,20 @@ class Variables(Container):
         for var in self.iter_state():
             var.apply_ic(vec, self.di.indx[var.name].start, force_values)
 
-    def has_ebc(self, vec=None, force_values=None):
+    def has_ebc(self, vec=None, force_values=None, verbose=False):
         if vec is None:
             vec = self.vec
 
-        for var_name in self.di.var_names:
-            eq_map = self[var_name].eq_map
-            i0 = self.di.indx[var_name].start
-            ii = i0 + eq_map.eq_ebc
-            if force_values is None:
-                if not nm.allclose(vec[ii], eq_map.val_ebc):
-                    return False
-            else:
-                if isinstance(force_values, dict):
-                    if not nm.allclose(vec[ii], force_values[var_name]):
-                        return False
-                else:
-                    if not nm.allclose(vec[ii], force_values):
-                        return False
-            # EPBC.
-            if not nm.allclose(vec[i0+eq_map.master], vec[i0+eq_map.slave]):
-                return False
-        return True
+        ok = True
+        for var in self.iter_state():
+            _ok = self[var.name].has_ebc(vec=vec[self.di.indx[var.name]],
+                                         force_values=force_values)
+            ok = ok and _ok
+
+            if verbose:
+                output(f'variable {var.name} has E(P)BC:', _ok)
+
+        return ok
 
     def set_data(self, data, step=0, ignore_unknown=False,
                  preserve_caches=False):
@@ -1815,6 +1807,25 @@ class FieldVariable(Variable):
 
             else:
                 vec[ii] = force_values
+
+    def has_ebc(self, vec=None, force_values=None):
+        eq_map = self.eq_map
+        ii = eq_map.eq_ebc
+        if force_values is None:
+            if not nm.allclose(vec[ii], eq_map.val_ebc):
+                return False
+        else:
+            if isinstance(force_values, dict):
+                if not nm.allclose(vec[ii], force_values[self.name]):
+                    return False
+            else:
+                if not nm.allclose(vec[ii], force_values):
+                    return False
+        # EPBC.
+        if not nm.allclose(vec[eq_map.master], vec[eq_map.slave]):
+            return False
+
+        return True
 
     def get_reduced(self, vec, offset=0, follow_epbc=False):
         """
