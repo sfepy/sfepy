@@ -36,6 +36,9 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
             elif sh == 'N': # General number ;)
                 return 1
 
+            elif sh == 'str':
+                return 'str'
+
             else:
                 return int(sh)
 
@@ -111,27 +114,34 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
                 if len(aux) == 2:
                     prefix, sh = aux
 
-            if material_value is None:
-                material_value = 1.0
+            value = material_value
+            if value is None:
+                value = 1.0
+
+            elif isinstance(value, dict):
+                value = material_value.get(arg_types[ii], 1.0)
 
             shape = _parse_tuple_shape(sh)
-            if (len(shape) > 1) or (shape[0] > 1):
+            if 'str' in shape:
+                values = {'.c%d' % ii : value}
+
+            elif (len(shape) > 1) or (shape[0] > 1):
                 if ((len(shape) == 2) and (shape[0] ==  shape[1])
-                    and (material_value != 0.0)):
+                    and (value != 0.0)):
                     # Identity matrix.
                     val = nm.eye(shape[0], dtype=nm.float64)
 
                 else:
                     # Array.
                     val = nm.empty(shape, dtype=nm.float64)
-                    val.fill(material_value)
+                    val.fill(value)
 
                 values = {'%sc%d' % (prefix, ii)
                           : val}
 
             elif (len(shape) == 1) and (shape[0] == 1):
                 # Single scalar as a special value.
-                values = {'.c%d' % ii : material_value}
+                values = {'.c%d' % ii : value}
 
             else:
                 raise ValueError('wrong material shape! (%s)' % shape)
@@ -221,6 +231,9 @@ def _test_single_term(data, term_cls, domain, rname):
 
             if 'dw_s_dot_grad_i_s' in term_cls.name:
                 material_value = 0.0
+
+            elif 'de_mass' in term_cls.name:
+                material_value = {'material_lumping' : 'row_sum'}
 
             else:
                 material_value = 1.0

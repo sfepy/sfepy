@@ -1253,3 +1253,115 @@ class MultiProblem(ScipyDirect):
             res.append(resi)
 
         return res[-1]
+
+
+class RMMSolver(LinearSolver):
+    """
+    Special solver for explicit transient elastodynamics.
+
+    The solver uses the reciprocal mass matrix algorithm [1]_, [2]_ to directly
+    construct a sparse inverse mass matrix. Instead of solving a linear system,
+    calling the solver simply performs a sparse matrix multiplication.
+
+    Limitations:
+
+    - Assumes that the density is constant in time.
+    - Uses the direct EBC application, i.e., no EBC projection matrix.
+
+    .. [1] González, J.A., Kolman, R., Cho, S.S., Felippa, C.A., Park, K.C.,
+           2018. Inverse mass matrix via the method of localized Lagrange
+           multipliers. International Journal for Numerical Methods in
+           Engineering 113, 277–295. https://doi.org/10.1002/nme.5613
+
+    .. [2] González, J.A., Kopačka, J., Kolman, R., Cho, S.S., Park, K.C.,
+           2019. Inverse mass matrix for isogeometric explicit transient
+           analysis via the method of localized Lagrange multipliers.
+           International Journal for Numerical Methods in Engineering 117,
+           939–966. https://doi.org/10.1002/nme.5986
+    """
+    name = 'ls.rmm'
+
+    _parameters = [
+        ('rmm_term', 'str', None, True,
+         """The RMM term definition, see
+         :class:`MassTerm <sfepy.terms.terms_mass.MassTerm>`."""),
+        ('debug', 'bool', False, False,
+         'If True, run in debug mode.'),
+    ]
+
+    def __init__(self, conf, context=None, **kwargs):
+        LinearSolver.__init__(self, conf, context=context, mtx_im=None, a0=None,
+                              **kwargs)
+
+    def init_rmm(self, mtx):
+        from sfepy.discrete.evaluate import eval_equations, apply_ebc_to_matrix
+
+        problem = self.context
+        equations, variables = problem.create_evaluable(
+            self.conf.rmm_term, preserve_caches=True,
+            copy_materials=False, mode='weak',
+            active_only=problem.active_only,
+        )
+        vu = next(variables.iter_state())
+
+        mtx_a = eval_equations(equations, variables, preserve_caches=True,
+                               mode='weak', dw_mode='matrix', term_mode='DPM',
+                               active_only=problem.active_only)
+        if not problem.active_only:
+            apply_ebc_to_matrix(mtx_a, vu.eq_map.eq_ebc,
+                                (vu.eq_map.master, vu.eq_map.slave))
+        mtx_a.eliminate_zeros()
+        mtx_ia = mtx_a.copy()
+        mtx_ia.setdiag(1.0 / mtx_a.diagonal())
+
+        mtx_c = eval_equations(equations, variables, preserve_caches=True,
+                               mode='weak', dw_mode='matrix', term_mode='RMM',
+                               active_only=problem.active_only)
+        mtx_c.eliminate_zeros()
+
+        mtx_im = mtx_ia @ (mtx_c @ mtx_ia)
+        if not problem.active_only:
+            apply_ebc_to_matrix(mtx_im, vu.eq_map.eq_ebc,
+                                (vu.eq_map.master, vu.eq_map.slave))
+
+        if self.conf.debug:
+            mtx_m = eval_equations(
+                equations, variables, preserve_caches=True,
+                mode='weak', dw_mode='matrix', term_mode=None,
+                active_only=problem.active_only,
+            )
+
+            if not problem.active_only:
+                mtx_r = vu.eq_map.get_operator()
+                mtx_imr = mtx_r.T @ mtx_im @ mtx_r
+                mtx_mr = mtx_r.T @ mtx_m @ mtx_r
+                mtx_mor = mtx_r.T @ mtx @ mtx_r
+
+            else:
+                mtx_imr = mtx_im
+                mtx_mr = mtx_m
+                mtx_mor = mtx
+
+            dim = problem.domain.shape.dim
+            output('total mass check: AMM:', mtx_mr.sum() / dim,
+                   'RMM:', nm.linalg.inv(mtx_imr.toarray()).sum() / dim,
+                   'M:', mtx_mor.sum() / dim)
+
+        return mtx_im
+
+    @standard_call
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+
+        if self.mtx_im is None:
+            self.mtx_im = self.init_rmm(mtx)
+
+        sol = self.mtx_im @ rhs
+        if self.a0 is not None:
+            # To make RMMSolver work with the standard Newton solver, a0 has to
+            # be set to the previous acceleration and M term has to be
+            # nullified (use dw_zero). This option is not used in the current
+            # implementation of CentralDifferenceTS.
+            sol += self.a0
+
+        return sol
