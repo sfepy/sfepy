@@ -264,8 +264,7 @@ def test_ed_solvers(problem, output_dir):
     sensor = problem.domain.regions['Sensor']
     isens = 3 * vu.field.get_dofs_in_region(sensor)[0] + 2
 
-    ths = []
-    def store_ths(pb, ts, variables):
+    def store_ths(pb, ts, variables, ths):
         sp = variables.get_state_parts()
         u1, v1, a1 = sp['u'], sp['du'], sp['ddu']
 
@@ -283,8 +282,9 @@ def test_ed_solvers(problem, output_dir):
             status = IndexedStruct()
             problem.init_solvers(tsc_conf=tsc_conf, ts_conf=tss_conf,
                                  status=status, force=True)
-            ths[:] = []
-            problem.solve(status=status, save_results=False, step_hook=store_ths)
+            ths = []
+            problem.solve(status=status, save_results=False,
+                          step_hook=partial(store_ths, ths=ths))
             all_ths.append(nm.array(ths))
             stats.append((problem.solver.tsc.conf.kind, tss_conf.kind,
                           status.n_step, status.time))
