@@ -846,9 +846,7 @@ def main():
         cpos = _get_cpos(plotter, options)
 
         if cpos is not None:
-            plotter.set_position(cpos[0])
-            plotter.set_focus(cpos[1])
-            plotter.set_viewup(cpos[2])
+            plotter.camera_position = cpos
 
         elif options.view_2d:
             plotter.view_xy()
