@@ -111,26 +111,26 @@ class FEDomain(Domain):
         """
         from sfepy.discrete.common.extmods.cmesh import orient_elements
 
-        if self.cmesh.tdim != self.cmesh.dim:
-            output('warning: mesh with topological dimension %d lower than'
-                   ' space dimension %d' % (self.cmesh.tdim, self.cmesh.dim))
-            output('- element orientation not checked!')
-            return
-
-        cmesh = self.cmesh
         for key, gel in self.geom_els.items():
             ori = gel.orientation
+
+            cmesh = self.cmesh_tdim[gel.dim]
+            if cmesh.tdim != cmesh.dim:
+                output('warning: mesh with topological dimension %d lower than'
+                       ' space dimension %d' % (cmesh.tdim, cmesh.dim))
+                output('- element orientation not checked!')
+                return
 
             cells = nm.where(cmesh.cell_types == cmesh.key_to_index[gel.name])
             cells = cells[0].astype(nm.uint32)
 
             itry = 0
             while itry < 2:
-                flag = -nm.ones(self.cmesh.n_el, dtype=nm.int32)
+                flag = -nm.ones(cmesh.n_el, dtype=nm.int32)
 
                 # Changes orientation if it is wrong according to swap*!
                 # Changes are indicated by positive flag.
-                orient_elements(flag, self.cmesh, cells, gel.dim,
+                orient_elements(flag, cmesh, cells, gel.dim,
                                 ori.roots, ori.vecs,
                                 ori.swap_from, ori.swap_to)
 
