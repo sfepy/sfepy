@@ -10,7 +10,7 @@ from sfepy.discrete import Domain, PolySpace
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, \
     refine_3_8, refine_1_2
 from sfepy.discrete.fem.fe_surface import FESurface
-import six
+
 
 class FEDomain(Domain):
     """
@@ -40,7 +40,7 @@ class FEDomain(Domain):
 
             geom_els[desc] = gel
 
-        for gel in six.itervalues(geom_els):
+        for gel in geom_els.values():
             key = gel.get_interpolation_name()
 
             gel.poly_space = PolySpace.any_from_args(key, gel, 1)

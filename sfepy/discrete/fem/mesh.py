@@ -6,7 +6,6 @@ from sfepy.base.base import Struct, invert_dict, get_default, output,\
      assert_, is_sequence
 from sfepy.base.timing import Timer
 from .meshio import MeshIO
-import six
 from scipy.spatial import cKDTree
 
 eps = 1e-9
@@ -255,7 +254,7 @@ class Mesh(Struct):
             remap[region.vertices] = nm.arange(region.vertices.shape[0])
 
             mesh.nodal_bcs = {}
-            for key, val in six.iteritems(mesh_in.nodal_bcs):
+            for key, val in mesh_in.nodal_bcs.items():
                 new_val = remap[val]
                 mesh.nodal_bcs[key] = new_val[new_val >= 0]
 
