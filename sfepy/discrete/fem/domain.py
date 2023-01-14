@@ -30,10 +30,6 @@ class FEDomain(Domain):
         """
         Domain.__init__(self, name, mesh=mesh, verbose=verbose, **kwargs)
 
-        if len(mesh.descs) > 1:
-            msg = 'meshes with several cell kinds are not supported!'
-            raise NotImplementedError(msg)
-
         self.geom_els = geom_els = {}
         for ig, desc in enumerate(mesh.descs):
             gel = GeometryElement(desc)
@@ -54,20 +50,24 @@ class FEDomain(Domain):
                 gel.poly_space = PolySpace.any_from_args(key, gel, 1)
 
         self.vertex_set_bcs = self.mesh.nodal_bcs
-
-        self.cmesh = self.mesh.cmesh
+        self.cmesh_tdim = self.mesh.cmesh_tdim
 
         # Must be before creating derived connectivities.
         self.fix_element_orientation()
 
         from sfepy.discrete.fem.geometry_element import create_geometry_elements
         gels = create_geometry_elements()
-        self.cmesh.set_local_entities(gels)
-        self.cmesh.setup_entities()
+        max_tdim = 0
+        for cmesh in self.mesh.cmesh_tdim:
+            if cmesh is not None:
+                cmesh.set_local_entities(gels)
+                cmesh.setup_entities()
+                max_tdim = max(max_tdim, cmesh.tdim)
 
+        self.cmesh_highest = self.cmesh_tdim[max_tdim]
         n_nod, dim = self.mesh.coors.shape
-        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=self.cmesh.tdim,
-                            n_el=self.cmesh.n_el,
+        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=self.cmesh_highest.tdim,
+                            n_el=self.cmesh_highest.n_el,
                             n_gr=len(self.geom_els))
 
         self.reset_regions()
@@ -118,7 +118,7 @@ class FEDomain(Domain):
             return
 
         cmesh = self.cmesh
-        for key, gel in six.iteritems(self.geom_els):
+        for key, gel in self.geom_els.items():
             ori = gel.orientation
 
             cells = nm.where(cmesh.cell_types == cmesh.key_to_index[gel.name])
@@ -148,16 +148,21 @@ class FEDomain(Domain):
             elif flag[0] == -1:
                 output('warning: element orienation not checked')
 
-    def get_conn(self, ret_gel=False):
+    def get_conn(self, ret_gel=False, tdim=None):
         """
         Get the cell-vertex connectivity and, if `ret_gel` is True, also the
         corresponding reference geometry element.
         """
-        conn = self.cmesh.get_conn(self.cmesh.tdim, 0).indices
-        conn = conn.reshape((self.cmesh.n_el, -1)).astype(nm.int32)
+        cmesh = self.cmesh_highest if tdim is None else self.cmesh_tdim[tdim]
+        conn = cmesh.get_conn(cmesh.tdim, 0).indices
+        conn = conn.reshape((cmesh.n_el, -1)).astype(nm.int32)
 
         if ret_gel:
-            gel = list(self.geom_els.values())[0]
+            gel = None
+            for gv in self.geom_els.values():
+                if gv.dim == cmesh.tdim:
+                    gel = gv
+                    break
 
             return conn, gel
 
