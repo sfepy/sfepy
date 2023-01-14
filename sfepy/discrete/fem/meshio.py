@@ -495,25 +495,25 @@ class MeshioLibIO(MeshIO):
         point_data[ngkey] = ngroups
         point_sets = {str(k): nm.where(ngroups == k)[0]
                       for k in nm.unique(ngroups)}
-        cmesh = mesh.cmesh
-        cell_groups = cmesh.cell_groups
-        cgrps = nm.unique(cell_groups)
+        cell_groups = [mesh.get_cmesh(desc).cell_groups for desc in descs]
+        cgrps = nm.unique(nm.hstack(cell_groups))
         # meshio.__version__ > 3.3.2
         cells = []
         cgroups = []
         cell_data = {k: [] for k in cell_data_keys}
         cell_sets = {str(k): [] for k in cgrps}
         for ii, desc in enumerate(descs):
+            cmesh = mesh.get_cmesh(desc)
             cells.append(meshio_Cells(inv_cell_types[desc][0], conns[ii]))
             cidxs = nm.where(cmesh.cell_types == cmesh.key_to_index[desc])
             cidxs = cidxs[0].astype(nm.uint32)
 
-            cgroups.append(cell_groups[cidxs])
+            cgroups.append(cmesh.cell_groups[cidxs])
             for k in cell_data_keys:
                 cell_data[k].append(out[k].data[cidxs, 0, :, 0])
 
             for k in cgrps:
-                idxs = nm.where(cell_groups[cidxs] == k)[0]
+                idxs = nm.where(cmesh.cell_groups[cidxs] == k)[0]
                 cell_sets[str(k)].append(cidxs[idxs])
 
         if self.file_format in ['vtk', 'vtk-ascii', 'vtk-binary', 'vtu']:
