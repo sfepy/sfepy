@@ -56,7 +56,8 @@ cdef _create_cconn(MeshConnectivity *pconn, num, n_incident, what):
 cdef class CMesh:
 
     @classmethod
-    def from_data(cls, coors, vertex_groups, conns, mat_ids, descs):
+    def from_data(cls, coors, vertex_groups, conns, mat_ids, descs,
+                  copy_coors=True):
         """
         Fill CMesh data using Python data.
         """
@@ -81,7 +82,8 @@ cdef class CMesh:
         if (self.dim < 1) or (self.dim > 3):
             raise ValueError('CMesh geometry dimension must be 1, 2 or 3! (%d)'
                              % self.dim)
-        _coors = self.coors = coors.copy()
+        _coors = self.coors = coors.copy() if copy_coors else coors
+
         mesh_set_coors(self.mesh, &_coors[0, 0], self.n_coor, self.dim, tdim)
 
         self.vertex_groups = vertex_groups
