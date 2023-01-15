@@ -54,12 +54,13 @@ class Shell10XMapping(Mapping):
         mesh = domain.mesh
 
         iels = self.region.get_cells()
-        conn = nm.take(domain.get_conn(), iels.astype(nm.int32), axis=0)
+        conn = nm.take(domain.get_conn(tdim=self.region.tdim),
+                       iels.astype(nm.int32), axis=0)
 
         e_coors = mesh.coors[conn]
         mtx_t = shell10x.create_transformation_matrix(e_coors)
 
-        e_centres = mesh.cmesh.get_centroids(2)[iels]
+        e_centres = self.region.cmesh.get_centroids(2)[iels]
 
         coors_loc = ddot((e_coors - e_centres[:, None, :]), mtx_t)
 
