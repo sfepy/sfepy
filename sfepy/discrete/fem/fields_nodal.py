@@ -69,7 +69,7 @@ class GlobalNodalLikeBasis(Struct):
         facet_desc = nm.array(facet_desc)
         n_dof_per_facet = facet_desc.shape[1]
 
-        cmesh = self.domain.cmesh
+        cmesh = self.cmesh
 
         facets = self.region.entities[dim]
         ii = nm.arange(facets.shape[0], dtype=nm.int32)
@@ -78,7 +78,7 @@ class GlobalNodalLikeBasis(Struct):
         # Prepare global facet id remapping to field-local numbering.
         remap = prepare_remap(facets, cmesh.num[dim])
 
-        cconn = self.region.domain.cmesh.get_conn(self.region.tdim, dim)
+        cconn = cmesh.get_conn(self.region.tdim, dim)
         offs = cconn.offsets
 
         n_f = self.gel.edges.shape[0] if dim == 1 else self.gel.faces.shape[0]
@@ -126,7 +126,7 @@ class GlobalNodalLikeBasis(Struct):
         n_dof_per_cell = self.node_desc.bubble.shape[0]
 
         ii = self.region.get_cells()
-        remap = prepare_remap(ii, self.domain.cmesh.n_el)
+        remap = prepare_remap(ii, self.cmesh.n_el)
 
         n_cell = ii.shape[0]
         n_dof = n_dof_per_cell * n_cell
@@ -391,8 +391,8 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
         mesh = self.create_mesh(extra_nodes=False)
 
         ctx = ps.create_context(None, 0, 1e-15, 100, 1e-8,
-                                tdim=mesh.cmesh.tdim)
-        geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
+                                tdim=self.cmesh.tdim)
+        geo_ctx = gps.create_context(self.cmesh, 0, 1e-15, 100, 1e-8)
 
         ctx.geo_ctx = geo_ctx
 
@@ -439,7 +439,7 @@ class H1SNodalVolumeField(H1NodalVolumeField):
         gps = self.gel.poly_space
         mesh = self.create_mesh(extra_nodes=False)
 
-        ctx = geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
+        ctx = geo_ctx = gps.create_context(self.cmesh, 0, 1e-15, 100, 1e-8)
         ctx.geo_ctx = geo_ctx
 
         return ctx
@@ -456,7 +456,7 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
         self._init_econn()
 
         ii = self.region.get_cells()
-        self.bubble_remap = prepare_remap(ii, self.domain.cmesh.n_el)
+        self.bubble_remap = prepare_remap(ii, self.cmesh.n_el)
 
         n_dof = nm.prod(self.econn.shape)
         all_dofs = nm.arange(n_dof, dtype=nm.int32)

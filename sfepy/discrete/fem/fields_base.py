@@ -37,7 +37,7 @@ def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
             domain.mesh.coors_act = nm.zeros_like(domain.mesh.coors)
         domain.mesh.coors_act[:] = coors[:domain.mesh.n_nod]
     else:
-        domain.cmesh.coors[:] = coors[:domain.mesh.n_nod]
+        domain.cmesh_highest.coors[:] = coors[:domain.mesh.n_nod]
 
     if update_fields:
         for field in six.itervalues(fields):
@@ -67,7 +67,7 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
 
     ##
     # Evaluate extra coordinates with 'bf'.
-    cmesh = region.domain.cmesh
+    cmesh = region.cmesh
     conn = cmesh.get_incident(0, region.cells, region.tdim)
     conn.shape = (econn.shape[0], -1)
 
@@ -857,7 +857,7 @@ class FEField(Field):
                 conn = self.econn[:, :self.gel.n_vertex]
 
             conns = [conn]
-            mat_ids = [mesh.cmesh.cell_groups]
+            mat_ids = [self.cmesh.cell_groups]
             descs = mesh.descs[:1]
 
             if extra_nodes:
@@ -906,7 +906,7 @@ class FEField(Field):
         timer = Timer(start=True)
         if (cache.get('cmesh', None) is None) or not share_geometry:
             mesh = self.create_mesh(extra_nodes=False)
-            cache.cmesh = cmesh = mesh.cmesh
+            cache.cmesh = cmesh = self.cmesh
 
             gels = create_geometry_elements()
 
@@ -1124,12 +1124,13 @@ class VolumeField(FEField):
         """
         ok = True
         domain = region.domain
+
         if region.kind != 'cell':
             output("bad region kind! (is: %r, should be: 'cell')"
                    % region.kind)
             ok = False
 
-        elif (region.kind_tdim != domain.shape.tdim):
+        elif region.cmesh is None:
             output('cells with a bad topological dimension! (%d == %d)'
                    % (region.kind_tdim, domain.shape.tdim))
             ok = False
@@ -1140,11 +1141,12 @@ class VolumeField(FEField):
         """
         Setup the field region geometry.
         """
-        cmesh = self.domain.cmesh
-        for key, gel in six.iteritems(self.domain.geom_els):
+        for gel in self.domain.geom_els.values():
+            cmesh = self.region.cmesh
             ct = cmesh.cell_types
             if (ct[self.region.cells] == cmesh.key_to_index[gel.name]).all():
                 self.gel = gel
+                self.cmesh = cmesh
                 break
 
         else:
@@ -1180,7 +1182,7 @@ class VolumeField(FEField):
 
         region = self.region
 
-        cmesh = self.domain.cmesh
+        cmesh = self.cmesh
         conn, offsets = cmesh.get_incident(0, region.cells, region.tdim,
                                            ret_offsets=True)
 
@@ -1191,7 +1193,6 @@ class VolumeField(FEField):
         aux = nm.unique(nm.diff(offsets))
         assert_(len(aux) == 1, 'region with multiple reference geometries!')
         offset = aux[0]
-
 
         # Remap vertex node connectivity to field-local numbering.
         aux = conn.reshape((-1, offset)).astype(nm.int32)

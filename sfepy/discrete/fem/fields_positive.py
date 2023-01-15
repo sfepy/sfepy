@@ -15,7 +15,7 @@ class H1BernsteinVolumeField(H1Mixin, GlobalNodalLikeBasis, VolumeField):
         gps = self.gel.poly_space
         mesh = self.create_mesh(extra_nodes=False)
 
-        ctx = geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
+        ctx = geo_ctx = gps.create_context(self.cmesh, 0, 1e-15, 100, 1e-8)
         ctx.geo_ctx = geo_ctx
 
         return ctx
