@@ -178,7 +178,7 @@ class Domain(Struct):
         Return the coordinates of centroids of mesh entities with dimension
         `dim`.
         """
-        return self.cmesh_highest.get_centroids(dim)
+        return self.cmesh.get_centroids(dim)
 
     def has_faces(self):
         return self.shape.tdim == 3
@@ -328,7 +328,7 @@ class Domain(Struct):
             region = self.regions[name]
             output(region.name)
 
-            aux.cmesh_highest.vertex_groups[region.vertices] = n_ig
+            aux.cmesh.vertex_groups[region.vertices] = n_ig
             n_ig += 1
 
             mask = nm.zeros((n_nod, 1), dtype=nm.float64)
@@ -338,7 +338,7 @@ class Domain(Struct):
 
             if region.has_cells():
                 ii = region.get_cells()
-                aux.cmesh_highest.cell_groups[ii] = c_ig
+                aux.cmesh.cell_groups[ii] = c_ig
                 c_ig += 1
 
         aux.write(filename, io='auto', out=out)

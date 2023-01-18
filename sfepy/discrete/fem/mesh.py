@@ -295,9 +295,9 @@ class Mesh(Struct):
         Struct.__init__(self, name=name, nodal_bcs={}, io=None)
         if cmesh is not None:
             self.cmesh_tdim = [None] * 4
-            self.cmesh_highest = self.cmesh_tdim[cmesh.tdim] = cmesh
+            self.cmesh = self.cmesh_tdim[cmesh.tdim] = cmesh
             self._collect_descs()
-            self._coors = self.cmesh_highest.coors
+            self._coors = self.cmesh.coors
             self._set_shape_info()
 
     def copy(self, name=None):
@@ -312,7 +312,7 @@ class Mesh(Struct):
         if name is None:
             name = self.name
 
-        cmesh = self.cmesh_highest.create_new()
+        cmesh = self.cmesh.create_new()
         return Mesh(name=name, cmesh=cmesh)
 
     def __add__(self, other):
@@ -322,10 +322,10 @@ class Mesh(Struct):
         """
         cmap = find_map(self.coors, other.coors)
         desc = self.descs[0]
-        aux = merge_mesh(self.coors, self.cmesh_highest.vertex_groups,
-                         self.get_conn(desc), self.cmesh_highest.cell_groups,
-                         other.coors, other.cmesh_highest.vertex_groups,
-                         other.get_conn(desc), other.cmesh_highest.cell_groups,
+        aux = merge_mesh(self.coors, self.cmesh.vertex_groups,
+                         self.get_conn(desc), self.cmesh.cell_groups,
+                         other.coors, other.cmesh.vertex_groups,
+                         other.get_conn(desc), other.cmesh.cell_groups,
                          cmap)
         coors, ngroups, conn, mat_ids = aux
 
@@ -335,7 +335,7 @@ class Mesh(Struct):
         return mesh
 
     def _collect_descs(self):
-        cmesh = self.cmesh_highest
+        cmesh = self.cmesh
         i2k = invert_dict(cmesh.key_to_index)
         cts = nm.unique(cmesh.cell_types)
         self.descs = [i2k[ct] for ct in cts]
@@ -397,8 +397,8 @@ class Mesh(Struct):
                     copy_coors = False
                     coors = self.cmesh_tdim[idim].coors
 
-        self.cmesh_highest = self.cmesh_tdim[max_tdim]
-        self._coors = self.cmesh_highest.coors
+        self.cmesh = self.cmesh_tdim[max_tdim]
+        self._coors = self.cmesh.coors
 
     def get_cmesh(self, desc):
         return self.cmesh_tdim[self.dims[self.descs.index(desc)]]
@@ -471,7 +471,7 @@ class Mesh(Struct):
         if desc not in self.descs:
             raise ValueError("'%s' not in %s!" % (desc, self.descs))
 
-        cmesh = self.cmesh_highest if tdim is None else self.cmesh_tdim[tdim]
+        cmesh = self.cmesh if tdim is None else self.cmesh_tdim[tdim]
 
         cells = nm.where(cmesh.cell_types == cmesh.key_to_index[desc])
         cells = cells[0].astype(nm.uint32)

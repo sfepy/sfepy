@@ -64,10 +64,10 @@ class FEDomain(Domain):
                 cmesh.setup_entities()
                 max_tdim = max(max_tdim, cmesh.tdim)
 
-        self.cmesh_highest = self.cmesh_tdim[max_tdim]
+        self.cmesh = self.cmesh_tdim[max_tdim]
         n_nod, dim = self.mesh.coors.shape
-        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=self.cmesh_highest.tdim,
-                            n_el=self.cmesh_highest.n_el,
+        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=self.cmesh.tdim,
+                            n_el=self.cmesh.n_el,
                             n_gr=len(self.geom_els))
 
         self.reset_regions()
@@ -153,7 +153,7 @@ class FEDomain(Domain):
         Get the cell-vertex connectivity and, if `ret_gel` is True, also the
         corresponding reference geometry element.
         """
-        cmesh = self.cmesh_highest if tdim is None else self.cmesh_tdim[tdim]
+        cmesh = self.cmesh if tdim is None else self.cmesh_tdim[tdim]
         conn = cmesh.get_conn(cmesh.tdim, 0).indices
         conn = conn.reshape((cmesh.n_el, -1)).astype(nm.int32)
 

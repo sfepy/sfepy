@@ -222,7 +222,7 @@ class IGDomain(Domain):
         mat_id = nm.zeros(ltconn.shape[0], dtype=nm.int32)
         self.mesh = Mesh.from_data(self.name + '_topo', ltcoors, None, [ltconn],
                                    [mat_id], [desc])
-        self.cmesh = self.mesh.cmesh_highest
+        self.cmesh = self.mesh.cmesh
         self.cmesh_tdim = self.mesh.cmesh_tdim
         gels = create_geometry_elements()
         self.cmesh.set_local_entities(gels)

@@ -37,7 +37,7 @@ def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
             domain.mesh.coors_act = nm.zeros_like(domain.mesh.coors)
         domain.mesh.coors_act[:] = coors[:domain.mesh.n_nod]
     else:
-        domain.cmesh_highest.coors[:] = coors[:domain.mesh.n_nod]
+        domain.cmesh.coors[:] = coors[:domain.mesh.n_nod]
 
     if update_fields:
         for field in six.itervalues(fields):
