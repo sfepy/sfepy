@@ -456,9 +456,6 @@ class ShiftedPeriodicOperator(LCBCOperator):
         LCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
                               variables, functions=functions)
 
-        self.shift_fun = get_condition_value(shift_fun, functions,
-                                             'LCBC', 'shift')
-
         mvar = variables[self.var_names[0]]
         svar = variables[self.var_names[1]]
 
@@ -482,8 +479,6 @@ class ShiftedPeriodicOperator(LCBCOperator):
         self.sdofs = expand_nodes_to_equations(nslave[i2], dof_names[1],
                                                self.all_dof_names[1])
 
-        self.shift = self.shift_fun(ts, scoor[i2], regions[1])
-
         meq = mvar.eq_map.eq[self.mdofs]
         seq = svar.eq_map.eq[self.sdofs]
 
@@ -504,7 +499,11 @@ class ShiftedPeriodicOperator(LCBCOperator):
 
         self.mtx = mtx.tocsr()
 
-        self.rhs = self.shift.ravel()[ia]
+        if shift_fun is not None:
+            self.shift_fun = get_condition_value(shift_fun, functions,
+                                                 'LCBC', 'shift')
+            self.shift = self.shift_fun(ts, scoor[i2], regions[1])
+            self.rhs = self.shift.ravel()[ia]
 
         self.ameq = meq
         self.aseq = seq
@@ -512,6 +511,22 @@ class ShiftedPeriodicOperator(LCBCOperator):
         self.n_mdof = len(nm.unique(meq))
         self.n_sdof = len(nm.unique(seq))
         self.n_new_dof = 0
+
+
+class MatchDOFsOperator(ShiftedPeriodicOperator):
+    """
+    Transformation matrix operator for match DOFs boundary conditions.
+
+    This operator ties DOFs of two fields in two disjoint regions
+    together. It does not create any new DOFs.
+    """
+    kind = 'match_dofs'
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 variables, ts, functions):
+        ShiftedPeriodicOperator.__init__(self, name, regions, dof_names,
+                                         dof_map_fun, None, variables,
+                                         ts, functions=functions)
+
 
 class LCBCOperators(Container):
     """
