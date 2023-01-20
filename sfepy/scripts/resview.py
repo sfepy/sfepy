@@ -834,6 +834,7 @@ def main():
         if options.axes_visibility:
             plotter.add_axes(**dict(options.axes_options))
         for step in range(n_steps):
+            plotter.clear()
             plotter, sb_limits = pv_plot(options.filenames, options,
                                          plotter=plotter, step=step,
                                          ret_scalar_bar_limits=True)
@@ -852,7 +853,13 @@ def main():
             plotter.view_xy()
 
         anim_filename = options.anim_output_file
-        plotter.open_movie(anim_filename, options.framerate)
+        if anim_filename.endswith('.png'):
+            from sfepy.base.ioutils import edit_filename
+            fig_name = edit_filename(anim_filename, suffix='{step:05d}')
+
+        else:
+            fig_name = None
+            plotter.open_movie(anim_filename, options.framerate)
 
         for k in scalar_bar_limits.keys():
             lims = scalar_bar_limits[k]
@@ -868,7 +875,11 @@ def main():
             if options.axes_visibility:
                 plotter.add_axes(**dict(options.axes_options))
 
-            plotter.write_frame()
+            if fig_name is None:
+                plotter.write_frame()
+
+            else:
+                plotter.screenshot(fig_name.format(step=step), return_img=False)
 
         plotter.show()
         plotter.close()
