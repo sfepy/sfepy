@@ -1130,11 +1130,6 @@ class VolumeField(FEField):
                    % region.kind)
             ok = False
 
-        elif region.cmesh is None:
-            output('cells with a bad topological dimension! (%d == %d)'
-                   % (region.kind_tdim, domain.shape.tdim))
-            ok = False
-
         return ok
 
     def _setup_geometry(self):
