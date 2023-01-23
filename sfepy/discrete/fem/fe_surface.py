@@ -82,8 +82,8 @@ class FESurface(Struct):
         ori_map = nm.zeros((nm.max(list(oo.keys())) + 1, self.n_fp), dtype=nm.int32)
         ori_map[list(oo.keys())] = nm.array([ii[1] for ii in oo.values()])
 
-        conn = region.domain.cmesh.get_conn_as_graph(region.dim, region.dim - 1)
-        oris = region.domain.cmesh.facet_oris
+        conn = region.cmesh.get_conn_as_graph(region.dim, region.dim - 1)
+        oris = region.cmesh.facet_oris
 
         econn = self.econn
         ofis = region.get_facet_indices()

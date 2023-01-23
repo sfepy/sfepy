@@ -609,7 +609,7 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
         if isinstance(region, Region):
             if region_mode == 'el_centers':
                 dim = region.domain.mesh.dim
-                ccoors = region.domain.cmesh.get_centroids(dim)
+                ccoors = region.cmesh.get_centroids(dim)
                 ccoors = ccoors[region.get_cells(), :]
                 recovery_ids = region.get_entities(-1)
                 recovery_ids_s = [f'(element {k})' for k in recovery_ids]
@@ -713,7 +713,7 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
 
         # Collect output data - by region
         outregs_data = {}
-        outregs_info = {None: ('ALL', nm.arange(pb.domain.cmesh.n_el))}
+        outregs_info = {None: ('ALL', nm.arange(pb.domain.mesh.n_el))}
         vn_reg = {None: None}
         for k, v in outs[0].items():
             if hasattr(v, 'region_name'):

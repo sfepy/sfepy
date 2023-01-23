@@ -5,8 +5,6 @@ from copy import copy
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
-import six
-from six.moves import range
 
 _depends = re.compile(r'r\.([a-zA-Z_\-0-9.]+)').findall
 
@@ -25,7 +23,7 @@ def get_dependency_graph(region_defs):
     """
     graph = {}
     name_to_sort_name = {}
-    for sort_name, rdef in six.iteritems(region_defs):
+    for sort_name, rdef in region_defs.items():
         name, sel = rdef.name, rdef.select
         if name in name_to_sort_name:
             msg = 'region %s/%s already defined!' % (sort_name, name)
@@ -52,7 +50,7 @@ def sort_by_dependency(graph):
     while idone < n_nod:
 
         dep_removed = 0
-        for node, deps in six.iteritems(graph):
+        for node, deps in graph.items():
 
             if (len(deps) == 1) and not deps[0]:
                 out.append(node)
@@ -215,7 +213,7 @@ class Region(Struct):
         return obj
 
     def __init__(self, name, definition, domain, parse_def, kind='cell',
-                 parent=None):
+                 parent=None, tdim=None):
         """
         Create region instance.
 
@@ -235,8 +233,11 @@ class Region(Struct):
             'cell_only', ..., 'vertex_only'.
         parent : str, optional
             The name of the parent region.
+        tdim : int
+            The topological dimension of the cells.
         """
-        tdim = domain.shape.tdim
+        if tdim is None:
+            tdim = domain.shape.tdim
         Struct.__init__(self,
                         name=name, definition=definition,
                         domain=domain, parse_def=parse_def,
@@ -244,7 +245,8 @@ class Region(Struct):
                         tdim=tdim, kind_tdim=None,
                         entities=[None] * (tdim + 1),
                         kind=None, parent=parent, shape=None,
-                        mirror_regions={}, mirror_maps={}, is_empty=False)
+                        mirror_regions={}, mirror_maps={}, is_empty=False,
+                        cmesh=domain.cmesh_tdim[tdim])
         self.set_kind(kind)
 
     def set_kind(self, kind):
@@ -260,21 +262,22 @@ class Region(Struct):
         can = [bool(ii) for ii in self.__can[self.true_kind]]
 
         self.can_vertices = can[0]
+        self.can_cells = can[3]
 
         if self.tdim == 1:
             self.can = (can[0], can[3])
-            self.can_cells = can[1]
+            self.can_edges = False
+            self.can_faces = False
 
         elif self.tdim == 2:
             self.can = (can[0], can[1], can[3])
             self.can_edges = can[1]
-            self.can_cells = can[2]
+            self.can_faces = False
 
         else:
             self.can = can
             self.can_edges = can[1]
             self.can_faces = can[2]
-            self.can_cells = can[3]
 
         for ii, ican in enumerate(self.can):
             if not ican:
@@ -441,7 +444,7 @@ class Region(Struct):
 
             return
 
-        cmesh = self.domain.cmesh
+        cmesh = self.cmesh
         if idim <= dim:
             if not (allow_lower or allow_empty):
                 msg = 'setup_from_highest() can be used only with dim < %d'
@@ -471,7 +474,7 @@ class Region(Struct):
         """
         if not self.can[dim]: return
 
-        cmesh = self.domain.cmesh
+        cmesh = self.cmesh
         cmesh.setup_connectivity(dim, 0)
         vv = self.vertices
         self.entities[dim] = cmesh.get_complete(dim, vv, 0)
@@ -600,7 +603,7 @@ class Region(Struct):
 
             else:
                 # Has to be consistent with get_facet_indices()!
-                cmesh = self.domain.cmesh
+                cmesh = self.cmesh
                 cmesh.setup_connectivity(self.tdim - 1, self.tdim)
                 out = cmesh.get_incident(self.tdim, self.facets, self.tdim - 1)
 
@@ -655,7 +658,7 @@ class Region(Struct):
         Return an array (per group) of (iel, ifa) for each facet. A facet can
         be in 1 (surface) or 2 (inner) cells.
         """
-        cmesh = self.domain.cmesh
+        cmesh = self.cmesh
         cmesh.setup_connectivity(self.tdim - 1, self.tdim)
 
         facets = self.facets
@@ -698,7 +701,7 @@ class Region(Struct):
             if self.vertices.shape[0] != mreg.vertices.shape[0]:
                 raise ValueError('%s: incompatible mirror region! (%s)'
                     % (self.name, mreg.name))
-            coors = self.domain.cmesh.coors
+            coors = self.cmesh.coors
             coors1 = coors[self.vertices, :]
             coors2 = coors[mreg.vertices, :]
             shift = ((nm.sum(coors2, axis=0) - nm.sum(coors1, axis=0))
@@ -709,8 +712,8 @@ class Region(Struct):
                 print(coors2[vmap2])
                 raise ValueError('cannot match vertices!')
 
-            fconn = self.domain.cmesh.get_conn_as_graph(self.dim - 1, 0)
-            cc = self.domain.cmesh.get_centroids(self.dim - 1)
+            fconn = self.cmesh.get_conn_as_graph(self.dim - 1, 0)
+            cc = self.cmesh.get_centroids(self.dim - 1)
             fmap1, fmap2 = find_map(cc[self.facets], cc[mreg.facets] - shift,
                                     join=False)
             if fmap1.shape[0] != self.facets.shape[0]:
@@ -814,7 +817,7 @@ class Region(Struct):
         """
         from scipy.sparse import csr_matrix
 
-        cmesh = self.domain.cmesh
+        cmesh = self.cmesh
 
         e_verts = cmesh.get_incident(0, self.edges, 1)
         e_verts.shape = (e_verts.shape[0] // 2, 2)

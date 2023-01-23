@@ -10,7 +10,7 @@ from sfepy.discrete import Domain, PolySpace
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, \
     refine_3_8, refine_1_2
 from sfepy.discrete.fem.fe_surface import FESurface
-import six
+
 
 class FEDomain(Domain):
     """
@@ -30,10 +30,6 @@ class FEDomain(Domain):
         """
         Domain.__init__(self, name, mesh=mesh, verbose=verbose, **kwargs)
 
-        if len(mesh.descs) > 1:
-            msg = 'meshes with several cell kinds are not supported!'
-            raise NotImplementedError(msg)
-
         self.geom_els = geom_els = {}
         for ig, desc in enumerate(mesh.descs):
             gel = GeometryElement(desc)
@@ -44,7 +40,7 @@ class FEDomain(Domain):
 
             geom_els[desc] = gel
 
-        for gel in six.itervalues(geom_els):
+        for gel in geom_els.values():
             key = gel.get_interpolation_name()
 
             gel.poly_space = PolySpace.any_from_args(key, gel, 1)
@@ -54,17 +50,21 @@ class FEDomain(Domain):
                 gel.poly_space = PolySpace.any_from_args(key, gel, 1)
 
         self.vertex_set_bcs = self.mesh.nodal_bcs
-
-        self.cmesh = self.mesh.cmesh
+        self.cmesh_tdim = self.mesh.cmesh_tdim
 
         # Must be before creating derived connectivities.
         self.fix_element_orientation()
 
         from sfepy.discrete.fem.geometry_element import create_geometry_elements
         gels = create_geometry_elements()
-        self.cmesh.set_local_entities(gels)
-        self.cmesh.setup_entities()
+        max_tdim = 0
+        for cmesh in self.mesh.cmesh_tdim:
+            if cmesh is not None:
+                cmesh.set_local_entities(gels)
+                cmesh.setup_entities()
+                max_tdim = max(max_tdim, cmesh.tdim)
 
+        self.cmesh = self.cmesh_tdim[max_tdim]
         n_nod, dim = self.mesh.coors.shape
         self.shape = Struct(n_nod=n_nod, dim=dim, tdim=self.cmesh.tdim,
                             n_el=self.cmesh.n_el,
@@ -111,26 +111,26 @@ class FEDomain(Domain):
         """
         from sfepy.discrete.common.extmods.cmesh import orient_elements
 
-        if self.cmesh.tdim != self.cmesh.dim:
-            output('warning: mesh with topological dimension %d lower than'
-                   ' space dimension %d' % (self.cmesh.tdim, self.cmesh.dim))
-            output('- element orientation not checked!')
-            return
-
-        cmesh = self.cmesh
-        for key, gel in six.iteritems(self.geom_els):
+        for key, gel in self.geom_els.items():
             ori = gel.orientation
+
+            cmesh = self.cmesh_tdim[gel.dim]
+            if cmesh.tdim != cmesh.dim:
+                output('warning: mesh with topological dimension %d lower than'
+                       ' space dimension %d' % (cmesh.tdim, cmesh.dim))
+                output('- element orientation not checked!')
+                return
 
             cells = nm.where(cmesh.cell_types == cmesh.key_to_index[gel.name])
             cells = cells[0].astype(nm.uint32)
 
             itry = 0
             while itry < 2:
-                flag = -nm.ones(self.cmesh.n_el, dtype=nm.int32)
+                flag = -nm.ones(cmesh.n_el, dtype=nm.int32)
 
                 # Changes orientation if it is wrong according to swap*!
                 # Changes are indicated by positive flag.
-                orient_elements(flag, self.cmesh, cells, gel.dim,
+                orient_elements(flag, cmesh, cells, gel.dim,
                                 ori.roots, ori.vecs,
                                 ori.swap_from, ori.swap_to)
 
@@ -148,16 +148,22 @@ class FEDomain(Domain):
             elif flag[0] == -1:
                 output('warning: element orienation not checked')
 
-    def get_conn(self, ret_gel=False):
+    def get_conn(self, ret_gel=False, tdim=None):
         """
         Get the cell-vertex connectivity and, if `ret_gel` is True, also the
-        corresponding reference geometry element.
+        corresponding reference geometry element. If `tdim` is not None get
+        the connectivity of the cells with topological dimension `tdim`.
         """
-        conn = self.cmesh.get_conn(self.cmesh.tdim, 0).indices
-        conn = conn.reshape((self.cmesh.n_el, -1)).astype(nm.int32)
+        cmesh = self.cmesh if tdim is None else self.cmesh_tdim[tdim]
+        conn = cmesh.get_conn(cmesh.tdim, 0).indices
+        conn = conn.reshape((cmesh.n_el, -1)).astype(nm.int32)
 
         if ret_gel:
-            gel = list(self.geom_els.values())[0]
+            gel = None
+            for gv in self.geom_els.values():
+                if gv.dim == cmesh.tdim:
+                    gel = gv
+                    break
 
             return conn, gel
 

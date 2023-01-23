@@ -122,7 +122,7 @@ def get_gel(region):
     gel :
         base geometry element of the region
     """
-    cmesh = region.domain.cmesh
+    cmesh = region.cmesh
     for key, gel in six.iteritems(region.domain.geom_els):
         ct = cmesh.cell_types
         if (ct[region.cells] == cmesh.key_to_index[gel.name]).all():
@@ -292,9 +292,9 @@ class DGField(FEField):
         """Forces self.domain.mesh to build necessary conductivities
         so they are available in self.get_nbrhd_dofs
         """
-        self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim)
-        self.region.domain.mesh.cmesh.setup_connectivity(self.dim - 1, self.dim)
-        self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim - 1)
+        self.region.cmesh.setup_connectivity(self.dim, self.dim)
+        self.region.cmesh.setup_connectivity(self.dim - 1, self.dim)
+        self.region.cmesh.setup_connectivity(self.dim, self.dim - 1)
 
     def get_coor(self, nods=None):
         """Returns coors for matching nodes
@@ -316,8 +316,8 @@ class DGField(FEField):
             nods = self.bubble_dofs
 
         cells = self.dofs2cells[nods]
-        coors = self.domain.mesh.cmesh.get_centroids(self.dim)[cells]
-        eps = min(self.domain.cmesh.get_volumes(self.dim)) / (self.n_el_nod + 2)
+        coors = self.region.cmesh.get_centroids(self.dim)[cells]
+        eps = min(self.region.cmesh.get_volumes(self.dim)) / (self.n_el_nod + 2)
         if self.dim == 1:
             extended_coors = nm.zeros(nm.shape(coors)[:-1] + (2,))
             extended_coors[:, 0] = coors[:, 0]
@@ -521,7 +521,7 @@ class DGField(FEField):
 
         dim, n_cell, n_el_facets = self.get_region_info(region)
 
-        cmesh = region.domain.mesh.cmesh
+        cmesh = region.cmesh
         cells = region.cells
 
         facet_neighbours = nm.zeros((n_cell, n_el_facets, 2), dtype=nm.int32)
@@ -864,7 +864,7 @@ class DGField(FEField):
 
         dim, n_cell, n_el_facets = self.get_region_info(region)
 
-        cmesh = region.domain.mesh.cmesh
+        cmesh = region.cmesh
         normals = cmesh.get_facet_normals()
         normals_out = nm.zeros((n_cell, n_el_facets, dim))
 
@@ -913,7 +913,7 @@ class DGField(FEField):
 
         dim, n_cell, n_el_facets = self.get_region_info(region)
 
-        cmesh = region.domain.mesh.cmesh
+        cmesh = region.cmesh
 
         if dim == 1:
             vols = nm.ones((cmesh.num[0], 1))
@@ -1046,7 +1046,7 @@ class DGField(FEField):
         else:
             # return indices of cells adjacent to boundary facets
             dim = self.dim
-            cmesh = region.domain.mesh.cmesh
+            cmesh = region.cmesh
             bc_cells = cmesh.get_incident(dim, region.facets, dim - 1)
             bc_dofs = self.bubble_dofs[bc_cells]
             dofs.append(bc_dofs)

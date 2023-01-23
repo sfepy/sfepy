@@ -6,7 +6,6 @@ from sfepy.base.base import Struct, invert_dict, get_default, output,\
      assert_, is_sequence
 from sfepy.base.timing import Timer
 from .meshio import MeshIO
-import six
 from scipy.spatial import cKDTree
 
 eps = 1e-9
@@ -231,7 +230,7 @@ class Mesh(Struct):
         Create a mesh corresponding to cells, or, if `is_surface` is True, to
         facets, of a given region.
         """
-        cmesh_in = mesh_in.cmesh
+        cmesh_in = region.cmesh
 
         if not is_surface:
             if not region.shape.n_cell:
@@ -250,12 +249,12 @@ class Mesh(Struct):
         mesh = Mesh(mesh_in.name + "_reg", cmesh=cmesh)
 
         if localize:
-            remap = nm.empty(mesh_in.cmesh.n_coor, dtype=nm.int32)
+            remap = nm.empty(cmesh_in.n_coor, dtype=nm.int32)
             remap[:] = -1
             remap[region.vertices] = nm.arange(region.vertices.shape[0])
 
             mesh.nodal_bcs = {}
-            for key, val in six.iteritems(mesh_in.nodal_bcs):
+            for key, val in mesh_in.nodal_bcs.items():
                 new_val = remap[val]
                 mesh.nodal_bcs[key] = new_val[new_val >= 0]
 
@@ -295,8 +294,10 @@ class Mesh(Struct):
         """
         Struct.__init__(self, name=name, nodal_bcs={}, io=None)
         if cmesh is not None:
-            self.cmesh = cmesh
+            self.cmesh_tdim = [None] * 4
+            self.cmesh = self.cmesh_tdim[cmesh.tdim] = cmesh
             self._collect_descs()
+            self._coors = self.cmesh.coors
             self._set_shape_info()
 
     def copy(self, name=None):
@@ -341,7 +342,7 @@ class Mesh(Struct):
 
     def _set_shape_info(self):
         self.n_nod, self.dim = self.coors.shape
-        self.n_el = self.cmesh.n_el
+        self.n_el = nm.sum([cm.n_el for cm in self.cmesh_tdim if cm])
         self.dims = [int(ii[0]) for ii in self.descs]
 
     def _set_io_data(self, coors, ngroups, conns, mat_ids, descs,
@@ -374,17 +375,38 @@ class Mesh(Struct):
         self.descs = descs
         self.nodal_bcs = get_default(nodal_bcs, {})
 
+        max_tdim = nm.max([int(k[0]) for k in descs])
+        self.cmesh_tdim = [None] * 4
+        copy_coors = True
         from sfepy.discrete.common.extmods.cmesh import CMesh
-        self.cmesh = CMesh.from_data(coors, ac(ngroups),
-                                     [ac(conn, dtype=nm.int32)
-                                      for conn in conns],
-                                     ac(nm.concatenate(mat_ids)), descs)
+        for idim in range(1, max_tdim + 1):
+            conns_, mat_ids_, descs_ = [], [], []
+            for k, dsc in enumerate(descs):
+                if int(dsc[0]) == idim:
+                    conns_.append(ac(conns[k], dtype=nm.int32))
+                    mat_ids_.append(mat_ids[k])
+                    descs_.append(dsc)
+
+            if len(conns_) > 0:
+                mat_ids_ = ac(nm.concatenate(mat_ids_))
+                self.cmesh_tdim[idim] = CMesh.from_data(coors, ac(ngroups),
+                                                        conns_, mat_ids_,
+                                                        descs_,
+                                                        copy_coors=copy_coors)
+                if copy_coors:
+                    copy_coors = False
+                    coors = self.cmesh_tdim[idim].coors
+
+        self.cmesh = self.cmesh_tdim[max_tdim]
+        self._coors = self.cmesh.coors
+
+    def get_cmesh(self, desc):
+        return self.cmesh_tdim[self.dims[self.descs.index(desc)]]
 
     def _get_io_data(self, cell_dim_only=None):
         """
         Return data to be used by `MeshIO`.
         """
-        cmesh = self.cmesh
         conns, mat_ids = [], []
         if cell_dim_only is not None:
             if not is_sequence(cell_dim_only):
@@ -393,7 +415,8 @@ class Mesh(Struct):
         else:
             descs = self.descs
         for desc in descs:
-            conn, cells = self.get_conn(desc, ret_cells=True)
+            cmesh = self.get_cmesh(desc)
+            conn, cells = self.get_conn(desc, ret_cells=True, tdim=cmesh.tdim)
             conns.append(conn)
             mat_ids.append(cmesh.cell_groups[cells])
 
@@ -401,7 +424,7 @@ class Mesh(Struct):
 
     @property
     def coors(self):
-        return self.cmesh.coors
+        return self._coors
 
     def write(self, filename=None, io=None, out=None, float_format=None,
               file_format=None, **kwargs):
@@ -440,7 +463,7 @@ class Mesh(Struct):
     def get_bounding_box(self):
         return nm.vstack((nm.amin(self.coors, 0), nm.amax(self.coors, 0)))
 
-    def get_conn(self, desc, ret_cells=False):
+    def get_conn(self, desc, ret_cells=False, tdim=None):
         """
         Get the rectangular cell-vertex connectivity corresponding to `desc`.
         If `ret_cells` is True, the corresponding cells are returned as well.
@@ -448,7 +471,7 @@ class Mesh(Struct):
         if desc not in self.descs:
             raise ValueError("'%s' not in %s!" % (desc, self.descs))
 
-        cmesh = self.cmesh
+        cmesh = self.cmesh if tdim is None else self.cmesh_tdim[tdim]
 
         cells = nm.where(cmesh.cell_types == cmesh.key_to_index[desc])
         cells = cells[0].astype(nm.uint32)
@@ -507,9 +530,9 @@ class Mesh(Struct):
         output('assembling mesh graph...', verbose=verbose)
         timer = Timer(start=True)
 
-        conn = self.get_conn(self.descs[0])
+        conn = [self.get_conn(self.descs[0], tdim=k) for k in self.dims]
         nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
-                                            1, [conn], [conn])
+                                            1, conn, conn)
         output('...done in %.2f s' % timer.stop(), verbose=verbose)
         output('graph nonzeros: %d (%.2e%% fill)' \
                % (nnz, 100.0 * float(nnz) / nm.prod(shape)), verbose=verbose)

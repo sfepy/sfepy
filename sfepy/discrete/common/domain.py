@@ -8,19 +8,23 @@ from sfepy.discrete.common.region import (Region, get_dependency_graph,
                                           sort_by_dependency, get_parents)
 from sfepy.discrete.parse_regions import create_bnf, visit_stack, ParseException
 
-def region_leaf(domain, regions, rdef, functions):
+
+def region_leaf(domain, regions, rdef, functions, tdim):
     """
     Create/setup a region instance according to rdef.
     """
     n_coor = domain.shape.n_nod
     dim = domain.shape.dim
+    cmesh = domain.cmesh_tdim[tdim]
 
     def _region_leaf(level, op):
         token, details = op['token'], op['orig']
 
         if token != 'KW_Region':
             parse_def = token + '<' + ' '.join(details) + '>'
-            region = Region('leaf', rdef, domain, parse_def=parse_def)
+            if token != 'E_COG':
+                region = Region('leaf', rdef, domain, parse_def=parse_def,
+                                tdim=tdim)
 
         if token == 'KW_Region':
             details = details[1][2:]
@@ -44,7 +48,7 @@ def region_leaf(domain, regions, rdef, functions):
                 assert_(nm.amin(vertices) >= 0)
                 assert_(nm.amax(vertices) < n_coor)
             else:
-                coors = domain.cmesh.coors
+                coors = cmesh.coors
                 y = z = None
                 x = coors[:,0]
 
@@ -61,7 +65,7 @@ def region_leaf(domain, regions, rdef, functions):
             region.vertices = vertices
 
         elif token == 'E_VOS':
-            facets = domain.cmesh.get_surface_facets()
+            facets = cmesh.get_surface_facets()
 
             region.set_kind('facet')
             region.facets = facets
@@ -69,7 +73,7 @@ def region_leaf(domain, regions, rdef, functions):
         elif token == 'E_VBF':
             where = details[2]
 
-            coors = domain.cmesh.coors
+            coors = cmesh.coors
 
             fun = functions[where]
             vertices = fun(coors, domain=domain)
@@ -88,8 +92,20 @@ def region_leaf(domain, regions, rdef, functions):
 
         elif token == 'E_COG':
             group = int(details[3])
+            td = 0
+            for k in range(4):
+                if domain.cmesh_tdim[k] is not None:
+                    cg = domain.cmesh_tdim[k].cell_groups
+                    if nm.any(cg == group):
+                        td = k
+                        break
 
-            region.cells = nm.where(domain.cmesh.cell_groups == group)[0]
+            if td == 0:
+                raise ValueError('cell group %s does not exist' % group)
+
+            region = Region('leaf', rdef, domain, parse_def=parse_def, tdim=td)
+            region.cells = \
+                nm.where(domain.cmesh_tdim[td].cell_groups == group)[0]
 
         elif token == 'E_COSET':
             raise NotImplementedError('element sets not implemented!')
@@ -97,7 +113,7 @@ def region_leaf(domain, regions, rdef, functions):
         elif token == 'E_VOG':
             group = int(details[3])
 
-            region.vertices = nm.where(domain.cmesh.vertex_groups == group)[0]
+            region.vertices = nm.where(cmesh.vertex_groups == group)[0]
 
         elif token == 'E_VOSET':
             try:
@@ -196,8 +212,10 @@ class Domain(Struct):
             print('parsing failed:', select)
             raise
 
+        tdim = self.shape.tdim if parent is None else self.regions[parent].tdim
         region = visit_stack(stack, region_op,
-                             region_leaf(self, self.regions, select, functions))
+                             region_leaf(self, self.regions, select,
+                                         functions, tdim))
         region.name = name
         region.definition = select
         region.set_kind(kind)
