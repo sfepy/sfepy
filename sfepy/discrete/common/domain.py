@@ -22,7 +22,7 @@ def region_leaf(domain, regions, rdef, functions, tdim):
 
         if token != 'KW_Region':
             parse_def = token + '<' + ' '.join(details) + '>'
-            if token != 'KW_COG':
+            if token != 'E_COG':
                 region = Region('leaf', rdef, domain, parse_def=parse_def,
                                 tdim=tdim)
 
