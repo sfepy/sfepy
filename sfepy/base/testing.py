@@ -45,7 +45,7 @@ def assert_equal(a, b, msg='assertion of equality failed!'):
     import scipy.sparse
 
     assert_base_types = (int, float, str, bytes, complex,
-                         None.__class__, type)
+                         None.__class__, type, nm.number)
     if a is b: return
 
     def assert_dict(a, b):
