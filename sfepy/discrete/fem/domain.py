@@ -151,7 +151,8 @@ class FEDomain(Domain):
     def get_conn(self, ret_gel=False, tdim=None):
         """
         Get the cell-vertex connectivity and, if `ret_gel` is True, also the
-        corresponding reference geometry element.
+        corresponding reference geometry element. If `tdim` is not None get
+        the connectivity of the cells with topological dimension `tdim`.
         """
         cmesh = self.cmesh if tdim is None else self.cmesh_tdim[tdim]
         conn = cmesh.get_conn(cmesh.tdim, 0).indices

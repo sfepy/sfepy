@@ -234,7 +234,7 @@ class Region(Struct):
         parent : str, optional
             The name of the parent region.
         tdim : int
-            The topological dimension.
+            The topological dimension of the cells.
         """
         if tdim is None:
             tdim = domain.shape.tdim
