@@ -535,14 +535,14 @@ class Region(Struct):
 
     def eval_op_cells(self, other, op):
         parse_def = _join(self.parse_def, '%sc' % op, other.parse_def)
-        tmp = self.light_copy('op', parse_def)
+        tmp = self.light_copy('op', parse_def, tdim=self.tdim)
         tmp.cells = self.__op_to_fun[op](self.cells, other.cells)
 
         return tmp
 
-    def light_copy(self, name, parse_def):
+    def light_copy(self, name, parse_def, tdim=None):
         return Region(name, self.definition, self.domain, parse_def,
-                      kind=self.kind)
+                      kind=self.kind, tdim=tdim)
 
     def copy(self):
         """
