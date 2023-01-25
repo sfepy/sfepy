@@ -548,7 +548,7 @@ class Region(Struct):
         """
         Vertices-based copy.
         """
-        tmp = self.light_copy('copy', self.parse_def)
+        tmp = self.light_copy('copy', self.parse_def, tdim=self.tdim)
         tmp.vertices = copy(self.vertices)
 
         return tmp
