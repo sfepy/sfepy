@@ -695,7 +695,7 @@ class Region(Struct):
 
         if mirror_name is not None:
             if mirror_name in self.mirror_regions:
-                return
+                return mirror_name if ret_name else None
 
             mreg = regions[mirror_name]
             if self.vertices.shape[0] != mreg.vertices.shape[0]:
