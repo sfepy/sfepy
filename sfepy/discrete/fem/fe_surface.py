@@ -32,8 +32,8 @@ class FESurface(Struct):
                              % region.name)
 
         econn = nm.empty(faces.shape, dtype=nm.int32)
-        for ir, face in enumerate( faces ):
-            econn[ir] = ee[ir,face]
+        for ir, face in enumerate(faces):
+            econn[ir] = ee[ir, face]
 
         nodes = nm.unique(econn)
         if len(nodes):
@@ -43,7 +43,7 @@ class FESurface(Struct):
         else:
             leconn = econn.copy()
 
-        n_fa, n_fp = face_indices.shape[0], faces.shape[1]
+        n_fa, n_fp = econn.shape
         face_type = 's%d' % n_fp
 
         # Store bkey in SurfaceData, so that base function can be
@@ -58,10 +58,16 @@ class FESurface(Struct):
         self.face_type = face_type
         self.bkey = bkey
         self.meconn = self.mleconn = None
+        self.set_orientation_map()
 
-        if self.n_fp <= 4:
-            self.ori_map, _, _ = build_orientation_map(self.n_fp)
-
+    def set_orientation_map(self):
+        n_fp = self.n_fp
+        if n_fp <= 4:
+            oo, _, _ = build_orientation_map(n_fp)
+            ori_map = nm.zeros((nm.max(list(oo.keys())) + 1, n_fp),
+                               dtype=nm.int32)
+            ori_map[list(oo.keys())] = nm.array([ii[1] for ii in oo.values()])
+            self.ori_map = ori_map
         else:
             self.ori_map = None
 
@@ -76,32 +82,31 @@ class FESurface(Struct):
 
         2. orientation -> permutation.
         """
+        def get_omap(reg, ori_map):
+            if reg.tdim == (reg.dim - 1):
+                cells = reg.get_cells()
+                conn = reg.domain.get_conn(tdim=reg.tdim)[cells, :]
+                return nm.argsort(conn)
+            else:
+                conn = reg.cmesh.get_conn_as_graph(reg.dim, reg.dim - 1)
+                oris = reg.cmesh.facet_oris
+                fis = reg.get_facet_indices()
+                return ori_map[oris[conn.indptr[fis[:, 0]] + fis[:, 1]]]
+
         mregion = region.get_mirror_region(mirror_name)
-
-        oo = self.ori_map
-        ori_map = nm.zeros((nm.max(list(oo.keys())) + 1, self.n_fp), dtype=nm.int32)
-        ori_map[list(oo.keys())] = nm.array([ii[1] for ii in oo.values()])
-
-        conn = region.cmesh.get_conn_as_graph(region.dim, region.dim - 1)
-        oris = region.cmesh.facet_oris
+        mmap = get_omap(mregion, self.ori_map)
+        omap = get_omap(region, self.ori_map)
 
         econn = self.econn
-        ofis = region.get_facet_indices()
         if mirror_name in region.mirror_maps\
             and region.mirror_maps[mirror_name] is not None:
             mirror_map = region.mirror_maps[mirror_name]
-            ofis = ofis[mirror_map]
+            omap = omap[mirror_map]
             econn = econn[mirror_map]
-        ooris = oris[conn.indptr[ofis[:, 0]] + ofis[:, 1]]
-        mfis = mregion.get_facet_indices()
-        moris = oris[conn.indptr[mfis[:, 0]] + mfis[:, 1]]
 
-        omap = ori_map[ooris]
-        mmap = ori_map[moris]
-
-        n_el, n_ep = self.econn.shape
+        n_el, n_ep = econn.shape
         ii = nm.repeat(nm.arange(n_el)[:, None], n_ep, 1)
-        self.meconn = nm.empty_like(self.econn)
+        self.meconn = nm.empty_like(econn)
         self.meconn[ii, omap] = econn[ii, mmap]
 
         nodes = nm.unique(self.meconn)
@@ -133,3 +138,39 @@ class FESurface(Struct):
 
             else:
                 return self.meconn
+
+
+class FEPhantomSurface(FESurface):
+    """A phantom surface of the region with tdim=2."""
+
+    def __init__(self, name, region, volume_econn):
+        self.name = get_default(name, 'surface_data_%s' % region.name)
+
+        ii = region.get_cells()
+        econn = volume_econn[ii]
+        nodes = nm.unique(econn)
+
+        if len(nodes):
+            remap = prepare_remap(nodes, nodes.max() + 1)
+            leconn = remap[econn].copy()
+
+        else:
+            leconn = econn.copy()
+
+        n_fa, n_fp = econn.shape
+        face_type = 's%d' % n_fp
+
+        # Store bkey in SurfaceData, so that base function can be
+        # queried later.
+        bkey = 'b%s' % face_type[1:]
+
+        self.econn = econn
+        self.fis = -nm.ones((n_fa, 2), dtype=nm.int32)
+        self.fis[:, 0] = ii
+        self.n_fa, self.n_fp = n_fa, n_fp
+        self.nodes = nodes
+        self.leconn = leconn
+        self.face_type = face_type
+        self.bkey = bkey
+        self.meconn = self.mleconn = None
+        self.set_orientation_map()

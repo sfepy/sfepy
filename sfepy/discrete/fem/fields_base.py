@@ -24,7 +24,7 @@ from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
                                       invert_remap, get_min_value)
 from sfepy.discrete.fem.mappings import VolumeMapping, SurfaceMapping
-from sfepy.discrete.fem.fe_surface import FESurface
+from sfepy.discrete.fem.fe_surface import FESurface, FEPhantomSurface
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
@@ -445,7 +445,7 @@ class FEField(Field):
         if integration in ('surface', 'surface_extra'):
             if region_name not in self.surface_data:
                 reg = self.domain.regions[region_name]
-                self.domain.create_surface_group(reg)
+                self.domain.create_surface_group(reg)  #!!!!
                 self.setup_surface_data(reg, False, None)
 
             sd = self.surface_data[region_name]
@@ -1034,7 +1034,7 @@ class FEField(Field):
                       ' basis transform!'
                 raise ValueError(msg)
 
-            sd = domain.surface_groups[region.name]
+            sd = domain.surface_groups[region.name] #!!!!!
             esd = self.surface_data[region.name]
 
             geo_ps = self.gel.poly_space
@@ -1206,7 +1206,7 @@ class VolumeField(FEField):
         if (dct == 'surface') or (geometry_flag):
             reg = info.get_region()
             mreg_name = info.get_region_name(can_trace=False)
-            self.domain.create_surface_group(reg)
+            self.domain.create_surface_group(reg) #!!!!
             self.setup_surface_data(reg, is_trace, mreg_name)
 
         elif dct == 'edge':
@@ -1228,8 +1228,12 @@ class VolumeField(FEField):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
         if region.name not in self.surface_data:
-            sd = FESurface('surface_data_%s' % region.name, region,
-                           self.efaces, self.econn, self.region)
+            name = 'surface_data_%s' % region.name
+            if is_trace and region.tdim == (region.dim - 1):
+                sd = FEPhantomSurface(name, region, self.econn)
+            else:
+                sd = FESurface(name, region, self.efaces, self.econn,
+                               self.region)
             self.surface_data[region.name] = sd
 
         if region.name in self.surface_data and is_trace:
@@ -1377,6 +1381,7 @@ class SurfaceField(FEField):
             raise ValueError(msg)
 
         reg = info.get_region()
+        self.domain.create_surface_group(reg) #!!!!
 
         if reg.name not in self.surface_data:
             # Defined in setup_vertex_dofs()
@@ -1474,6 +1479,7 @@ class SurfaceField(FEField):
         ir = nm.arange(nc, dtype=nm.int32)
 
         sd = self.domain.surface_groups[region.name]
+        from sfepy.base.base import debug; debug()
         # Should be vertex connectivity!
         conn = sd.get_connectivity(local=True)
         for ii, cc in enumerate(conn):

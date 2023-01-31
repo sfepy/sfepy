@@ -204,7 +204,7 @@ class FEDomain(Domain):
         """
         groups = self.surface_groups
         if region.name not in groups:
-            conn, gel = self.get_conn(ret_gel=True)
+            conn, gel = self.get_conn(ret_gel=True, tdim=region.tdim)
             gel_faces = gel.get_surface_entities()
 
             name = 'surface_group_%s' % (region.name)
