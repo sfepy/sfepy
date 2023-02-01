@@ -113,7 +113,7 @@ class FESurface(Struct):
         remap = prepare_remap(nodes, nodes.max() + 1)
         self.mleconn = remap[self.meconn].copy()
 
-    def get_connectivity(self, local=False, is_trace=False):
+    def get_connectivity(self, local=False, trace_region=None):
         """
         Return the surface element connectivity.
 
@@ -122,10 +122,10 @@ class FESurface(Struct):
         local : bool
             If True, return local connectivity w.r.t. surface nodes,
             otherwise return global connectivity w.r.t. all mesh nodes.
-        is_trace : bool
-            If True, return mirror connectivity according to `local`.
+        trace_trace : None or str
+            If not None, return mirror connectivity according to `local`.
         """
-        if not is_trace:
+        if trace_region is None:
             if local:
                 return self.leconn
 

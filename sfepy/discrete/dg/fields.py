@@ -963,7 +963,8 @@ class DGField(FEField):
 
         return data_shape
 
-    def get_econn(self, conn_type, region, is_trace=False, integration=None):
+    def get_econn(self, conn_type, region, trace_region=None,
+                  integration=None):
         """Getter for econn
 
         Parameters
@@ -971,9 +972,9 @@ class DGField(FEField):
         conn_type : string or Struct
             'volume' is only supported
         region : sfepy.discrete.common.region.Region
-            
-        is_trace : ignored
-             (Default value = False)
+
+        trace_region : ignored
+             (Default value = None)
         integration : ignored
              (Default value = None)
 
@@ -997,7 +998,7 @@ class DGField(FEField):
 
         return conn
 
-    def setup_extra_data(self, geometry, info, is_trace):
+    def setup_extra_data(self, geometry, info):
         """This is called in create_adof_conns(conn_info, var_indx=None,
                                                 active_only=True, verbose=True)
         for each variable but has no effect.
@@ -1009,17 +1010,12 @@ class DGField(FEField):
             
         info :
             set to self.info
-            
-        is_trace :
-            set to self.trace
-
         """
         # placeholder, what is this used for?
 
         # dct = info.dc_type.type
 
         self.info = info
-        self.is_trace = is_trace
 
     def get_dofs_in_region(self, region, merge=True):
         """Return indices of DOFs that belong to the given region.

@@ -37,7 +37,7 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
     and connectivity with all DOFs active is created.
 
     DOF connectivity key is a tuple ``(primary variable name, region name,
-    type, is_trace flag)``.
+    type, trace_region)``.
 
     Notes
     -----
@@ -67,18 +67,18 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
 
         return adc
 
-    def _assign(adof_conns, info, region, var, field, is_trace):
-        key = (var.name, region.name, info.dc_type.type, is_trace)
+    def _assign(adof_conns, info, region, var, field, trace_region):
+        key = (var.name, region.name, info.dc_type.type, trace_region)
         if not key in adof_conns:
-            econn = field.get_econn(info.dc_type, region, is_trace=is_trace)
+            econn = field.get_econn(info.dc_type, region, trace_region)
             if econn is None: return
 
             adof_conns[key] = _create(var, econn)
 
-        if info.is_trace:
-            key = (var.name, region.name, info.dc_type.type, False)
+        if info.trace_region is not None:
+            key = (var.name, region.name, info.dc_type.type, None)
             if not key in adof_conns:
-                econn = field.get_econn(info.dc_type, region, is_trace=False)
+                econn = field.get_econn(info.dc_type, region, trace_region=None)
 
                 adof_conns[key] = _create(var, econn)
 
@@ -92,21 +92,23 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
         if info.primary is not None:
             var = info.primary
             field = var.get_field()
-            field.setup_extra_data(info.ps_tg, info, info.is_trace)
+            field.setup_extra_data(info.ps_tg, info)
 
             region = info.get_region()
-            _assign(adof_conns, info, region, var, field, info.is_trace)
+            mreg_name = info.get_region_name(can_trace=False)
+            mreg_name = None if region.name == mreg_name else mreg_name
+            _assign(adof_conns, info, region, var, field, mreg_name)
 
-        if info.has_virtual and not info.is_trace:
+        if info.has_virtual and info.trace_region is None:
             var = info.virtual
             field = var.get_field()
-            field.setup_extra_data(info.v_tg, info, False)
+            field.setup_extra_data(info.v_tg, info)
 
             aux = var.get_primary()
             var = aux if aux is not None else var
 
             region = info.get_region(can_trace=False)
-            _assign(adof_conns, info, region, var, field, False)
+            _assign(adof_conns, info, region, var, field, None)
 
     if verbose:
         output('...done in %.2f s' % timer.stop())
@@ -1438,7 +1440,7 @@ class FieldVariable(Variable):
                                      return_key=return_key)
         return out
 
-    def get_dof_conn(self, dc_type, is_trace=False, trace_region=None):
+    def get_dof_conn(self, dc_type, trace_region=None):
         """
         Get active dof connectivity of a variable.
 
@@ -1454,15 +1456,15 @@ class FieldVariable(Variable):
         else:
             var_name = self.name
 
-        if not is_trace:
-            region_name = dc_type.region_name
-
+        if trace_region is None:
+            region_name, mregion_name = dc_type.region_name, None
         else:
-            aux = self.field.domain.regions[dc_type.region_name]
-            region = aux.get_mirror_region(trace_region)
+            mregion = self.field.domain.regions[dc_type.region_name]
+            region = mregion.get_mirror_region(trace_region)
             region_name = region.name
+            mregion_name = mregion.name
 
-        key = (var_name, region_name, dc_type.type, is_trace)
+        key = (var_name, region_name, dc_type.type, mregion_name)
         dc = self.adof_conns[key]
 
         return dc
@@ -1643,8 +1645,8 @@ class FieldVariable(Variable):
 
     def evaluate(self, mode='val',
                  region=None, integral=None, integration=None,
-                 step=0, time_derivative=None, is_trace=False,
-                 trace_region=None, dt=None, bf=None):
+                 step=0, time_derivative=None, trace_region=None,
+                 dt=None, bf=None):
         """
         Evaluate various quantities related to the variable according to
         `mode` in quadrature points defined by `integral`.
@@ -1671,8 +1673,8 @@ class FieldVariable(Variable):
         time_derivative : None or 'dt'
             If not None, return time derivative of the data,
             approximated by the backward finite difference.
-        is_trace : bool, default False
-            Indicate evaluation of trace of the variable on a boundary
+        trace_region : None or str
+            If not None, evaluate of trace of the variable on a boundary
             region.
         dt : float, optional
             The time step to be used if `derivative` is `'dt'`. If None,
@@ -1698,7 +1700,7 @@ class FieldVariable(Variable):
         if region is None:
             region = field.region
 
-        if is_trace:
+        if trace_region is not None:
             region = region.get_mirror_region(trace_region)
 
         if (region is not field.region) and not region.is_empty:
@@ -1712,7 +1714,7 @@ class FieldVariable(Variable):
 
         geo, _, key = field.get_mapping(region, integral, integration,
                                         return_key=True)
-        key += (time_derivative, is_trace)
+        key += (time_derivative, trace_region)
 
         if key in cache:
             out = cache[key]
@@ -1722,7 +1724,7 @@ class FieldVariable(Variable):
             ct = integration
             if integration == 'surface_extra':
                 ct = 'volume'
-            conn = field.get_econn(ct, region, is_trace, integration)
+            conn = field.get_econn(ct, region, trace_region, integration)
 
             shape = self.get_data_shape(integral, integration, region.name)
 
