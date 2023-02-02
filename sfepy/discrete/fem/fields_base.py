@@ -445,7 +445,7 @@ class FEField(Field):
         if integration in ('surface', 'surface_extra'):
             if region_name not in self.surface_data:
                 reg = self.domain.regions[region_name]
-                self.domain.create_surface_group(reg)  #!!!!
+                self.domain.create_surface_group(reg)
                 self.setup_surface_data(reg, None)
 
             sd = self.surface_data[region_name]
@@ -1034,7 +1034,7 @@ class FEField(Field):
                       ' basis transform!'
                 raise ValueError(msg)
 
-            sd = domain.surface_groups[region.name] #!!!!!
+            sd = domain.surface_groups[region.name]
             esd = self.surface_data[region.name]
 
             geo_ps = self.gel.poly_space
@@ -1207,7 +1207,7 @@ class VolumeField(FEField):
             reg = info.get_region()
             mreg_name = info.get_region_name(can_trace=False)
             mreg_name = None if reg.name == mreg_name else mreg_name
-            self.domain.create_surface_group(reg) #!!!!
+            self.domain.create_surface_group(reg)
             self.setup_surface_data(reg, mreg_name)
 
         elif dct == 'edge':
@@ -1382,7 +1382,7 @@ class SurfaceField(FEField):
             raise ValueError(msg)
 
         reg = info.get_region()
-        self.domain.create_surface_group(reg) #!!!!
+        self.domain.create_surface_group(reg)
 
         if reg.name not in self.surface_data:
             # Defined in setup_vertex_dofs()
@@ -1480,7 +1480,6 @@ class SurfaceField(FEField):
         ir = nm.arange(nc, dtype=nm.int32)
 
         sd = self.domain.surface_groups[region.name]
-        from sfepy.base.base import debug; debug()
         # Should be vertex connectivity!
         conn = sd.get_connectivity(local=True)
         for ii, cc in enumerate(conn):
