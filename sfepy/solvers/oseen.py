@@ -96,7 +96,7 @@ class StabilizationFunction(Struct):
             region = term.region
             vg, _ = field.get_mapping(region, term.integral, 'volume')
             cells = region.get_cells()
-            d2 = problem.domain.get_element_diameters(cells, vg, dm)
+            d2 = problem.domain.get_element_diameters(cells, vg.volume, dm)
 
             self.diameters2 = d2
 

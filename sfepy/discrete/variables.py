@@ -1942,7 +1942,8 @@ class FieldVariable(Variable):
 
         vg, _ = field.get_mapping(field.region, integral, 'volume')
 
-        diameters = domain.get_element_diameters(cells, vg, mode, square=square)
+        diameters = domain.get_element_diameters(cells, vg.volume, mode,
+                                                 square=square)
 
         return diameters
 
