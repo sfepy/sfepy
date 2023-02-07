@@ -10,6 +10,7 @@ from sfepy.discrete.common.mappings import Mapping
 from sfepy.discrete.common.extmods.mappings import CMapping
 from sfepy.discrete import PolySpace
 
+
 class FEMapping(Mapping):
     """
     Base class for finite element mappings.
@@ -37,7 +38,7 @@ class FEMapping(Mapping):
                                                  force_bubble=False)
 
         self.poly_space = poly_space
-        self.indices = slice(None)
+        self.indices = None
 
     def get_geometry(self):
         """
@@ -51,7 +52,17 @@ class FEMapping(Mapping):
         coordinates.
         """
         bf = self.poly_space.eval_base(coors, diff=diff)
+        if self.indices is not None:
+            ii = max(self.dim - 1, 1)
+            bf = nm.ascontiguousarray(bf[..., :ii:, self.indices])
+
         return bf
+
+    def set_basis_indices(self, indices):
+        """
+        Set indices to cell-based basis that give the facet-based basis.
+        """
+        self.indices = indices
 
     def get_physical_qps(self, qp_coors):
         """
@@ -71,6 +82,48 @@ class FEMapping(Mapping):
 
         return qps
 
+    def get_mapping(self, qp_coors, weights, poly_space=None, ori=None,
+                    transform=None, mode='surface', is_face=False):
+        """
+        Get the mapping for given quadrature points, weights, and
+        polynomial space.
+
+        Returns
+        -------
+        cmap : CMapping instance
+            The domain mapping.
+        """
+        poly_space = get_default(poly_space, self.poly_space)
+
+        bf_g = self.get_base(qp_coors, diff=True)
+        if nm.allclose(bf_g, 0.0) and self.dim > 1:
+            raise ValueError('zero base function gradient!')
+
+        if not is_face:
+            ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
+                                        force_axis=True, transform=transform)
+            size = ebf_g.nbytes * self.n_el
+            site_config = Config()
+            raise_if_too_large(size, site_config.refmap_memory_factor())
+
+            flag = (ori is not None) or (ebf_g.shape[0] > 1)
+            mode = 'volume'
+        else:
+            flag = 0
+            ebf_g = None
+
+        cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
+                        poly_space.n_nod, mode=mode, flag=flag)
+        cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
+
+        if self.dim == 1 and cmap.normal is not None:
+            # Fix normals.
+            ii = nm.where(self.conn == 0)[0]
+            cmap.normal[ii] *= -1.0
+
+        return cmap
+
+
 class VolumeMapping(FEMapping):
     """
     Mapping from reference domain to physical domain of the same space
@@ -79,32 +132,11 @@ class VolumeMapping(FEMapping):
 
     def get_mapping(self, qp_coors, weights, poly_space=None, ori=None,
                     transform=None):
-        """
-        Get the mapping for given quadrature points, weights, and
-        polynomial space.
+        print('vol_map')
+        return FEMapping.get_mapping(self, qp_coors, weights,
+                                     poly_space=poly_space, ori=ori,
+                                     transform=transform, is_face=False)
 
-        Returns
-        -------
-        cmap : CMapping instance
-            The volume mapping.
-        """
-        poly_space = get_default(poly_space, self.poly_space)
-
-        bf_g = self.get_base(qp_coors, diff=True)
-
-        ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
-                                     force_axis=True, transform=transform)
-        size = ebf_g.nbytes * self.n_el
-        site_config = Config()
-        raise_if_too_large(size, site_config.refmap_memory_factor())
-
-        flag = (ori is not None) or (ebf_g.shape[0] > 1)
-
-        cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
-                        poly_space.n_nod, mode='volume', flag=flag)
-        cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
-
-        return cmap
 
 class SurfaceMapping(FEMapping):
     """
@@ -112,43 +144,8 @@ class SurfaceMapping(FEMapping):
     dimension higher by one.
     """
 
-    def set_basis_indices(self, indices):
-        """
-        Set indices to cell-based basis that give the facet-based basis.
-        """
-        self.indices = indices
-
-    def get_base(self, coors, diff=False):
-        """
-        Get base functions or their gradient evaluated in given
-        coordinates.
-        """
-        bf = self.poly_space.eval_base(coors, diff=diff)
-        ii = max(self.dim - 1, 1)
-        return nm.ascontiguousarray(bf[..., :ii:, self.indices])
-
     def get_mapping(self, qp_coors, weights, poly_space=None, mode='surface'):
-        """
-        Get the mapping for given quadrature points, weights, and
-        polynomial space.
-
-        Returns
-        -------
-        cmap : CMapping instance
-            The surface mapping.
-        """
-        poly_space = get_default(poly_space, self.poly_space)
-
-        bf_g = self.get_base(qp_coors, diff=True)
-        if nm.allclose(bf_g, 0.0) and self.dim > 1:
-            raise ValueError('zero base function gradient!')
-
-        cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
-                        poly_space.n_nod, mode=mode)
-        cmap.describe(self.coors, self.conn, bf_g, None, weights)
-        if self.dim == 1:
-            # Fix normals.
-            ii = nm.where(self.conn == 0)[0]
-            cmap.normal[ii] *= -1.0
-
-        return cmap
+        print('surf_map')
+        return FEMapping.get_mapping(self, qp_coors, weights,
+                                     poly_space=poly_space, ori=None,
+                                     transform=None, mode=mode, is_face=True)
