@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
-from sfepy.terms.terms import terms
+from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_hyperelastic_base import\
     HyperElasticBase, HyperElasticFamilyData
 
@@ -698,6 +698,9 @@ class HyperElasticSurfaceTLFamilyData(HyperElasticFamilyData):
 
         fargs = tuple([getattr(data, k) for k in self.data_names])
         fargs = fargs + (vec, sg, sd.fis, state.field.econn)
+        fargs = Term.translate_fargs_mapping(self.family_function,
+                                             list(fargs))
+
         self.family_function(*fargs)
 
         return data

@@ -67,6 +67,8 @@ class HyperElasticFamilyData(Struct):
 
             fargs = tuple([getattr(data, k) for k in self.data_names])
             fargs = fargs + (vec, vg, state.field.econn)
+            fargs = Term.translate_fargs_mapping(self.family_function,
+                                                 list(fargs))
 
             self.family_function(*fargs)
             cache[data_key] = data

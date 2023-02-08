@@ -1312,7 +1312,19 @@ class Term(Struct):
 
         return fargs
 
+    @staticmethod
+    def translate_fargs_mapping(function, fargs, force=False):
+        key = 'builtin_function_or_method'
+        fs = [k.__class__.__name__ for k in fargs]
+        if key in function.__class__.__name__ or key in fs or force:
+            for ii, k in enumerate(fs):
+                if k == 'DMapping':
+                    fargs[ii] = fargs[ii].cmap
+
+        return fargs
+
     def call_function(self, out, fargs):
+        fargs = self.translate_fargs_mapping(self.function, list(fargs))
         try:
             status = self.function(out, *fargs)
 
