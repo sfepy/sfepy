@@ -5,10 +5,72 @@ import numpy as nm
 
 from sfepy import Config
 from sfepy.base.base import get_default, output
-from sfepy.base.mem_usage import raise_if_too_large
-from sfepy.discrete.common.mappings import Mapping
-from sfepy.discrete.common.extmods.mappings import CMapping
+from sfepy.discrete.common.mappings import Mapping, DMapping
 from sfepy.discrete import PolySpace
+
+
+def eval_mapping_data_in_qp(coorIn, conn, dim, n_ep, bf_g, weight,
+                            ebf_g=None, is_face=False, flag=0, eps=1e-15,
+                            se_conn=None, se_bf_bg=None):
+    coor = coorIn[conn, :dim]
+    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coor)
+
+    n_el, n_qp = mtxRM.shape[:2]
+
+    if is_face:
+        # outward unit normal vector
+        normal = nm.ones((n_el, n_qp, dim, 1), dtype=nm.float64)
+        if dim == 1:
+            det = nm.tile(weight, (n_el, 1)).reshape(n_el, n_qp, 1, 1)
+            ii = nm.where(conn == 0)[0]
+            normal[ii] *= -1.0
+        elif dim == 2:
+            c1, c2 = mtxRM[..., 0], mtxRM[..., 1]
+            det0 = nm.sqrt(c1**2 + c2**2).reshape(n_el, n_qp, 1, 1)
+            det = det0 * weight[:, None, None]
+            det0[nm.abs(det0) < eps] = 1.0
+            normal[..., 0, :] = c2
+            normal[..., 1, :] = -c1
+            normal /= det0
+        elif dim == 3:
+            j012 = mtxRM[..., 0, :].T
+            j345 = mtxRM[..., 1, :].T
+            c1 = (j012[1] * j345[2] - j345[1] * j012[2]).T
+            c2 = (j012[0] * j345[2] - j345[0] * j012[2]).T
+            c3 = (j012[0] * j345[1] - j345[0] * j012[1]).T
+            det0 = nm.sqrt(c1**2 + c2**2 + c3**2).reshape(n_el, n_qp, 1, 1)
+            det = det0 * weight[:, None, None]
+            det0[nm.abs(det0) < eps] = 1.0
+            normal[..., 0, 0] = c1
+            normal[..., 1, 0] = -c2
+            normal[..., 2, 0] = c3
+            normal /= det0
+    else:
+        det = nm.linalg.det(mtxRM)
+        if nm.any(det <= 0.0):
+            raise ValueError('warp violation!')
+
+        det *= weight
+        det = det.reshape(n_el, n_qp, 1, 1)
+        normal = None
+
+    if ebf_g is not None:
+        if is_face and se_conn is not None and se_bf_bg is not None:
+            se_coor = coorIn[se_conn, :dim]
+            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, se_coor)
+            mtxRMI = nm.linalg.inv(mtxRM)
+            bfg = nm.einsum('cqij,cqjk->cqik', mtxRMI, ebf_g)
+        else:
+            mtxRMI = nm.linalg.inv(mtxRM)
+            bfg = nm.einsum('cqij,xqjk->cqik', mtxRMI, ebf_g)
+    else:
+        bfg = None
+
+    volume = nm.sum(det, axis=1).reshape(n_el, 1, 1, 1)
+
+    bf = nm.empty((n_el if flag else 1, n_qp, 1, n_ep), dtype=nm.float64)
+
+    return bf, det, volume, bfg, normal
 
 
 class FEMapping(Mapping):
@@ -83,14 +145,14 @@ class FEMapping(Mapping):
         return qps
 
     def get_mapping(self, qp_coors, weights, poly_space=None, ori=None,
-                    transform=None, mode='surface', is_face=False):
+                    transform=None, is_face=False, extra=(None, None, None)):
         """
         Get the mapping for given quadrature points, weights, and
         polynomial space.
 
         Returns
         -------
-        cmap : CMapping instance
+        dmap : DMapping instance
             The domain mapping.
         """
         poly_space = get_default(poly_space, self.poly_space)
@@ -101,27 +163,22 @@ class FEMapping(Mapping):
 
         if not is_face:
             ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
-                                        force_axis=True, transform=transform)
-            size = ebf_g.nbytes * self.n_el
-            site_config = Config()
-            raise_if_too_large(size, site_config.refmap_memory_factor())
-
+                                         force_axis=True, transform=transform)
             flag = (ori is not None) or (ebf_g.shape[0] > 1)
-            mode = 'volume'
+            se_conn, se_bf_bg = None, None
         else:
             flag = 0
-            ebf_g = None
+            se_conn, se_bf_bg, ebf_g = extra
 
-        cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
-                        poly_space.n_nod, mode=mode, flag=flag)
-        cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
+        margs = eval_mapping_data_in_qp(self.coors, self.conn, self.dim,
+                                        poly_space.n_nod, bf_g, weights,
+                                        ebf_g, is_face=is_face, flag=flag,
+                                        se_conn=se_conn, se_bf_bg=se_bf_bg)
 
-        if self.dim == 1 and cmap.normal is not None:
-            # Fix normals.
-            ii = nm.where(self.conn == 0)[0]
-            cmap.normal[ii] *= -1.0
+        margs += (self.dim,)
+        dmap = DMapping(*margs)
 
-        return cmap
+        return dmap
 
 
 class VolumeMapping(FEMapping):
@@ -132,7 +189,6 @@ class VolumeMapping(FEMapping):
 
     def get_mapping(self, qp_coors, weights, poly_space=None, ori=None,
                     transform=None):
-        print('vol_map')
         return FEMapping.get_mapping(self, qp_coors, weights,
                                      poly_space=poly_space, ori=ori,
                                      transform=transform, is_face=False)
@@ -144,8 +200,7 @@ class SurfaceMapping(FEMapping):
     dimension higher by one.
     """
 
-    def get_mapping(self, qp_coors, weights, poly_space=None, mode='surface'):
-        print('surf_map')
+    def get_mapping(self, qp_coors, weights, poly_space=None, extra=(None, None, None)):
         return FEMapping.get_mapping(self, qp_coors, weights,
                                      poly_space=poly_space, ori=None,
-                                     transform=None, mode=mode, is_face=True)
+                                     transform=None, is_face=True, extra=extra)
