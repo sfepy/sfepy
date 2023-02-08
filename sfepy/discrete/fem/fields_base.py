@@ -1007,11 +1007,11 @@ class FEField(Field):
         transform = (self.basis_transform[iels] if self.basis_transform
                      is not None else None)
 
+        geo_ps = self.gel.poly_space
+        ps = self.poly_space
+
         if integration == 'volume':
             qp = self.get_qp('v', integral)
-
-            geo_ps = self.gel.poly_space
-            ps = self.poly_space
             bf = self.get_base('v', 0, integral, iels=iels)
 
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
@@ -1021,7 +1021,7 @@ class FEField(Field):
 
             out = vg
 
-        elif (integration == 'surface') or (integration == 'surface_extra'):
+        elif integration.startswith('surface'):
             assert_(self.approx_order > 0)
 
             if self.ori is not None:
@@ -1036,9 +1036,6 @@ class FEField(Field):
 
             sd = domain.surface_groups[region.name]
             esd = self.surface_data[region.name]
-
-            geo_ps = self.gel.poly_space
-            ps = self.poly_space
 
             conn = sd.get_connectivity()
             mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
@@ -1055,33 +1052,28 @@ class FEField(Field):
                 indx = nm.roll(indx, -1)[::-1]
                 mapping.set_basis_indices(indx)
 
+                if integration == 'surface_extra':
+                    se_bf_bg = geo_ps.eval_base(qp.vals, diff=True)
+                    se_bf_bg = se_bf_bg[sd.fis[:, 1]]
+                    se_ebf_bg = self.get_base(esd.bkey, 1, integral)
+                    se_ebf_bg = se_ebf_bg[sd.fis[:, 1]]
+                    se_conn = dconn[sd.fis[:, 0], :]
+                else:
+                    se_bf_bg, se_ebf_bg, se_conn = None, None, None
+
                 sg = mapping.get_mapping(qp.vals[0], qp.weights,
                                          poly_space=Struct(n_nod=bf.shape[-1]),
-                                         mode=integration)
-
-                if integration == 'surface_extra':
-                    sg.alloc_extra_data(self.econn.shape[1])
-
-                    bf_bg = geo_ps.eval_base(qp.vals, diff=True)
-                    ebf_bg = self.get_base(esd.bkey, 1, integral)
-
-                    sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, dconn)
+                                         extra=(se_conn, se_bf_bg, se_ebf_bg))
 
             else:
-                if self.basis_transform is not None:
-                    msg = 'surface fields do not work with the' \
-                          ' basis transform!'
-                    raise ValueError(msg)
-
                 # Do not use BQP for surface fields.
                 qp = self.get_qp(sd.face_type, integral)
                 bf = ps.eval_base(qp.vals, transform=transform)
 
                 sg = mapping.get_mapping(qp.vals, qp.weights,
-                                         poly_space=Struct(n_nod=bf.shape[-1]),
-                                         mode=integration)
+                                         poly_space=Struct(n_nod=bf.shape[-1]))
 
-            out =  sg
+            out = sg
 
         elif integration == 'point':
             out = mapping = None
