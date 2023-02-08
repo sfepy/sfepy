@@ -7,7 +7,7 @@ cimport cython
 cimport numpy as np
 import numpy as np
 
-from sfepy.discrete.common.extmods.mappings cimport (Mapping, CMapping)
+from sfepy.discrete.common.extmods.cmapping cimport (Mapping, CMapping)
 from sfepy.discrete.common.extmods._fmfield cimport (FMField,
                                                      array2fmfield4,
                                                      array2fmfield3,

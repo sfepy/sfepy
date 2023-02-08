@@ -22,7 +22,7 @@ def configuration(parent_package='', top_path=None):
 
     common_path = '../../common/extmods'
 
-    common_src = ['fmfield.c', 'refmaps.c', 'geommech.c', 'common_python.c']
+    common_src = ['fmfield.c', 'geommech.c', 'common_python.c']
     common_src = [op.join(common_path, ii) for ii in common_src]
 
     src = ['bases.pyx', 'lagrange.c']

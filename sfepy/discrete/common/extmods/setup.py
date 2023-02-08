@@ -22,7 +22,7 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_MESH' in site_config.debug_flags():
         defines.append(('DEBUG_MESH', None))
 
-    common_src = ['fmfield.c', 'refmaps.c', 'geommech.c', 'common_python.c']
+    common_src = ['fmfield.c', 'geommech.c', 'common_python.c']
 
     config.add_library('sfepy_common',
                        sources=common_src,
@@ -42,8 +42,8 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['mappings.pyx']
-    config.add_extension('mappings',
+    src = ['cmapping.pyx']
+    config.add_extension('cmapping',
                          sources=src,
                          libraries=['sfepy_common'],
                          depends=common_src,
@@ -90,7 +90,7 @@ def configuration(parent_package='', top_path=None):
 
     # Include *.pxd files in distribution tarball and install them along
     # with the extension modules.
-    pxd_files = ['cmesh.pxd', 'mappings.pxd', 'types.pxd',
+    pxd_files = ['cmesh.pxd', 'cmapping.pxd', 'types.pxd',
                  '_fmfield.pxd', '_geommech.pxd']
     config.add_data_files(('', pxd_files))
 
