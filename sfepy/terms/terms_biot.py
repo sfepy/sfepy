@@ -150,7 +150,8 @@ class BiotStressTerm(CauchyStressTerm):
             status = 0
 
         else:
-            status = terms.de_cauchy_stress(out, val_qp, mat, vg, fmode)
+
+            status = terms.de_cauchy_stress(out, val_qp, mat, vg.cmap, fmode)
 
         out *= -1.0
 

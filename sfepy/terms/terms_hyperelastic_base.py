@@ -229,7 +229,7 @@ class DeformationGradientTerm(Term):
         out_qp = nm.empty((out.shape[0], vg.n_qp, d, d), dtype=out.dtype)
 
         mode = 1 if term_mode == 'jacobian' else 0
-        terms.dq_def_grad(out_qp, vec, vg, econn, mode)
+        terms.dq_def_grad(out_qp, vec, vg.cmap, econn, mode)
 
         if fmode == 2:
             out[:] = out_qp
