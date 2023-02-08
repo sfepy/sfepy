@@ -548,7 +548,7 @@ class Region(Struct):
         """
         Vertices-based copy.
         """
-        tmp = self.light_copy('copy', self.parse_def)
+        tmp = self.light_copy('copy', self.parse_def, tdim=self.tdim)
         tmp.vertices = copy(self.vertices)
 
         return tmp
@@ -695,7 +695,7 @@ class Region(Struct):
 
         if mirror_name is not None:
             if mirror_name in self.mirror_regions:
-                return
+                return mirror_name if ret_name else None
 
             mreg = regions[mirror_name]
             if self.vertices.shape[0] != mreg.vertices.shape[0]:
@@ -712,13 +712,16 @@ class Region(Struct):
                 print(coors2[vmap2])
                 raise ValueError('cannot match vertices!')
 
-            fconn = self.cmesh.get_conn_as_graph(self.dim - 1, 0)
-            cc = self.cmesh.get_centroids(self.dim - 1)
-            fmap1, fmap2 = find_map(cc[self.facets], cc[mreg.facets] - shift,
+            _ = self.cmesh.get_conn_as_graph(self.dim - 1, 0)
+            cc1 = self.cmesh.get_centroids(self.dim - 1)
+            sfacets = self.cells if self.tdim < self.dim else self.facets
+            cc2 = mreg.cmesh.get_centroids(mreg.dim - 1)
+            mfacets = mreg.cells if mreg.tdim < mreg.dim else mreg.facets
+            fmap1, fmap2 = find_map(cc1[sfacets], cc2[mfacets] - shift,
                                     join=False)
-            if fmap1.shape[0] != self.facets.shape[0]:
-                print(cc[self.facets][fmap1])
-                print(cc[mreg.facets][fmap2])
+            if fmap1.shape[0] != sfacets.shape[0]:
+                print(cc1[sfacets][fmap1])
+                print(cc2[mfacets][fmap2])
                 raise ValueError('cannot match facets!')
 
             mirror_map_i = nm.zeros_like(fmap1)

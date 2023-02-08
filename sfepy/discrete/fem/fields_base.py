@@ -24,7 +24,7 @@ from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
                                       invert_remap, get_min_value)
 from sfepy.discrete.fem.mappings import VolumeMapping, SurfaceMapping
-from sfepy.discrete.fem.fe_surface import FESurface
+from sfepy.discrete.fem.fe_surface import FESurface, FEPhantomSurface
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
@@ -446,7 +446,7 @@ class FEField(Field):
             if region_name not in self.surface_data:
                 reg = self.domain.regions[region_name]
                 self.domain.create_surface_group(reg)
-                self.setup_surface_data(reg, False, None)
+                self.setup_surface_data(reg, None)
 
             sd = self.surface_data[region_name]
 
@@ -977,11 +977,11 @@ class FEField(Field):
         else:
             return self.coors[nods]
 
-    def get_connectivity(self, region, integration, is_trace=False):
+    def get_connectivity(self, region, integration, trace_region=None):
         """
         Convenience alias to `Field.get_econn()`, that is used in some terms.
         """
-        return self.get_econn(integration, region, is_trace=is_trace)
+        return self.get_econn(integration, region, trace_region=trace_region)
 
     def create_mapping(self, region, integral, integration,
                        return_mapping=True):
@@ -1195,7 +1195,7 @@ class VolumeField(FEField):
 
         return n_dof, remap
 
-    def setup_extra_data(self, geometry, info, is_trace):
+    def setup_extra_data(self, geometry, info):
         dct = info.dc_type.type
 
         if geometry != None:
@@ -1206,8 +1206,9 @@ class VolumeField(FEField):
         if (dct == 'surface') or (geometry_flag):
             reg = info.get_region()
             mreg_name = info.get_region_name(can_trace=False)
+            mreg_name = None if reg.name == mreg_name else mreg_name
             self.domain.create_surface_group(reg)
-            self.setup_surface_data(reg, is_trace, mreg_name)
+            self.setup_surface_data(reg, mreg_name)
 
         elif dct == 'edge':
             raise NotImplementedError('dof connectivity type %s' % dct)
@@ -1224,21 +1225,25 @@ class VolumeField(FEField):
             conn.shape += (1,)
             self.point_data[region.name] = conn
 
-    def setup_surface_data(self, region, is_trace=False, trace_region=None):
+    def setup_surface_data(self, region, trace_region=None):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
         if region.name not in self.surface_data:
-            sd = FESurface('surface_data_%s' % region.name, region,
-                           self.efaces, self.econn, self.region)
+            name = 'surface_data_%s' % region.name
+            if trace_region is not None and region.tdim == (region.dim - 1):
+                sd = FEPhantomSurface(name, region, self.econn)
+            else:
+                sd = FESurface(name, region, self.efaces, self.econn,
+                               self.region)
             self.surface_data[region.name] = sd
 
-        if region.name in self.surface_data and is_trace:
+        if region.name in self.surface_data and trace_region is not None:
             sd = self.surface_data[region.name]
             sd.setup_mirror_connectivity(region, trace_region)
 
         return self.surface_data[region.name]
 
-    def get_econn(self, conn_type, region, is_trace=False, integration=None,
+    def get_econn(self, conn_type, region, trace_region=None, integration=None,
                   local=False):
         """
         Get extended connectivity of the given type in the given region.
@@ -1261,7 +1266,7 @@ class VolumeField(FEField):
                 self.setup_surface_data(region)
 
             sd = self.surface_data[region.name]
-            conn = sd.get_connectivity(local=local, is_trace=is_trace)
+            conn = sd.get_connectivity(local=local, trace_region=trace_region)
 
         elif ct == 'edge':
             raise NotImplementedError('connectivity type %s' % ct)
@@ -1369,7 +1374,7 @@ class SurfaceField(FEField):
                                      force_bubble=self.force_bubble)
         self.poly_space = ps
 
-    def setup_extra_data(self, geometry, info, is_trace):
+    def setup_extra_data(self, geometry, info):
         dct = info.dc_type.type
 
         if dct != 'surface':
@@ -1377,13 +1382,14 @@ class SurfaceField(FEField):
             raise ValueError(msg)
 
         reg = info.get_region()
+        self.domain.create_surface_group(reg)
 
         if reg.name not in self.surface_data:
             # Defined in setup_vertex_dofs()
             msg = 'no surface data of surface field! (%s)' % reg.name
             raise ValueError(msg)
 
-        if reg.name in self.surface_data and is_trace:
+        if reg.name in self.surface_data and info.trace_region is not None:
             sd = self.surface_data[reg.name]
             mreg_name = info.get_region_name(can_trace=False)
             sd.setup_mirror_connectivity(reg, mreg_name)
@@ -1423,7 +1429,7 @@ class SurfaceField(FEField):
         """
         return 0, None, None
 
-    def get_econn(self, conn_type, region, is_trace=False,
+    def get_econn(self, conn_type, region, trace_region=None,
                   integration=None):
         """
         Get extended connectivity of the given type in the given region.
@@ -1435,7 +1441,7 @@ class SurfaceField(FEField):
             raise ValueError(msg)
 
         sd = self.surface_data[region.name]
-        conn = sd.get_connectivity(local=True, is_trace=is_trace)
+        conn = sd.get_connectivity(local=True, trace_region=trace_region)
 
         return conn
 

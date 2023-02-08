@@ -395,19 +395,20 @@ class Equations(Container):
 
             dct = info.dc_type.type
             if not (dct in ('volume', 'scalar', 'custom') or is_surface
-                    or info.is_trace or any_dof_conn):
+                    or info.trace_region is not None or any_dof_conn):
                 continue
 
             rreg_name = info.get_region_name(can_trace=False)
             creg_name = info.get_region_name()
+            mreg_name = None if creg_name == rreg_name else rreg_name
 
             rname = rvar.get_primary_name()
-            rkey = (rname, rreg_name, dct, False)
-            ckey = (cvar.name, creg_name, dct, info.is_trace)
+            rkey = (rname, rreg_name, dct, None)
+            ckey = (cvar.name, creg_name, dct, mreg_name)
 
             dc_key = (rkey, ckey)
 
-            if not dc_key in shared:
+            if dc_key not in shared:
                 rdc = adcs[rkey]
                 cdc = adcs[ckey]
                 if not active_only:

@@ -97,7 +97,7 @@ class IGField(Field):
         """
         return (self.nurbs.degrees > 1).any()
 
-    def get_econn(self, conn_type, region, is_trace=False, integration=None,
+    def get_econn(self, conn_type, region, trace_region=None, integration=None,
                   local=False):
         """
         Get DOF connectivity of the given type in the given region.
@@ -245,7 +245,7 @@ class IGField(Field):
 
         return all_qp, all_fbfs, all_dets
 
-    def setup_extra_data(self, geometry, info, is_trace):
+    def setup_extra_data(self, geometry, info):
         dct = info.dc_type.type
 
         if dct != 'volume':
