@@ -229,7 +229,14 @@ class ExpressionArg(Struct):
 
     def get_bf(self, expr_cache):
         ag, _ = self.term.get_mapping(self.arg)
-        bf = ag.bf
+        if self.term.integration == 'surface_extra':
+            sd = self.arg.field.surface_data[self.term.region.name]
+            _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
+            bf = _bf[sd.fis[:, 1], ...]
+
+        else:
+            bf = ag.bf
+
         key = 'bf{}'.format(id(bf))
         _bf  = expr_cache.get(key)
         if bf.shape[0] > 1: # cell-depending basis.
@@ -359,7 +366,8 @@ class ExpressionBuilder(Struct):
             self.add_bfg(iin, ein, arg.name)
 
         else:
-            self.add_bf(iin, ein, arg.name)
+            cell_dep = arg.term.integration == 'surface_extra'
+            self.add_bf(iin, ein, arg.name, cell_dependent=cell_dep)
 
         out_letters = iin
 
@@ -390,7 +398,8 @@ class ExpressionBuilder(Struct):
             self.add_bfg(iin, ein, arg.name)
 
         else:
-            self.add_bf(iin, ein, arg.name)
+            cell_dep = arg.term.integration == 'surface_extra'
+            self.add_bf(iin, ein, arg.name, cell_dependent=cell_dep)
 
         out_letters = iin
 
