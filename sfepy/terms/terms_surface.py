@@ -299,7 +299,7 @@ class ContactPlaneTerm(Term):
         assert_((force_pars >= 0.0).all(),
                 'force parameters must be non-negative!')
 
-        force_pars = Term.tile_mat(force_pars, sg.shape[0])
+        force_pars = Term.tile_mat(force_pars, sg.n_el)
 
         if self.cp is None:
             self.cp = ContactPlane(anchor, normal, bounds)
@@ -433,7 +433,7 @@ class ContactSphereTerm(ContactPlaneTerm):
         assert_((force_pars >= 0.0).all(),
                 'force parameters must be non-negative!')
 
-        force_pars = Term.tile_mat(force_pars, sg.shape[0])
+        force_pars = Term.tile_mat(force_pars, sg.n_el)
 
         if self.cs is None:
             self.cs = ContactSphere(centre, radius)
