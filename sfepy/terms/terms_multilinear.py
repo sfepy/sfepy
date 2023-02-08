@@ -1777,3 +1777,44 @@ class ELinearTractionTerm(ETermBase):
         )
 
         return fun
+
+class SurfaceFluxOperatorTerm(ETermBase):
+    r"""
+    Surface flux operator term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} q \ul{n} \cdot \ull{K} \cdot \nabla p \mbox{ , }
+        \int_{\Gamma} p \ul{n} \cdot \ull{K} \cdot \nabla q
+
+    :Arguments 1:
+        - material : :math:`\ull{K}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+    :Arguments 2:
+        - material : :math:`\ull{K}`
+        - state    : :math:`p`
+        - virtual  : :math:`q`
+    """
+    name = 'de_surface_flux'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'material' : 'D, D',
+                   'virtual/grad_state' : (1, None),
+                   'state/grad_state' : 1,
+                   'virtual/grad_virtual' : (1, None),
+                   'state/grad_virtual' : 1,
+                   'parameter_1': 1, 'parameter_2': 1}]
+    integration = 'surface_extra'
+    modes = ('grad_state', 'grad_virtual', 'eval')
+
+    def get_function(self, mat, var1, var2, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        normals = self.get_normals(var2)
+        return self.make_function(
+            'i,ij,0,0.j',
+            normals, mat, var1, var2, diff_var=diff_var,
+        )
