@@ -12,6 +12,55 @@ from sfepy.discrete import PolySpace
 def eval_mapping_data_in_qp(coorIn, conn, dim, n_ep, bf_g, weight,
                             ebf_g=None, is_face=False, flag=0, eps=1e-15,
                             se_conn=None, se_bf_bg=None):
+    """
+    Evaluate mapping data.
+
+    Parameters
+    ----------
+    coorIn: numpy.ndarray
+        The nodal coordinates.
+    conn: numpy.ndarray
+        The element connectivity.
+    dim: int
+        The space dimension.
+    n_ep: int
+        The number of element points.
+    bf_g: numpy.ndarray
+        The derivatives of the domain base functions with respect to the
+        reference coordinates.
+    weight: numpy.ndarray
+        The weights of the integration points.
+    ebf_g: numpy.ndarray
+        The derivatives of the field base functions with respect to the
+        reference coordinates.
+    is_face: bool
+        Is it the boundary of a region?
+    flag: int
+        If is 1, `bf` has shape (n_el, n_qp, 1, n_ep) else
+        the shape is (1, n_qp, 1, n_ep).
+    eps: float
+        The tolerance for the normal vectors calculation.
+    se_conn: numpy.ndarray
+        The connectivity for the claculation of surface derivatives.
+    se_bf_bg: numpy.ndarray
+        The surface base function derivatives with respect to the reference
+        coordinates.
+
+    Returns
+    -------
+    bf: numpy.ndarray
+        The empty array for storing base functions.
+    det: numpy.ndarray
+        The determinant of the mapping evaluated in integration points.
+    volume: numpy.ndarray
+        The element (volume or surface) volumes in integration points.
+    bfg: numpy.ndarray
+        The derivatives of the base functions with respect to the spatial
+        coordinates. Can be evaluated either for surface elements if `bf_g`,
+        `se_conn`, and `se_bf_bg` are given.
+    normal: numpy.ndarray
+        The normal vectors for the surface elements in integration points.
+    """
     coor = coorIn[conn, :dim]
     mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coor)
 
@@ -150,10 +199,32 @@ class FEMapping(Mapping):
         Get the mapping for given quadrature points, weights, and
         polynomial space.
 
+        Parameters
+        ----------
+        qp_coors: numpy.ndarray
+            The coordinates of the integration points.
+        weights:
+            The integration weights.
+        poly_space: PolySpace instance
+            The PolySpace instance.
+        ori: ?
+            ?
+        transform: ?
+            ?
+        is_face: bool
+            Is it the boundary of a region?
+        extra:
+            The extra data for surface derivatives:
+              - the derivatives of the field boundary base functions with
+                respect to the reference coordinates
+              - the boundary connectivity
+              - the derivatives of the domain boundary base functions with
+                respect to the reference coordinates
+
         Returns
         -------
-        dmap : DMapping instance
-            The domain mapping.
+        dmap: DMapping instance
+            The domain mapping fields.
         """
         poly_space = get_default(poly_space, self.poly_space)
 
