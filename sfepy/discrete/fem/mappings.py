@@ -62,7 +62,7 @@ def eval_mapping_data_in_qp(coorIn, conn, dim, n_ep, bf_g, weight,
         The normal vectors for the surface elements in integration points.
     """
     coor = coorIn[conn, :dim]
-    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coor)
+    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coor, optimize=True)
 
     n_el, n_qp = mtxRM.shape[:2]
 
@@ -106,12 +106,13 @@ def eval_mapping_data_in_qp(coorIn, conn, dim, n_ep, bf_g, weight,
     if ebf_g is not None:
         if is_face and se_conn is not None and se_bf_bg is not None:
             se_coor = coorIn[se_conn, :dim]
-            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, se_coor)
+            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, se_coor,
+                              optimize=True)
             mtxRMI = nm.linalg.inv(mtxRM)
-            bfg = nm.einsum('cqij,cqjk->cqik', mtxRMI, ebf_g)
+            bfg = nm.einsum('cqij,cqjk->cqik', mtxRMI, ebf_g, optimize=True)
         else:
             mtxRMI = nm.linalg.inv(mtxRM)
-            bfg = nm.einsum('cqij,xqjk->cqik', mtxRMI, ebf_g)
+            bfg = nm.einsum('cqij,xqjk->cqik', mtxRMI, ebf_g, optimize=True)
     else:
         bfg = None
 
