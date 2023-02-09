@@ -41,7 +41,7 @@ def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
     eps: float
         The tolerance for the normal vectors calculation.
     se_conn: numpy.ndarray
-        The connectivity for the claculation of surface derivatives.
+        The connectivity for the calculation of surface derivatives.
     se_bf_bg: numpy.ndarray
         The surface base function derivatives with respect to the reference
         coordinates.
@@ -206,13 +206,13 @@ class FEMapping(Mapping):
             The integration weights.
         poly_space: PolySpace instance
             The PolySpace instance.
-        ori: ?
-            ?
-        transform: ?
-            ?
+        ori: numpy.ndarray
+            Element orientation, used by hierarchical basis.
+        transform: numpy.ndarray
+            The transformation matrix applied to the basis functions.
         is_face: bool
             Is it the boundary of a region?
-        extra:
+        extra: tuple
             The extra data for surface derivatives:
               - the derivatives of the field boundary base functions with
                 respect to the reference coordinates
