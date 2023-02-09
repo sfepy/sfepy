@@ -9,7 +9,7 @@ from sfepy.discrete.common.mappings import Mapping, PyCMapping
 from sfepy.discrete import PolySpace
 
 
-def eval_mapping_data_in_qp(coorIn, conn, dim, n_ep, bf_g, weight,
+def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
                             ebf_g=None, is_face=False, flag=0, eps=1e-15,
                             se_conn=None, se_bf_bg=None):
     """
@@ -17,7 +17,7 @@ def eval_mapping_data_in_qp(coorIn, conn, dim, n_ep, bf_g, weight,
 
     Parameters
     ----------
-    coorIn: numpy.ndarray
+    coor: numpy.ndarray
         The nodal coordinates.
     conn: numpy.ndarray
         The element connectivity.
@@ -61,8 +61,7 @@ def eval_mapping_data_in_qp(coorIn, conn, dim, n_ep, bf_g, weight,
     normal: numpy.ndarray
         The normal vectors for the surface elements in integration points.
     """
-    coor = coorIn[conn, :dim]
-    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coor, optimize=True)
+    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coor[conn, :dim], optimize=True)
 
     n_el, n_qp = mtxRM.shape[:2]
 
@@ -105,8 +104,7 @@ def eval_mapping_data_in_qp(coorIn, conn, dim, n_ep, bf_g, weight,
 
     if ebf_g is not None:
         if is_face and se_conn is not None and se_bf_bg is not None:
-            se_coor = coorIn[se_conn, :dim]
-            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, se_coor,
+            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, coor[se_conn, :dim],
                               optimize=True)
             mtxRMI = nm.linalg.inv(mtxRM)
             bfg = nm.einsum('cqij,cqjk->cqik', mtxRMI, ebf_g, optimize=True)
