@@ -229,7 +229,14 @@ class ExpressionArg(Struct):
 
     def get_bf(self, expr_cache):
         ag, _ = self.term.get_mapping(self.arg)
-        bf = ag.bf
+        if self.term.integration == 'surface_extra':
+            sd = self.arg.field.surface_data[self.term.region.name]
+            _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
+            bf = _bf[sd.fis[:, 1], ...]
+
+        else:
+            bf = ag.bf
+
         key = 'bf{}'.format(id(bf))
         _bf  = expr_cache.get(key)
         if bf.shape[0] > 1: # cell-depending basis.
@@ -359,7 +366,8 @@ class ExpressionBuilder(Struct):
             self.add_bfg(iin, ein, arg.name)
 
         else:
-            self.add_bf(iin, ein, arg.name)
+            cell_dep = arg.term.integration == 'surface_extra'
+            self.add_bf(iin, ein, arg.name, cell_dependent=cell_dep)
 
         out_letters = iin
 
@@ -390,7 +398,8 @@ class ExpressionBuilder(Struct):
             self.add_bfg(iin, ein, arg.name)
 
         else:
-            self.add_bf(iin, ein, arg.name)
+            cell_dep = arg.term.integration == 'surface_extra'
+            self.add_bf(iin, ein, arg.name, cell_dependent=cell_dep)
 
         out_letters = iin
 
@@ -1768,3 +1777,44 @@ class ELinearTractionTerm(ETermBase):
         )
 
         return fun
+
+class SurfaceFluxOperatorTerm(ETermBase):
+    r"""
+    Surface flux operator term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} q \ul{n} \cdot \ull{K} \cdot \nabla p \mbox{ , }
+        \int_{\Gamma} p \ul{n} \cdot \ull{K} \cdot \nabla q
+
+    :Arguments 1:
+        - material : :math:`\ull{K}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+    :Arguments 2:
+        - material : :math:`\ull{K}`
+        - state    : :math:`p`
+        - virtual  : :math:`q`
+    """
+    name = 'de_surface_flux'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'material' : 'D, D',
+                   'virtual/grad_state' : (1, None),
+                   'state/grad_state' : 1,
+                   'virtual/grad_virtual' : (1, None),
+                   'state/grad_virtual' : 1,
+                   'parameter_1': 1, 'parameter_2': 1}]
+    integration = 'surface_extra'
+    modes = ('grad_state', 'grad_virtual', 'eval')
+
+    def get_function(self, mat, var1, var2, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        normals = self.get_normals(var2)
+        return self.make_function(
+            'i,ij,0,0.j',
+            normals, mat, var1, var2, diff_var=diff_var,
+        )
