@@ -1318,7 +1318,7 @@ class Term(Struct):
         fs = [k.__class__.__name__ for k in fargs]
         if key in function.__class__.__name__ or key in fs or force:
             for ii, k in enumerate(fs):
-                if k == 'DMapping':
+                if k == 'PyCMapping':
                     fargs[ii] = fargs[ii].cmap
 
         return fargs

@@ -5,7 +5,7 @@ import numpy as nm
 
 from sfepy import Config
 from sfepy.base.base import get_default, output
-from sfepy.discrete.common.mappings import Mapping, DMapping
+from sfepy.discrete.common.mappings import Mapping, PyCMapping
 from sfepy.discrete import PolySpace
 
 
@@ -224,7 +224,7 @@ class FEMapping(Mapping):
 
         Returns
         -------
-        dmap: DMapping instance
+        pycmap: PyCMapping instance
             The domain mapping fields.
         """
         poly_space = get_default(poly_space, self.poly_space)
@@ -248,9 +248,9 @@ class FEMapping(Mapping):
                                         se_conn=se_conn, se_bf_bg=se_bf_bg)
 
         margs += (self.dim,)
-        dmap = DMapping(*margs)
+        pycmap = PyCMapping(*margs)
 
-        return dmap
+        return pycmap
 
 
 class VolumeMapping(FEMapping):

@@ -3,7 +3,7 @@ Reference mappings for isogeometric analysis.
 """
 import numpy as nm
 
-from sfepy.discrete.common.mappings import Mapping, DMapping
+from sfepy.discrete.common.mappings import Mapping, PyCMapping
 import sfepy.discrete.iga.extmods.igac as iga
 
 
@@ -79,6 +79,6 @@ class IGMapping(Mapping):
         # Cell volumes.
         volumes = dets.sum(axis=1)[..., None]
 
-        dmap = DMapping(bfs, dets, volumes, bfgs, None, self.v_shape[2])
+        pycmap = PyCMapping(bfs, dets, volumes, bfgs, None, self.v_shape[2])
 
-        return dmap
+        return pycmap

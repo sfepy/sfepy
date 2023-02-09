@@ -7,7 +7,7 @@ from sfepy.base.base import Struct
 from sfepy.discrete.common.extmods.cmapping import CMapping
 
 
-class DMapping(Struct):
+class PyCMapping(Struct):
     """
     Class for storing mapping data. Primary data in numpy arrays.
     Data for C functions translated to FMFields and embedded in CMapping.
