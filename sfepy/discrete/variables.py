@@ -1729,10 +1729,10 @@ class FieldVariable(Variable):
             shape = self.get_data_shape(integral, integration, region.name)
 
             if self.dtype == nm.float64:
-                out = eval_real(vec, conn, geo.cmap, mode, shape, bf)
+                out = eval_real(vec, conn, geo, mode, shape, bf)
 
             else:
-                out = eval_complex(vec, conn, geo.cmap, mode, shape, bf)
+                out = eval_complex(vec, conn, geo, mode, shape, bf)
 
             cache[key] = out
 
