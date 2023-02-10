@@ -29,7 +29,7 @@ def test_normals():
     import sfepy
     from sfepy.discrete import Integral, PolySpace
     from sfepy.discrete.fem import Mesh, FEDomain
-    from sfepy.discrete.fem.mappings import SurfaceMapping
+    from sfepy.discrete.fem.mappings import FEMapping
     from sfepy.linalg import normalize_vectors
 
     ok = True
@@ -48,13 +48,13 @@ def test_normals():
         gel = domain.geom_els[geom].surface_facet
         ps = PolySpace.any_from_args('aux', gel, 1)
 
-        mapping = SurfaceMapping(coors, sd.get_connectivity(), ps)
+        mapping = FEMapping(coors, sd.get_connectivity(), ps)
 
         integral = Integral('i', order=1)
         vals, weights = integral.get_qp(gel.name)
 
         # Evaluate just in the first quadrature point...
-        geo = mapping.get_mapping(vals[:1], weights[:1])
+        geo = mapping.get_mapping(vals[:1], weights[:1], is_face=True)
 
         expected = expected_normals[geom].copy()
         normalize_vectors(expected)

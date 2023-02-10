@@ -5,7 +5,7 @@ from sfepy.base.base import assert_
 from sfepy.linalg import norm_l2_along_axis as norm
 from sfepy.linalg import dot_sequences, insert_strided_axis
 from sfepy.discrete import PolySpace
-from sfepy.discrete.fem.mappings import VolumeMapping
+from sfepy.discrete.fem.mappings import FEMapping
 from sfepy.mechanics.tensors import dim2sym
 from six.moves import range
 
@@ -108,7 +108,7 @@ def create_mapping(coors, gel, order):
 
     Returns
     -------
-    mapping : VolumeMapping instance
+    mapping : FEMapping instance
         The reference element face mapping.
     """
     # Strip 'z' component (should be 0 now...).
@@ -121,7 +121,7 @@ def create_mapping(coors, gel, order):
     seq_conn = nm.arange(seq_coors.shape[0], dtype=nm.int32)
     seq_conn.shape = sh[:2]
 
-    mapping = VolumeMapping(seq_coors, seq_conn, gel=gel, order=1)
+    mapping = FEMapping(seq_coors, seq_conn, gel=gel, order=1)
 
     return mapping
 

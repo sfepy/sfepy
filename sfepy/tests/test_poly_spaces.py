@@ -279,7 +279,7 @@ def test_continuity(gels):
 
 @pytest.mark.slow
 def test_gradients(gels):
-    from sfepy.discrete.fem.mappings import VolumeMapping
+    from sfepy.discrete.fem.mappings import FEMapping
 
     ok = True
     orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
@@ -293,18 +293,16 @@ def test_gradients(gels):
         conn = mesh.get_conn(gel.name)
 
         geo_ps = field.gel.poly_space
-        rmapping = VolumeMapping(mesh.coors, conn[rcell:rcell+1],
-                                 poly_space=geo_ps)
+        rmapping = FEMapping(mesh.coors, conn[rcell:rcell+1],
+                             poly_space=geo_ps)
         rori = field.ori[:1] if field.ori is not None else None
-        rvg = rmapping.get_mapping(rrc, qp_weights,
-                                   poly_space=ps, ori=rori)
+        rvg = rmapping.get_mapping(rrc, qp_weights, poly_space=ps, ori=rori)
         rbfg = rvg.bfg
 
-        cmapping = VolumeMapping(mesh.coors, conn[ccell:ccell+1],
-                                 poly_space=geo_ps)
+        cmapping = FEMapping(mesh.coors, conn[ccell:ccell+1],
+                             poly_space=geo_ps)
         cori = field.ori[1:] if field.ori is not None else None
-        cvg = cmapping.get_mapping(crc, qp_weights,
-                                   poly_space=ps, ori=cori)
+        cvg = cmapping.get_mapping(crc, qp_weights, poly_space=ps, ori=cori)
         cbfg = cvg.bfg
 
         dofs = nm.r_[edofs, fdofs]

@@ -204,7 +204,7 @@ class FEDomain(Domain):
         Notes
         -----
         Surface groups define surface facet connectivity that is needed
-        for :class:`sfepy.discrete.fem.mappings.SurfaceMapping`.
+        for :class:`sfepy.discrete.fem.mappings.FEMapping`.
         """
         groups = self.surface_groups
         if region.name not in groups:

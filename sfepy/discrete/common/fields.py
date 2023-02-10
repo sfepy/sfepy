@@ -223,7 +223,7 @@ class Field(Struct):
         -------
         geo : CMapping instance
             The reference mapping.
-        mapping : VolumeMapping or SurfaceMapping instance
+        mapping : FEMapping or IGMapping instance
             The mapping.
         key : tuple
             The key of the mapping in `mappings` or `mappings0`.

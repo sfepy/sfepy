@@ -257,28 +257,3 @@ class FEMapping(Mapping):
         pycmap = PyCMapping(*margs)
 
         return pycmap
-
-
-class VolumeMapping(FEMapping):
-    """
-    Mapping from reference domain to physical domain of the same space
-    dimension.
-    """
-
-    def get_mapping(self, qp_coors, weights, poly_space=None, ori=None,
-                    transform=None):
-        return FEMapping.get_mapping(self, qp_coors, weights,
-                                     poly_space=poly_space, ori=ori,
-                                     transform=transform, is_face=False)
-
-
-class SurfaceMapping(FEMapping):
-    """
-    Mapping from reference domain to physical domain of the space
-    dimension higher by one.
-    """
-
-    def get_mapping(self, qp_coors, weights, poly_space=None, extra=(None, None, None)):
-        return FEMapping.get_mapping(self, qp_coors, weights,
-                                     poly_space=poly_space, ori=None,
-                                     transform=None, is_face=True, extra=extra)

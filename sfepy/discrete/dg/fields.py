@@ -11,7 +11,7 @@ from sfepy.base.base import (output, assert_, Struct)
 from sfepy.discrete import Integral, PolySpace
 from sfepy.discrete.common.fields import parse_shape
 from sfepy.discrete.fem.fields_base import FEField
-from sfepy.discrete.fem.mappings import VolumeMapping
+from sfepy.discrete.fem.mappings import FEMapping
 
 
 def get_unraveler(n_el_nod, n_cell):
@@ -1092,7 +1092,7 @@ class DGField(FEField):
 
         Returns
         -------
-        mapping : VolumeMapping
+        mapping : FEMapping
         """
         domain = self.domain
         coors = domain.get_mesh_coors(actual=True)
@@ -1108,12 +1108,10 @@ class DGField(FEField):
             bf = self.get_base('v', 0, integral, iels=iels)
 
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
-            mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
-            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
-                                     ori=self.ori,
-                                     transform=self.basis_transform)
-
-            out = vg
+            mapping = FEMapping(coors, conn, poly_space=geo_ps)
+            out = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+                                      ori=self.ori,
+                                      transform=self.basis_transform)
         else:
             raise ValueError('unsupported integration geometry type: %s'
                              % integration)
