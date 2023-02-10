@@ -221,7 +221,7 @@ class Field(Struct):
 
         Returns
         -------
-        geo : CMapping instance
+        geo : PyCMapping instance
             The reference mapping.
         mapping : FEMapping or IGMapping instance
             The mapping.
