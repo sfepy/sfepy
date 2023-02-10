@@ -468,7 +468,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
             pos2 = position // options.max_plots
             shift = pos1 * size * nm.array(options.grid_vector1)
             shift += pos2 * size * nm.array(options.grid_vector2)
-            pipe[-1].translate(shift)
+            pipe[-1].translate(shift, inplace=True)
 
         if opts.get('l', options.outline):  # outline
             plotter.add_mesh(pipe[-1].outline(), color='k')
