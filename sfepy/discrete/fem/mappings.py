@@ -29,7 +29,7 @@ def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
         The derivatives of the domain base functions with respect to the
         reference coordinates.
     weight: numpy.ndarray
-        The weights of the integration points.
+        The weights of the quadrature points.
     ebf_g: numpy.ndarray
         The derivatives of the field base functions with respect to the
         reference coordinates.
@@ -223,7 +223,7 @@ class FEMapping(Mapping):
         Returns
         -------
         pycmap: PyCMapping instance
-            The domain mapping fields.
+            The domain mapping data.
         """
         poly_space = get_default(poly_space, self.poly_space)
 
