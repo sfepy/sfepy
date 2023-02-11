@@ -111,7 +111,9 @@ def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
             bfg = nm.einsum('cqij,cqjk->cqik', mtxRMI, ebf_g, optimize=True)
         else:
             mtxRMI = nm.linalg.inv(mtxRM)
-            bfg = nm.einsum('cqij,xqjk->cqik', mtxRMI, ebf_g, optimize=True)
+            es_arg2 = 'x' if ebf_g.shape[0] == 1 else 'c'
+            bfg = nm.einsum(f'cqij,{es_arg2}qjk->cqik', mtxRMI, ebf_g,
+                            optimize=True)
     else:
         bfg = None
 
