@@ -8,6 +8,7 @@ from sfepy.base.base import get_default, output
 from sfepy.base.mem_usage import raise_if_too_large
 from sfepy.discrete.common.mappings import Mapping, PyCMapping
 from sfepy.discrete import PolySpace
+from sfepy.linalg.utils import invs_fast, dets_fast
 
 
 def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
@@ -95,11 +96,12 @@ def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
             normal[..., 2, 0] = c3
             normal /= det0
     else:
-        det = nm.linalg.det(mtxRM)
-        if nm.any(det <= 0.0):
+        # det0 = nm.linalg.det(mtxRM)
+        det0 = dets_fast(mtxRM)
+        if nm.any(det0 <= 0.0):
             raise ValueError('warp violation!')
 
-        det *= weights
+        det = det0 * weights
         det = det.reshape(n_el, n_qp, 1, 1)
         normal = None
 
@@ -107,10 +109,10 @@ def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
         if is_face and se_conn is not None and se_bf_bg is not None:
             mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, coors[se_conn, :dim],
                               optimize=True)
-            mtxRMI = nm.linalg.inv(mtxRM)
+            mtxRMI = invs_fast(mtxRM)
             bfg = nm.einsum('cqij,cqjk->cqik', mtxRMI, ebf_g, optimize=True)
         else:
-            mtxRMI = nm.linalg.inv(mtxRM)
+            mtxRMI = invs_fast(mtxRM, det0)
             es_arg2 = 'x' if ebf_g.shape[0] == 1 else 'c'
             bfg = nm.einsum(f'cqij,{es_arg2}qjk->cqik', mtxRMI, ebf_g,
                             optimize=True)

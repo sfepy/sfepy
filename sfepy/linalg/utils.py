@@ -95,6 +95,55 @@ def dets_fast(a):
 
         return sign * nm.exp(logdet)
 
+
+def invs_fast(a, det=None):
+    """
+    Fast inversion calculation of 4-dimensional array.
+
+    Parameters
+    ----------
+    a : array
+        The input array with shape (c, q, n, n).
+    det: array
+        To speed up the calculation, enter the already calculated determinant.
+
+    Returns
+    -------
+    out : array
+        The output array with shape (c, q, n, n):
+        out[c, q] = inv(a[c, q, :, :]).
+    """
+    ax = nm.einsum("ij...->...ij", a)
+    dim = a.shape[-1]
+    inv_ax = nm.empty_like(ax)
+    if det is None:
+        det_a = nm.linalg.det(a)[..., None, None]
+    else:
+        det_a = det.reshape(a.shape[:2] + (1, 1))
+
+    if dim == 3:
+        inv_ax[0, 0] = -ax[1, 2] * ax[2, 1] + ax[1, 1] * ax[2, 2]
+        inv_ax[1, 0] = ax[1, 2] * ax[2, 0] -  ax[1, 0] * ax[2, 2]
+        inv_ax[2, 0] = -ax[1, 1] * ax[2, 0] + ax[1, 0] * ax[2, 1]
+        inv_ax[0, 1] = ax[0, 2] * ax[2, 1] -  ax[0, 1] * ax[2, 2]
+        inv_ax[1, 1] = -ax[0, 2] * ax[2, 0] + ax[0, 0] * ax[2, 2]
+        inv_ax[2, 1] = ax[0, 1] * ax[2, 0] - ax[0, 0] * ax[2, 1]
+        inv_ax[0, 2] = -ax[0, 2] * ax[1, 1] + ax[0, 1] * ax[1, 2]
+        inv_ax[1, 2] = ax[0, 2] * ax[1, 0] - ax[0, 0] * ax[1, 2]
+        inv_ax[2, 2] = -ax[0, 1] * ax[1, 0] + ax[0, 0] * ax[1, 1]
+    elif dim == 2:
+        inv_ax[0, 0] = ax[1, 1]
+        inv_ax[1, 0] = -ax[0, 1]
+        inv_ax[0, 1] = -ax[1, 0]
+        inv_ax[1, 1] = ax[0, 0]
+    elif dim == 1:
+        inv_ax[0, 0] = 1.
+    else:
+        raise NotImplementedError(f'matrix dimension {dim}x{dim}')
+
+    return nm.einsum("...ij->ij...", inv_ax) / det_a
+
+
 def print_array_info(ar):
     """
     Print array shape and other basic information.
