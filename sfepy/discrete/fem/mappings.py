@@ -9,7 +9,7 @@ from sfepy.discrete.common.mappings import Mapping, PyCMapping
 from sfepy.discrete import PolySpace
 
 
-def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
+def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
                             ebf_g=None, is_face=False, flag=0, eps=1e-15,
                             se_conn=None, se_bf_bg=None):
     """
@@ -17,7 +17,7 @@ def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
 
     Parameters
     ----------
-    coor: numpy.ndarray
+    coors: numpy.ndarray
         The nodal coordinates.
     conn: numpy.ndarray
         The element connectivity.
@@ -28,7 +28,7 @@ def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
     bf_g: numpy.ndarray
         The derivatives of the domain base functions with respect to the
         reference coordinates.
-    weight: numpy.ndarray
+    weights: numpy.ndarray
         The weights of the quadrature points.
     ebf_g: numpy.ndarray
         The derivatives of the field base functions with respect to the
@@ -61,7 +61,7 @@ def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
     normal: numpy.ndarray
         The normal vectors for the surface elements in integration points.
     """
-    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coor[conn, :dim], optimize=True)
+    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coors[conn, :dim], optimize=True)
 
     n_el, n_qp = mtxRM.shape[:2]
 
@@ -69,13 +69,13 @@ def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
         # outward unit normal vector
         normal = nm.ones((n_el, n_qp, dim, 1), dtype=nm.float64)
         if dim == 1:
-            det = nm.tile(weight, (n_el, 1)).reshape(n_el, n_qp, 1, 1)
+            det = nm.tile(weights, (n_el, 1)).reshape(n_el, n_qp, 1, 1)
             ii = nm.where(conn == 0)[0]
             normal[ii] *= -1.0
         elif dim == 2:
             c1, c2 = mtxRM[..., 0], mtxRM[..., 1]
             det0 = nm.sqrt(c1**2 + c2**2).reshape(n_el, n_qp, 1, 1)
-            det = det0 * weight[:, None, None]
+            det = det0 * weights[:, None, None]
             det0[nm.abs(det0) < eps] = 1.0
             normal[..., 0, :] = c2
             normal[..., 1, :] = -c1
@@ -87,7 +87,7 @@ def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
             c2 = (j012[0] * j345[2] - j345[0] * j012[2]).T
             c3 = (j012[0] * j345[1] - j345[0] * j012[1]).T
             det0 = nm.sqrt(c1**2 + c2**2 + c3**2).reshape(n_el, n_qp, 1, 1)
-            det = det0 * weight[:, None, None]
+            det = det0 * weights[:, None, None]
             det0[nm.abs(det0) < eps] = 1.0
             normal[..., 0, 0] = c1
             normal[..., 1, 0] = -c2
@@ -98,13 +98,13 @@ def eval_mapping_data_in_qp(coor, conn, dim, n_ep, bf_g, weight,
         if nm.any(det <= 0.0):
             raise ValueError('warp violation!')
 
-        det *= weight
+        det *= weights
         det = det.reshape(n_el, n_qp, 1, 1)
         normal = None
 
     if ebf_g is not None:
         if is_face and se_conn is not None and se_bf_bg is not None:
-            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, coor[se_conn, :dim],
+            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, coors[se_conn, :dim],
                               optimize=True)
             mtxRMI = nm.linalg.inv(mtxRM)
             bfg = nm.einsum('cqij,cqjk->cqik', mtxRMI, ebf_g, optimize=True)
