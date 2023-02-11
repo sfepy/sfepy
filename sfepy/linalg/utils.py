@@ -117,7 +117,7 @@ def invs_fast(a, det=None):
     dim = a.shape[-1]
     inv_ax = nm.empty_like(ax)
     if det is None:
-        det_a = nm.linalg.det(a)[..., None, None]
+        det_a = dets_fast(a)[..., None, None]
     else:
         det_a = det.reshape(a.shape[:2] + (1, 1))
 
