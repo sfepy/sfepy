@@ -498,6 +498,8 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
             ts.advance()
 
             vec = vect
+            
+        return vec
 
 class VelocityVerletTS(ElastodynamicsBaseTS):
     """
