@@ -251,6 +251,9 @@ class Region(Struct):
     def set_kind(self, kind):
         if kind == self.kind: return
 
+        if self.__facet_kinds[self.tdim]['facet'] == kind:
+            kind = 'facet'
+
         self.kind = kind
         if 'facet' in kind:
             self.true_kind = self.__facet_kinds[self.tdim][kind]
@@ -594,7 +597,7 @@ class Region(Struct):
         to facets are returned if the region itself contains no cells. Obeys
         parent region, if given.
         """
-        if self.cells.shape[0] == 0:
+        if self.kind != 'cell':
             if true_cells_only:
                 msg = 'region %s has not true cells! (has kind: %s)' \
                       % (self.name, self.kind)
