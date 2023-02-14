@@ -123,18 +123,20 @@ def invs_fast(a, det=None):
 
     if dim == 3:
         inv_ax[0, 0] = -ax[1, 2] * ax[2, 1] + ax[1, 1] * ax[2, 2]
-        inv_ax[1, 0] = ax[1, 2] * ax[2, 0] -  ax[1, 0] * ax[2, 2]
+        inv_ax[1, 0] = ax[1, 2] * ax[2, 0] - ax[1, 0] * ax[2, 2]
         inv_ax[2, 0] = -ax[1, 1] * ax[2, 0] + ax[1, 0] * ax[2, 1]
-        inv_ax[0, 1] = ax[0, 2] * ax[2, 1] -  ax[0, 1] * ax[2, 2]
+
+        inv_ax[0, 1] = ax[0, 2] * ax[2, 1] - ax[0, 1] * ax[2, 2]
         inv_ax[1, 1] = -ax[0, 2] * ax[2, 0] + ax[0, 0] * ax[2, 2]
         inv_ax[2, 1] = ax[0, 1] * ax[2, 0] - ax[0, 0] * ax[2, 1]
+
         inv_ax[0, 2] = -ax[0, 2] * ax[1, 1] + ax[0, 1] * ax[1, 2]
         inv_ax[1, 2] = ax[0, 2] * ax[1, 0] - ax[0, 0] * ax[1, 2]
         inv_ax[2, 2] = -ax[0, 1] * ax[1, 0] + ax[0, 0] * ax[1, 1]
     elif dim == 2:
         inv_ax[0, 0] = ax[1, 1]
-        inv_ax[1, 0] = -ax[0, 1]
-        inv_ax[0, 1] = -ax[1, 0]
+        inv_ax[1, 0] = -ax[1, 0]
+        inv_ax[0, 1] = -ax[0, 1]
         inv_ax[1, 1] = ax[0, 0]
     elif dim == 1:
         inv_ax[0, 0] = 1.
