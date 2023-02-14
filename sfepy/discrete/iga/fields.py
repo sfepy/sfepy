@@ -97,8 +97,7 @@ class IGField(Field):
         """
         return (self.nurbs.degrees > 1).any()
 
-    def get_econn(self, conn_type, region, trace_region=None, integration=None,
-                  local=False):
+    def get_econn(self, conn_type, region, trace_region=None, local=False):
         """
         Get DOF connectivity of the given type in the given region.
         """

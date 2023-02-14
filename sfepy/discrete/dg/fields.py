@@ -963,8 +963,7 @@ class DGField(FEField):
 
         return data_shape
 
-    def get_econn(self, conn_type, region, trace_region=None,
-                  integration=None):
+    def get_econn(self, conn_type, region, trace_region=None):
         """Getter for econn
 
         Parameters
@@ -972,10 +971,7 @@ class DGField(FEField):
         conn_type : string or Struct
             'volume' is only supported
         region : sfepy.discrete.common.region.Region
-
         trace_region : ignored
-             (Default value = None)
-        integration : ignored
              (Default value = None)
 
         Returns
