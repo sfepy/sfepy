@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+"""SfePy: Simple finite elements in Python
+
+SfePy (simple finite elements in Python) is a software, distributed
+under the BSD license, for solving systems of coupled partial
+differential equations by the finite element method. The code is based
+on NumPy and SciPy packages.
+"""
+
+from skbuild import setup
+from setuptools import find_packages, Extension
+from Cython.Build import cythonize
+import numpy as np
+
+import sys
+sys.path.append('./tools')
+from build_helpers import INFO, cmdclass
+
+DOCLINES = __doc__.split("\n")
+
+VERSION = INFO.__version__
+
+CLASSIFIERS = """\
+Development Status :: 3 - Alpha
+Intended Audience :: Science/Research
+Intended Audience :: Developers
+License :: OSI Approved :: BSD License
+Programming Language :: C
+Programming Language :: Python
+Topic :: Software Development
+Topic :: Scientific/Engineering
+Operating System :: POSIX
+Operating System :: MacOS :: MacOS X
+Operating System :: Microsoft :: Windows
+"""
+
+DOWNLOAD_URL = "http://sfepy.org/doc-devel/downloads.html"
+
+install_requires = [
+    'matplotlib',
+    'meshio',
+    'numpy',
+    'pyparsing',
+    'pyvista',
+    'scipy',
+    'sympy',
+    'tables',
+]
+"""
+print(find_packages())
+test_ext = Extension(
+    'sfepy.discrete.common.extmods.mappings',
+    sources=['sfepy/discrete/common/extmods/mappings*.pyx'],
+    include_dirs=[np.get_include()]
+)
+print(test_ext)
+"""
+
+# Create version.h file.
+# There is probably a way to do it with CMake but we'll get to it later.
+filename_in = 'sfepy/discrete/common/extmods/version.h.in'
+filename_out = 'sfepy/discrete/common/extmods/version.h'
+fdi = open(filename_in, 'r')
+fdo = open(filename_out, 'w')
+for line in fdi:
+    if line.find('VERSION "0.0.0"') >= 0:
+        aux = line.split()
+        aux[2] = VERSION
+        line = ' '.join(aux) + '\n'
+    fdo.write(line)
+fdi.close()
+fdo.close()
+
+setup(
+    name='sfepy',
+    maintainer="Robert Cimrman",
+    maintainer_email="cimrman3@ntc.zcu.cz",
+    description=DOCLINES[0],
+    long_description="\n".join(DOCLINES[2:]),
+    url="http://sfepy.org",
+    download_url=DOWNLOAD_URL,
+    license='BSD',
+    classifiers=list(filter(None, CLASSIFIERS.split('\n'))),
+    platforms=["Linux", "Mac OS-X", 'Windows'],
+    entry_points={
+      'console_scripts': [
+          'sfepy-convert=sfepy.scripts.convert_mesh:main',
+          'sfepy-mesh=sfepy.scripts.gen_mesh:main',
+          'sfepy-probe=sfepy.scripts.probe:main',
+          'sfepy-run=sfepy.scripts.simple:main',
+          'sfepy-test=sfepy.scripts.run_tests:main',
+          'sfepy-view=sfepy.scripts.resview:main',
+      ],
+    },
+    install_requires=install_requires,
+    cmdclass=cmdclass,
+    packages=find_packages(),
+    setup_requires=['cython'],
+)

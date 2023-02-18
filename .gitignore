@@ -2,6 +2,7 @@
 !*/
 !*.py
 
+.venv
 .tox/
 build/
 doc/_build/
@@ -11,3 +12,4 @@ sfepy/__config__.py
 sfepy/discrete/__config__.py
 site_cfg.py
 work/
+/_skbuild/
