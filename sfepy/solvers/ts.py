@@ -145,7 +145,7 @@ class VariableTimeStepper(TimeStepper):
 
         self.dt0 = self.dt
 
-        self.n_digit, self.format, self.suffix = get_print_info(5)
+        self.n_digit, self.format, self.suffix = get_print_info(self.n_step0)
 
         self.set_step(step)
 
