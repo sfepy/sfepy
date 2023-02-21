@@ -215,6 +215,12 @@ def define(
         'i' : 2,
     }
 
+    # Notes:
+    # 1. The order of the variables in the solution vector is specified here (3rd tuple member),
+    #    since that specific order is expected by the elastodynamic time-stepping solvers.
+    # 2. For the same reason, we won't explicitly define below the equations du = du/dt
+    #    and ddu = ddu/dt - these are implicitly defined by the time-stepping solver.
+    #    see the `step()` method of the solvers.
     variables = {
         'u' : ('unknown field', 'displacement', 0),
         'du' : ('unknown field', 'displacement', 1),
@@ -223,12 +229,6 @@ def define(
         'dv' : ('test field', 'displacement', 'du'),
         'ddv' : ('test field', 'displacement', 'ddu'),
     }
-    # Notes:
-    # 1. The order of the variables in the solution vector is specified here (3rd tuple member),
-    #    since that specific order is expected by the elastodynamic time-stepping solvers.
-    # 2. For the same reason, we won't explicitly define below the equations du = du/dt
-    #    and ddu = ddu/dt - these are implicitly defined by the time-stepping solver.
-    #    see the `step()` method on the solvers.
 
     ebcs = {
         'Impact' : ('Impact', {'u.0' : 0.0, 'du.0' : 0.0, 'ddu.0' : 0.0}),
