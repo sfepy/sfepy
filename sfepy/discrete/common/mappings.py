@@ -4,6 +4,41 @@ Reference-physical domain mappings.
 import numpy as nm
 
 from sfepy.base.base import Struct
+from sfepy.discrete.common.extmods.cmapping import CMapping
+
+
+class PyCMapping(Struct):
+    """
+    Class for storing mapping data. Primary data in numpy arrays.
+    Data for C functions translated to FMFields and embedded in CMapping.
+    """
+    def __init__(self, bf, det, volume, bfg, normal, dim):
+        self.bf = bf
+        self.det = det
+        self.volume = volume
+        self.bfg = bfg
+        self.normal = normal
+
+        self.cmap = CMapping(bf, det, volume, bfg, normal, dim)
+
+        n_el, n_qp = det.shape[:2]
+        n_ep = bf.shape[3]
+        self.n_el = n_el
+        self.n_qp = n_qp
+        self.dim = dim
+        self.n_ep = n_ep
+
+    def integrate(self, out, field, mode=0):
+        dim = field.shape[2]
+        if mode < 3 or dim == 1:
+            out[:] = nm.sum(field * self.det, axis=1)[:, None, :, :]
+            if mode == 1:
+                out /= self.volume
+        elif dim == (self.tdim + 1) and self.normal is not None:
+            out[:] = nm.dot(field, self.normal) * self.det / self.volume
+
+        return 0
+
 
 class PhysicalQPs(Struct):
     """

@@ -67,6 +67,8 @@ class HyperElasticFamilyData(Struct):
 
             fargs = tuple([getattr(data, k) for k in self.data_names])
             fargs = fargs + (vec, vg, state.field.econn)
+            fargs = Term.translate_fargs_mapping(self.family_function,
+                                                 list(fargs))
 
             self.family_function(*fargs)
             cache[data_key] = data
@@ -229,7 +231,7 @@ class DeformationGradientTerm(Term):
         out_qp = nm.empty((out.shape[0], vg.n_qp, d, d), dtype=out.dtype)
 
         mode = 1 if term_mode == 'jacobian' else 0
-        terms.dq_def_grad(out_qp, vec, vg, econn, mode)
+        terms.dq_def_grad(out_qp, vec, vg.cmap, econn, mode)
 
         if fmode == 2:
             out[:] = out_qp

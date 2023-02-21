@@ -413,7 +413,7 @@ class CauchyStrainTerm(Term):
             status = 0
 
         else:
-            status = terms.de_cauchy_strain(out, strain, vg, fmode)
+            status = terms.de_cauchy_strain(out, strain, vg.cmap, fmode)
 
         return status
 
@@ -469,7 +469,7 @@ class CauchyStressTerm(Term):
             status = 0
 
         else:
-            status = terms.de_cauchy_stress(out, strain, mat, vg, fmode)
+            status = terms.de_cauchy_stress(out, strain, mat, vg.cmap, fmode)
 
         if coef is not None:
             out *= coef

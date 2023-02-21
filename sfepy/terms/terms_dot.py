@@ -404,10 +404,10 @@ class VectorDotScalarTerm(Term):
             status1 = terms.actBfT(aux, bfve, mat)
 
         if fmode == 0:
-            status2 = terms.mulAB_integrate(out, aux, val_qp, geo, 'AB')
+            status2 = terms.mulAB_integrate(out, aux, val_qp, geo.cmap, 'AB')
 
         if fmode == 1:
-            status2 = terms.mulAB_integrate(out, aux, bfsc, geo, 'AB')
+            status2 = terms.mulAB_integrate(out, aux, bfsc, geo.cmap, 'AB')
 
         if fmode == 2:
             aux = (bfsc * dot_sequences(mat, val_qp,
@@ -415,7 +415,7 @@ class VectorDotScalarTerm(Term):
             status2 = geo.integrate(out, nm.ascontiguousarray(aux))
 
         if fmode == 3:
-            status2 = terms.mulAB_integrate(out, bfsc, aux, geo, 'ATBT')
+            status2 = terms.mulAB_integrate(out, bfsc, aux, geo.cmap, 'ATBT')
 
         return status1 and status2
 
@@ -509,13 +509,13 @@ class ScalarDotGradIScalarTerm(Term):
 
         if fmode == 0:
             status = terms.mulAB_integrate(out, bft,
-                                           cc(grad[..., idx:idx+1, :]), vg,
-                                           mode='ATB')
+                                           cc(grad[..., idx:idx+1, :]),
+                                           vg.cmap, mode='ATB')
 
         else:
             status = terms.mulAB_integrate(out, bft,
-                                           cc(vg.bfg[:,:,idx:(idx + 1),:]), vg,
-                                           mode='ATB')
+                                           cc(vg.bfg[:,:,idx:(idx + 1),:]),
+                                           vg.cmap, mode='ATB')
 
         return status
 

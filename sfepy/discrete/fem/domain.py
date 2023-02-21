@@ -170,21 +170,25 @@ class FEDomain(Domain):
         else:
             return conn
 
-    def get_element_diameters(self, cells, vg, mode, square=True):
-        diameters = nm.empty((len(cells), 1, 1, 1), dtype=nm.float64)
-        if vg is None:
-            diameters.fill(1.0)
-        else:
-            conn, gel = self.get_conn(ret_gel=True)
-            vg.get_element_diameters(diameters, gel.edges,
-                                     self.get_mesh_coors().copy(), conn,
-                                     cells.astype(nm.int32), mode)
-        if square:
-            out = diameters.squeeze()
-        else:
-            out = nm.sqrt(diameters.squeeze())
+    def get_element_diameters(self, cells, volume, mode, square=True):
+        conn, gel = self.get_conn(ret_gel=True)
+        coors = self.get_mesh_coors()
+        lconn = conn[cells]
+        ed = gel.edges
 
-        return out
+        if mode == 0 or mode == 2:
+            vv = coors[lconn[:, ed[:, 1]]] - coors[lconn[:, ed[:, 0]]]
+            v0 = nm.max(nm.sum(vv**2, axis=2), axis=1)
+            out = v0
+
+        if mode == 1 or mode == 2:
+            v1 = nm.power(0.16 * volume, 1.0 / gel.dim).squeeze()
+            out = v1
+
+        if mode == 2:
+            out = nm.max(nm.stack([v0, v1]), axis=0)
+
+        return out if square else nm.sqrt(out)
 
     def clear_surface_groups(self):
         """
