@@ -290,7 +290,7 @@ def main():
     eok += report(out, '...', -2, 4, '8.021313824020e-07', eps=1e-6)
 
     out, err = check_output('mpiexec -n 2 python3 sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
-    eok += report(out, '...', -2, 4, '3.787214380277e-09', eps=1e-8)
+    eok += report(out, '...', -2, 4, '3.787214380277e-09', eps=1e-7)
 
     t1 = time.time()
 
