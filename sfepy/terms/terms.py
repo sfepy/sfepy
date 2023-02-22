@@ -922,8 +922,13 @@ class Term(Struct):
             reg = self.region
             if reg.kind == 'cell':
                 integration = 'volume'
-            elif reg.kind == 'face' or reg.kind == 'facet':
+
+            elif reg.kind_tdim == (reg.tdim - 1):
                 integration = getattr(self, 'surface_integration', 'surface')
+
+            else:
+                raise ValueError(f'region "{reg.name}" cannot be used as '
+                                 f'"{self.name}" term integration domain!')
 
             self.integration = integration
 
