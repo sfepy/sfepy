@@ -1497,7 +1497,9 @@ class EGradTerm(ETermBase):
 
     .. math::
         \int_{\Omega} \nabla \ul{v} \mbox { , }
-        \int_{\Omega} c \nabla \ul{v}
+        \int_{\Omega} c \nabla \ul{v} \mbox { , }
+        \int_{\Omega} \ul{c} \cdot \nabla \ul{v} \mbox { , }
+        \int_{\Omega} \ull{c} \cdot \nabla \ul{v}
 
     :Arguments:
         - material: :math:`c` (optional)
@@ -1506,6 +1508,7 @@ class EGradTerm(ETermBase):
     name = 'de_grad'
     arg_types = ('opt_material', 'parameter')
     arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 'N'},
+                  {'opt_material' : 'N, 1'}, {'opt_material' : 'N, N'},
                   {'opt_material' : None}]
 
     def get_function(self, mat, virtual, mode=None, term_mode=None,
@@ -1516,8 +1519,16 @@ class EGradTerm(ETermBase):
             )
 
         else:
+            dim = virtual.dim
+            if mat.shape[-2:] == (1, 1):
+                mul = '00'
+            elif mat.shape[-2:] in [(dim, 1), (dim, dim)]:
+                mul = 'jk'
+            else:
+                raise ValueError(f'wrong matrial shape! ({mat.shape[-2:]})')
+
             fun = self.make_function(
-                '00,i.j', mat, virtual, diff_var=diff_var,
+                mul + ',i.j', mat, virtual, diff_var=diff_var,
             )
 
         return fun
