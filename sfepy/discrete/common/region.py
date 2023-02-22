@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import re
-from copy import copy
 
 import numpy as nm
 
@@ -546,10 +545,10 @@ class Region(Struct):
 
     def copy(self):
         """
-        Vertices-based copy.
+        Make a copy based on the region kind.
         """
         tmp = self.light_copy('copy', self.parse_def, tdim=self.tdim)
-        tmp.vertices = copy(self.vertices)
+        tmp.entities[self.kind_tdim] = self.get_entities(self.kind_tdim).copy()
 
         return tmp
 
