@@ -1521,14 +1521,14 @@ class EGradTerm(ETermBase):
         else:
             dim = virtual.dim
             if mat.shape[-2:] == (1, 1):
-                mul = '00'
+                expr = '00,i.j'
             elif mat.shape[-2:] in [(dim, 1), (dim, dim)]:
-                mul = 'jk'
+                expr = 'jk,i.j'
             else:
                 raise ValueError(f'wrong matrial shape! ({mat.shape[-2:]})')
 
             fun = self.make_function(
-                mul + ',i.j', mat, virtual, diff_var=diff_var,
+                expr, mat, virtual, diff_var=diff_var,
             )
 
         return fun
