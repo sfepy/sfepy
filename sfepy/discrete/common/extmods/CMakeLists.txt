@@ -1,6 +1,6 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(common_src fmfield.c refmaps.c geommech.c common_python.c)
+set(common_src fmfield.c geommech.c common_python.c)
 add_library(sfepy_common SHARED ${common_src})
 python_extension_module(sfepy_common)
 target_include_directories(sfepy_common PRIVATE ${NumPy_INCLUDE_DIRS})
