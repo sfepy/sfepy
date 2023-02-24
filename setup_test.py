@@ -95,5 +95,6 @@ setup(
     install_requires=install_requires,
     cmdclass=cmdclass,
     packages=find_packages(),
+    data_files=[('sfepy', ['LICENSE', 'VERSION'])],
     setup_requires=['cython'],
 )
