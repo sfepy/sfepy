@@ -11,12 +11,10 @@ add_library(_fmfield MODULE ${_fmfield})
 target_include_directories(_fmfield PRIVATE ${NumPy_INCLUDE_DIRS})
 target_link_libraries(_fmfield sfepy_common)
 
-install(TARGETS _fmfield LIBRARY DESTINATION _fmfield)
-
 add_cython_target(cmapping cmapping.pyx)
 python_extension_module(cmapping)
 add_library(cmapping MODULE ${cmapping})
 target_include_directories(cmapping PRIVATE ${NumPy_INCLUDE_DIRS})
 target_link_libraries(cmapping sfepy_common)
 
-install(TARGETS _fmfield cmapping LIBRARY DESTINATION sfepy)
+install(TARGETS _fmfield cmapping LIBRARY DESTINATION sfepy/discrete/common/extmods)
