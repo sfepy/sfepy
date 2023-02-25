@@ -1,9 +1,11 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(common_src fmfield.c geommech.c common_python.c)
-add_library(sfepy_common SHARED ${common_src})
-#python_extension_module(sfepy_common)
+add_library(sfepy_common STATIC ${common_src})
+python_extension_module(sfepy_common)
 target_include_directories(sfepy_common PRIVATE ${NumPy_INCLUDE_DIRS})
+#install(TARGETS sfepy_common LIBRARY DESTINATION sfepy/)
 
 add_cython_target(_fmfield _fmfield.pyx)
 add_library(_fmfield MODULE ${_fmfield})
@@ -17,4 +19,4 @@ python_extension_module(cmapping)
 target_include_directories(cmapping PRIVATE ${NumPy_INCLUDE_DIRS})
 target_link_libraries(cmapping sfepy_common)
 
-install(TARGETS _fmfield cmapping sfepy_common LIBRARY DESTINATION sfepy/discrete/common/extmods)
+install(TARGETS _fmfield cmapping LIBRARY DESTINATION sfepy/discrete/common/extmods)
