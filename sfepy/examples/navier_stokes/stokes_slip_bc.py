@@ -181,7 +181,7 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
         'pressure' : ('real', 1, 'Omega', 1),
     }
 
-    def get_u_d(ts, coors, region=None):
+    def get_u_d(ts, coors, region=None, **kwargs):
         """
         Given stator velocity.
         """

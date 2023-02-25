@@ -113,7 +113,7 @@ def get_nodes(coors, radius, eps, mode):
 
     return get_coors_in_ball(coors, centre, eps)
 
-def get_volume(ts, coors, region=None):
+def get_volume(ts, coors, region=None, **kwargs):
     rs = 1.0 + 1.0 * ts.time
 
     rv = get_rel_volume(rs)
