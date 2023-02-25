@@ -113,7 +113,7 @@ def get_middle_ball(coors, domain=None):
 
     return flag
 
-def get_load_variable(ts, coors, region=None):
+def get_load_variable(ts, coors, region=None, variable=None, **kwargs):
     """
     Define nodal values of 'p' in the nodal coordinates `coors`.
     """
@@ -122,7 +122,7 @@ def get_load_variable(ts, coors, region=None):
     val = 5e5 * y
     return val
 
-def get_convective_velocity(ts, coors, region=None):
+def get_convective_velocity(ts, coors, **kwargs):
     """
     Define nodal values of 'w' in the nodal coordinates `coors`.
     """

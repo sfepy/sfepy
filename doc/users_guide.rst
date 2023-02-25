@@ -863,15 +863,12 @@ description file demonstrating how to use different kinds of functions.
 
 - function for setting values of a parameter variable::
 
-    variable_1 = {
-        'name' : 'p',
-        'kind' : 'parameter field',
-        'field' : 'temperature',
-        'like' : None,
-        'special' : {'setter' : 'get_load_variable'},
+    variables = {
+        'p' : ('parameter field', 'temperature',
+               {'setter' : 'get_load_variable'}),
     }
 
-    def get_load_variable(ts, coors, region=None):
+    def get_load_variable(ts, coors, region=None, variable=None, **kwargs):
         y = coors[:,1]
         val = 5e5 * y
         return val

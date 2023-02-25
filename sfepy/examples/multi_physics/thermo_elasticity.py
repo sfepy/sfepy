@@ -39,7 +39,7 @@ T0 = 20.0 # Background temperature.
 
 filename_mesh = data_dir + '/meshes/3d/block.mesh'
 
-def get_temperature_load(ts, coors, region=None):
+def get_temperature_load(ts, coors, region=None, **kwargs):
     """
     Temperature load depends on the `x` coordinate.
     """
