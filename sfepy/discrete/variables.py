@@ -1416,7 +1416,7 @@ class FieldVariable(Variable):
         elif kind == 'ic':
             sargs = (coors, )
 
-        skwargs = {'region' : region}
+        skwargs = {'region' : region, 'variable' : self}
 
         return setter, sargs, skwargs
 
