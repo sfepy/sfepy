@@ -6,4 +6,6 @@ find_package(Cython REQUIRED)
 find_package(NumPy REQUIRED)
 
 add_subdirectory(sfepy/discrete/common/extmods)
+add_subdirectory(sfepy/discrete/fem/extmods)
+add_subdirectory(sfepy/discrete/iga/extmods)
 add_subdirectory(sfepy/terms/extmods)
