@@ -6,6 +6,7 @@ under the BSD license, for solving systems of coupled partial
 differential equations by the finite element method. The code is based
 on NumPy and SciPy packages.
 """
+import glob
 
 from skbuild import setup
 from setuptools import find_packages, Extension
@@ -95,6 +96,9 @@ setup(
     install_requires=install_requires,
     cmdclass=cmdclass,
     packages=find_packages(),
-    data_files=[('sfepy', ['LICENSE', 'VERSION'])],
+    data_files=[
+        ('sfepy', ['LICENSE', 'VERSION']),
+        ('sfepy/tests/', glob.glob('sfepy/tests/*.py'))
+    ],
     setup_requires=['cython'],
 )
