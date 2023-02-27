@@ -154,6 +154,11 @@ custom = {
     'linear_elasticity/linear_viscoelastic.py': {
         '': {'camera': [225, 75, 0.88]}
     },
+    'linear_elasticity/seismic_load.py': {
+        '': {
+            'fields': ['cauchy_stress:wu:f10:p0', '1:vw:p0'],
+        },
+    },
     'linear_elasticity/shell10x_cantilever.py': {
         '': {
             'fields': ['u_disp:wu_disp:p0', '1:vw:p0',
