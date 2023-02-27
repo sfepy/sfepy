@@ -222,7 +222,7 @@ def main():
 
         suffix = tss.ts.suffix
         def poststep_fun(ts, vec):
-            _poststep_fun(ts, vec)
+            vec = _poststep_fun(ts, vec)
 
             # Probe the solution.
             dvel_qp = ev('ev_diffusion_velocity.%d.Omega(m.diffusivity, T)'
@@ -249,6 +249,8 @@ def main():
                     output('  min: %+.2e, mean: %+.2e, max: %+.2e'
                            % (val.min(), val.mean(), val.max()))
                 output.level -= 2
+
+            return vec
 
     else:
         poststep_fun = _poststep_fun

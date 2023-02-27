@@ -95,11 +95,11 @@ class DGMultiStageTSS(TimeSteppingSolver):
 
         self.output_step_info(ts)
         if ts.step == 0:
-            prestep_fun(ts, vec0)
+            vec0 = prestep_fun(ts, vec0)
 
             vec = self.solve_step0(nls, vec0)
 
-            poststep_fun(ts, vec)
+            vec = poststep_fun(ts, vec)
             ts.advance()
 
         else:
@@ -108,12 +108,12 @@ class DGMultiStageTSS(TimeSteppingSolver):
         for step, time in ts.iter_from(ts.step):
             self.output_step_info(ts)
 
-            prestep_fun(ts, vec)
+            vec = prestep_fun(ts, vec)
 
             vect = self.solve_step(ts, nls, vec, prestep_fun, poststep_fun,
                                    status)
 
-            poststep_fun(ts, vect)
+            vect = poststep_fun(ts, vect)
 
             vec = vect
 
@@ -166,7 +166,6 @@ class TVDRK3StepSolver(DGMultiStageTSS):
     r"""3rd order Total Variation Diminishing Runge-Kutta method
     based on [1]_
 
-    
     .. math::
         \begin{aligned}
             \mathbf{p}^{(1)} &= \mathbf{p}^n - \Delta t
@@ -237,7 +236,7 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
         # ----3rd stage-----
         ts.set_substep_time(1. / 2. * ts.dt)
-        prestep_fun(ts, vec_x2)
+        vec_x2 = prestep_fun(ts, vec_x2)
         vec_r = fun(vec_x2)
         mtx_a = fun_grad(vec_x2)
         vec_dx = lin_solver(vec_r, x0=vec_x2,
