@@ -30,7 +30,7 @@ int32 divgrad_build_gtg( FMField *out, FMField *gcv, FMField *gcs )
        || (out->nLev != gcs->nLev)) {
     errput( ErrHead "ERR_BadMatch: (%d %d %d), (%d %d %d), (%d %d %d)\n",
 	    out->nLev, out->nRow, out->nCol,
-	    gcv->nLev, gcv->nRow, gcv->nCol );
+	    gcv->nLev, gcv->nRow, gcv->nCol,
 	    gcs->nLev, gcs->nRow, gcs->nCol );
   }
 #endif
