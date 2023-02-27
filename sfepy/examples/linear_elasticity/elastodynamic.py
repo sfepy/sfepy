@@ -49,7 +49,7 @@ Cauchy strain and stress using::
 Solve in 2D using the explicit Velocity-Verlet method with adaptive
 time-stepping and save all time steps (see ``plot_times.py`` use below)::
 
-  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -d "dims=(5e-3, 5e-3), shape=(61, 61), tss_name='tsvv', adaptive=True, save_times='all'"
+  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -d "dims=(5e-3, 5e-3), shape=(61, 61), tss_name='tsvv', tsc_name='tscedb', adaptive=True, save_times='all'"
 
 View the resulting velocities on the deforming mesh (1000x magnified) using::
 
@@ -71,8 +71,8 @@ reducing so the need for a new matrix factorization. Run::
 The resulting velocities and adaptive time steps can again be plotted by the
 commands shown above.
 
-Use the Reciprocal Mass Matrix Algorithm [1]_ and view the resulting stress
-waves::
+Use the central difference explicit method with the reciprocal mass matrix
+algorithm [1]_ and view the resulting stress waves::
 
   sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -d "dims=(5e-3, 5e-3), shape=(61, 61), tss_name=tscd, tsc_name=tscedl, adaptive=False, ls_name=lsrmm, mass_beta=0.5, mass_lumping=row_sum, fast_rmm=True, save_times=all"
 
@@ -83,8 +83,6 @@ waves::
        International Journal for Numerical Methods in Engineering 113, 277–295.
        https://doi.org/10.1002/nme.5613
 """
-from __future__ import absolute_import
-
 import numpy as nm
 
 import sfepy.mechanics.matcoefs as mc
@@ -216,11 +214,12 @@ def define(
     }
 
     # Notes:
-    # 1. The order of the variables in the solution vector is specified here (3rd tuple member),
-    #    since that specific order is expected by the elastodynamic time-stepping solvers.
-    # 2. For the same reason, we won't explicitly define below the equations du = du/dt
-    #    and ddu = ddu/dt - these are implicitly defined by the time-stepping solver.
-    #    see the `step()` method of the solvers.
+    # 1. The order of the variables in the solution vector is specified here
+    #    (3rd tuple member), since that specific order is expected by the
+    #    elastodynamic time-stepping solvers.
+    # 2. For the same reason, we won't explicitly define below the equations
+    #    du = du/dt and ddu = ddu/dt - these are implicitly defined by
+    #    the time-stepping solver. see the `step()` method of the solvers.
     variables = {
         'u' : ('unknown field', 'displacement', 0),
         'du' : ('unknown field', 'displacement', 1),
@@ -314,7 +313,7 @@ def define(
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
-            # Explicit method.
+            # Explicit method. Supports ls.rmm.
             't0' : 0.0,
             't1' : t1,
             'dt' : dt,
