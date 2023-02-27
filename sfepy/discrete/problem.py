@@ -1279,15 +1279,16 @@ class Problem(Struct):
             if update_bcs:
                 self.time_update(ts)
                 variables = self.equations.variables
-                variables.set_state(vec, self.active_only)
-                variables.apply_ebc()
+                variables.set_state(vec, self.active_only, apply_ebc=True)
 
             if update_materials:
                 self.update_materials(ts, verbose=self.conf.get('verbose', True))
 
+            return vec
+
         def poststep_fun(ts, vec):
             variables = self.equations.variables
-            variables.set_state(vec, self.active_only, preserve_caches=True)
+            variables.set_state(vec, self.active_only, apply_ebc=True)
             if step_hook is not None:
                 step_hook(self, ts, variables)
 
@@ -1310,6 +1311,7 @@ class Problem(Struct):
                                 file_format=self.file_format)
 
             self.advance(ts)
+            return vec
 
         return init_fun, prestep_fun, poststep_fun
 
