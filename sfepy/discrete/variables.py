@@ -1595,7 +1595,7 @@ class FieldVariable(Variable):
 
             self.initial_condition[eq] = nm.ravel(vv)
 
-    def get_data_shape(self, integral, integration='volume', region_name=None):
+    def get_data_shape(self, integral, integration='cell', region_name=None):
         """
         Get element data dimensions for given approximation.
 
@@ -1603,8 +1603,8 @@ class FieldVariable(Variable):
         ----------
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : 'volume', 'surface', 'surface_extra', 'point' or 'custom'
-            The term integration type.
+        integration : 'cell', 'facet', 'facet_extra', 'point' or 'custom'
+            The term extra integration mode.
         region_name : str
             The name of the region of the integral.
 
@@ -1671,9 +1671,9 @@ class FieldVariable(Variable):
             The integral defining quadrature points in which the
             evaluation occurs. If None, the first order volume integral
             is created. Must not be None for surface integrations.
-        integration : 'volume', 'surface', 'surface_extra', or 'point'
+        integration : 'cell', 'facet', 'facet_extra', or 'point'
             The term integration type. If None, it is derived from
-            `integral`.
+            the region kind.
         step : int, default 0
             The time step (0 means current, -1 previous, ...).
         time_derivative : None or 'dt'
@@ -1716,7 +1716,7 @@ class FieldVariable(Variable):
             integral = Integral('aux_1', 1)
 
         if integration is None:
-            integration = 'volume' if region.can_cells else 'surface'
+            integration = region.kind
 
         geo, _, key = field.get_mapping(region, integral, integration,
                                         return_key=True)
@@ -1727,10 +1727,9 @@ class FieldVariable(Variable):
 
         else:
             vec = self(step=step, derivative=time_derivative, dt=dt)
-            ct = integration
-            if integration == 'surface_extra':
-                ct = 'volume'
-            conn = field.get_econn(ct, region, trace_region, integration)
+
+            ct = 'cell' if integration == 'facet_extra' else integration
+            conn = field.get_econn(ct, region, trace_region)
 
             shape = self.get_data_shape(integral, integration, region.name)
 

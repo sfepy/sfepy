@@ -410,7 +410,7 @@ class FEField(Field):
 
         return dofs[facets[facets >= 0]].ravel()
 
-    def get_data_shape(self, integral, integration='volume', region_name=None):
+    def get_data_shape(self, integral, integration='cell', region_name=None):
         """
         Get element data dimensions.
 
@@ -418,8 +418,8 @@ class FEField(Field):
         ----------
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : 'volume', 'surface', 'surface_extra', 'point' or 'custom'
-            The term integration type.
+        integration : str
+            The term integration mode.
         region_name : str
             The name of the region of the integral.
 
@@ -442,7 +442,10 @@ class FEField(Field):
         shape = region.shape
         dim = region.dim
 
-        if integration in ('surface', 'surface_extra'):
+        if integration is None:
+            integration == region.kind
+
+        if 'facet' in integration:
             if region_name not in self.surface_data:
                 reg = self.domain.regions[region_name]
                 self.domain.create_surface_group(reg)
@@ -455,13 +458,12 @@ class FEField(Field):
             weights = self.get_qp(key, integral).weights
             n_qp = weights.shape[0]
 
-            if integration == 'surface':
+            if integration == 'facet_extra':
+                data_shape = (sd.n_fa, n_qp, dim, self.econn.shape[1])
+            else:
                 data_shape = (sd.n_fa, n_qp, dim, sd.n_fp)
 
-            else:
-                data_shape = (sd.n_fa, n_qp, dim, self.econn.shape[1])
-
-        elif integration in ('volume', 'custom'):
+        elif integration in ('cell', 'custom'):
             _, weights = integral.get_qp(self.gel.name)
             n_qp = weights.shape[0]
 
@@ -472,7 +474,7 @@ class FEField(Field):
             data_shape = (dofs.shape[0], 0, 0, 1)
 
         else:
-            raise NotImplementedError('unsupported integration! (%s)'
+            raise NotImplementedError('unsupported integration type! (%s)'
                                       % integration)
 
         return data_shape
@@ -1002,15 +1004,14 @@ class FEField(Field):
         coors = domain.get_mesh_coors(actual=True)
         dconn = domain.get_conn()
 
-        tco = integration in ('volume', 'custom')
-        iels = region.get_cells(true_cells_only=tco)
+        iels = region.get_cells(true_cells_only=(region.kind == 'cell'))
         transform = (self.basis_transform[iels] if self.basis_transform
                      is not None else None)
 
         geo_ps = self.gel.poly_space
         ps = self.poly_space
 
-        if integration == 'volume':
+        if region.kind == 'cell':
             qp = self.get_qp('v', integral)
             bf = self.get_base('v', 0, integral, iels=iels)
 
@@ -1019,7 +1020,7 @@ class FEField(Field):
             out = mapping.get_mapping(qp.vals, qp.weights, bf, poly_space=ps,
                                       ori=self.ori, transform=transform)
 
-        elif integration.startswith('surface'):
+        elif region.kind == 'facet':
             assert_(self.approx_order > 0)
 
             if self.ori is not None:
@@ -1050,7 +1051,7 @@ class FEField(Field):
                 indx = nm.roll(indx, -1)[::-1]
                 mapping.set_basis_indices(indx)
 
-                if integration == 'surface_extra':
+                if integration == 'facet_extra':
                     se_bf_bg = geo_ps.eval_base(qp.vals, diff=True)
                     se_bf_bg = se_bf_bg[sd.fis[:, 1]]
                     se_ebf_bg = self.get_base(esd.bkey, 1, integral)
@@ -1071,15 +1072,8 @@ class FEField(Field):
                 out = mapping.get_mapping(qp.vals, qp.weights, bf,
                                           is_face=True)
 
-        elif integration == 'point':
-            out = mapping = None
-
-        elif integration == 'custom':
-            raise ValueError('cannot create custom mapping!')
-
         else:
-            raise ValueError('unknown integration geometry type: %s'
-                             % integration)
+            out = mapping = None
 
         if out is not None:
             # Store the integral used.
@@ -1091,6 +1085,7 @@ class FEField(Field):
             out = (out, mapping)
 
         return out
+
 
 class VolumeField(FEField):
     """
@@ -1184,12 +1179,10 @@ class VolumeField(FEField):
     def setup_extra_data(self, geometry, info):
         dct = info.dc_type.type
 
-        if geometry != None:
-            geometry_flag = 'surface' in geometry
-        else:
-            geometry_flag = False
+        geometry_flag = False if geometry is None\
+            else 'facet' in geometry
 
-        if (dct == 'surface') or (geometry_flag):
+        if (dct == 'facet') or (geometry_flag):
             reg = info.get_region()
             mreg_name = info.get_region_name(can_trace=False)
             mreg_name = None if reg.name == mreg_name else mreg_name
@@ -1202,7 +1195,7 @@ class VolumeField(FEField):
         elif dct == 'point':
             self.setup_point_data(self, info.region)
 
-        elif dct not in ('volume', 'scalar', 'custom'):
+        elif dct not in ('cell', 'custom'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     def setup_point_data(self, field, region):
@@ -1236,17 +1229,16 @@ class VolumeField(FEField):
         """
         ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
 
-        if ct in ('volume', 'custom'):
+        if ct in ('cell', 'custom'):
             if region.name == self.region.name:
                 conn = self.econn
-
             else:
-                tco = integration in ('volume', 'custom')
+                tco = region.kind == 'cell'
                 cells = region.get_cells(true_cells_only=tco)
                 ii = self.region.get_cell_indices(cells, true_cells_only=tco)
                 conn = nm.take(self.econn, ii, axis=0)
 
-        elif ct == 'surface':
+        elif ct == 'facet':
             if region.name not in self.surface_data:
                 self.domain.create_surface_group(region)
                 self.setup_surface_data(region)
@@ -1254,14 +1246,11 @@ class VolumeField(FEField):
             sd = self.surface_data[region.name]
             conn = sd.get_connectivity(local=local, trace_region=trace_region)
 
-        elif ct == 'edge':
-            raise NotImplementedError('connectivity type %s' % ct)
-
         elif ct == 'point':
             conn = self.point_data[region.name]
 
         else:
-            raise ValueError('unknown connectivity type! (%s)' % ct)
+            raise NotImplementedError('connectivity type %s' % ct)
 
         return conn
 
@@ -1363,8 +1352,8 @@ class SurfaceField(FEField):
     def setup_extra_data(self, geometry, info):
         dct = info.dc_type.type
 
-        if dct != 'surface':
-            msg = "dof connectivity type must be 'surface'! (%s)" % dct
+        if dct != 'facet':
+            msg = "dof connectivity type must be 'facet'! (%s)" % dct
             raise ValueError(msg)
 
         reg = info.get_region()
@@ -1420,10 +1409,10 @@ class SurfaceField(FEField):
         """
         Get extended connectivity of the given type in the given region.
         """
-        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
+        ct = conn_type.type if isinstance(conn_type, Struct) else region.kind
 
-        if ct != 'surface':
-            msg = 'connectivity type must be "surface"! (%s)' % ct
+        if ct != 'facet':
+            msg = 'connectivity type must be "facet"! (%s)' % ct
             raise ValueError(msg)
 
         sd = self.surface_data[region.name]
