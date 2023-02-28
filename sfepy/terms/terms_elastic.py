@@ -403,8 +403,7 @@ class CauchyStrainTerm(Term):
     name = 'ev_cauchy_strain'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'D'}
-    integration = 'by_region'
-    surface_integration = 'surface_extra'
+    integration = ('cell', 'facet_extra')
 
     @staticmethod
     def function(out, strain, vg, fmode):
@@ -459,8 +458,7 @@ class CauchyStressTerm(Term):
     name = 'ev_cauchy_stress'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'S, S', 'parameter' : 'D'}
-    integration = 'by_region'
-    surface_integration = 'surface_extra'
+    integration = ('cell', 'facet_extra')
 
     @staticmethod
     def function(out, coef, strain, mat, vg, fmode):
@@ -754,7 +752,7 @@ class ElasticWaveTerm(Term):
         gmat = _build_wave_strain_op(kappa, ebf)
 
         if diff_var is None:
-            econn = state.field.get_econn('volume', self.region)
+            econn = state.field.get_econn('cell', self.region)
             adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
                                    econn, n_c, 0)
             vals = state()[adc]
@@ -826,7 +824,7 @@ class ElasticWaveCauchyTerm(Term):
 
         if diff_var is None:
             avar = evar if self.mode == 'ge' else gvar
-            econn = avar.field.get_econn('volume', self.region)
+            econn = avar.field.get_econn('cell', self.region)
             adc = create_adof_conn(nm.arange(avar.n_dof, dtype=nm.int32),
                                    econn, n_c, 0)
             vals = avar()[adc]

@@ -94,7 +94,7 @@ class TLMembraneTerm(Term):
                   'material_h0' : '1, 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     geometries = ['3_4', '3_8']
-    integration = 'surface'
+    integration = 'facet'
 
     @staticmethod
     def function(out, fun, *args):

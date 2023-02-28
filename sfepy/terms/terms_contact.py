@@ -96,7 +96,7 @@ class ContactTerm(Term):
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material' : '.: 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
-    integration = 'surface'
+    integration = 'facet'
 
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)

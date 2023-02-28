@@ -70,14 +70,11 @@ def get_shape_kind(integration):
     """
     Get data shape kind for given integration type.
     """
-    if integration == 'surface':
-        shape_kind = 'surface'
+    if integration in ('plate', 'facet_extra'):
+        shape_kind = 'cell'
 
-    elif integration in ('volume', 'plate', 'surface_extra'):
-        shape_kind = 'volume'
-
-    elif integration == 'point':
-        shape_kind = 'point'
+    elif integration in ('cell', 'facet', 'point'):
+        shape_kind = integration
 
     else:
         raise NotImplementedError('unsupported term integration! (%s)'
@@ -321,7 +318,7 @@ class Term(Struct):
     name = ''
     arg_types = ()
     arg_shapes = {}
-    integration = 'volume'
+    integration = 'cell'
     geometries = ['1_2', '2_3', '2_4', '3_4', '3_8']
 
     @staticmethod
@@ -918,40 +915,30 @@ class Term(Struct):
         self.has_geometry = True
 
         self.geometry_types = {}
-        if self.integration == 'by_region':
-            reg = self.region
-            if reg.kind == 'cell':
-                integration = 'volume'
+        reg = self.region
 
-            elif reg.kind_tdim == (reg.tdim - 1):
-                integration = getattr(self, 'surface_integration', 'surface')
-
+        if isinstance(self.integration, tuple):
+            if reg.kind in self.integration:
+                integration = reg.kind
+            elif reg.kind == 'facet' and 'facet_extra' in self.integration:
+                integration = 'facet_extra'
             else:
                 raise ValueError(f'region "{reg.name}" cannot be used as '
                                  f'"{self.name}" term integration domain!')
-
-            self.integration = integration
-
-        if isinstance(self.integration, basestr):
-            for var in self.get_variables():
-                self.geometry_types[var.name] = self.integration
-
         else:
-            if self.mode is not None:
-                self.integration = self._integration[self.mode]
+            integration = self.integration
 
-            if self.integration is not None:
-                for arg_type, gtype in six.iteritems(self.integration):
-                    var = self.get_args(arg_types=[arg_type])[0]
-                    self.geometry_types[var.name] = gtype
+        for var in self.get_variables():
+            self.geometry_types[var.name] = integration
 
         gtypes = list(set(self.geometry_types.values()))
 
-        if 'surface_extra' in gtypes:
-            self.dof_conn_type = 'volume'
-
+        if 'facet_extra' in gtypes:
+            self.dof_conn_type = 'cell'
         elif len(gtypes):
             self.dof_conn_type = gtypes[0]
+
+        self.act_integration = integration
 
     def get_region(self):
         return self.region
@@ -1060,7 +1047,7 @@ class Term(Struct):
         """
         from sfepy.discrete.common.mappings import get_physical_qps, PhysicalQPs
 
-        if self.integration == 'point':
+        if self.act_integration == 'point':
             phys_qps = PhysicalQPs()
 
         else:
@@ -1184,7 +1171,7 @@ class Term(Struct):
 
         if hasattr(self, 'arg_shapes_dict') and \
                 isinstance(self.arg_shapes_dict, dict):
-            integration = self.integration.split('_')[0]
+            integration = self.act_integration.split('_')[0]
             arg_shapes_list = self.arg_shapes_dict[integration]
         else:
             arg_shapes_list = self.arg_shapes

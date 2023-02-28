@@ -61,7 +61,7 @@ class IntegrateTerm(Term):
     arg_types = ('opt_material', 'parameter')
     arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 'N'},
                   {'opt_material' : None}]
-    integration = 'by_region'
+    integration = ('cell', 'facet')
 
     @staticmethod
     def function(out, val_qp, vg, fmode):
@@ -126,7 +126,7 @@ class IntegrateOperatorTerm(Term):
     arg_types = ('opt_material', 'virtual')
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                   {'opt_material' : None}]
-    integration = 'by_region'
+    integration = ('cell', 'facet')
 
     @staticmethod
     def function(out, material, bf, geo):
@@ -161,7 +161,7 @@ class VolumeTerm(Term):
     name = 'ev_volume'
     arg_types = ('parameter',)
     arg_shapes = [{'parameter' : 'N'}]
-    integration = 'by_region'
+    integration = ('cell', 'facet')
 
     @staticmethod
     def function(out, geo):
@@ -198,7 +198,7 @@ class VolumeSurfaceTerm(Term):
     name = 'ev_volume_surface'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'N'}
-    integration = 'surface'
+    integration = 'facet'
 
     function = staticmethod(terms.d_volume_surface)
 
@@ -234,7 +234,7 @@ class SurfaceMomentTerm(Term):
     name = 'ev_surface_moment'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : '.: D', 'parameter' : 'N'}
-    integration = 'surface'
+    integration = 'facet'
 
     function = staticmethod(terms.di_surface_moment)
 
@@ -278,7 +278,7 @@ class IntegrateMatTerm(Term):
     name = 'ev_integrate_mat'
     arg_types = ('material', 'parameter')
     arg_shapes = [{'material' : 'N, N', 'parameter' : 'N'}]
-    integration = 'by_region'
+    integration = ('cell', 'facet')
 
     @staticmethod
     def function(out, mat, geo, fmode):

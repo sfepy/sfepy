@@ -356,12 +356,12 @@ class ESDLinearTractionTerm(ETermBase):
                   {'opt_material': None}, {'opt_material': '1, 1'},
                   {'opt_material': 'D, D'}]
     modes = ('weak', 'eval')
-    integration = 'surface'
+    integration = 'facet'
 
     def get_function(self, traction, vvar, par_mv, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         sg, _ = self.get_mapping(vvar)
-        grad_mv = self.get(par_mv, 'grad', integration='surface_extra')
+        grad_mv = self.get(par_mv, 'grad', integration='facet_extra')
         div_mv = nm.trace(grad_mv, axis1=2, axis2=3)[..., None, None]
 
         _, n_qp, dim, _ = grad_mv.shape

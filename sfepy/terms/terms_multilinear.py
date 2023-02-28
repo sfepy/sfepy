@@ -229,7 +229,7 @@ class ExpressionArg(Struct):
 
     def get_bf(self, expr_cache):
         ag, _ = self.term.get_mapping(self.arg)
-        if self.term.integration == 'surface_extra':
+        if self.term.integration == 'facet_extra':
             sd = self.arg.field.surface_data[self.term.region.name]
             _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
             bf = _bf[sd.fis[:, 1], ...]
@@ -366,7 +366,7 @@ class ExpressionBuilder(Struct):
             self.add_bfg(iin, ein, arg.name)
 
         else:
-            cell_dep = arg.term.integration == 'surface_extra'
+            cell_dep = arg.term.integration == 'facet_extra'
             self.add_bf(iin, ein, arg.name, cell_dependent=cell_dep)
 
         out_letters = iin
@@ -398,7 +398,7 @@ class ExpressionBuilder(Struct):
             self.add_bfg(iin, ein, arg.name)
 
         else:
-            cell_dep = arg.term.integration == 'surface_extra'
+            cell_dep = arg.term.integration == 'facet_extra'
             self.add_bf(iin, ein, arg.name, cell_dependent=cell_dep)
 
         out_letters = iin
@@ -1189,7 +1189,7 @@ class EIntegrateOperatorTerm(ETermBase):
     arg_types = ('opt_material', 'virtual')
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                   {'opt_material' : None}]
-    integration = 'by_region'
+    integration = ('cell', 'facet')
 
     def get_function(self, mat, virtual, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
@@ -1271,7 +1271,7 @@ class EDotTerm(ETermBase):
                   {'opt_material' : 'D, D'},
                   {'opt_material' : None}]
     modes = ('weak', 'eval')
-    integration = 'by_region'
+    integration = ('cell', 'facet')
 
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
@@ -1352,7 +1352,7 @@ class ENonPenetrationPenaltyTerm(ETermBase):
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material' : '1, 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
-    integration = 'surface'
+    integration = 'facet'
 
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
@@ -1755,7 +1755,7 @@ class ELinearTractionTerm(ETermBase):
                   {'opt_material': None}, {'opt_material': '1, 1'},
                   {'opt_material': 'D, 1'}, {'opt_material': 'D, D'}]
     modes = ('weak', 'eval')
-    integration = 'surface'
+    integration = 'facet'
 
     def get_function(self, traction, vvar, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
@@ -1819,7 +1819,7 @@ class SurfaceFluxOperatorTerm(ETermBase):
                    'virtual/grad_virtual' : (1, None),
                    'state/grad_virtual' : 1,
                    'parameter_1': 1, 'parameter_2': 1}]
-    integration = 'surface_extra'
+    integration = 'facet_extra'
     modes = ('grad_state', 'grad_virtual', 'eval')
 
     def get_function(self, mat, var1, var2, mode=None, term_mode=None,

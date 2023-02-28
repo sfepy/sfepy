@@ -149,7 +149,7 @@ class AdvectionDGFluxTerm(DGTerm):
                    'state'           : 1
                    },
                   {'opt_material': None}]
-    integration = 'volume'
+    integration = 'cell'
     symbolic = {'expression': 'div(a*p)*w',
                 'map' : {'p': 'state', 'a': 'material', 'v': 'virtual'}
                 }
@@ -292,7 +292,7 @@ class DiffusionDGFluxTerm(DGTerm):
                    'virtual/avg_virtual': (1, None),
                    'state/avg_virtual' : 1,
                    }]
-    integration = 'volume'
+    integration = 'cell'
     modes = ('avg_state', 'avg_virtual')
 
     def get_fargs(self, diff_tensor, test, state,
@@ -611,7 +611,7 @@ class NonlinearHyperbolicDGFluxTerm(DGTerm):
                    'state'         : 1
                    },
                   {'opt_material': None}]
-    integration = 'volume'
+    integration = 'cell'
     symbolic = {'expression': 'div(f(p))*w',
                 'map'       : {'p': 'state', 'v': 'virtual', 'f': 'function'}
                 }

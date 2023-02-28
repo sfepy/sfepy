@@ -732,7 +732,7 @@ class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
     arg_shapes = {'material_1' : 'D, D', 'material_2' : '1, 1',
                   'parameter_1' : 1, 'parameter_2' : 'D'}
     family_data_names = ['det_f', 'inv_f']
-    integration = 'surface_extra'
+    integration = 'facet_extra'
 
     function = staticmethod(terms.d_tl_surface_flux)
 
@@ -782,7 +782,7 @@ class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
                    'state' : 'D'},
                   {'opt_material' : None}]
     family_data_names = ['det_f', 'inv_f']
-    integration = 'surface_extra'
+    integration = 'facet_extra'
 
     function = staticmethod(terms.dw_tl_surface_traction)
 
@@ -831,7 +831,7 @@ class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'D'}
     family_data_names = ['det_f', 'inv_f']
-    integration = 'surface_extra'
+    integration = 'facet_extra'
 
     function = staticmethod(terms.d_tl_volume_surface)
 
