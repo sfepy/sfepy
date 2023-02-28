@@ -70,11 +70,11 @@ class StationarySolver(TimeSteppingSolver):
 
         vec0 = init_fun(ts, vec0)
 
-        prestep_fun(ts, vec0)
+        vec0 = prestep_fun(ts, vec0)
 
         vec = nls(vec0)
 
-        poststep_fun(ts, vec)
+        vec = poststep_fun(ts, vec)
 
         return vec
 
@@ -141,11 +141,11 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
         self.output_step_info(ts)
         if ts.step == 0:
-            prestep_fun(ts, vec0)
+            vec0 = prestep_fun(ts, vec0)
 
             vec = self.solve_step0(nls, vec0)
 
-            poststep_fun(ts, vec)
+            vec = poststep_fun(ts, vec)
             ts.advance()
 
         else:
@@ -154,11 +154,11 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
         for step, time in ts.iter_from(ts.step):
             self.output_step_info(ts)
 
-            prestep_fun(ts, vec)
+            vec = prestep_fun(ts, vec)
 
             vect = self.solve_step(ts, nls, vec, prestep_fun)
 
-            poststep_fun(ts, vect)
+            vect = poststep_fun(ts, vect)
 
             vec = vect
 
@@ -313,7 +313,7 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
             if is_break:
                 break
 
-            prestep_fun(ts, vec)
+            vec = prestep_fun(ts, vec)
 
         return vect
 
@@ -428,7 +428,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
         output(self.format % (ts.time, ts.step + 1, ts.n_step),
                verbose=self.verbose)
         if ts.step == 0:
-            prestep_fun(ts, vec0)
+            vec0 = prestep_fun(ts, vec0)
             u0, v0, _ = unpack(vec0)
 
             ut = u0
@@ -436,7 +436,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
             at = self.get_a0(nls, u0, v0)
 
             vec = pack(ut, vt, at)
-            poststep_fun(ts, vec)
+            vec = poststep_fun(ts, vec)
             ts.advance()
 
         else:
@@ -466,9 +466,11 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
             # adaptivity modifies dt and time.
             while 1:
                 # Previous step state q(t_n).
-                # TODO: EBCs for current time t_{n+1}. but loads should be
-                # applied in the mid-step time t_{n+1-a}.
-                prestep_fun(ts, vec)
+                # Both prestep_fun() and poststep_fun() apply EBCs to vec/vect
+                # in case active_only is False.
+                # TODO: Generalized alpha: EBCs for current time t_{n+1}. but
+                # loads should be applied in the mid-step time t_{n+1-a}.
+                vec = prestep_fun(ts, vec)
                 vect = self.step(ts, vec, nls, pack, unpack,
                                  prestep_fun=prestep_fun)
 
@@ -488,7 +490,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
                 ts.set_time_step(new_dt, update_time=True)
 
             # Current step state q(t_{n+1}).
-            poststep_fun(ts, vect)
+            vect = poststep_fun(ts, vect)
 
             if ts.nt >= 1:
                 break
@@ -498,7 +500,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
             ts.advance()
 
             vec = vect
-            
+
         return vec
 
 class VelocityVerletTS(ElastodynamicsBaseTS):
@@ -1081,7 +1083,7 @@ class BatheTS(ElastodynamicsBaseTS):
         ts.set_substep_time(0.5 * dt)
 
         vec1 = pack(ut1, vt1, at1)
-        prestep_fun(ts, vec1)
+        vec1 = prestep_fun(ts, vec1)
 
         nlst2 = self.create_nlst2(nls, dt, ut, ut1, vt, vt1)
         ut2 = nlst2(ut1)

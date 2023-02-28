@@ -810,11 +810,17 @@ class Variables(Container):
 
         return out
 
-    def set_state(self, vec, reduced=False, force=False, preserve_caches=False):
+    def set_state(self, vec, reduced=False, force=False, preserve_caches=False,
+                  apply_ebc=False):
+        preserve_caches = preserve_caches and (not apply_ebc)
         if reduced:
             self.set_reduced_state(vec, preserve_caches=preserve_caches)
+            if apply_ebc:
+                self.apply_ebc()
 
         else:
+            if apply_ebc:
+                self.apply_ebc(vec)
             self.set_full_state(vec, force=force,
                                 preserve_caches=preserve_caches)
 

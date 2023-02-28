@@ -1,5 +1,5 @@
 r"""
-The linear elastodynamics solution of an iron plate impact problem.
+The linear elastodynamics with seismic boundary conditions.
 
 Find :math:`\ul{u}` such that:
 
@@ -7,76 +7,40 @@ Find :math:`\ul{u}` such that:
     \int_{\Omega} \rho \ul{v} \pddiff{\ul{u}}{t}
     + \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
     = 0
-    \;, \quad \forall \ul{v} \;,
+    \;, \quad \forall \ul{v} \;, \\
+    u_1(t) =  10^{-5} \sin(\omega t) \sin(k x_2)
+    \mbox{ on } \Gamma_\mathrm{Seismic} \;, \\
+    \omega = c_L k \;,
 
-where
+where :math:`c_L` is the longitudinal wave propagation speed, :math:`k = 2 \pi
+/ L`,` :math:`L` is the length of the domain and
 
 .. math::
     D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 
-Notes
------
-
-The used elastodynamics solvers expect that the total vector of DOFs contains
-three blocks in this order: the displacements, the velocities, and the
-accelerations. This is achieved by defining three unknown variables ``'u'``,
-``'du'``, ``'ddu'`` and the corresponding test variables, see the `variables`
-definition. Then the solver can automatically extract the mass, damping (zero
-here), and stiffness matrices as diagonal blocks of the global matrix. Note
-also the use of the ``'dw_zero'`` (do-nothing) term that prevents the
-velocity-related variables to be removed from the equations in the absence of a
-damping term.
+See :ref:`linear_elasticity-elastodynamic` example for notes on elastodynamics
+solvers.
 
 Usage Examples
 --------------
 
-Run with the default settings (the Newmark method, 3D problem, results stored
-in ``output/ed/``)::
+Run with the default settings (the Newmark method, 2D problem, results stored
+in ``output/seismic/``)::
 
-  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py
+  sfepy-run sfepy/examples/linear_elasticity/seismic_load.py -o tsn
 
-Solve using the Bathe method::
+View the resulting displacements on the deforming mesh (10x magnified)::
 
-  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -O "tss_name='tsb'"
-
-View the resulting displacements on the deforming mesh (1000x magnified),
-Cauchy strain and stress using::
-
-  sfepy-view output/ed/user_block.h5 -f u:wu:f1e3:p0 1:vw:p0 cauchy_strain:p1 cauchy_stress:p2
-
-Solve in 2D using the explicit Velocity-Verlet method with adaptive
-time-stepping and save all time steps (see ``plot_times.py`` use below)::
-
-  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -d "dims=(5e-3, 5e-3), shape=(61, 61), tss_name='tsvv', tsc_name='tscedb', adaptive=True, save_times='all'"
-
-View the resulting velocities on the deforming mesh (1000x magnified) using::
-
-  sfepy-view output/ed/user_block.h5 -2 --grid-vector1=1.2,0,0 -f du:wu:f1e3:p0 1:vw:p0
-
-Plot the adaptive time steps (available at times according to 'save_times'
-option!)::
-
-  python3 sfepy/scripts/plot_times.py output/ed/user_block.h5 -l
-
-Again, solve in 2D using the explicit Velocity-Verlet method with adaptive
-time-stepping and save all time steps. Now the used time step control is
-suitable for linear problems solved by a direct solver: it employs a heuristic
-that tries to keep the time step size constant for several consecutive steps,
-reducing so the need for a new matrix factorization. Run::
-
-  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -d "dims=(5e-3, 5e-3), shape=(61, 61), tss_name='tsvv', tsc_name='tscedl', adaptive=True, save_times='all'"
-
-The resulting velocities and adaptive time steps can again be plotted by the
-commands shown above.
+  sfepy-view output/seismic/tsn.h5 -2 -f u:wu:f10:p0 1:vw:p0
 
 Use the central difference explicit method with the reciprocal mass matrix
 algorithm [1]_ and view the resulting stress waves::
 
-  sfepy-run sfepy/examples/linear_elasticity/elastodynamic.py -d "dims=(5e-3, 5e-3), shape=(61, 61), tss_name=tscd, tsc_name=tscedl, adaptive=False, ls_name=lsrmm, mass_beta=0.5, mass_lumping=row_sum, fast_rmm=True, save_times=all"
+  sfepy-run sfepy/examples/linear_elasticity/seismic_load.py  -d "dims=(5e-3, 5e-3), shape=(51, 51), tss_name=tscd, ls_name=lsrmm, mass_beta=0.5, mass_lumping=row_sum, fast_rmm=True, save_times=all" -o tscd
 
-  sfepy-view output/ed/user_block.h5 -2 --grid-vector1=1.2,0,0 -f cauchy_stress:wu:f1e3:p0 1:vw:p0
+  sfepy-view output/seismic/tscd.h5 -2 -f cauchy_stress:wu:f10:p0 1:vw:p0
 
 .. [1] González, J.A., Kolman, R., Cho, S.S., Felippa, C.A., Park, K.C., 2018.
        Inverse mass matrix via the method of localized Lagrange multipliers.
@@ -92,8 +56,8 @@ from sfepy.mesh.mesh_generators import gen_block_mesh
 def define(
         E=200e9, nu=0.3, rho=7800,
         plane='strain',
-        dims=(1e-2, 2.5e-3, 2.5e-3),
-        shape=(21, 6, 6),
+        dims=(5e-3, 5e-3),
+        shape=(31, 31),
         v0=1.0,
         ct1=1.5,
         dt=None,
@@ -106,7 +70,7 @@ def define(
         mass_lumping='none',
         fast_rmm=False,
         save_times=20,
-        output_dir='output/ed',
+        output_dir='output/seismic',
 ):
     """
     Parameters
@@ -186,13 +150,8 @@ def define(
 
     regions = {
         'Omega' : 'all',
-        'Impact' : ('vertices in (x < 1e-12)', 'facet'),
+        'Seismic' : ('vertices in (x < 1e-12)', 'facet'),
     }
-    if dim == 3:
-        regions.update({
-            'Symmetry-y' : ('vertices in (y < 1e-12)', 'facet'),
-            'Symmetry-z' : ('vertices in (z < 1e-12)', 'facet'),
-        })
 
     # Iron.
     materials = {
@@ -213,13 +172,6 @@ def define(
         'i' : 2,
     }
 
-    # Notes:
-    # 1. The order of the variables in the solution vector is specified here
-    #    (3rd tuple member), since that specific order is expected by the
-    #    elastodynamic time-stepping solvers.
-    # 2. For the same reason, we won't explicitly define below the equations
-    #    du = du/dt and ddu = ddu/dt - these are implicitly defined by
-    #    the time-stepping solver. see the `step()` method of the solvers.
     variables = {
         'u' : ('unknown field', 'displacement', 0),
         'du' : ('unknown field', 'displacement', 1),
@@ -229,34 +181,35 @@ def define(
         'ddv' : ('test field', 'displacement', 'ddu'),
     }
 
-    ebcs = {
-        'Impact' : ('Impact', {'u.0' : 0.0, 'du.0' : 0.0, 'ddu.0' : 0.0}),
-    }
-    if dim == 3:
-        ebcs.update({
-            'Symmtery-y' : ('Symmetry-y',
-                            {'u.1' : 0.0, 'du.1' : 0.0, 'ddu.1' : 0.0}),
-            'Symmetry-z' : ('Symmetry-z',
-                            {'u.2' : 0.0, 'du.2' : 0.0, 'ddu.2' : 0.0}),
-        })
-
-    def get_ic(coor, ic, mode='u'):
-        val = nm.zeros_like(coor)
+    def get_ebcs(ts, coors, mode='u'):
+        y = coors[:, 1]
+        amplitude = 0.00001
+        k = 2 * nm.pi / L
+        omega = cl * k
         if mode == 'u':
-            val[:, 0] = 0.0
+            val = amplitude * nm.sin(ts.time * omega) * nm.sin(k * y)
 
         elif mode == 'du':
-            val[:, 0] = -1.0
+            val = amplitude * omega * nm.cos(ts.time * omega) * nm.sin(k * y)
+
+        elif mode == 'ddu':
+            val = -amplitude * omega**2 * nm.sin(ts.time * omega) * nm.sin(k * y)
 
         return val
 
     functions = {
-        'get_ic_u' : (get_ic,),
-        'get_ic_du' : (lambda coor, ic: get_ic(coor, None, mode='du'),),
+        'get_u' : (lambda ts, coor, **kwargs: get_ebcs(ts, coor),),
+        'get_du' : (lambda ts, coor, **kwargs: get_ebcs(ts, coor, mode='du'),),
+        'get_ddu' : (lambda ts, coor, **kwargs: get_ebcs(ts, coor, mode='ddu'),),
+    }
+
+    ebcs = {
+        'Seismic' : ('Seismic', {'u.0' : 'get_u', 'du.0' : 'get_du',
+                                 'ddu.0' : 'get_ddu'}),
     }
 
     ics = {
-        'ic' : ('Omega', {'u.all' : 'get_ic_u', 'du.all' : 'get_ic_du'}),
+        'ic' : ('Omega', {'u.all' : 0.0, 'du.all' : 0.0}),
     }
 
     if (ls_name == 'lsrmm') and fast_rmm:
@@ -300,6 +253,7 @@ def define(
             'i_max'      : 1,
             'eps_a'      : 1e-6,
             'eps_r'      : 1e-6,
+            'ls_on'      : 1e100,
         }),
         'tsvv' : ('ts.velocity_verlet', {
             # Explicit method.
