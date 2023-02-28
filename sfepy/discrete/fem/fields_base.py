@@ -1016,7 +1016,7 @@ class FEField(Field):
 
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
             mapping = FEMapping(coors, conn, poly_space=geo_ps)
-            out = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+            out = mapping.get_mapping(qp.vals, qp.weights, bf, poly_space=ps,
                                       ori=self.ori, transform=transform)
 
         elif integration.startswith('surface'):
@@ -1059,9 +1059,7 @@ class FEField(Field):
                 else:
                     se_bf_bg, se_ebf_bg, se_conn = None, None, None
 
-                n_ep = bf.shape[-1]
-                out = mapping.get_mapping(qp.vals[0], qp.weights,
-                                          poly_space=Struct(n_nod=n_ep),
+                out = mapping.get_mapping(qp.vals[0], qp.weights, bf,
                                           extra=(se_conn, se_bf_bg, se_ebf_bg),
                                           is_face=True)
 
@@ -1070,9 +1068,7 @@ class FEField(Field):
                 qp = self.get_qp(sd.face_type, integral)
                 bf = ps.eval_base(qp.vals, transform=transform)
 
-                n_ep = bf.shape[-1]
-                out = mapping.get_mapping(qp.vals, qp.weights,
-                                          poly_space=Struct(n_nod=n_ep),
+                out = mapping.get_mapping(qp.vals, qp.weights, bf,
                                           is_face=True)
 
         elif integration == 'point':
@@ -1090,8 +1086,6 @@ class FEField(Field):
             out.integral = integral
             out.qp = qp
             out.ps = ps
-            # Update base.
-            out.bf[:] = bf
 
         if return_mapping:
             out = (out, mapping)

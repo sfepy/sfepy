@@ -1109,7 +1109,7 @@ class DGField(FEField):
 
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
             mapping = FEMapping(coors, conn, poly_space=geo_ps)
-            out = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+            out = mapping.get_mapping(qp.vals, qp.weights, bf, poly_space=ps,
                                       ori=self.ori,
                                       transform=self.basis_transform)
         else:
@@ -1121,8 +1121,6 @@ class DGField(FEField):
             out.integral = integral
             out.qp = qp
             out.ps = ps
-            # Update base.
-            out.bf[:] = bf
 
         if return_mapping:
             out = (out, mapping)

@@ -11,8 +11,8 @@ from sfepy.discrete import PolySpace
 from sfepy.linalg.utils import invs_fast, dets_fast
 
 
-def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
-                            ebf_g=None, is_face=False, flag=0, eps=1e-15,
+def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
+                            ebf_g=None, is_face=False, eps=1e-15,
                             se_conn=None, se_bf_bg=None):
     """
     Evaluate mapping data.
@@ -25,8 +25,6 @@ def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
         The element connectivity.
     dim: int
         The space dimension.
-    n_ep: int
-        The number of element points.
     bf_g: numpy.ndarray
         The derivatives of the domain base functions with respect to the
         reference coordinates.
@@ -37,9 +35,6 @@ def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
         reference coordinates.
     is_face: bool
         Is it the boundary of a region?
-    flag: int
-        If is 1, `bf` has shape (n_el, n_qp, 1, n_ep) else
-        the shape is (1, n_qp, 1, n_ep).
     eps: float
         The tolerance for the normal vectors calculation.
     se_conn: numpy.ndarray
@@ -121,9 +116,7 @@ def eval_mapping_data_in_qp(coors, conn, dim, n_ep, bf_g, weights,
 
     volume = nm.sum(det, axis=1).reshape(n_el, 1, 1, 1)
 
-    bf = nm.empty((n_el if flag else 1, n_qp, 1, n_ep), dtype=nm.float64)
-
-    return bf, det, volume, bfg, normal
+    return det, volume, bfg, normal
 
 
 class FEMapping(Mapping):
@@ -197,8 +190,9 @@ class FEMapping(Mapping):
 
         return qps
 
-    def get_mapping(self, qp_coors, weights, poly_space=None, ori=None,
-                    transform=None, is_face=False, extra=(None, None, None)):
+    def get_mapping(self, qp_coors, weights, bf=None, poly_space=None,
+                    ori=None, transform=None, is_face=False,
+                    extra=(None, None, None)):
         """
         Get the mapping for given quadrature points, weights, and
         polynomial space.
@@ -209,6 +203,8 @@ class FEMapping(Mapping):
             The coordinates of the integration points.
         weights:
             The integration weights.
+        bf: numpy.ndarray
+            The base functions.
         poly_space: PolySpace instance
             The PolySpace instance.
         ori: numpy.ndarray
@@ -242,18 +238,20 @@ class FEMapping(Mapping):
             size = ebf_g.nbytes * self.n_el
             site_config = Config()
             raise_if_too_large(size, site_config.refmap_memory_factor())
-            flag = (ori is not None) or (ebf_g.shape[0] > 1)
             se_conn, se_bf_bg = None, None
         else:
-            flag = 0
             se_conn, se_bf_bg, ebf_g = extra
 
         margs = eval_mapping_data_in_qp(self.coors, self.conn, self.dim,
-                                        poly_space.n_nod, bf_g, weights,
-                                        ebf_g, is_face=is_face, flag=flag,
+                                        bf_g, weights, ebf_g, is_face=is_face,
                                         se_conn=se_conn, se_bf_bg=se_bf_bg)
 
-        margs += (self.dim,)
+        if bf is None:
+            bf = nm.array([[[[0.]]]])
+        elif len(bf.shape) == 3:
+            bf = bf[None, ...]
+
+        margs = (nm.ascontiguousarray(bf),) + margs + (self.dim,)
         pycmap = PyCMapping(*margs)
 
         return pycmap
