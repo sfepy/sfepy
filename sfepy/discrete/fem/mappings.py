@@ -26,12 +26,12 @@ def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
     dim: int
         The space dimension.
     bf_g: numpy.ndarray
-        The derivatives of the domain base functions with respect to the
+        The derivatives of the domain basis functions with respect to the
         reference coordinates.
     weights: numpy.ndarray
         The weights of the quadrature points.
     ebf_g: numpy.ndarray
-        The derivatives of the field base functions with respect to the
+        The derivatives of the field basis functions with respect to the
         reference coordinates.
     is_face: bool
         Is it the boundary of a region?
@@ -40,19 +40,19 @@ def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
     se_conn: numpy.ndarray
         The connectivity for the calculation of surface derivatives.
     se_bf_bg: numpy.ndarray
-        The surface base function derivatives with respect to the reference
+        The surface basis function derivatives with respect to the reference
         coordinates.
 
     Returns
     -------
     bf: numpy.ndarray
-        The empty array for storing base functions.
+        The empty array for storing basis functions.
     det: numpy.ndarray
         The determinant of the mapping evaluated in integration points.
     volume: numpy.ndarray
         The element (volume or surface) volumes in integration points.
     bfg: numpy.ndarray
-        The derivatives of the base functions with respect to the spatial
+        The derivatives of the basis functions with respect to the spatial
         coordinates. Can be evaluated either for surface elements if `bf_g`,
         `se_conn`, and `se_bf_bg` are given.
     normal: numpy.ndarray
@@ -156,7 +156,7 @@ class FEMapping(Mapping):
 
     def get_base(self, coors, diff=False):
         """
-        Get base functions or their gradient evaluated in given
+        Get basis functions or their gradient evaluated in given
         coordinates.
         """
         bf = self.poly_space.eval_base(coors, diff=diff)
@@ -204,7 +204,7 @@ class FEMapping(Mapping):
         weights:
             The integration weights.
         bf: numpy.ndarray
-            The base functions.
+            The basis functions.
         poly_space: PolySpace instance
             The PolySpace instance.
         ori: numpy.ndarray
@@ -215,10 +215,10 @@ class FEMapping(Mapping):
             Is it the boundary of a region?
         extra: tuple
             The extra data for surface derivatives:
-              - the derivatives of the field boundary base functions with
+              - the derivatives of the field boundary basis functions with
                 respect to the reference coordinates
               - the boundary connectivity
-              - the derivatives of the domain boundary base functions with
+              - the derivatives of the domain boundary basis functions with
                 respect to the reference coordinates
 
         Returns
@@ -230,7 +230,7 @@ class FEMapping(Mapping):
 
         bf_g = self.get_base(qp_coors, diff=True)
         if nm.allclose(bf_g, 0.0) and self.dim > 1:
-            raise ValueError('zero base function gradient!')
+            raise ValueError('zero basis function gradient!')
 
         if not is_face:
             ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
