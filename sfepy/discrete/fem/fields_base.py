@@ -28,7 +28,7 @@ from sfepy.discrete.fem.fe_surface import FESurface, FEPhantomSurface
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
-import six
+
 
 def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
                    clear_all=True, extra_dofs=False):
@@ -40,7 +40,7 @@ def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
         domain.cmesh.coors[:] = coors[:domain.mesh.n_nod]
 
     if update_fields:
-        for field in six.itervalues(fields):
+        for field in fields.values():
             field.set_coors(coors, extra_dofs=extra_dofs)
             field.clear_mappings(clear_all=clear_all)
 
@@ -1348,7 +1348,7 @@ class SurfaceField(FEField):
         """
         Setup the field region geometry.
         """
-        for key, vgel in six.iteritems(self.domain.geom_els):
+        for key, vgel in self.domain.geom_els.items():
             self.gel = vgel.surface_facet
             break
 
