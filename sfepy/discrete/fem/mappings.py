@@ -45,8 +45,6 @@ def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
 
     Returns
     -------
-    bf: numpy.ndarray
-        The empty array for storing basis functions.
     det: numpy.ndarray
         The determinant of the mapping evaluated in integration points.
     volume: numpy.ndarray
