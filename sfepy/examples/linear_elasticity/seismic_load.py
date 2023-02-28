@@ -187,20 +187,13 @@ def define(
         k = 2 * nm.pi / L
         omega = cl * k
         if mode == 'u':
-            # val = amplitude * nm.sin(k * y - ts.time * omega)
             val = amplitude * nm.sin(ts.time * omega) * nm.sin(k * y)
-            print(nm.sin(ts.time * omega).max(), nm.sin(k * y).max(),
-                  nm.abs(val).max())
 
         elif mode == 'du':
             val = amplitude * omega * nm.cos(ts.time * omega) * nm.sin(k * y)
-            #val[:] = 0
 
         elif mode == 'ddu':
             val = -amplitude * omega**2 * nm.sin(ts.time * omega) * nm.sin(k * y)
-            #val[:] = 0
-
-        #print(nm.abs(val).max())
 
         return val
 
