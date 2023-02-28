@@ -45,6 +45,7 @@ examples = [
     'linear_elasticity/material_nonlinearity.py',
     'linear_elasticity/nodal_lcbcs.py',
     'linear_elasticity/prestress_fibres.py',
+    'linear_elasticity/seismic_load.py',
     'linear_elasticity/shell10x_cantilever.py',
     'linear_elasticity/two_bodies_contact.py',
     'multi_physics/biot.py',
