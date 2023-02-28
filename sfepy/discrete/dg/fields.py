@@ -933,7 +933,7 @@ class DGField(FEField):
 
         return vols_out
 
-    def get_data_shape(self, integral, integration='volume', region_name=None):
+    def get_data_shape(self, integral, integration='cell', region_name=None):
         """Returns data shape
         (n_nod, n_qp, self.gel.dim, self.n_el_nod)
 
@@ -950,7 +950,7 @@ class DGField(FEField):
         data_shape : tuple
         """
 
-        if integration in ('volume',):
+        if integration in ('cell',):
             # from FEField.get_data_shape()
             _, weights = integral.get_qp(self.gel.name)
             n_qp = weights.shape[0]
@@ -988,7 +988,7 @@ class DGField(FEField):
 
         ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
 
-        if ct == 'volume':
+        if ct == 'cell':
             if region.name == self.region.name:
                 conn = self.econn
             else:
@@ -1098,7 +1098,7 @@ class DGField(FEField):
         coors = domain.get_mesh_coors(actual=True)
         dconn = domain.get_conn()
         # from FEField
-        if integration == 'volume':
+        if region.kind == 'cell':
             qp = self.get_qp('v', integral)
             # qp = self.integral.get_qp(self.gel.name)
             iels = region.get_cells()
@@ -1114,7 +1114,7 @@ class DGField(FEField):
                                       transform=self.basis_transform)
         else:
             raise ValueError('unsupported integration geometry type: %s'
-                             % integration)
+                             % region.kind)
 
         if out is not None:
             # Store the integral used.

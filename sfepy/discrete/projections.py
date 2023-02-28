@@ -181,7 +181,7 @@ def project_to_facets(region, fun, dpn, field):
     n_dof = len(nods)
 
     # Region facet connectivity.
-    lconn = field.get_econn('surface', region, local=True)
+    lconn = field.get_econn('facet', region, local=True)
 
     # Cell and face(cell) ids for each facet.
     fis = region.get_facet_indices()

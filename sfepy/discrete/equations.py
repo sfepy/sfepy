@@ -394,7 +394,7 @@ class Equations(Container):
             is_surface = rvar.is_surface or cvar.is_surface
 
             dct = info.dc_type.type
-            if not (dct in ('volume', 'scalar', 'custom') or is_surface
+            if not (dct in ('cell', 'custom') or is_surface
                     or info.trace_region is not None or any_dof_conn):
                 continue
 
