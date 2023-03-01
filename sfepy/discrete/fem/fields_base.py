@@ -44,6 +44,7 @@ def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
             field.set_coors(coors, extra_dofs=extra_dofs)
             field.clear_mappings(clear_all=clear_all)
 
+
 def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
                      econn, only_extra=True):
     """
@@ -51,8 +52,9 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
     mesh coordinates and `geom_poly_space`.
     """
     if only_extra:
-        iex = (poly_space.nts[:,0] > 0).nonzero()[0]
-        if iex.shape[0] == 0: return
+        iex = (poly_space.nts[:, 0] > 0).nonzero()[0]
+        if iex.shape[0] == 0:
+            return
 
         qp_coors = poly_space.node_coors[iex, :]
         econn = econn[:, iex].copy()
@@ -63,7 +65,7 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
     ##
     # Evaluate geometry interpolation base functions in (extra) nodes.
     bf = geom_poly_space.eval_base(qp_coors)
-    bf = bf[:,0,:].copy()
+    bf = bf[:, 0, :].copy()
 
     ##
     # Evaluate extra coordinates with 'bf'.
@@ -74,6 +76,7 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
     ecoors = nm.dot(bf, mesh_coors[conn])
     coors[econn] = nm.swapaxes(ecoors, 0, 1)
 
+
 def _interp_to_faces(vertex_vals, bfs, faces):
     dim = vertex_vals.shape[1]
     n_face = faces.shape[0]
@@ -81,10 +84,11 @@ def _interp_to_faces(vertex_vals, bfs, faces):
 
     faces_vals = nm.zeros((n_face, n_qp, dim), nm.float64)
     for ii, face in enumerate(faces):
-        vals = vertex_vals[face,:dim]
-        faces_vals[ii,:,:] = nm.dot(bfs[:,0,:], vals)
+        vals = vertex_vals[face, :dim]
+        faces_vals[ii, :, :] = nm.dot(bfs[:, 0, :], vals)
 
     return(faces_vals)
+
 
 def get_eval_expression(expression,
                         fields, materials, variables,
@@ -106,6 +110,7 @@ def get_eval_expression(expression,
         return val[..., 0]
 
     return _eval
+
 
 def create_expression_output(expression, name, primary_field_name,
                              fields, materials, variables,
@@ -191,6 +196,7 @@ def create_expression_output(expression, name, primary_field_name,
     out = convert_complex_output(out)
 
     return out
+
 
 class FEField(Field):
     """
@@ -357,8 +363,8 @@ class FEField(Field):
         aux = self._setup_bubble_dofs()
         self.n_bubble_dof, self.bubble_dofs, self.bubble_remap = aux
 
-        self.n_nod = self.n_vertex_dof + self.n_edge_dof \
-                     + self.n_face_dof + self.n_bubble_dof
+        self.n_nod = (self.n_vertex_dof + self.n_edge_dof
+                      + self.n_face_dof + self.n_bubble_dof)
 
         self._setup_esurface()
 
@@ -412,7 +418,7 @@ class FEField(Field):
             efs = nm.array(efs).squeeze()
 
             if efs.ndim < 2:
-                efs = efs[:,nm.newaxis]
+                efs = efs[:, nm.newaxis]
             self.efaces = nm.hstack((self.efaces, efs))
 
         efs = node_desc.face
@@ -420,7 +426,7 @@ class FEField(Field):
             efs = nm.array(efs).squeeze()
 
             if efs.ndim < 2:
-                efs = efs[:,nm.newaxis]
+                efs = efs[:, nm.newaxis]
             self.efaces = nm.hstack((self.efaces, efs))
 
         if gel.dim == 3:
@@ -430,7 +436,7 @@ class FEField(Field):
                 efs = nm.array(efs).squeeze()
 
                 if efs.ndim < 2:
-                    efs = efs[:,nm.newaxis]
+                    efs = efs[:, nm.newaxis]
                 self.eedges = nm.hstack((self.eedges, efs))
 
     def set_coors(self, coors, extra_dofs=False):
@@ -696,7 +702,8 @@ class FEField(Field):
         vec = vec.reshape((self.n_nod, self.n_components)).copy()
         evec = vec[self.econn]
 
-        vec[self.econn0] = nm.einsum('cji,cjk->cik', self.basis_transform, evec)
+        vec[self.econn0] = nm.einsum('cji,cjk->cik', self.basis_transform,
+                                     evec)
 
         return vec.ravel()
 
@@ -733,7 +740,7 @@ class FEField(Field):
 
         sd = self.surface_data[region_name]
         bqpkey = (integral.order, sd.bkey)
-        if not bqpkey in self.qp_coors:
+        if bqpkey not in self.qp_coors:
             qp = self.get_qp(sd.face_type, integral)
 
             ps_s = self.gel.surface_facet.poly_space
@@ -833,8 +840,8 @@ class FEField(Field):
                                          min_level=min_level,
                                          max_level=max_level, eps=eps)
 
-        mesh = Mesh.from_data('linearized_mesh', coors, None, [conn], [mat_ids],
-                              self.domain.mesh.descs)
+        mesh = Mesh.from_data('linearized_mesh', coors, None, [conn],
+                              [mat_ids], self.domain.mesh.descs)
 
         return mesh, vdofs, level
 
@@ -976,7 +983,8 @@ class FEField(Field):
         except ImportError:
             from scipy.spatial import KDTree
 
-        from sfepy.discrete.fem.geometry_element import create_geometry_elements
+        from sfepy.discrete.fem.geometry_element import \
+            create_geometry_elements
 
         if cache is None:
             cache = Struct(name='evaluate_cache')
@@ -1032,7 +1040,7 @@ class FEField(Field):
         integral = Integral('i', order=self.approx_order)
 
         bf = self.get_base('v', False, integral)
-        bf = bf[:,0,:].copy()
+        bf = bf[:, 0, :].copy()
 
         data_qp = nm.dot(bf, dofs[self.econn])
         data_qp = nm.swapaxes(data_qp, 0, 1)
