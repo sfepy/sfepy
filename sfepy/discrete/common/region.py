@@ -624,32 +624,18 @@ class Region(Struct):
         not allow cells. For `true_cells_only` equal to False, cells incident
         to facets are returned if the region itself contains no cells.
 
-        Notes
-        -----
-        If the number of unique values in `cells` is smaller or equal to the
-        number of cells in the region, all `cells` has to be also the region
-        cells (`self` is a superset of `cells`). The region cells are
-        considered depending on `true_cells_only`.
-
-        Otherwise, indices of all cells in `self` that are in `cells` are
-        returned.
+        Raises ValueError if all `cells` are not in the region cells.
         """
         fcells = self.get_cells(true_cells_only=true_cells_only)
 
-        ucells = nm.unique(cells)
-        ufcells = nm.unique(fcells)
-        if not len(nm.intersect1d(ucells, ufcells, assume_unique=True)):
-            return nm.array([], dtype=nm.int32)
+        iin = nm.isin(cells, fcells)
+        if not iin.all():
+            raise ValueError(f'some cells are not in region {self.name} cells!')
 
-        if len(ucells) <= len(ufcells):
-            # self is a superset of cells.
-            ii = nm.searchsorted(fcells, cells)
-            assert_((fcells[ii] == cells).all())
+        iis = nm.searchsorted(fcells, cells)
+        assert_((fcells[iis[iin]] == cells[iin]).all())
 
-        else:
-            aux = nm.searchsorted(cells, fcells)
-            ii = nm.where(nm.take(cells, aux, mode='clip') == fcells)[0]
-
+        ii = nm.where(iin, iis, -1)
         return ii
 
     def get_facet_indices(self):
