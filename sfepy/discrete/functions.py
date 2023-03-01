@@ -166,8 +166,8 @@ class ConstantFunctionByRegion(Function):
                         rval = nm.array(rval, dtype=dtype, ndmin=3)
 
                         cells = region.get_cells(true_cells_only=False)
-                        ii = term.region.get_cell_indices(cells,
-                                                          true_cells_only=False)
+                        tcells = term.region.get_cells(true_cells_only=False)
+                        ii = nm.isin(tcells, cells)
                         matdata[ii] = rval
 
                     out[key] = matdata.reshape((-1,) + s0)
