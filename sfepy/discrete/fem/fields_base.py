@@ -23,12 +23,12 @@ from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
                                       invert_remap, get_min_value)
-from sfepy.discrete.fem.mappings import VolumeMapping, SurfaceMapping
+from sfepy.discrete.fem.mappings import FEMapping
 from sfepy.discrete.fem.fe_surface import FESurface, FEPhantomSurface
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
-import six
+
 
 def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
                    clear_all=True, extra_dofs=False):
@@ -40,7 +40,7 @@ def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
         domain.cmesh.coors[:] = coors[:domain.mesh.n_nod]
 
     if update_fields:
-        for field in six.itervalues(fields):
+        for field in fields.values():
             field.set_coors(coors, extra_dofs=extra_dofs)
             field.clear_mappings(clear_all=clear_all)
 
@@ -1015,11 +1015,9 @@ class FEField(Field):
             bf = self.get_base('v', 0, integral, iels=iels)
 
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
-            mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
-            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
-                                     ori=self.ori, transform=transform)
-
-            out = vg
+            mapping = FEMapping(coors, conn, poly_space=geo_ps)
+            out = mapping.get_mapping(qp.vals, qp.weights, bf, poly_space=ps,
+                                      ori=self.ori, transform=transform)
 
         elif integration.startswith('surface'):
             assert_(self.approx_order > 0)
@@ -1038,7 +1036,7 @@ class FEField(Field):
             esd = self.surface_data[region.name]
 
             conn = sd.get_connectivity()
-            mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
+            mapping = FEMapping(coors, conn, poly_space=geo_ps)
 
             if not self.is_surface:
                 self.create_bqp(region.name, integral)
@@ -1061,19 +1059,17 @@ class FEField(Field):
                 else:
                     se_bf_bg, se_ebf_bg, se_conn = None, None, None
 
-                sg = mapping.get_mapping(qp.vals[0], qp.weights,
-                                         poly_space=Struct(n_nod=bf.shape[-1]),
-                                         extra=(se_conn, se_bf_bg, se_ebf_bg))
+                out = mapping.get_mapping(qp.vals[0], qp.weights, bf,
+                                          extra=(se_conn, se_bf_bg, se_ebf_bg),
+                                          is_face=True)
 
             else:
                 # Do not use BQP for surface fields.
                 qp = self.get_qp(sd.face_type, integral)
                 bf = ps.eval_base(qp.vals, transform=transform)
 
-                sg = mapping.get_mapping(qp.vals, qp.weights,
-                                         poly_space=Struct(n_nod=bf.shape[-1]))
-
-            out = sg
+                out = mapping.get_mapping(qp.vals, qp.weights, bf,
+                                          is_face=True)
 
         elif integration == 'point':
             out = mapping = None
@@ -1090,8 +1086,6 @@ class FEField(Field):
             out.integral = integral
             out.qp = qp
             out.ps = ps
-            # Update base.
-            out.bf[:] = bf
 
         if return_mapping:
             out = (out, mapping)
@@ -1348,7 +1342,7 @@ class SurfaceField(FEField):
         """
         Setup the field region geometry.
         """
-        for key, vgel in six.iteritems(self.domain.geom_els):
+        for key, vgel in self.domain.geom_els.items():
             self.gel = vgel.surface_facet
             break
 

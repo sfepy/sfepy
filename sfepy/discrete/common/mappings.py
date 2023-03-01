@@ -94,14 +94,14 @@ class Mapping(Struct):
 
         Returns
         -------
-        mapping : VolumeMapping or SurfaceMapping instance
+        mapping : FEMapping or IGMapping instance
             The requested mapping.
         """
         from sfepy.discrete.fem.domain import FEDomain
         from sfepy.discrete.iga.domain import IGDomain
 
         if isinstance(region.domain, FEDomain):
-            import sfepy.discrete.fem.mappings as mm
+            from sfepy.discrete.fem.mappings import FEMapping
             coors = region.domain.get_mesh_coors()
             if kind == 's':
                 coors = coors[region.vertices]
@@ -111,19 +111,18 @@ class Mapping(Struct):
             if kind == 'v':
                 cells = region.get_cells()
 
-                mapping = mm.VolumeMapping(coors, conn[cells], gel=gel)
+                mapping = FEMapping(coors, conn[cells], gel=gel)
 
             elif kind == 's':
                 from sfepy.discrete.fem.fe_surface import FESurface
 
                 aux = FESurface('aux', region, gel.get_surface_entities(),
                                 conn)
-                mapping = mm.SurfaceMapping(coors, aux.leconn,
-                                            gel=gel.surface_facet)
+                mapping = FEMapping(coors, aux.leconn, gel=gel.surface_facet)
 
         elif isinstance(region.domain, IGDomain):
-            import sfepy.discrete.iga.mappings as mm
-            mapping = mm.IGMapping(region.domain, region.cells)
+            from sfepy.discrete.iga.mappings import IGMapping
+            mapping = IGMapping(region.domain, region.cells)
 
         else:
             raise ValueError('unknown domain class! (%s)' % type(region.domain))
