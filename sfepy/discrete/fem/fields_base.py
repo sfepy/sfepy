@@ -270,6 +270,45 @@ class FEField(Field):
             self.approx_order = approx_order
             self.force_bubble = False
 
+    def _setup_geometry(self):
+        """
+        Setup the field region geometry.
+        """
+        region = self.region
+        cmesh = region.cmesh
+        if region.kind == 'cell':
+            ct = cmesh.cell_types
+            for gel in self.domain.geom_els.values():
+                if (ct[region.cells] == cmesh.key_to_index[gel.name]).all():
+                    self.gel = gel
+                    self.cmesh = cmesh
+                    break
+            else:
+                raise ValueError('region %s of field %s contains multiple'
+                                 ' reference geometries!'
+                                 % (self.region.name, self.name))
+
+            self.is_surface = False
+
+        elif region.kind == 'facet':
+            for gel in self.domain.geom_els.values():
+                self.gel = gel.surface_facet
+                break
+
+            if self.gel is None:
+                raise ValueError('cells with no surface!')
+
+            self.is_surface = True
+
+    def _create_interpolant(self):
+        name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
+                                  self.poly_space_base, self.approx_order,
+                                  'B' * self.force_bubble)
+        ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
+                                     base=self.poly_space_base,
+                                     force_bubble=self.force_bubble)
+        self.poly_space = ps
+
     def get_true_order(self):
         """
         Get the true approximation order depending on the reference
@@ -322,6 +361,38 @@ class FEField(Field):
                      + self.n_face_dof + self.n_bubble_dof
 
         self._setup_esurface()
+
+    def _init_econn(self):
+        """
+        Initialize the extended DOF connectivity.
+        """
+        n_ep = self.poly_space.n_nod
+        n_cell = self.region.get_n_cells(is_surface=self.is_surface)
+        self.econn = nm.zeros((n_cell, n_ep), nm.int32)
+
+    def _setup_vertex_dofs(self):
+        """
+        Setup vertex DOF connectivity.
+        """
+        if self.node_desc.vertex is None:
+            return 0, None
+
+        region = self.region
+
+        remap = prepare_remap(region.vertices, region.n_v_max)
+        n_dof = region.vertices.shape[0]
+
+        # Remap vertex node connectivity to field-local numbering.
+        conn, gel = self.domain.get_conn(ret_gel=True)
+        if self.is_surface:
+            faces = gel.get_surface_entities()
+            aux = FESurface('aux', region, faces, conn)
+            self.econn[:, :aux.n_fp] = aux.leconn
+            self.surface_data[region.name] = aux
+        else:
+            self.econn[:, :conn.shape[1]] = nm.take(remap, conn[region.cells])
+
+        return n_dof, remap
 
     def _setup_esurface(self):
         """
@@ -990,6 +1061,82 @@ class FEField(Field):
         """
         return self.get_econn(integration, region, trace_region=trace_region)
 
+    def get_econn(self, conn_type, region, trace_region=None, local=False):
+        """
+        Get extended connectivity of the given type in the given region.
+        """
+        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
+
+        if ct in ('cell', 'custom'):
+            if region.name == self.region.name:
+                conn = self.econn
+            else:
+                tco = region.kind == 'cell'
+                cells = region.get_cells(true_cells_only=tco)
+                ii = self.region.get_cell_indices(cells, true_cells_only=tco)
+                conn = nm.take(self.econn, ii, axis=0)
+
+        elif ct == 'facet':
+            if region.name not in self.surface_data:
+                self.domain.create_surface_group(region)
+                self.setup_surface_data(region)
+
+            if self.is_surface:
+                local = True
+            sd = self.surface_data[region.name]
+            conn = sd.get_connectivity(local=local, trace_region=trace_region)
+
+        elif ct == 'point':
+            conn = self.point_data[region.name]
+
+        else:
+            raise NotImplementedError('connectivity type %s' % ct)
+
+        return conn
+
+    def setup_extra_data(self, geometry, info):
+        dct = info.dc_type.type
+
+        if dct == 'facet':
+            reg = info.get_region()
+            mreg_name = info.get_region_name(can_trace=False)
+            mreg_name = None if reg.name == mreg_name else mreg_name
+            self.domain.create_surface_group(reg)
+            self.setup_surface_data(reg, mreg_name)
+
+        elif dct == 'edge':
+            raise NotImplementedError('dof connectivity type %s' % dct)
+
+        elif dct == 'point':
+            self.setup_point_data(self, info.region)
+
+        elif dct not in ('cell', 'custom'):
+            raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+    def setup_surface_data(self, region, trace_region=None):
+        """nodes[leconn] == econn"""
+        """nodes are sorted by node number -> same order as region.vertices"""
+        if region.name not in self.surface_data:
+            name = 'surface_data_%s' % region.name
+            if trace_region is not None and region.tdim == (region.dim - 1):
+                sd = FEPhantomSurface(name, region, self.econn)
+            else:
+                sd = FESurface(name, region, self.efaces, self.econn,
+                               self.region)
+            self.surface_data[region.name] = sd
+
+        if region.name in self.surface_data and trace_region is not None:
+            sd = self.surface_data[region.name]
+            sd.setup_mirror_connectivity(region, trace_region)
+
+        return self.surface_data[region.name]
+
+    def setup_point_data(self, field, region):
+        if region.name not in self.point_data:
+            conn = field.get_dofs_in_region(region, merge=True)
+            conn.shape += (1,)
+            self.point_data[region.name] = conn
+
     def create_mapping(self, region, integral, integration,
                        return_mapping=True):
         """
@@ -1091,23 +1238,6 @@ class FEField(Field):
 
         return out
 
-    def _create_interpolant(self):
-        name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
-                                  self.poly_space_base, self.approx_order,
-                                  'B' * self.force_bubble)
-        ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base=self.poly_space_base,
-                                     force_bubble=self.force_bubble)
-        self.poly_space = ps
-
-    def _init_econn(self):
-        """
-        Initialize the extended DOF connectivity.
-        """
-        n_ep = self.poly_space.n_nod
-        n_cell = self.region.get_n_cells(is_surface=self.is_surface)
-        self.econn = nm.zeros((n_cell, n_ep), nm.int32)
-
     def average_qp_to_vertices(self, data_qp, integral):
         r"""
         Average data given in quadrature points in region elements into
@@ -1157,137 +1287,6 @@ class FEField(Field):
         data_vertex /= nod_vol[:, nm.newaxis]
 
         return data_vertex
-
-    def setup_point_data(self, field, region):
-        if region.name not in self.point_data:
-            conn = field.get_dofs_in_region(region, merge=True)
-            conn.shape += (1,)
-            self.point_data[region.name] = conn
-
-    def get_econn(self, conn_type, region, trace_region=None, local=False):
-        """
-        Get extended connectivity of the given type in the given region.
-        """
-        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
-
-        if ct in ('cell', 'custom'):
-            if region.name == self.region.name:
-                conn = self.econn
-            else:
-                tco = region.kind == 'cell'
-                cells = region.get_cells(true_cells_only=tco)
-                ii = self.region.get_cell_indices(cells, true_cells_only=tco)
-                conn = nm.take(self.econn, ii, axis=0)
-
-        elif ct == 'facet':
-            if region.name not in self.surface_data:
-                self.domain.create_surface_group(region)
-                self.setup_surface_data(region)
-
-            if self.is_surface:
-                local = True
-            sd = self.surface_data[region.name]
-            conn = sd.get_connectivity(local=local, trace_region=trace_region)
-
-        elif ct == 'point':
-            conn = self.point_data[region.name]
-
-        else:
-            raise NotImplementedError('connectivity type %s' % ct)
-
-        return conn
-
-    def setup_extra_data(self, geometry, info):
-        dct = info.dc_type.type
-
-        if dct == 'facet':
-            reg = info.get_region()
-            mreg_name = info.get_region_name(can_trace=False)
-            mreg_name = None if reg.name == mreg_name else mreg_name
-            self.domain.create_surface_group(reg)
-            self.setup_surface_data(reg, mreg_name)
-
-        elif dct == 'edge':
-            raise NotImplementedError('dof connectivity type %s' % dct)
-
-        elif dct == 'point':
-            self.setup_point_data(self, info.region)
-
-        elif dct not in ('cell', 'custom'):
-            raise ValueError('unknown dof connectivity type! (%s)' % dct)
-
-    def setup_surface_data(self, region, trace_region=None):
-        """nodes[leconn] == econn"""
-        """nodes are sorted by node number -> same order as region.vertices"""
-        if region.name not in self.surface_data:
-            name = 'surface_data_%s' % region.name
-            if trace_region is not None and region.tdim == (region.dim - 1):
-                sd = FEPhantomSurface(name, region, self.econn)
-            else:
-                sd = FESurface(name, region, self.efaces, self.econn,
-                               self.region)
-            self.surface_data[region.name] = sd
-
-        if region.name in self.surface_data and trace_region is not None:
-            sd = self.surface_data[region.name]
-            sd.setup_mirror_connectivity(region, trace_region)
-
-        return self.surface_data[region.name]
-
-    def _setup_vertex_dofs(self):
-        """
-        Setup vertex DOF connectivity.
-        """
-        if self.node_desc.vertex is None:
-            return 0, None
-
-        region = self.region
-
-        remap = prepare_remap(region.vertices, region.n_v_max)
-        n_dof = region.vertices.shape[0]
-
-        # Remap vertex node connectivity to field-local numbering.
-        conn, gel = self.domain.get_conn(ret_gel=True)
-        if self.is_surface:
-            faces = gel.get_surface_entities()
-            aux = FESurface('aux', region, faces, conn)
-            self.econn[:, :aux.n_fp] = aux.leconn
-            self.surface_data[region.name] = aux
-        else:
-            self.econn[:, :conn.shape[1]] = nm.take(remap, conn[region.cells])
-
-        return n_dof, remap
-
-    def _setup_geometry(self):
-        """
-        Setup the field region geometry.
-        """
-        region = self.region
-        cmesh = region.cmesh
-        print('>>>', region.name, region.kind)
-        if region.kind == 'cell':
-            ct = cmesh.cell_types
-            for gel in self.domain.geom_els.values():
-                if (ct[region.cells] == cmesh.key_to_index[gel.name]).all():
-                    self.gel = gel
-                    self.cmesh = cmesh
-                    break
-            else:
-                raise ValueError('region %s of field %s contains multiple'
-                                 ' reference geometries!'
-                                 % (self.region.name, self.name))
-
-            self.is_surface = False
-
-        elif region.kind == 'facet':
-            for gel in self.domain.geom_els.values():
-                self.gel = gel.surface_facet
-                break
-
-            if self.gel is None:
-                raise ValueError('cells with no surface!')
-
-            self.is_surface = True
 
     # from SurfaceField()
     # def _setup_bubble_dofs(self):
