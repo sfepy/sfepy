@@ -305,6 +305,10 @@ class FEField(Field):
                 raise ValueError('cells with no surface!')
 
             self.is_surface = True
+        else:
+            raise ValueError(f'unsuitable region {region.name} with kind '
+                             f'{region.kind} for field {self.name}, '
+                             f'"region.kind" must be "cell" or "facet"!')
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
