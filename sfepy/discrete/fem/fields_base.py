@@ -707,7 +707,7 @@ class FEField(Field):
         evec = vec[self.econn]
 
         vec[self.econn0] = nm.einsum('cji,cjk->cik', self.basis_transform,
-                                     evec)
+                                     evec, optimize=True)
 
         return vec.ravel()
 
