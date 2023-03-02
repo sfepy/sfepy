@@ -92,7 +92,7 @@ def test_ref_coors_iga():
                             approx_order='iga', poly_space_base='iga')
 
     mcoors = field.nurbs.cps
-    conn = field.get_econn('volume', field.region)
+    conn = field.get_econn('cell', field.region)
 
     bbox = domain.eval_mesh.get_bounding_box()
     ray = nm.linspace(bbox[0, 0], bbox[1, 0], 11)

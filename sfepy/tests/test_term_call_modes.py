@@ -323,12 +323,15 @@ def test_term_call_modes(data):
                or (term_cls.name == "dw_ns_dot_grad_s"):
                 continue
 
-            if term_cls.integration == 'by_region':
-                rnames = ['Omega', 'Gamma']
-            else:
-                vint = ('volume', 'point', 'custom')
-                rnames = ['Omega'] if term_cls.integration in vint\
-                    else ['Gamma']
+            rnames = []
+            if ('cell' in term_cls.integration or
+                'point' in term_cls.integration or
+                'custom' in term_cls.integration):
+                rnames.append('Omega')
+
+            if ('facet' in term_cls.integration or
+                'facet_extra' in term_cls.integration):
+                rnames.append('Gamma')
 
             for rname in rnames:
                 tst.report('<-- %s.%s ...' % (term_cls.name, rname))

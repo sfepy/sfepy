@@ -34,7 +34,7 @@ class NonPenetrationTerm(Term):
                    'virtual/div' : (1, None), 'state/div' : 'D'},
                   {'opt_material' : None}]
     modes = ('grad', 'div')
-    integration = 'surface'
+    integration = 'facet'
 
     @staticmethod
     def function(out, val_qp, ebf, bf, mat, sg, diff_var, mode):
@@ -117,7 +117,7 @@ class NonPenetrationPenaltyTerm(Term):
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material' : '1, 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
-    integration = 'surface'
+    integration = 'facet'
 
     @staticmethod
     def function(out, val_qp, ebf, mat, sg, diff_var):

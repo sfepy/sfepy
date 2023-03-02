@@ -439,14 +439,14 @@ class Field(Struct):
             valsi = vals.copy()
             evaluate_in_rc(vals, ref_coors, cells, status,
                            nm.ascontiguousarray(source_vals.real),
-                           self.get_econn('volume', self.region), cmode, ctx)
+                           self.get_econn('cell', self.region), cmode, ctx)
             evaluate_in_rc(valsi, ref_coors, cells, status,
                            nm.ascontiguousarray(source_vals.imag),
-                           self.get_econn('volume', self.region), cmode, ctx)
+                           self.get_econn('cell', self.region), cmode, ctx)
             vals = vals + valsi * 1j
         else:
             evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                           self.get_econn('volume', self.region), cmode, ctx)
+                           self.get_econn('cell', self.region), cmode, ctx)
 
         output('interpolation: %f s' % timer.stop(),verbose=verbose)
 

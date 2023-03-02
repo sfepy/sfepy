@@ -164,7 +164,7 @@ class Shell10XTerm(Term):
 
         # Displacements of element nodes.
         vec_u = vu()
-        econn = vu.field.get_econn('volume', self.region)
+        econn = vu.field.get_econn('cell', self.region)
         adc = create_adof_conn(nm.arange(vu.n_dof, dtype=nm.int32), econn, 6, 0)
         el_u = vec_u[adc]
 

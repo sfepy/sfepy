@@ -42,7 +42,7 @@ class LinearTractionTerm(Term):
                   {'opt_material' : 'D, 1'}, {'opt_material' : '1, 1'},
                   {'opt_material' : 'D, D'}, {'opt_material' : None}]
     modes = ('weak', 'eval')
-    integration = 'surface'
+    integration = 'facet'
 
     @staticmethod
     def d_fun(out, traction, val, sg):
@@ -127,7 +127,7 @@ class SDLinearTractionTerm(Term):
                    'parameter_mv': 'D'}, {'opt_material': '1, 1'},
                   {'opt_material': 'D, 1'}, {'opt_material': 'D, D'},
                   {'opt_material': None}]
-    integration = 'surface'
+    integration = 'facet'
 
     @staticmethod
     def d_fun(out, traction, val, grad_mv, div_mv, sg):
@@ -170,8 +170,8 @@ class SDLinearTractionTerm(Term):
         sg, _ = self.get_mapping(par_u)
 
         val = self.get(par_u, 'val')
-        grad_mv = self.get(par_mv, 'grad', integration='surface_extra')
-        div_mv = self.get(par_mv, 'div', integration='surface_extra')
+        grad_mv = self.get(par_mv, 'grad', integration='facet_extra')
+        div_mv = self.get(par_mv, 'div', integration='facet_extra')
 
         return traction, val, grad_mv, div_mv, sg
 
@@ -238,7 +238,7 @@ class ContactPlaneTerm(Term):
                   'material_a' : '.: D', 'material_b' : '.: N, D',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     geometries = ['3_4', '3_8']
-    integration = 'surface'
+    integration = 'facet'
 
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
@@ -389,7 +389,7 @@ class ContactSphereTerm(ContactPlaneTerm):
                   'material_r' : '.: 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     geometries = ['3_4', '3_8']
-    integration = 'surface'
+    integration = 'facet'
 
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
@@ -498,7 +498,7 @@ class SufaceNormalDotTerm(Term):
                  ('material', 'parameter'))
     arg_shapes = {'material' : 'D, 1', 'virtual' : (1, None), 'parameter' : 1}
     modes = ('weak', 'eval')
-    integration = 'surface'
+    integration = 'facet'
 
     @staticmethod
     def dw_fun(out, material, bf, sg):
@@ -558,7 +558,7 @@ class SDSufaceIntegrateTerm(Term):
     name = 'ev_sd_surface_integrate'
     arg_types = ('parameter', 'parameter_mv')
     arg_shapes = {'parameter': 1, 'parameter_mv': 'D'}
-    integration = 'surface'
+    integration = 'facet'
 
     @staticmethod
     def function(out, val_p, div_v, sg):
@@ -570,7 +570,7 @@ class SDSufaceIntegrateTerm(Term):
         sg, _ = self.get_mapping(par)
 
         val_p = self.get(par, 'val')
-        div_v = self.get(par_v, 'div', integration='surface_extra')
+        div_v = self.get(par_v, 'div', integration='facet_extra')
         return val_p, div_v, sg
 
     def get_eval_shape(self, par, par_v,
@@ -599,7 +599,7 @@ class SurfaceJumpTerm(Term):
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None),
                    'state_1' : 1, 'state_2' : 1},
                   {'opt_material' : None}]
-    integration = 'surface'
+    integration = 'facet'
 
     @staticmethod
     def function(out, jump, mul, bf1, bf2, sg, fmode):

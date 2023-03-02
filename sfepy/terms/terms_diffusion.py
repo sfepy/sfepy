@@ -297,8 +297,7 @@ class DiffusionVelocityTerm( Term ):
     name = 'ev_diffusion_velocity'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'D, D', 'parameter' : 1}
-    integration = 'by_region'
-    surface_integration = 'surface_extra'
+    integration = ('cell', 'facet_extra')
 
     @staticmethod
     def function(out, grad, mat, vg, fmode):
@@ -350,7 +349,7 @@ class SurfaceFluxTerm(Term):
     name = 'ev_surface_flux'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'D, D', 'parameter' : 1}
-    integration = 'surface_extra'
+    integration = 'facet_extra'
 
     function = staticmethod(terms.d_surface_flux)
 
@@ -389,7 +388,7 @@ class SurfaceFluxOperatorTerm(Term):
     arg_shapes = [{'opt_material' : 'D, D', 'virtual' : (1, 'state'),
                    'state' : 1},
                   {'opt_material' : None}]
-    integration = 'surface_extra'
+    integration = 'facet_extra'
     function = terms.dw_surface_flux
 
     def get_fargs(self, mat, virtual, state,
@@ -404,7 +403,7 @@ class SurfaceFluxOperatorTerm(Term):
             mat[..., :, :] = nm.eye(dim, dtype=nm.float64)
 
         if diff_var is None:
-            grad = self.get(state, 'grad', integration='surface_extra')
+            grad = self.get(state, 'grad', integration='facet_extra')
             fmode = 0
 
         else:

@@ -333,8 +333,7 @@ class GradTerm(Term):
     arg_types = ('opt_material', 'parameter')
     arg_shapes = [{'opt_material': '1, 1', 'parameter': 'N'},
                   {'opt_material': None}]
-    integration = 'by_region'
-    surface_integration = 'surface_extra'
+    integration = ('cell', 'facet_extra')
 
     @staticmethod
     def function(out, mat, grad, vg, fmode):
@@ -352,7 +351,7 @@ class GradTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
 
-        grad = self.get(parameter, 'grad', integration=self.integration)
+        grad = self.get(parameter, 'grad', integration=self.act_integration)
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
@@ -386,8 +385,7 @@ class DivTerm(Term):
     arg_types = ('opt_material', 'parameter')
     arg_shapes = [{'opt_material': '1, 1', 'parameter': 'D'},
                   {'opt_material': None}]
-    integration = 'by_region'
-    surface_integration = 'surface_extra'
+    integration = ('cell', 'facet_extra')
 
     @staticmethod
     def function(out, mat, div, vg, fmode):
@@ -405,7 +403,7 @@ class DivTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
 
-        div = self.get(parameter, 'div', integration=self.integration)
+        div = self.get(parameter, 'div', integration=self.act_integration)
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
@@ -499,7 +497,7 @@ class StokesWaveTerm(Term):
         kebf = insert_strided_axis(aux, 0, n_el)
 
         if diff_var is None:
-            econn = state.field.get_econn('volume', self.region)
+            econn = state.field.get_econn('cell', self.region)
             adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
                                    econn, n_c, 0)
             vals = state()[adc]
@@ -567,7 +565,7 @@ class StokesWaveDivTerm(Term):
 
         if diff_var is None:
             avar = dvar if self.mode == 'kd' else kvar
-            econn = avar.field.get_econn('volume', self.region)
+            econn = avar.field.get_econn('cell', self.region)
             adc = create_adof_conn(nm.arange(avar.n_dof, dtype=nm.int32),
                                    econn, n_c, 0)
             vals = avar()[adc]
@@ -677,7 +675,7 @@ class PSPGCStabilizationTerm(Term):
         vvg, _ = self.get_mapping(state)
 
         val_qp = self.get(parameter, 'val')
-        conn = state.field.get_connectivity(self.region, self.integration)
+        conn = state.field.get_connectivity(self.region, self.act_integration)
 
         if diff_var is None:
             fmode = 0
@@ -757,7 +755,8 @@ class SUPGCStabilizationTerm(Term):
         vg, _ = self.get_mapping(virtual)
 
         val_qp = self.get(parameter, 'val')
-        conn = virtual.field.get_connectivity(self.region, self.integration)
+        conn = virtual.field.get_connectivity(self.region,
+                                              self.act_integration)
 
         if diff_var is None:
             fmode = 0

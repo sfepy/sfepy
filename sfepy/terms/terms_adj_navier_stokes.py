@@ -139,7 +139,7 @@ class SUPGCAdjStabilizationTerm(Term):
 
         val_u = self.get(parameter, 'val')
         grad_u = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
-        conn = state.field.get_connectivity(self.region, self.integration)
+        conn = state.field.get_connectivity(self.region, self.act_integration)
 
         fmode = diff_var is not None
 
@@ -173,7 +173,8 @@ class SUPGPAdj1StabilizationTerm(Term):
         vg_w, _ = self.get_mapping(state)
 
         grad_p = self.get(parameter, 'grad')
-        conn_w = state.field.get_connectivity(self.region, self.integration)
+        conn_w = state.field.get_connectivity(self.region,
+                                              self.act_integration)
 
         fmode = diff_var is not None
 
@@ -209,7 +210,8 @@ class SUPGPAdj2StabilizationTerm(Term):
         vg_u, _ = self.get_mapping(parameter)
 
         grad_u = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
-        conn_r = state.field.get_connectivity(self.region, self.integration)
+        conn_r = state.field.get_connectivity(self.region,
+                                              self.act_integration)
 
         fmode = diff_var is not None
 
@@ -433,7 +435,7 @@ class NSOFSurfMinDPressTerm(Term):
     arg_types = ('material_1', 'material_2', 'parameter')
     arg_shapes = {'material_1' : 1, 'material_2' : 1,
                   'parameter' : 1}
-    integration = 'surface'
+    integration = 'facet'
 
     function = staticmethod(terms.d_of_nsSurfMinDPress)
 

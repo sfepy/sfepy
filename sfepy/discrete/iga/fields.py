@@ -97,8 +97,7 @@ class IGField(Field):
         """
         return (self.nurbs.degrees > 1).any()
 
-    def get_econn(self, conn_type, region, trace_region=None, integration=None,
-                  local=False):
+    def get_econn(self, conn_type, region, trace_region=None, local=False):
         """
         Get DOF connectivity of the given type in the given region.
         """
@@ -106,7 +105,7 @@ class IGField(Field):
 
         nconn = self.nurbs.conn
 
-        if ct == 'volume':
+        if ct == 'cell':
             if region.name == self.region.name:
                 conn = nconn
 
@@ -114,7 +113,7 @@ class IGField(Field):
                 cells = region.get_cells(true_cells_only=True)
                 conn = nm.take(nconn, cells.astype(nm.int32), axis=0)
 
-        elif ct == 'surface':
+        elif ct == 'facet':
             fis = region.get_facet_indices()
             tdim = region.kind_tdim
             facets = self._get_facets(tdim)
@@ -135,7 +134,7 @@ class IGField(Field):
 
         return conn
 
-    def get_data_shape(self, integral, integration='volume', region_name=None):
+    def get_data_shape(self, integral, integration='cell', region_name=None):
         """
         Get element data dimensions.
 
@@ -143,8 +142,8 @@ class IGField(Field):
         ----------
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : 'volume'
-            The term integration type. Only 'volume' type is implemented.
+        integration : 'cell'
+            The term integration type. Only 'cell' type is implemented.
         region_name : str
             The name of the region of the integral.
 
@@ -183,11 +182,11 @@ class IGField(Field):
                              % region.name)
 
         if idim == region.tdim: # Cells.
-            rconn = self.get_econn('volume', region)
+            rconn = self.get_econn('cell', region)
             dofs = nm.unique(rconn)
 
         else: # Facets.
-            rconn = self.get_econn('surface', region)
+            rconn = self.get_econn('facet', region)
             dofs = nm.unique(nm.concatenate(rconn))
 
         if not merge:
@@ -248,7 +247,7 @@ class IGField(Field):
     def setup_extra_data(self, geometry, info):
         dct = info.dc_type.type
 
-        if dct != 'volume':
+        if dct != 'cell':
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     def create_mapping(self, region, integral, integration):
