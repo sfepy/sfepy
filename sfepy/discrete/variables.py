@@ -1604,7 +1604,7 @@ class FieldVariable(Variable):
         integral : Integral instance
             The integral describing used numerical quadrature.
         integration : 'cell', 'facet', 'facet_extra', 'point' or 'custom'
-            The term extra integration mode.
+            The term integration mode.
         region_name : str
             The name of the region of the integral.
 

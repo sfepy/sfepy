@@ -418,7 +418,7 @@ class FEField(Field):
         ----------
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : str
+        integration : 'cell', 'facet', 'facet_extra', 'point' or 'custom'
             The term integration mode.
         region_name : str
             The name of the region of the integral.
@@ -432,6 +432,15 @@ class FEField(Field):
 
         Notes
         -----
+        Integration modes:
+        - 'cell': integration over cells/elements
+        - 'facet': integration over cell facets (faces, edges)
+        - 'facet_extra': same as 'facet' but also the normal derivatives
+          are evaluated
+        - 'point': point integration
+        - 'custom': user defined integration
+
+        Dimensions:
         - `n_el`, `n_fa` = number of elements/facets
         - `n_qp` = number of quadrature points per element/facet
         - `dim` = spatial dimension
