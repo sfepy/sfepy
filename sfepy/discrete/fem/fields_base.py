@@ -1300,12 +1300,12 @@ class FEField(Field):
 
         return data_vertex
 
-    # from SurfaceField()
-    # def _setup_bubble_dofs(self):
-    #     """
-    #     Setup bubble DOF connectivity.
-    #     """
-    #     return 0, None, None
+    def _setup_bubble_dofs(self):
+        """
+        Setup bubble DOF connectivity for surface field.
+        """
+        if self.is_surface:
+            return 0, None, None
 
 
 class H1Mixin(Struct):
