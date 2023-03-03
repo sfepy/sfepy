@@ -7,6 +7,7 @@ differential equations by the finite element method. The code is based
 on NumPy and SciPy packages.
 """
 import glob
+import os
 
 from skbuild import setup
 from setuptools import find_packages, Extension
@@ -72,6 +73,22 @@ for line in fdi:
 fdi.close()
 fdo.close()
 
+
+def data_dir_walk(dir_name: str, prefix: str) -> list[tuple[str, list[str]]]:
+    """
+    Generate instructions for setup() to add all files in a tree rooted at `dirname`
+    as data_files.
+    """
+    data_files = []
+    for root, dirs, files in os.walk(dir_name):
+        full_paths = [os.path.join(root, fname) for fname in files]
+        data_files.append((os.path.join(prefix, root), full_paths))
+
+    return data_files
+
+
+mesh_data_files = data_dir_walk('meshes', 'sfepy')
+
 setup(
     name='sfepy',
     maintainer="Robert Cimrman",
@@ -99,6 +116,6 @@ setup(
     data_files=[
         ('sfepy', ['LICENSE', 'VERSION']),
         ('sfepy/tests/', glob.glob('sfepy/tests/*.py'))
-    ],
+    ] + mesh_data_files,
     setup_requires=['cython'],
 )
