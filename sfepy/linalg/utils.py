@@ -1,10 +1,9 @@
-from __future__ import print_function
-from __future__ import absolute_import
+from itertools import product
+
 import numpy as nm
 from numpy.lib.stride_tricks import as_strided
 import numpy.linalg as nla
 import scipy as sc
-from six.moves import range
 
 from sfepy.base.base import assert_, insert_method, output, Struct
 
@@ -145,6 +144,61 @@ def invs_fast(a, det=None):
 
     return nm.einsum("...ij->ij...", inv_ax) / det_a
 
+def get_blocks_stats(blocks, *args):
+    """
+    Return statistics of array/matrix `blocks` defined by indices in `args`.
+
+    Returns
+    -------
+    stats: structured array
+        The array with 'shape', 'min', 'mean' and 'max' fields at positions of
+        each matrix block.
+
+    Examples
+    --------
+    >>> import numpy as nm
+    >>> from sfepy.linalg.utils import get_blocks_stats
+    >>>
+    >>> A = nm.eye(3)
+    >>> B = nm.full((3,2), 2)
+    >>> C = nm.full((1,3), 3)
+    >>> D = nm.full((1,2), 4)
+    >>> M = nm.block([[A, B], [C, D]])
+    >>>
+    >>> sr = [slice(0, 3), slice(3, 5)]
+    >>> sc = [slice(0, 3), slice(3, 4)]
+    >>> stats = get_blocks_stats(M, sr, sc)
+    >>>
+    >>> print(stats['shape'])
+    [[(3, 3) (3, 1)]
+     [(1, 3) (1, 1)]]
+    >>>
+    >>> print(stats['min'])
+    [[0. 2.]
+     [3. 4.]]
+    """
+    bindices = args
+    idim = len(args)
+    bdim = blocks.ndim
+    bshape = [len(indices) for indices in bindices]
+    if idim == 1:
+        bshape = bshape * blocks.ndim
+        bindices *= blocks.ndim
+
+    elif idim != bdim:
+        raise ValueError('wrong number of dimensions of block indices!'
+                         f' (can be 1 or {bdim}, is {idim})')
+
+    dt = blocks.dtype
+    sizes = nm.empty(bshape,
+                     dtype=[('shape', tuple), ('min', dt), ('mean', dt),
+                            ('max', dt), ('maxabs', dt)])
+    for iflat, ii in enumerate(product(*bindices)):
+        key = nm.unravel_index(iflat, bshape)
+        block = blocks[ii]
+        sizes[key] = ((block.shape, block.min(), block.mean(), block.max(),
+                       nm.abs(block).max()))
+    return sizes
 
 def print_array_info(ar):
     """
