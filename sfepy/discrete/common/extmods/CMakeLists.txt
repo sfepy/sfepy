@@ -1,6 +1,3 @@
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2")
 
 set(common_src fmfield.c geommech.c common_python.c)
 add_library(sfepy_common STATIC ${common_src})

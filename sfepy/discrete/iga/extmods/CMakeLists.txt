@@ -1,7 +1,3 @@
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2")
-
 set(common_path ../../common/extmods)
 
 add_cython_target(igac igac.pyx)
