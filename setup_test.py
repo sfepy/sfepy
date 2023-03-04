@@ -10,9 +10,7 @@ import glob
 import os
 
 from skbuild import setup
-from setuptools import find_packages, Extension
-from Cython.Build import cythonize
-import numpy as np
+from setuptools import find_packages
 
 import sys
 sys.path.append('./tools')
@@ -48,15 +46,6 @@ install_requires = [
     'sympy',
     'tables',
 ]
-"""
-print(find_packages())
-test_ext = Extension(
-    'sfepy.discrete.common.extmods.mappings',
-    sources=['sfepy/discrete/common/extmods/mappings*.pyx'],
-    include_dirs=[np.get_include()]
-)
-print(test_ext)
-"""
 
 # Create version.h file.
 # There is probably a way to do it with CMake but we'll get to it later.
