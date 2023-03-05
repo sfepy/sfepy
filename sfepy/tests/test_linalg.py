@@ -77,3 +77,22 @@ def test_geometry():
     ok = nm.allclose([a1, a2], [1, 1], rtol=0, atol=1e-15)
 
     assert ok
+
+def test_get_blocks_stats():
+    import numpy as nm
+    from sfepy.linalg.utils import get_blocks_stats
+
+    A = nm.eye(3)
+    B = nm.full((3,2), 2)
+    C = nm.full((1,3), 3)
+    D = nm.full((1,2), 4)
+
+    sr = [slice(0, 3), slice(3, 5)]
+    sc = [slice(0, 3), slice(3, 4)]
+
+    M = nm.block([[A, B], [C, D]])
+    stats = get_blocks_stats(M, sr, sc)
+
+    assert stats['shape'].tolist() == [[(3, 3), (3, 1)], [(1, 3), (1, 1)]]
+    assert (stats['min'] == nm.array([[0., 2.], [3., 4.]])).all()
+    assert (stats['max'] == nm.array([[1., 2.], [3., 4.]])).all()
