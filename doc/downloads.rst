@@ -35,4 +35,4 @@ latest snapshot:
 
 latest and previous releases:
 
-   https://github.com/sfepy/sfepy/releases
+   https://github.com/sfepy/sfepy/tags
