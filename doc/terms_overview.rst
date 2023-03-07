@@ -23,11 +23,11 @@ The following notation is used:
    * - symbol
      - meaning
    * - :math:`\Omega`
-     - volume (sub)domain
+     - cell (volume) (sub)domain
    * - :math:`\Gamma`
-     - surface (sub)domain
+     - facet (surface) (sub)domain
    * - :math:`\cal{D}`
-     - volume or surface (sub)domain
+     - cell or facet (sub)domain
    * - :math:`d`
      - dimension of space
    * - :math:`t`

@@ -561,16 +561,17 @@ here, see :ref:`multi-linear_terms`.
 Notes on terminology
 ^^^^^^^^^^^^^^^^^^^^
 
-*Volume* refers to the whole domain (in space of dimension :math:`d`), while
-*surface* to a subdomain of dimension :math:`d-1`, for example a part of the
-domain boundary. So in 3D problems volume = volume, surface = surface, while in
-2D volume = area, surface = curve.
+Term integrals are over domains of the *cell* or *facet* kinds. For meshes with
+elements of the topological dimension :math:`t \leq d`, where :math:`d` is the
+space dimension, *cells* have the topological :math:`t`, while facets
+:math:`t-1`. For example, in 3D meshes cell = volume, facet = surface, while in
+2D cell = area, facet = curve.
 
 Introduction
 ^^^^^^^^^^^^
 
 A term in *SfePy* usually corresponds to a single integral term in (weak)
-integral formulation of an equation. Both volume and surface integrals are
+integral formulation of an equation. Both cell and facet integrals are
 supported. There are three types of arguments a term can have:
 
 - *variables*, i.e. the unknown, test or parameter variables declared by the
@@ -596,15 +597,15 @@ Basic attributes
 ^^^^^^^^^^^^^^^^
 
 A term class should inherit from :class:`sfepy.terms.terms.Term` base
-class. The simplest possible term with volume integration and 'weak'
+class. The simplest possible term with cell integration and 'weak'
 evaluation mode needs to have the following attributes and methods:
 
 - docstring (not really required per se, but we require it);
 - `name` attribute - the name to be used in `equations`;
 - `arg_types` attribute - the types of arguments the term accepts;
 - `integration` attribute, optional - the kind of integral the term
-  implements, one of `'volume'` (the default, if not given), `'surface'`,
-  `'surface_extra'` or `'by_region'`;
+  implements, one of `'cell'` (the default, if not given), `'facet'` or
+  `'facet_extra'`;
 - `function()` static method - the assembling function;
 - `get_fargs()` method - the method that takes term arguments and
   converts them to arguments for `function()`.
@@ -632,16 +633,13 @@ Integration kinds
 
 The integration kinds have the following meaning:
 
-- `'volume'` for volume integral over a region that contains elements;
-  uses volume element connectivity for assembling;
-- `'surface'` for surface integral over a region that contains faces;
-  uses surface face connectivity for assembling;
-- `'surface_extra'` for surface integral over a region that contains
-  faces; uses volume element connectivity for assembling - this is
-  needed if full gradients of a variable are required on the boundary;
-- `'by_region'` -  the integration mode is determined by the region kind,
-  The term attribute 'surface_integration' allows to set `'surface_extra'`
-  integration for surface regions.
+- `'cell'` for cell integral over a region that contains elements;
+  uses cell connectivity for assembling;
+- `'facet'` for facet integral over a region that contains faces;
+  uses facet connectivity for assembling;
+- `'facet_extra'` for facet integral over a region that contains
+  faces; uses cell connectivity for assembling - this is
+  needed if full gradients of a variable are required on the boundary.
 
 `function()`
 """"""""""""
@@ -773,7 +771,7 @@ implemented as follows::
         arg_types = ('opt_material', 'virtual')
         arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                       {'opt_material' : None}]
-        integration = 'by_region'
+        integration = ('cell', 'facet')
 
         @staticmethod
         def function(out, material, bf, geo):
