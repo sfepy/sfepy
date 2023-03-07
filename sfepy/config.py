@@ -26,13 +26,16 @@ except ImportError:
 has_attr = lambda obj, attr: obj and hasattr(obj, attr)
 
 
-def compose_system_compile_flags() -> list:
+def compose_system_compile_flags(is_posix: bool) -> list:
     """
     Provides a list of compile flags that tries to be as similar as possible
     to what Python itself was built with. This has been done historically by
     numpy.distutils (now deprecated) and a squeezed version of it is brought
     over to here.
     """
+    if not is_posix:
+        return []
+
     cflags, configure_cppflags, configure_cflags = sysconfig.get_config_vars(
         'CFLAGS', 'CONFIGURE_CPPFLAGS', 'CONFIGURE_CFLAGS')
 
@@ -76,7 +79,7 @@ class Config(object):
         else:
             flags = ['-g', '-O2']
 
-        return flags + compose_system_compile_flags()
+        return flags + compose_system_compile_flags(self.system() == 'posix')
 
     def link_flags(self):
         if has_attr(site_cfg, 'link_flags'):
