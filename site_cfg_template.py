@@ -11,7 +11,7 @@ system = None
 
 # Extra flags added to the flags supplied by distutils to compile C
 # extension modules.
-compile_flags = '-g -O2'
+compile_flags = ['-g', '-O2']
 
 # Extra flags added to the flags supplied by distutils to link C
 # extension modules.

@@ -16,6 +16,8 @@ import sys
 sys.path.append('./tools')
 from build_helpers import INFO, cmdclass
 
+from sfepy import config
+
 DOCLINES = __doc__.split("\n")
 
 VERSION = INFO.__version__
@@ -78,6 +80,8 @@ def data_dir_walk(dir_name: str, prefix: str) -> list[tuple[str, list[str]]]:
 
 mesh_data_files = data_dir_walk('meshes', 'sfepy')
 
+conf = config.Config()
+
 setup(
     name='sfepy',
     maintainer="Robert Cimrman",
@@ -107,4 +111,5 @@ setup(
         ('sfepy/tests/', glob.glob('sfepy/tests/*.py'))
     ] + mesh_data_files,
     setup_requires=['cython'],
+    cmake_args=[f'-DCMAKE_C_FLAGS={" ".join(conf.compile_flags())}']
 )

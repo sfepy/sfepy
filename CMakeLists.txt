@@ -10,9 +10,6 @@ find_package(NumPy REQUIRED)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# this needs discussion, see PR description
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2")
-
 if(MSVC)
     add_compile_definitions(SFEPY_PLATFORM=1 inline=__inline)
 else()
