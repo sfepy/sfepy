@@ -229,7 +229,7 @@ Following the above definitions, a region can be of different `kind`:
   defined terms (e.g. point loads).
 
 The kinds allow a clear distinction between regions of different purpose
-(cell integration domains, facet domains, etc.) and could be uses to lower
+(cell integration domains, facet domains, etc.) and could be used to lower
 memory usage.
 
 A region definition involves `topological entity selections` combined with
