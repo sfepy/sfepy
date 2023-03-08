@@ -69,7 +69,7 @@ which :math:`u_j` belongs to).
 Finite Element Approximation
 ----------------------------
 
-On a finite element :math:`T_K` (surface or volume) we have :math:`u_i(\ul{x}) =
+On a finite element :math:`T_K` (facet or cell) we have :math:`u_i(\ul{x}) =
 \sum_{k=1}^{N} u_i^k \phi^k (\ul{x})`, where :math:`\phi^k` are the
 local (element) base functions. Using the more compact matrix notation
 :math:`\ub_i = [u_i^1, \dots, u_i^N]`, :math:`\vphib = [\vphib^1, \dots,

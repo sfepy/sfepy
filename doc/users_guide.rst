@@ -220,16 +220,16 @@ Following the above definitions, a region can be of different `kind`:
 - ``cell_only``, ``facet_only``, ``face_only``, ``edge_only``,
   ``vertex_only`` - only the specified entities are included, other entities
   are empty sets, so that set-like operators still work, see below.
-- The ``cell`` kind is the most general and should be used with volume
+- The ``cell`` kind is the most general and should be used with cell
   terms. It is also the default if the kind is not specified in region
   definition.
 - The ``facet`` kind (same as ``edge`` in 2D and ``face`` in 3D) is to be used
-  with boundary (surface integral) terms.
+  with boundary (facet integral) terms.
 - The ``vertex`` (same as ``vertex_only``) kind can be used with point-wise
   defined terms (e.g. point loads).
 
 The kinds allow a clear distinction between regions of different purpose
-(volume integration domains, surface domains, etc.) and could be uses to lower
+(cell integration domains, facet domains, etc.) and could be used to lower
 memory usage.
 
 A region definition involves `topological entity selections` combined with
@@ -1409,8 +1409,8 @@ The following already works:
 - region selection based on topological Bezier mesh, see below
 - Dirichlet boundary conditions using projections for non-constant values
 - evaluation in arbitrary point in the physical domain
-- both scalar and vector volume terms work
-- term integration over the whole domain as well as a volume subdomain
+- both scalar and vector cell terms work
+- term integration over the whole domain as well as a cell subdomain
 - simple linearization (output file generation) based on sampling the results
   with uniform parametric vectors
 - basic domain generation with ``sfepy/scripts/gen_iga_patch.py`` based on
@@ -1420,7 +1420,7 @@ The following is not implemented yet:
 
 - tests
 - theoretical convergence rate verification
-- surface terms
+- facet terms
 - other boundary conditions
 - proper (adaptive) linearization for post-processing
 - support for multiple NURBS patches

@@ -2,11 +2,11 @@
 Fields corresponding to structural elements.
 """
 from sfepy.base.base import Struct
-from sfepy.discrete.fem.fields_nodal import H1NodalMixin, VolumeField
+from sfepy.discrete.fem.fields_nodal import H1NodalMixin, FEField
 from sfepy.discrete.structural.mappings import Shell10XMapping
 from sfepy.discrete import PolySpace
 
-class Shell10XField(H1NodalMixin, VolumeField):
+class Shell10XField(H1NodalMixin, FEField):
     """
     The field for the shell10x element.
     """

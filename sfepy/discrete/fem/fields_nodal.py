@@ -19,8 +19,7 @@ from sfepy.discrete.fem.utils import prepare_remap
 from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
 from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.fem.facets import get_facet_dof_permutations
-from sfepy.discrete.fem.fields_base import (FEField, VolumeField, SurfaceField,
-                                            H1Mixin)
+from sfepy.discrete.fem.fields_base import FEField, H1Mixin
 
 class GlobalNodalLikeBasis(Struct):
 
@@ -398,7 +397,7 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
 
         return ctx
 
-class H1NodalVolumeField(H1NodalMixin, VolumeField):
+class H1NodalVolumeField(H1NodalMixin, FEField):
     family_name = 'volume_H1_lagrange'
 
     def interp_v_vals_to_n_vals(self, vec):
@@ -444,7 +443,7 @@ class H1SNodalVolumeField(H1NodalVolumeField):
 
         return ctx
 
-class H1DiscontinuousField(H1NodalMixin, VolumeField):
+class H1DiscontinuousField(H1NodalMixin, FEField):
     family_name = 'volume_H1_lagrange_discontinuous'
 
     def _setup_global_base(self):
@@ -506,7 +505,7 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
 
         return vertex_dofs
 
-class H1NodalSurfaceField(H1NodalMixin, SurfaceField):
+class H1NodalSurfaceField(H1NodalMixin, FEField):
     """
     A field defined on a surface region.
     """
