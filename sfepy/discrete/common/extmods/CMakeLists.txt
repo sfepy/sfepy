@@ -1,3 +1,6 @@
+if(DEBUG_MESH)
+    add_compile_definitions(DEBUG_MESH)
+endif()
 
 set(common_src fmfield.c geommech.c common_python.c)
 add_library(sfepy_common STATIC ${common_src})

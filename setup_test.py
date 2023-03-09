@@ -80,7 +80,22 @@ def data_dir_walk(dir_name: str, prefix: str) -> list[tuple[str, list[str]]]:
 
 mesh_data_files = data_dir_walk('meshes', 'sfepy')
 
-conf = config.Config()
+
+def cmake_bool(py_bool: bool) -> str:
+    return "ON" if py_bool else "OFF"
+
+
+def compose_cmake_args() -> list[str]:
+    conf = config.Config()
+    cmake_args = [f'-DCMAKE_C_FLAGS={" ".join(conf.compile_flags())}']
+
+    # Debug flags are always added explicitly, so they won't be taken from cmake cache.
+    debug_flags = set(conf.debug_flags())
+    cmake_args.append(f"-DDEBUG_FMF={cmake_bool('DEBUG_FMF' in debug_flags)}")
+    cmake_args.append(f"-DDEBUG_MESH={cmake_bool('DEBUG_MESH' in debug_flags)}")
+
+    return cmake_args
+
 
 setup(
     name='sfepy',
@@ -111,5 +126,5 @@ setup(
         ('sfepy/tests/', glob.glob('sfepy/tests/*.py'))
     ] + mesh_data_files,
     setup_requires=['cython'],
-    cmake_args=[f'-DCMAKE_C_FLAGS={" ".join(conf.compile_flags())}']
+    cmake_args=compose_cmake_args()
 )

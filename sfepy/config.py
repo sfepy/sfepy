@@ -90,11 +90,11 @@ class Config(object):
 
         return flags.split()
 
-    def debug_flags(self):
+    def debug_flags(self) -> list:
         if has_attr(site_cfg, 'debug_flags'):
             return site_cfg.debug_flags
         else:
-            return ''
+            return []
 
     def numpydoc_path(self):
         if (has_attr(site_cfg, 'numpydoc_path') and
