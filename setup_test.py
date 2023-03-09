@@ -78,7 +78,15 @@ def data_dir_walk(dir_name: str, prefix: str) -> list[tuple[str, list[str]]]:
     return data_files
 
 
-mesh_data_files = data_dir_walk('meshes', 'sfepy')
+def compose_data_files() -> list[tuple[str, list[str]]]:
+    data_files = [
+        ('sfepy', ['LICENSE', 'VERSION']),
+    ]
+    test_files = [('sfepy/tests/', glob.glob('sfepy/tests/*.py'))]
+    mesh_data_files = data_dir_walk('meshes', 'sfepy')
+    example_files = data_dir_walk('examples', 'sfepy')
+
+    return data_files + test_files + mesh_data_files + example_files
 
 
 def cmake_bool(py_bool: bool) -> str:
@@ -121,10 +129,7 @@ setup(
     install_requires=install_requires,
     cmdclass=cmdclass,
     packages=find_packages(),
-    data_files=[
-        ('sfepy', ['LICENSE', 'VERSION']),
-        ('sfepy/tests/', glob.glob('sfepy/tests/*.py'))
-    ] + mesh_data_files,
+    data_files=compose_data_files(),
     setup_requires=['cython'],
     cmake_args=compose_cmake_args()
 )
