@@ -81,15 +81,6 @@ class Config(object):
 
         return flags + compose_system_compile_flags(self.system() == 'posix')
 
-    def link_flags(self):
-        if has_attr(site_cfg, 'link_flags'):
-            flags =  site_cfg.link_flags
-
-        else:
-            flags = ''
-
-        return flags.split()
-
     def debug_flags(self) -> list:
         if has_attr(site_cfg, 'debug_flags'):
             return site_cfg.debug_flags

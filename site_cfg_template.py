@@ -13,10 +13,6 @@ system = None
 # extension modules.
 compile_flags = ['-g', '-O2']
 
-# Extra flags added to the flags supplied by distutils to link C
-# extension modules.
-link_flags = ''
-
 # Can be '' or one or several from 'DEBUG_FMF', 'DEBUG_MESH'. For
 # developers internal use only.
 debug_flags = []
