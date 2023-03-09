@@ -6,19 +6,19 @@ under the BSD license, for solving systems of coupled partial
 differential equations by the finite element method. The code is based
 on NumPy and SciPy packages.
 """
-import glob
-import os
-
-from skbuild import setup
-from setuptools import find_packages
-
-import sys
-sys.path.append('./tools')
-from build_helpers import INFO, cmdclass, log, package_check
-
-from sfepy import config, version
 
 DOCLINES = __doc__.split("\n")
+
+import os
+import sys
+sys.path.append('./tools')
+
+from build_helpers import (generate_a_pyrex_source, package_check, log,
+                           cmdclass, INFO)
+# monkey-patch numpy distutils to use Cython instead of Pyrex
+from numpy.distutils.command.build_src import build_src
+
+build_src.generate_a_pyrex_source = generate_a_pyrex_source
 
 VERSION = INFO.__version__
 
@@ -42,22 +42,39 @@ DOWNLOAD_URL = "http://sfepy.org/doc-devel/downloads.html"
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
+def configuration(parent_package='', top_path=None):
+    from numpy.distutils.misc_util import Configuration
+
+    config = Configuration(None, parent_package, top_path)
+    config.set_options(ignore_setup_xxx_py=True,
+                       assume_default_configuration=True,
+                       delegate_options_to_subpackages=True,
+                       quiet=True)
+
+    config.add_subpackage('sfepy')
+
+    config.add_data_files(('sfepy', ('VERSION', 'LICENSE')))
+    config.add_data_dir(('sfepy/meshes', 'meshes'))
+    config.add_data_dir(('sfepy/examples', 'sfepy/examples'))
+    config.add_data_dir(('sfepy/tests', 'sfepy/tests'))
+
+    config.get_version('sfepy/version.py')  # sets config.version
+
+    return config
+
 
 def _cython_version(pkg_name):
     from Cython.Compiler.Version import version
 
     return version
 
-
 def _igakit_version(pkg_name):
     return '0.1'
-
 
 def _pymetis_version(pkg_name):
     import pymetis
 
     return pymetis.version
-
 
 def _scikit_umfpack_version(pkg_name):
     try:
@@ -70,7 +87,6 @@ def _scikit_umfpack_version(pkg_name):
 
     except:
         return None
-
 
 def check_versions(show_only=False):
     # Cython is a build dependency.
@@ -121,50 +137,25 @@ def check_versions(show_only=False):
     package_check('dask', INFO.DASK_MIN_VERSION, optional=True,
                   show_only=show_only)
 
-
-def data_dir_walk(dir_name: str, prefix: str) -> list[tuple[str, list[str]]]:
-    """
-    Generate instructions for setup() to add all files in a tree rooted at `dirname`
-    as data_files.
-    """
-    data_files = []
-    for root, dirs, files in os.walk(dir_name):
-        full_paths = [os.path.join(root, fname) for fname in files]
-        data_files.append((os.path.join(prefix, root), full_paths))
-
-    return data_files
-
-
-def compose_data_files() -> list[tuple[str, list[str]]]:
-    data_files = [
-        ('sfepy', ['LICENSE', 'VERSION']),
-    ]
-    test_files = [('sfepy/tests/', glob.glob('sfepy/tests/*.py'))]
-    mesh_data_files = data_dir_walk('meshes', 'sfepy')
-    example_files = data_dir_walk('examples', 'sfepy')
-
-    return data_files + test_files + mesh_data_files + example_files
-
-
-def cmake_bool(py_bool: bool) -> str:
-    return "ON" if py_bool else "OFF"
-
-
-def compose_cmake_args() -> list[str]:
-    conf = config.Config()
-    cmake_args = [f'-DCMAKE_C_FLAGS={" ".join(conf.compile_flags())}']
-
-    # Debug flags are always added explicitly, so they won't be taken from cmake cache.
-    debug_flags = set(conf.debug_flags())
-    cmake_args.append(f"-DDEBUG_FMF={cmake_bool('DEBUG_FMF' in debug_flags)}")
-    cmake_args.append(f"-DDEBUG_MESH={cmake_bool('DEBUG_MESH' in debug_flags)}")
-
-    return cmake_args
-
-
 def setup_package():
+    if not 'sdist' in sys.argv[1:]:
+        # Import setuptools to find a C compiler on windows.
+        import setuptools; setuptools
+
+    from numpy.distutils.core import setup
+
+    old_path = os.getcwd()
+    local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    os.chdir(local_path)
+    sys.path.insert(0, local_path)
+    sys.path.insert(0, os.path.join(local_path, 'sfepy'))  # to retrive version
+
+    # Write the version file.
+    fd = open('VERSION', 'w')
+    fd.write(VERSION)
+    fd.close()
+
     # Create version.h file.
-    # There is probably a way to do it with CMake but we'll get to it later.
     filename_in = 'sfepy/discrete/common/extmods/version.h.in'
     filename_out = 'sfepy/discrete/common/extmods/version.h'
     fdi = open(filename_in, 'r')
@@ -189,36 +180,36 @@ def setup_package():
         'tables',
     ]
 
-    setup(
-        name='sfepy',
-        version=version.__version__,
-        maintainer="Robert Cimrman",
-        maintainer_email="cimrman3@ntc.zcu.cz",
-        description=DOCLINES[0],
-        long_description="\n".join(DOCLINES[2:]),
-        url="http://sfepy.org",
-        download_url=DOWNLOAD_URL,
-        license='BSD',
-        classifiers=list(filter(None, CLASSIFIERS.split('\n'))),
-        platforms=["Linux", "Mac OS-X", 'Windows'],
-        entry_points={
-          'console_scripts': [
-              'sfepy-convert=sfepy.scripts.convert_mesh:main',
-              'sfepy-mesh=sfepy.scripts.gen_mesh:main',
-              'sfepy-probe=sfepy.scripts.probe:main',
-              'sfepy-run=sfepy.scripts.simple:main',
-              'sfepy-test=sfepy.scripts.run_tests:main',
-              'sfepy-view=sfepy.scripts.resview:main',
-          ],
-        },
-        install_requires=install_requires,
-        cmdclass=cmdclass,
-        packages=find_packages(),
-        data_files=compose_data_files(),
-        setup_requires=['cython'],
-        cmake_args=compose_cmake_args()
-    )
+    try:
+        setup(name='sfepy',
+              maintainer="Robert Cimrman",
+              maintainer_email="cimrman3@ntc.zcu.cz",
+              description=DOCLINES[0],
+              long_description="\n".join(DOCLINES[2:]),
+              url="http://sfepy.org",
+              download_url=DOWNLOAD_URL,
+              license='BSD',
+              classifiers=list(filter(None, CLASSIFIERS.split('\n'))),
+              platforms=["Linux", "Mac OS-X", 'Windows'],
+              entry_points={
+                  'console_scripts': [
+                      'sfepy-convert=sfepy.scripts.convert_mesh:main',
+                      'sfepy-mesh=sfepy.scripts.gen_mesh:main',
+                      'sfepy-probe=sfepy.scripts.probe:main',
+                      'sfepy-run=sfepy.scripts.simple:main',
+                      'sfepy-test=sfepy.scripts.run_tests:main',
+                      'sfepy-view=sfepy.scripts.resview:main',
+                  ],
+              },
+              install_requires=install_requires,
+              cmdclass=cmdclass,
+              configuration=configuration)
 
+    finally:
+        del sys.path[0]
+        os.chdir(old_path)
+
+    return
 
 if __name__ == '__main__':
     check_versions()
