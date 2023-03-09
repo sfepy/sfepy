@@ -122,7 +122,7 @@ def check_versions(show_only=False):
                   show_only=show_only)
 
 
-def data_dir_walk(dir_name: str, prefix: str) -> list[tuple[str, list[str]]]:
+def data_dir_walk(dir_name: str, prefix: str) -> list:
     """
     Generate instructions for setup() to add all files in a tree rooted at `dirname`
     as data_files.
@@ -135,7 +135,7 @@ def data_dir_walk(dir_name: str, prefix: str) -> list[tuple[str, list[str]]]:
     return data_files
 
 
-def compose_data_files() -> list[tuple[str, list[str]]]:
+def compose_data_files() -> list:
     data_files = [
         ('sfepy', ['LICENSE', 'VERSION']),
     ]
@@ -150,7 +150,7 @@ def cmake_bool(py_bool: bool) -> str:
     return "ON" if py_bool else "OFF"
 
 
-def compose_cmake_args() -> list[str]:
+def compose_cmake_args() -> list:
     conf = config.Config()
     cmake_args = [f'-DCMAKE_C_FLAGS={" ".join(conf.compile_flags())}']
 
