@@ -955,6 +955,11 @@ Additional options (including solver selection)::
         # fixed DOFs are modified w.r.t. a problem without the boundary
         # conditions.
         'active_only' : False,
+
+        # bool, default: False. If True, all DOF connectivities are used to
+        # pre-allocate the matrix graph. If False, only cell region
+        # connectivities are used.
+        'any_dof_conn' : False,
     }
 
 * ``post_process_hook`` enables computing derived quantities, like
