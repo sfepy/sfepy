@@ -25,6 +25,7 @@ from pkg_resources import parse_version
 
 from numpy.distutils.misc_util import appendpath
 from numpy.distutils import log
+from install_data import install_data
 
 import sfepy.version as INFO
 
@@ -186,6 +187,7 @@ cmdclass = {
     'pdfdocs' : SphinxPDFDocs,
     'doxygendocs' : DoxygenDocs,
     'clean': Clean,
+    'install_data': install_data
 }
 
 def have_good_cython():
