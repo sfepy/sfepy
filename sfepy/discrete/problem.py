@@ -599,7 +599,7 @@ class Problem(Struct):
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
                          lcbcs=None, functions=None, create_matrix=False,
-                         is_matrix=True):
+                         is_matrix=True, any_dof_conn=None):
         """
         Update equations for current time step.
 
@@ -628,23 +628,32 @@ class Problem(Struct):
         is_matrix : bool
             If False, the matrix is not created. Has precedence over
             `create_matrix`.
+        any_dof_conn : bool or None, default False
+            If True, all DOF connectivities are used to pre-allocate the matrix
+            graph. If False, only cell region connectivities are used. If None,
+            the value is, if available, taken from `conf.options`.
         """
         self.update_time_stepper(ts)
         functions = get_default(functions, self.functions)
 
-        ac = self.active_only
         graph_changed = self.equations.time_update(
                                        self.ts,
                                        ebcs, epbcs, lcbcs,
                                        functions, self,
-                                       active_only=ac,
+                                       active_only=self.active_only,
                                        verbose=self.conf.get('verbose', True))
         self.graph_changed = graph_changed
 
         if (is_matrix
             and ((self.active_only and graph_changed)
                  or (self.mtx_a is None) or create_matrix)):
-            self.mtx_a = self.equations.create_matrix_graph(active_only=ac)
+            any_dof_conn = get_default(any_dof_conn,
+                                       self.conf.options.get('any_dof_conn',
+                                                             False))
+            self.mtx_a = self.equations.create_matrix_graph(
+                any_dof_conn=any_dof_conn,
+                active_only=self.active_only,
+            )
             ## import sfepy.base.plotutils as plu
             ## plu.spy(self.mtx_a)
             ## plu.plt.show()
@@ -684,12 +693,19 @@ class Problem(Struct):
 
     def time_update(self, ts=None,
                     ebcs=None, epbcs=None, lcbcs=None,
-                    functions=None, create_matrix=False, is_matrix=True):
+                    functions=None, create_matrix=False, is_matrix=True,
+                    any_dof_conn=None):
         self.set_bcs(get_default(ebcs, self.ebcs),
                      get_default(epbcs, self.epbcs),
                      get_default(lcbcs, self.lcbcs))
-        self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
-                              functions, create_matrix, is_matrix)
+        self.update_equations(ts=ts,
+                              ebcs=self.ebcs,
+                              epbcs=self.epbcs,
+                              lcbcs=self.lcbcs,
+                              functions=functions,
+                              create_matrix=create_matrix,
+                              is_matrix=is_matrix,
+                              any_dof_conn=any_dof_conn)
 
     def set_ics(self, ics=None):
         """
@@ -703,7 +719,7 @@ class Problem(Struct):
             self.ics = Conditions.from_conf(conf_ics, self.domain.regions)
 
     def select_bcs(self, ebc_names=None, epbc_names=None,
-                   lcbc_names=None, create_matrix=False):
+                   lcbc_names=None, create_matrix=False, any_dof_conn=None):
 
         if ebc_names is not None:
             conf_ebc = select_by_names(self.conf.ebcs, ebc_names)
@@ -721,8 +737,13 @@ class Problem(Struct):
             conf_lcbc = None
 
         self.set_bcs(conf_ebc, conf_epbc, conf_lcbc)
-        self.update_equations(self.ts, self.ebcs, self.epbcs, self.lcbcs,
-                              self.functions, create_matrix)
+        self.update_equations(ts=self.ts,
+                              ebcs=self.ebcs,
+                              epbcs=self.epbcs,
+                              lcbcs=self.lcbcs,
+                              functions=self.functions,
+                              create_matrix=create_matrix,
+                              any_dof_conn=any_dof_conn)
 
     def create_state(self):
         return self.get_initial_state()
@@ -1736,6 +1757,7 @@ class Problem(Struct):
                  ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
                  var_dict=None, strip_variables=True, ret_variables=False,
+                 any_dof_conn=False,
                  active_only=True, eterm_options=None, verbose=True,
                  extra_args=None, **kwargs):
         """
@@ -1785,7 +1807,9 @@ class Problem(Struct):
         out = eval_equations(equations, variables,
                              preserve_caches=preserve_caches,
                              mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                             active_only=active_only, verbose=verbose)
+                             active_only=active_only,
+                             any_dof_conn=any_dof_conn,
+                             verbose=verbose)
 
         if ret_variables:
             out = (out, variables)
@@ -1794,7 +1818,7 @@ class Problem(Struct):
 
     def eval_equations(self, names=None, preserve_caches=False,
                    mode='eval', dw_mode='vector', term_mode=None,
-                   active_only=True, verbose=True):
+                   active_only=True, any_dof_conn=False, verbose=True):
         """
         Evaluate (some of) the problem's equations, convenience wrapper of
         :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations>`.
@@ -1830,7 +1854,8 @@ class Problem(Struct):
         return eval_equations(self.equations, self.equations.variables,
                               names=names, preserve_caches=preserve_caches,
                               mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                              active_only=active_only, verbose=verbose)
+                              active_only=active_only,
+                              any_dof_conn=any_dof_conn, verbose=verbose)
 
     def get_materials(self):
         if self.equations is not None:

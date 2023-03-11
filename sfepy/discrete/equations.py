@@ -352,8 +352,8 @@ class Equations(Container):
         Parameters
         ----------
         any_dof_conn : bool
-            By default, only volume DOF connectivities are used, with
-            the exception of trace surface DOF connectivities. If True,
+            By default, only cell DOF connectivities are used, with
+            the exception of trace facet DOF connectivities. If True,
             any kind of DOF connectivities is allowed.
         rdcs, cdcs : arrays, optional
             Additional row and column DOF connectivities, corresponding
@@ -382,8 +382,8 @@ class Equations(Container):
 
         adcs = self.variables.adof_conns
 
-        # Only volume dof connectivities are used, with the exception of trace
-        # surface dof connectivities.
+        # Only cell dof connectivities are used, with the exception of trace
+        # facet dof connectivities.
         shared = set()
         for key, ii, info in iter_dict_of_lists(self.conn_info,
                                                 return_keys=True):
@@ -437,9 +437,9 @@ class Equations(Container):
         Parameters
         ----------
         any_dof_conn : bool
-            By default, only volume DOF connectivities are used, with
-            the exception of trace surface DOF connectivities. If True,
-            any kind of DOF connectivities is allowed.
+            By default, only cell region DOF connectivities are used, with
+            the exception of trace facet DOF connectivities. If True,
+            any DOF connectivities are used.
         rdcs, cdcs : arrays, optional
             Additional row and column DOF connectivities, corresponding
             to the variables used in the equations.

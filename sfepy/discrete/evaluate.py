@@ -245,7 +245,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
 def eval_equations(equations, variables, names=None, preserve_caches=False,
                    mode='eval', dw_mode='vector', term_mode=None,
-                   active_only=True, verbose=True):
+                   active_only=True, any_dof_conn=False, verbose=True):
     """
     Evaluate the equations.
 
@@ -273,6 +273,10 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
     active_only : bool
         If True, in 'weak' mode, the (tangent) matrices and residual
         vectors (right-hand sides) contain only active DOFs.
+    any_dof_conn : bool
+        If True, in 'weak' `mode` and 'matrix' `dw_mode`, all DOF
+        connectivities are used to pre-allocate the matrix graph. If False,
+        only cell region connectivities are used.
     verbose : bool
         If False, reduce verbosity.
 
@@ -290,7 +294,8 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
             asm_obj = equations.create_reduced_vec()
 
         else:
-            asm_obj = equations.create_matrix_graph(active_only=active_only,
+            asm_obj = equations.create_matrix_graph(any_dof_conn=any_dof_conn,
+                                                    active_only=active_only,
                                                     verbose=verbose)
 
     if not preserve_caches:
