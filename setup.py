@@ -163,6 +163,11 @@ def compose_cmake_args() -> list:
 
 
 def setup_package():
+    # Write the version file.
+    fd = open('VERSION', 'w')
+    fd.write(VERSION)
+    fd.close()
+
     # Create version.h file.
     # There is probably a way to do it with CMake but we'll get to it later.
     filename_in = 'sfepy/discrete/common/extmods/version.h.in'
