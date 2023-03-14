@@ -139,7 +139,7 @@ def compose_data_files() -> list:
     data_files = [
         ('sfepy', ['LICENSE', 'VERSION']),
     ]
-    test_files = [('sfepy/tests/', glob.glob('sfepy/tests/*.py'))]
+    test_files = [('sfepy/tests', glob.glob('sfepy/tests/*.py'))]
     mesh_data_files = data_dir_walk('meshes', 'sfepy')
     example_files = data_dir_walk('examples', 'sfepy')
 
