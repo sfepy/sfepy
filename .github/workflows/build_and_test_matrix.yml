@@ -36,4 +36,9 @@ jobs:
         pip install .
     - name: Test with pytest and coverage
       run: |
+        # We create a special directory for running coverage, to ensure that
+        # the installed package is used, rather than the source in current directory.
+        # coverage results will be left in this directory.
+        mkdir -p coverage
+        cd coverage
         coverage run --source=sfepy/ -m pytest sfepy/tests -v -x --durations=10
