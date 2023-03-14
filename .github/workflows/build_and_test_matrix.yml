@@ -41,4 +41,4 @@ jobs:
         # coverage results will be left in this directory.
         mkdir -p coverage
         cd coverage
-        coverage run --source=sfepy/ -m pytest sfepy/tests -v -x --durations=10
+        coverage run --source=../sfepy/ -m pytest ../sfepy/tests -v -x --durations=10
