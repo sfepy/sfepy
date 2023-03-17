@@ -1,7 +1,6 @@
 """
 Classes of equations composed of terms.
 """
-from __future__ import absolute_import
 from copy import copy
 
 import numpy as nm
@@ -14,7 +13,6 @@ from sfepy.discrete import Materials, Variables, create_adof_conns
 from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
 from sfepy.terms.terms_multilinear import ETermBase
-import six
 
 def parse_definition(equation_def):
     """
@@ -59,7 +57,7 @@ class Equations(Container):
         conf = copy(conf)
 
         ii = 0
-        for name, desc in six.iteritems(conf):
+        for name, desc in conf.items():
             if verbose:
                 output('equation "%s":' %  name)
                 output(desc)

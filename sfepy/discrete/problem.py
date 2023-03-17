@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 import os.path as op
 from copy import copy
@@ -28,8 +27,6 @@ from sfepy.discrete.evaluate import Evaluator
 from sfepy.solvers import Solver, NonlinearSolver
 from sfepy.solvers.solvers import use_first_available
 from sfepy.solvers.ts_solvers import StationarySolver
-import six
-from six.moves import range
 
 def make_is_save(options):
     """
@@ -858,7 +855,7 @@ class Problem(Struct):
                 out = post_process_hook(out, self, state, extend=extend)
 
         if linearization.kind == 'adaptive':
-            for key, val in six.iteritems(out):
+            for key, val in out.items():
                 mesh = val.get('mesh', self.domain.mesh)
                 aux = io.edit_filename(filename, suffix='_' + val.var_name)
                 mesh.write(aux, io='auto', out={key : val},
@@ -956,7 +953,7 @@ class Problem(Struct):
 
         if force:
             vals = dict_from_keys_init(variables.state)
-            for ii, key in enumerate(six.iterkeys(vals)):
+            for ii, key in enumerate(vals.keys()):
                 vals[key] = ii + 1
 
             variables.apply_ebc(force_values=vals)
@@ -1056,12 +1053,12 @@ class Problem(Struct):
         conf_solvers = get_default(conf_solvers, self.conf.solvers)
         self.solver_confs = {}
 
-        for key, val in six.iteritems(conf_solvers):
+        for key, val in conf_solvers.items():
             self.solver_confs[val.name] = val
 
         def _find_suitable(prefix):
             cands = []
-            for key, val in six.iteritems(self.solver_confs):
+            for key, val in self.solver_confs.items():
                 if val.kind.find(prefix) == 0:
                     if val.name == prefix[:-1]:
                         return val
@@ -1515,7 +1512,7 @@ class Problem(Struct):
 
         def replace_virtuals(deps, pairs):
             out = {}
-            for key, val in six.iteritems(deps):
+            for key, val in deps.items():
                 out[pairs[key]] = val
 
             return out
@@ -1677,12 +1674,12 @@ class Problem(Struct):
         """
         from sfepy.discrete.equations import get_expression_arg_names
 
-        variables = Variables(six.itervalues(get_default(var_dict, {})))
+        variables = Variables(get_default(var_dict, {}).values())
         var_context = get_default(var_dict, {})
 
         if try_equations and self.equations is not None:
             # Make a copy, so that possible variable caches are preserved.
-            for key, var in six.iteritems(self.equations.variables.as_dict()):
+            for key, var in self.equations.variables.as_dict().items():
                 if key in variables:
                     continue
                 var = var.copy(name=key)
@@ -1703,7 +1700,7 @@ class Problem(Struct):
             materials = Materials(objs=materials._objs)
 
         _kwargs = copy(kwargs)
-        for key, val in six.iteritems(kwargs):
+        for key, val in kwargs.items():
             if isinstance(val, Variable):
                 if val.name != key:
                     msg = 'inconsistent variable name! (%s == %s)' \
@@ -1742,7 +1739,7 @@ class Problem(Struct):
 
         if not strip_variables:
             variables = out[1]
-            variables.extend([var for var in six.itervalues(var_context)
+            variables.extend([var for var in var_context.values()
                               if var not in variables])
 
         equations = out[0]
@@ -1987,7 +1984,7 @@ class Problem(Struct):
         fd = pt.open_file(filename, mode='w', title='SfePy restart file')
 
         tgroup = fd.create_group('/', 'ts', 'ts')
-        for key, val in six.iteritems(ts.get_state()):
+        for key, val in ts.get_state().items():
             fd.create_array(tgroup, key, val, key)
 
         variables = self.get_variables()

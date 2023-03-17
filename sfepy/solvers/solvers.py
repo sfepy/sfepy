@@ -1,10 +1,8 @@
 """
 Base (abstract) solver classes.
 """
-from __future__ import absolute_import
 import numpy as nm
 from sfepy.base.base import Struct, output, structify
-import six
 
 def make_get_conf(conf, kwargs):
     def _get_conf_item(name, default=None, msg_if_none=None):
@@ -145,8 +143,7 @@ class SolverMeta(type):
 
         return super(SolverMeta, cls).__new__(cls, name, bases, ndict)
 
-@six.add_metaclass(SolverMeta)
-class Solver(Struct):
+class Solver(Struct, metaclass=SolverMeta):
     """
     Base class for all solver kinds. Takes care of processing of common
     configuration options.
@@ -240,7 +237,7 @@ class Solver(Struct):
         std = set([ii[0] for ii in options if ii[0] != '*'])
 
         kwargs = {}
-        for key, val in six.iteritems(conf.to_dict()):
+        for key, val in conf.to_dict().items():
             if key not in std:
                 kwargs[key] = val
 

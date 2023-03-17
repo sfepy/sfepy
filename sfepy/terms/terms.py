@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import re
 from copy import copy
 
@@ -10,9 +9,6 @@ from sfepy.base.compat import in1d
 
 # Used for imports in term files.
 from sfepy.terms.extmods import terms
-import six
-from six.moves import range
-from functools import reduce
 
 _match_args = re.compile(r'^([^\(\}]*)\((.*)\)$').match
 _match_virtual = re.compile('^virtual$').match
