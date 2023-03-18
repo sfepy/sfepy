@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4...3.22)
-project(sfepy)
+project(sfepy C)
 
 set(CMAKE_VERBOSE_MAKEFILE:BOOL ON)
 
