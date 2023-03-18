@@ -324,16 +324,70 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
 #
 # Elastodynamics solvers.
 #
-def gen_multi_vec_packing(size, num):
-    assert_((size % num) == 0)
-    ii = size // num
+def gen_multi_vec_packing(di, names, nls_var=None):
+    """
+    Return DOF vector (un)packing functions for nlst. For multiphysical
+    problems (non-empty `ie` slice for extra variables) the `pack()` function
+    depends on the `nls_var` attribute of the solver, currently 'a' or 'u'm and
+    both `pack()` and `unpack()` accept an additional argument `mode` that can
+    be set to 'full' or 'nls'.
 
-    def unpack(vec):
-        return [vec[ir:ir+ii] for ir in range(0, size, ii)]
+    The following DOF ordering must be obeyed:
 
-    def pack(*args):
-        return nm.concatenate(args)
+    - The full DOF vector:
 
+      | ``---iue---|-iv-|-ia-``
+      | ``-iu-|-ie-|``
+
+    - The DOF vector passed to nlst ('nls' mode):
+
+      | ``-ia-|-ie-`` for nls_var == 'a'
+      | ``-iu-|-ie-`` for nls_var == 'u'
+    """
+    iu = di.indx[names['u']]
+    iv = di.indx[names['du']]
+    ia = di.indx[names['ddu']]
+    ie = slice(iu.stop, di.ptr[-3])
+    iue = slice(0, di.ptr[-3])
+    assert_(iu.stop == di.n_dof[names['u']])
+    assert_(iv.start == ie.stop)
+    assert_(ia.start == iv.stop)
+
+    if nls_var is None:
+        assert_(ie.stop == ie.start)
+        n_arg = 3
+
+        def unpack(vec, mode=None):
+            return vec[iu], vec[iv], vec[ia]
+
+        def pack(u, v, a, mode=None):
+            return nm.r_[u, v, a]
+
+    else:
+        n_arg = 4
+
+        def unpack(vec, mode='full'):
+            if mode == 'nls':
+                return vec[iu], vec[ie]
+
+            else:
+                return vec[iu], vec[ie], vec[iv], vec[ia]
+
+        def pack(u, e, v, a, mode='full'):
+            if mode == 'nls':
+                if nls_var == 'a':
+                    return nm.r_[a, e]
+
+                else:
+                    return nm.r_[u, e]
+
+            else:
+                return nm.r_[u, e, v, a]
+
+    indices = dict(indices=(iue, iu, ie, iv, ia),
+                   n_dof=di.ptr[-1], n_uedof=ie.stop, n_arg=n_arg)
+    unpack.__dict__.update(indices)
+    pack.__dict__.update(indices)
     return unpack, pack
 
 def _cache(obj, attr, dep):
