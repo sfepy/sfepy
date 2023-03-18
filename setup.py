@@ -221,7 +221,8 @@ def setup_package():
         packages=find_packages(),
         data_files=compose_data_files(),
         setup_requires=['cython'],
-        cmake_args=compose_cmake_args()
+        cmake_args=compose_cmake_args(),
+        cmake_languages=('C')
     )
 
 
