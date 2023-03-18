@@ -309,21 +309,23 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
 def pv_plot(filenames, options, plotter=None, step=None,
             scalar_bar_limits=None, ret_scalar_bar_limits=False,
             step_inc=None, use_cache=True):
+    fstep = (step if step is not None else options.step)
+    if step_inc is not None:
+        fstep += step_inc
+    if fstep < 0:
+        return
+    if hasattr(plotter, 'resview_n_steps'): # Works for None as well.
+        if fstep >= plotter.resview_n_steps:
+            return
+
     plots = {}
     color = None
 
     if plotter is None:
         plotter = pv.Plotter()
 
-    fstep = (step if step is not None else options.step)
     if step_inc is not None:
         plotter.clear()
-        fstep += step_inc
-    if fstep < 0:
-        fstep = 0
-    if hasattr(plotter, 'resview_n_steps'):
-        if fstep >= plotter.resview_n_steps:
-            fstep = plotter.resview_n_steps - 1
 
     mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True,
                               use_cache=use_cache)
