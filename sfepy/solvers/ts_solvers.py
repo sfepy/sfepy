@@ -858,7 +858,7 @@ class NewmarkTS(ElastodynamicsBaseTS):
                 M, C, K = self.get_matrices(nls, vec, unpack)
 
                 Kt = K.copy()
-                Kt[iu, iu] *= ck
+                Kt[:, iu] *= ck
                 Kt[iu, iu] += M + cc * C
                 return Kt
 
