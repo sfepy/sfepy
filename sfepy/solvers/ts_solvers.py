@@ -801,6 +801,7 @@ class NewmarkTS(ElastodynamicsBaseTS):
     [2] Arnaud Delaplace, David Ryckelynck: Solvers for Computational Mechanics
     """
     name = 'ts.newmark'
+    nls_var = 'a'
 
     _parameters = [
         ('t0', 'float', 0.0, False,
@@ -817,44 +818,72 @@ class NewmarkTS(ElastodynamicsBaseTS):
         ('gamma', 'float', 0.5, False, 'The Newmark method parameter gamma.'),
     ]
 
-    def _create_nlst_a(self, nls, dt, ufun, vfun, cc, ck, cache_name):
-        nlst = nls.copy()
-
-        def fun(at):
-            vec = nm.r_[ufun(at), vfun(at), at]
-
-            aux = nls.fun(vec)
-
-            i3 = len(at)
-            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
-            return rt
-
-        @_cache(self, cache_name, self.conf.is_linear)
-        def fun_grad(at):
-            vec = None if self.conf.is_linear else nm.r_[ufun(at), vfun(at), at]
-            M, C, K = self.get_matrices(nls, vec)
-
-            Kt = M + cc * C + ck * K
-            return Kt
-
-        nlst.fun = fun
-        nlst.fun_grad = fun_grad
-        nlst.u = ufun
-        nlst.v = vfun
-
-        return nlst
-
-    def create_nlst(self, nls, dt, gamma, beta, u0, v0, a0):
+    def create_nlst(self, nls, dt, gamma, beta, u0, e0, v0, a0, pack, unpack):
         dt2 = dt**2
+        iue, iu, ie, iv, ia = pack.indices
+
+        cc0 = (1.0 - gamma) * dt
+        cc = gamma * dt
+        ck0 = (0.5 - beta) * dt2
+        ck = beta * dt2
 
         def v(a):
-            return v0 + dt * ((1.0 - gamma) * a0 + gamma * a)
+            return v0 + cc0 * a0 + cc * a
 
         def u(a):
-            return u0 + dt * v0 + dt2 * ((0.5 - beta) * a0 + beta * a)
+            return u0 + dt * v0 + ck0 * a0 + ck * a
 
-        nlst = self._create_nlst_a(nls, dt, u, v, gamma * dt, beta * dt2,
-                                   'matrix')
+        if iue == iu:
+            def fun(at):
+                vec = nm.r_[u(at), v(at), at]
+
+                aux = nls.fun(vec)
+
+                rt = aux[iu] + aux[iv] + aux[ia]
+                return rt
+
+            @_cache(self, 'matrix', self.conf.is_linear)
+            def fun_grad(at):
+                vec = None if self.conf.is_linear else nm.r_[u(at), v(at), at]
+                M, C, K = self.get_matrices(nls, vec, unpack)
+
+                Kt = M + cc * C + ck * K
+                return Kt
+
+        else: # Extra variables present.
+            def fun(aet):
+                at = aet[iu]
+                vec = nm.r_[u(at), aet[ie], v(at), at]
+
+                aux = nls.fun(vec)
+
+                rt = nm.empty(pack.n_uedof, aux.dtype)
+                rt[iu] = aux[iu] + aux[iv] + aux[ia]
+                rt[ie] = aux[ie]
+                return rt
+
+            @_cache(self, 'matrix', self.conf.is_linear)
+            def fun_grad(aet):
+                if self.conf.is_linear:
+                    vec = None
+
+                else:
+                    at = aet[iu]
+                    vec = nm.r_[u(at), aet[ie], v(at), at]
+
+                M, C, K = self.get_matrices(nls, vec, unpack)
+
+                Kt = K.copy()
+                Kt[iu, iu] *= ck
+                Kt[iu, iu] += M + cc * C
+                return Kt
+
+        nlst = nls.copy()
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.u = u
+        nlst.v = v
+
         return nlst
 
     def step(self, ts, vec, nls, pack, unpack, **kwargs):
@@ -863,15 +892,16 @@ class NewmarkTS(ElastodynamicsBaseTS):
         """
         dt = ts.dt
         conf = self.conf
-        ut, vt, at = unpack(vec)
+        ut, et, vt, at = unpack(vec)
+        nlst = self.create_nlst(nls, dt, conf.gamma, conf.beta, ut, et, vt, at,
+                                pack, unpack)
 
-        nlst = self.create_nlst(nls, dt, conf.gamma, conf.beta, ut, vt, at)
-        atp = nlst(at)
+        aetp = nlst(pack(ut, et, vt, at, mode='nls'))
+        atp, etp = unpack(aetp, mode='nls')
         vtp = nlst.v(atp)
         utp = nlst.u(atp)
 
-        vect = pack(utp, vtp, atp)
-
+        vect = pack(utp, etp, vtp, atp)
         return vect
 
 class GeneralizedAlphaTS(ElastodynamicsBaseTS):
