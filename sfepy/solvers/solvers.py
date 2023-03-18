@@ -315,6 +315,9 @@ class TimeSteppingSolver(Solver):
         Solver.__init__(self, conf=conf, nls=nls, tsc=tsc, status=status,
                         context=context, **kwargs)
 
+    def set_dof_info(self, di):
+        self.di = di
+
     def __call__(self, vec0=None, nls=None, tsc=None, init_fun=None,
                  prestep_fun=None, poststep_fun=None,
                  status=None, **kwargs):

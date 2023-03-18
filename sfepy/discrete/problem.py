@@ -1480,6 +1480,7 @@ class Problem(Struct):
                 save_results=save_results,
                 step_hook=step_hook, post_process_hook=post_process_hook)
 
+            tss.set_dof_info(variables.adi)
             vec = tss(variables.get_state(self.active_only, force=True),
                       init_fun=init_fun,
                       prestep_fun=prestep_fun,
