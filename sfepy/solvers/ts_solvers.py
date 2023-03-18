@@ -324,13 +324,11 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
 #
 # Elastodynamics solvers.
 #
-def gen_multi_vec_packing(di, names, nls_var=None):
+def gen_multi_vec_packing(di, names, extra_variables=False):
     """
     Return DOF vector (un)packing functions for nlst. For multiphysical
-    problems (non-empty `ie` slice for extra variables) the `pack()` function
-    depends on the `nls_var` attribute of the solver, currently 'a' or 'u'm and
-    both `pack()` and `unpack()` accept an additional argument `mode` that can
-    be set to 'full' or 'nls'.
+    problems (non-empty `ie` slice for extra variables) the `unpack()` function
+    accepts an additional argument `mode` that can be set to 'full' or 'nls'.
 
     The following DOF ordering must be obeyed:
 
@@ -338,11 +336,6 @@ def gen_multi_vec_packing(di, names, nls_var=None):
 
       | ``---iue---|-iv-|-ia-``
       | ``-iu-|-ie-|``
-
-    - The DOF vector passed to nlst ('nls' mode):
-
-      | ``-ia-|-ie-`` for nls_var == 'a'
-      | ``-iu-|-ie-`` for nls_var == 'u'
     """
     iu = di.indx[names['u']]
     iv = di.indx[names['du']]
@@ -353,15 +346,12 @@ def gen_multi_vec_packing(di, names, nls_var=None):
     assert_(iv.start == ie.stop)
     assert_(ia.start == iv.stop)
 
-    if nls_var is None:
+    if not extra_variables:
         assert_(ie.stop == ie.start)
         n_arg = 3
 
         def unpack(vec, mode=None):
             return vec[iu], vec[iv], vec[ia]
-
-        def pack(u, v, a, mode=None):
-            return nm.r_[u, v, a]
 
     else:
         n_arg = 4
@@ -373,16 +363,8 @@ def gen_multi_vec_packing(di, names, nls_var=None):
             else:
                 return vec[iu], vec[ie], vec[iv], vec[ia]
 
-        def pack(u, e, v, a, mode='full'):
-            if mode == 'nls':
-                if nls_var == 'a':
-                    return nm.r_[a, e]
-
-                else:
-                    return nm.r_[u, e]
-
-            else:
-                return nm.r_[u, e, v, a]
+    def pack(*args):
+        return nm.concatenate(args)
 
     indices = dict(indices=(iue, iu, ie, iv, ia),
                    n_dof=di.ptr[-1], n_uedof=ie.stop, n_arg=n_arg)
@@ -482,8 +464,10 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
         return a0
 
     def get_initial_vec(self, nls, vec0, init_fun, prestep_fun, poststep_fun):
-        unpack, pack = gen_multi_vec_packing(self.di, self.var_names,
-                                             nls_var=self.get('nls_var', None))
+        unpack, pack = gen_multi_vec_packing(
+            self.di, self.var_names,
+            extra_variables=self.get('extra_variables', False),
+        )
 
         ts = self.ts
         vec0 = init_fun(ts, vec0)
@@ -801,7 +785,7 @@ class NewmarkTS(ElastodynamicsBaseTS):
     [2] Arnaud Delaplace, David Ryckelynck: Solvers for Computational Mechanics
     """
     name = 'ts.newmark'
-    nls_var = 'a'
+    extra_variables = True
 
     _parameters = [
         ('t0', 'float', 0.0, False,
@@ -896,7 +880,7 @@ class NewmarkTS(ElastodynamicsBaseTS):
         nlst = self.create_nlst(nls, dt, conf.gamma, conf.beta, ut, et, vt, at,
                                 pack, unpack)
 
-        aetp = nlst(pack(ut, et, vt, at, mode='nls'))
+        aetp = nlst(pack(at, et))
         atp, etp = unpack(aetp, mode='nls')
         vtp = nlst.v(atp)
         utp = nlst.u(atp)
