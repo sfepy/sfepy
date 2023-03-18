@@ -435,19 +435,28 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
         self.constant_matrices = None
         self.matrix = None
 
-    def get_matrices(self, nls, vec):
+    def get_matrices(self, nls, vec, unpack=None):
         if self.conf.is_linear and self.constant_matrices is not None:
             out = self.constant_matrices
 
         else:
             aux = nls.fun_grad(vec)
 
-            assert_((len(vec) % 3) == 0)
-            i3 = len(vec) // 3
+            if unpack is not None:
+                iue, iu, ie, iv, ia = unpack.indices
+                aux = nls.fun_grad(vec)
 
-            K = aux[:i3, :i3]
-            C = aux[i3:2*i3, i3:2*i3]
-            M = aux[2*i3:, 2*i3:]
+                M = aux[ia, ia]
+                C = aux[iv, iv]
+                K = aux[iue, iue]
+
+            else:
+                assert_((len(vec) % 3) == 0)
+                i3 = len(vec) // 3
+
+                K = aux[:i3, :i3]
+                C = aux[i3:2*i3, i3:2*i3]
+                M = aux[2*i3:, 2*i3:]
 
             out = (M, C, K)
 
@@ -459,36 +468,45 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
         return out
 
-    def get_a0(self, nls, u0, v0):
-        vec = nm.r_[u0, v0, nm.zeros_like(u0)]
+    def get_a0(self, nls, u0, e0, v0, unpack):
+        iue, iu, ie, iv, ia = unpack.indices
 
+        vec = nm.r_[u0, e0, v0, nm.zeros_like(v0)]
         aux = nls.fun(vec)
-        i3 = len(u0)
-        r = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+        r = aux[iu] + aux[iv] + aux[ia]
 
-        M = self.get_matrices(nls, vec)[0]
+        M = self.get_matrices(nls, vec, unpack)[0][iu, iu]
         a0 = nls.lin_solver(-r, mtx=M)
         nls.lin_solver.clear()
         output_array_stats(a0, 'initial acceleration', verbose=self.verbose)
         return a0
 
     def get_initial_vec(self, nls, vec0, init_fun, prestep_fun, poststep_fun):
+        unpack, pack = gen_multi_vec_packing(self.di, self.var_names,
+                                             nls_var=self.get('nls_var', None))
+
         ts = self.ts
         vec0 = init_fun(ts, vec0)
-
-        unpack, pack = gen_multi_vec_packing(len(vec0), 3)
 
         output(self.format % (ts.time, ts.step + 1, ts.n_step),
                verbose=self.verbose)
         if ts.step == 0:
             vec0 = prestep_fun(ts, vec0)
-            u0, v0, _ = unpack(vec0)
+            if unpack.n_arg == 4:
+                u0, e0, v0, _ = unpack(vec0)
 
-            ut = u0
-            vt = v0
-            at = self.get_a0(nls, u0, v0)
+            else:
+                u0, v0, _ = unpack(vec0)
+                e0 = nm.empty(0, dtype=u0.dtype)
 
-            vec = pack(ut, vt, at)
+            a0 = self.get_a0(nls, u0, e0, v0, unpack)
+
+            if unpack.n_arg == 4:
+                vec = pack(u0, e0, v0, a0)
+
+            else:
+                vec = pack(u0, v0, a0)
+
             vec = poststep_fun(ts, vec)
             ts.advance()
 
