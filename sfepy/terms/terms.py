@@ -1583,7 +1583,7 @@ class Term(Struct):
                 val = val.astype(nm.complex128)
 
             sign = 1.0
-            if self.arg_derivatives[svar.name]:
+            if self.arg_derivatives[svar.name] == 'dt':
                 if not self.is_quasistatic or (self.step > 0):
                     sign *= 1.0 / self.dt
 
