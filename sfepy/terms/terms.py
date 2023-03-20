@@ -138,9 +138,10 @@ def split_complex_args(args):
 
     return newargs
 
-def create_arg_parser():
-    from pyparsing import Literal, Word, delimitedList, Group, \
-         StringStart, StringEnd, Optional, nums, alphas, alphanums
+def create_arg_parser(allow_derivatives=True):
+    from pyparsing import (Literal, Word, OneOrMore, delimitedList, Group,
+                           StringStart, StringEnd, Combine, Optional, nums,
+                           alphas, alphanums)
 
     ident = Word(alphas, alphanums + "_")
     inumber = Word("+-" + nums, nums)
@@ -160,7 +161,12 @@ def create_arg_parser():
                   + variable
                   + Literal(')').suppress())
 
-    generalized_var = derivative | trace | variable
+    if allow_derivatives:
+        derivative2 = Group(Combine(OneOrMore(Literal('d'))) + variable)
+        generalized_var = derivative | derivative2 | trace | variable
+
+    else:
+        generalized_var = derivative | trace | variable
 
     args = StringStart() + delimitedList(generalized_var) + StringEnd()
 
