@@ -427,7 +427,7 @@ class Term(Struct):
         if self.integral is not None:
             self.integral_name = self.integral.name
 
-    def setup(self):
+    def setup(self, allow_derivatives=True):
         self.function = Struct.get(self, 'function', None)
 
         self.step = 0
@@ -435,7 +435,7 @@ class Term(Struct):
         self.is_quasistatic = False
         self.has_region = True
 
-        self.setup_formal_args()
+        self.setup_formal_args(allow_derivatives=allow_derivatives)
 
         if self._kwargs:
             self.setup_args(**self._kwargs)
@@ -443,14 +443,14 @@ class Term(Struct):
         else:
             self.args = []
 
-    def setup_formal_args(self):
+    def setup_formal_args(self, allow_derivatives=True):
         self.arg_names = []
         self.arg_steps = {}
         self.arg_derivatives = {}
         self.arg_traces = {}
         self.arg_trace_regions = {}
 
-        parser = create_arg_parser()
+        parser = create_arg_parser(allow_derivatives=allow_derivatives)
         self.arg_desc = parser.parseString(self.arg_str)
         for arg in self.arg_desc:
             derivative = None
@@ -462,9 +462,15 @@ class Term(Struct):
 
             else:
                 kind = arg[0]
-                if kind == 'd':
-                    name, step = arg[1]
-                    derivative = arg[2]
+                if 'd' in kind:
+                    if len(arg) == 3:
+                        name, step = arg[1]
+                        derivative = arg[2]
+
+                    else:
+                        name, step = arg[1]
+                        derivative = len(kind)
+
                 elif kind == 'tr':
                     trace = True
                     trace_region = arg[1]
