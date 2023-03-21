@@ -324,6 +324,101 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
 #
 # Elastodynamics solvers.
 #
+def transform_equations_ed(equations, materials):
+    """
+    Transform equations and variables for :class:`ElastodynamicsBaseTS`-based
+    time stepping solvers. The displacement variable name is automatically
+    detected by seeking the second time derivative, i.e. the 'dd' prefix in
+    variable names.
+    """
+    from sfepy.terms.terms import Terms, Term
+    from sfepy.discrete.variables import FieldVariable
+    from sfepy.discrete.equations import Equations, Equation
+
+    eq_mass = []
+    eq_damping = []
+    eq_other = []
+    new_var_primary = set()
+    variables = equations.variables
+    for eq in equations:
+        for term in eq.terms:
+            print(eq.name, term.name)
+            for name in term.names.state:
+                der = term.arg_derivatives[name]
+                if ((der is not None) and
+                    isinstance(der, int) and
+                    (der > 0)):
+                    new_var_primary.add(name)
+                    if der == 2:
+                        eq_mass.append(term)
+
+                    else:
+                        eq_damping.append(term)
+
+                else:
+                    eq_other.append(term)
+
+                continue
+
+    assert len(new_var_primary) == 1
+    uname = new_var_primary.pop()
+    vname = variables[uname].dual_var_name
+    duname = 'd' + uname
+    dduname = 'dd' + uname
+    dvname = 'd' + vname
+    ddvname = 'dd' + vname
+    new_variables = variables.copy()
+    new_variables.extend([
+        FieldVariable(duname, 'unknown', variables[uname].field),
+        FieldVariable(dduname, 'unknown', variables[uname].field),
+        FieldVariable(dvname, 'test', variables[uname].field,
+                      primary_var_name=duname),
+        FieldVariable(ddvname, 'test', variables[uname].field,
+                      primary_var_name=dduname),
+    ])
+    for it, term in enumerate(eq_mass.copy()):
+        aux = ','.join([ii.strip() for ii in term.arg_str.split(',')])
+        arg_str = aux.replace(f',{vname},', f',{ddvname},')
+        new_term = term.__class__(term.name, arg_str, term.integral, term.region)
+        new_term.setup(allow_derivatives=False)
+        new_term.assign_args(new_variables, materials, user=None)
+
+
+        eq_mass[it] = new_term
+
+    for it, term in enumerate(eq_damping.copy()):
+        aux = ','.join([ii.strip() for ii in term.arg_str.split(',')])
+        arg_str = aux.replace(f',{vname},', f',{dvname},')
+        new_term = term.__class__(term.name, arg_str, term.integral, term.region)
+        new_term.setup(allow_derivatives=False)
+        new_term.assign_args(new_variables, materials, user=None)
+
+
+        eq_damping[it] = new_term
+
+    if not len(eq_damping):
+        mterm = eq_mass[0]
+        # Dummy damping to introduce du, could use a single cell region?
+        dterm = Term.new(
+            f'dw_zero({dvname}, {duname})', mterm.integral, mterm.region,
+            **{dvname : new_variables[dvname],
+               duname : new_variables[duname]},
+        )
+        dterm.setup(allow_derivatives=False)
+        dterm.assign_args(new_variables, materials, user=None)
+        eq_damping = [dterm]
+
+    new_equations = Equations([Equation('M', Terms(eq_mass), setup=False),
+                               Equation('C', Terms(eq_damping), setup=False),
+                               Equation('K', Terms(eq_other), setup=False),])
+
+    var_names = {
+        'u' : uname, 'du' : duname, 'ddu' : dduname,
+        'extra' : set(equations.variables.di.var_names)
+        - set([uname, duname, dduname])
+    }
+    return new_equations, var_names
+
 def gen_multi_vec_packing(di, names, extra_variables=False):
     """
     Return DOF vector (un)packing functions for nlst. For multiphysical
