@@ -91,8 +91,10 @@ class ElastodynamicsBasicTSC(TimeStepController):
     def get_scaled_errors(dt, vec0, vec1, eps_as, eps_rs, unpack):
         u_eps_a, v_eps_a = eps_as
         u_eps_r, v_eps_r = eps_rs
-        u0, v0, a0 = unpack(vec0)
-        u1, v1, a1 = unpack(vec1)
+        aux = unpack(vec0)
+        u0, v0, a0 = aux if unpack.n_arg == 3 else (aux[0], aux[2], aux[3])
+        aux = unpack(vec1)
+        u1, v1, a1 = aux if unpack.n_arg == 3 else (aux[0], aux[2], aux[3])
 
         # Backward Euler step.
         u1_be = u0 + dt * v1
@@ -123,7 +125,8 @@ class ElastodynamicsBasicTSC(TimeStepController):
         eps_a = min(*conf.eps_a)
         eps_r = min(*conf.eps_r)
 
-        u0, v0, a0 = unpack(vec)
+        aux = unpack(vec0)
+        u0, v0, a0 = aux if unpack.n_arg == 3 else (aux[0], aux[2], aux[3])
 
         d0 = eval_scaled_norm(u0, eps_a, eps_r)
         d1 = eval_scaled_norm(v0, eps_a, eps_r)
@@ -143,8 +146,10 @@ class ElastodynamicsBasicTSC(TimeStepController):
         fmin, fmax, fsafety, error_order = (
             conf.fmin, conf.fmax, conf.fsafety, conf.error_order,
         )
-        u0, v0, a0 = unpack(vec0)
-        u1, v1, a1 = unpack(vec1)
+        aux = unpack(vec0)
+        u0, v0, a0 = aux if unpack.n_arg == 3 else (aux[0], aux[2], aux[3])
+        aux = unpack(vec1)
+        u1, v1, a1 = aux if unpack.n_arg == 3 else (aux[0], aux[2], aux[3])
 
         u_err, v_err = self.get_scaled_errors(
             dt, vec0, vec1, conf.eps_a, conf.eps_r, unpack,
