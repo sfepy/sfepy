@@ -26,7 +26,8 @@ from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.evaluate import Evaluator
 from sfepy.solvers import Solver, NonlinearSolver
 from sfepy.solvers.solvers import use_first_available
-from sfepy.solvers.ts_solvers import StationarySolver
+from sfepy.solvers.ts_solvers import (StationarySolver, ElastodynamicsBaseTS,
+                                      transform_equations_ed)
 
 def make_is_save(options):
     """
@@ -1211,12 +1212,25 @@ class Problem(Struct):
         instance is created automatically as the time-stepping solver. Also
         sets `self.ts` attribute.
         """
-        if isinstance(solver, NonlinearSolver):
-            solver = StationarySolver({}, nls=solver.copy(),
-                                      ts=self.get_default_ts(),
-                                      status=status)
+        if isinstance(solver, ElastodynamicsBaseTS):
+            self.orig_equations = self.equations
+            equations, var_names = transform_equations_ed(self.equations,
+                                                          self.get_materials())
+            self.equations = equations
 
-        self.solver = solver.copy()
+            output('transformed equations of elastodynamics solvers:')
+            self.equations.print_terms()
+            self.solver = solver.copy()
+            self.solver.var_names = var_names
+
+        elif isinstance(solver, NonlinearSolver):
+            self.solver = StationarySolver({}, nls=solver.copy(),
+                                           ts=self.get_default_ts(),
+                                           status=status)
+
+        else:
+            self.solver = solver.copy()
+
         self.ts = solver.ts
         self.status = get_default(solver.status, IndexedStruct())
 
