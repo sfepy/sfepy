@@ -749,11 +749,11 @@ class Equation(Struct):
                     term.set_verbosity(eterm_options.get('verbosity', 0))
                     term.set_backend(**eterm_options.get('backend_args', {}))
 
-        obj = Equation(name, terms)
+        obj = Equation(name, terms, setup=False)
 
         return obj
 
-    def __init__(self, name, terms):
+    def __init__(self, name, terms, setup=True):
         Struct.__init__(self, name=name)
 
         if isinstance(terms, Term): # A single term.
@@ -761,7 +761,8 @@ class Equation(Struct):
 
         self.terms = terms
 
-        self.terms.setup()
+        if setup:
+            self.terms.setup()
 
     def collect_materials(self):
         """
