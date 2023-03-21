@@ -53,6 +53,7 @@ examples = [
     'multi_physics/biot_npbc_lagrange.py',
     'multi_physics/biot_short_syntax.py',
     'multi_physics/piezo_elasticity.py',
+    'multi_physics/piezo_elastodynamic.py',
     'multi_physics/thermo_elasticity.py',
     'multi_physics/thermo_elasticity_ess.py',
     'navier_stokes/navier_stokes.py',
