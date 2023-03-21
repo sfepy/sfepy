@@ -2,7 +2,6 @@
 """
 Plot time steps, times of time steps and time deltas in a HDF5 results file.
 """
-from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser
@@ -58,6 +57,7 @@ def main():
     ax.set_ylabel(r'$\Delta t$', fontsize=fontsize)
     ax.grid(True)
 
+    plt.tight_layout()
     plt.show()
 
 if __name__ == '__main__':
