@@ -1161,11 +1161,12 @@ class CoefExprPar(MiniAppBase):
             equations, variables = \
               problem.create_evaluable(expression, term_mode=term_mode)
 
-            if isinstance(self.set_variables, list):
-                self.set_variables_default(variables, ir, self.set_variables,
-                                           data)
-            else:
-                self.set_variables(variables, ir, **data)
+            if hasattr(self, 'set_variables'):
+                if isinstance(self.set_variables, list):
+                    self.set_variables_default(variables, ir,
+                                               self.set_variables, data)
+                else:
+                    self.set_variables(variables, ir, **data)
 
             val = eval_equations(equations, variables,
                                  term_mode=term_mode)
