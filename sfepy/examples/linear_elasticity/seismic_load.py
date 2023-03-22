@@ -1,5 +1,5 @@
 r"""
-The linear elastodynamics with seismic boundary conditions.
+The linear elastodynamics of an elastic body loaded by a given base motion.
 
 Find :math:`\ul{u}` such that:
 
@@ -174,11 +174,7 @@ def define(
 
     variables = {
         'u' : ('unknown field', 'displacement', 0),
-        'du' : ('unknown field', 'displacement', 1),
-        'ddu' : ('unknown field', 'displacement', 2),
         'v' : ('test field', 'displacement', 'u'),
-        'dv' : ('test field', 'displacement', 'du'),
-        'ddv' : ('test field', 'displacement', 'ddu'),
     }
 
     def get_ebcs(ts, coors, mode='u'):
@@ -214,16 +210,14 @@ def define(
 
     if (ls_name == 'lsrmm') and fast_rmm:
         # Speed up residual calculation, as M is not used with lsrmm.
-        term = 'dw_zero.i.Omega(ddv, ddu)'
+        term = 'dw_zero.i.Omega(v, ddu)'
 
     else:
-        term = 'de_mass.i.Omega(solid.rho, solid.lumping, solid.beta, ddv, ddu)'
+        term = 'de_mass.i.Omega(solid.rho, solid.lumping, solid.beta, v, ddu)'
 
     equations = {
         'balance_of_forces' :
-        term + """
-         + dw_zero.i.Omega(dv, du)
-         + dw_lin_elastic.i.Omega(solid.D, v, u) = 0""",
+        term + '+ dw_lin_elastic.i.Omega(solid.D, v, u) = 0',
     }
 
     solvers = {
@@ -246,7 +240,7 @@ def define(
         }),
         'lsrmm' : ('ls.rmm', {
             'rmm_term' : """de_mass.i.Omega(solid.rho, solid.lumping,
-                                            solid.beta, ddv, ddu)""",
+                                            solid.beta, v, ddu)""",
             'debug' : False,
         }),
         'newton' : ('nls.newton', {
