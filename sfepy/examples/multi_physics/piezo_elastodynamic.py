@@ -73,6 +73,7 @@ def define(
         tsc_name='tscedl',
         adaptive=False,
         ls_name='lsd',
+        active_only=False,
         save_times='all',
         output_dir='output/piezo-ed',
 ):
@@ -284,7 +285,7 @@ def define(
 
         'save_times' : save_times,
 
-        'active_only' : False,
+        'active_only' : active_only,
         'auto_transform_equations' : True,
 
         'output_format' : 'h5',

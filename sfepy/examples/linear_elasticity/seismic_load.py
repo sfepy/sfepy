@@ -69,6 +69,7 @@ def define(
         mass_beta=0.0,
         mass_lumping='none',
         fast_rmm=False,
+        active_only=False,
         save_times=20,
         output_dir='output/seismic',
 ):
@@ -337,7 +338,7 @@ def define(
 
         'save_times' : save_times,
 
-        'active_only' : False,
+        'active_only' : active_only,
         'auto_transform_equations' : True,
 
         'output_format' : 'h5',

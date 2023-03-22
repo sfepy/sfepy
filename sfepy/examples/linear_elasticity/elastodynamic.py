@@ -105,6 +105,7 @@ def define(
         mass_beta=0.0,
         mass_lumping='none',
         fast_rmm=False,
+        active_only=False,
         save_times=20,
         output_dir='output/ed',
 ):
@@ -389,7 +390,7 @@ def define(
 
         'save_times' : save_times,
 
-        'active_only' : False,
+        'active_only' : active_only,
 
         'output_format' : 'h5',
         'output_dir' : output_dir,
