@@ -660,7 +660,8 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
             macro = new_macro
 
         for ii in range(nrec):
-            local_coors = mic_coors + ccoors[ii]
+            local_coors = mic_coors.copy()
+            local_coors[:, :ccoors.shape[1]] += ccoors[ii]
             coors.append(local_coors)
             conn.append(mesh.get_conn(mesh.descs[0]) + ndoffset)
             ndoffset += mesh.n_nod
