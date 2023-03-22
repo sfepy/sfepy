@@ -338,6 +338,7 @@ def define(
         'save_times' : save_times,
 
         'active_only' : False,
+        'auto_transform_equations' : True,
 
         'output_format' : 'h5',
         'output_dir' : output_dir,

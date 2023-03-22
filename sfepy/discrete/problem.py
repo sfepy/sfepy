@@ -1212,12 +1212,13 @@ class Problem(Struct):
         instance is created automatically as the time-stepping solver. Also
         sets `self.ts` attribute.
 
-        If `self.conf.options.auto_transform_equations` is True (the default),
-        the problem equations are automatically transformed to a form suitable
-        for the given solver. Implemented for :class:`ElastodynamicsBaseTS
+        If `self.conf.options.auto_transform_equations` is True (the default is
+        False), the problem equations are automatically transformed to a form
+        suitable for the given solver. Implemented for
+        :class:`ElastodynamicsBaseTS
         <sfepy.solvers.ts_solvers.ElastodynamicsBaseTS>`-based solvers.
         """
-        transform = self.conf.options.get('auto_transform_equations', True)
+        transform = self.conf.options.get('auto_transform_equations', False)
         if transform and isinstance(solver, ElastodynamicsBaseTS):
             self.solver = solver.copy()
             if self.get('orig_equations', None) is None:
