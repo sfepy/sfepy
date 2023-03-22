@@ -383,8 +383,13 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
             position += 1
 
-        if len(fields) == 0:
-            fields.append(('mat_id', 'p0'))
+        if (len(fields) == 0):
+            if  'mat_id' in mesh.array_names:
+                fields.append(('mat_id', 'p0'))
+
+            else:
+                fields.append(('0', 'p0'))
+
     else:
         fields = options.fields
 
