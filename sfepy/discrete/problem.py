@@ -1211,16 +1211,29 @@ class Problem(Struct):
         set already. If a nonlinear solver is set, a default StationarySolver
         instance is created automatically as the time-stepping solver. Also
         sets `self.ts` attribute.
-        """
-        if isinstance(solver, ElastodynamicsBaseTS):
-            self.orig_equations = self.equations
-            equations, var_names = transform_equations_ed(self.equations,
-                                                          self.get_materials())
-            self.equations = equations
 
-            output('transformed equations of elastodynamics solvers:')
-            self.equations.print_terms()
+        If `self.conf.options.auto_transform_equations` is True (the default),
+        the problem equations are automatically transformed to a form suitable
+        for the given solver. Implemented for :class:`ElastodynamicsBaseTS
+        <sfepy.solvers.ts_solvers.ElastodynamicsBaseTS>`-based solvers.
+        """
+        transform = self.conf.options.get('auto_transform_equations', True)
+        if transform and isinstance(solver, ElastodynamicsBaseTS):
             self.solver = solver.copy()
+            if self.get('orig_equations', None) is None:
+                equations, var_names = transform_equations_ed(
+                    self.equations, self.get_materials(),
+                )
+                self.orig_equations = self.equations
+                self.ed_var_names = var_names
+                self.equations = equations
+
+                output('transformed equations of elastodynamics solvers:')
+                self.equations.print_terms()
+
+            else:
+                var_names = self.ed_var_names
+
             self.solver.var_names = var_names
 
         elif isinstance(solver, NonlinearSolver):
