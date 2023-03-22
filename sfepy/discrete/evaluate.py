@@ -14,6 +14,10 @@ def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
     diagonal for master EPBC DOFs, -1 to the [master, slave] entries. It is
     assumed, that the matrix contains zeros in EBC and master EPBC DOFs rows
     and columns.
+
+    When used within a nonlinear solver, the actual values on the EBC DOFs
+    diagonal positions do not matter, as the residual is zero at those
+    positions.
     """
     data, prows, cols = mtx.data, mtx.indptr, mtx.indices
     # Does not change the sparsity pattern.
@@ -30,9 +34,9 @@ def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', SparseEfficiencyWarning)
-            # Changes sparsity pattern in-place - allocates new entries! The master
-            # DOFs are not allocated by Equations.create_matrix_graph(), see
-            # create_adof_conns().
+            # Changes sparsity pattern in-place - allocates new entries! The
+            # master DOFs are not allocated by Equations.create_matrix_graph(),
+            # see create_adof_conns().
             mtx[master, master] = 1.0
             mtx[master, slave] = -1.0
 
