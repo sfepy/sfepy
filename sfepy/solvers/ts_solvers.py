@@ -342,7 +342,6 @@ def transform_equations_ed(equations, materials):
     variables = equations.variables
     for eq in equations:
         for term in eq.terms:
-            print(eq.name, term.name)
             for name in term.names.state:
                 der = term.arg_derivatives[name]
                 if ((der is not None) and
