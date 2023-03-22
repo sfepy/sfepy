@@ -1244,7 +1244,7 @@ class Problem(Struct):
         else:
             self.solver = solver.copy()
 
-        self.ts = solver.ts
+        self.ts = self.solver.ts
         self.status = get_default(solver.status, IndexedStruct())
 
         # Assign the nonlinear solver functions.
