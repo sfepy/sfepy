@@ -23,7 +23,7 @@ electric field intensity, :math:`e_{kij}` the piezoelectric modulus and
 Usage Examples
 --------------
 
-Run with the default settings, results stored in ``output/piezo-dynamic/``::
+Run with the default settings, results stored in ``output/piezo-ed/``::
 
   sfepy-run sfepy/examples/multi_physics/piezo_elastodynamic.py
 
@@ -33,7 +33,7 @@ The :func:`define()` arguments, see below, can be set using the ``-d`` option::
 
 View the resulting potential :math:`p` on a deformed mesh (2000x magnified)::
 
-  sfepy-view output/piezo-dynamic/user_block.h5 -f p:wu:f2000:p0 1:vw:wu:f2000:p0 --color-map=seismic
+  sfepy-view output/piezo-ed/user_block.h5 -f p:wu:f2000:p0 1:vw:wu:f2000:p0 --color-map=seismic
 """
 import numpy as nm
 
@@ -74,7 +74,7 @@ def define(
         adaptive=False,
         ls_name='lsd',
         save_times='all',
-        output_dir='output/piezo-dynamic',
+        output_dir='output/piezo-ed',
 ):
     """
     Parameters
