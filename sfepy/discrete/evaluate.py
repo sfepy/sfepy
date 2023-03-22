@@ -79,6 +79,9 @@ class Evaluator(Struct):
         if not is_full and self.problem.active_only:
             vec = self.make_full_vec(vec)
 
+        else:
+            self.problem.equations.variables.apply_ebc(vec)
+
         vec_r = self.problem.equations.eval_residuals(vec)
         if self.matrix_hook is not None:
             vec_r = self.matrix_hook(vec_r, self.problem, call_mode='residual')
@@ -99,7 +102,10 @@ class Evaluator(Struct):
             return get_default(mtx, self.problem.mtx_a)
 
         if not is_full and self.problem.active_only:
-            vec = self.make_full_vec( vec )
+            vec = self.make_full_vec(vec)
+
+        elif vec is not None:
+            self.problem.equations.variables.apply_ebc(vec)
 
         pb = self.problem
         if mtx is None:
