@@ -1325,7 +1325,8 @@ class Problem(Struct):
             if update_bcs:
                 self.time_update(ts)
                 variables = self.equations.variables
-                variables.set_state(vec, self.active_only, apply_ebc=True)
+                # EBCs are applied in Evaluator.eval_residual().
+                variables.set_state(vec, self.active_only, apply_ebc=False)
 
             if update_materials:
                 self.update_materials(ts, verbose=self.conf.get('verbose', True))
@@ -1334,6 +1335,8 @@ class Problem(Struct):
 
         def poststep_fun(ts, vec):
             variables = self.equations.variables
+            # EBCs need to be applied here because of algrbraically computed
+            # variables in elastodynamics solvers.
             variables.set_state(vec, self.active_only, apply_ebc=True)
             if step_hook is not None:
                 step_hook(self, ts, variables)
