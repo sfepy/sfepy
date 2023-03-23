@@ -559,16 +559,17 @@ def pv_plot(filenames, options, plotter=None, step=None,
     if options.show_scalar_bars:
         if scalar_bar_limits is None:
             scalar_bar_limits = {}
-            for k, vs in scalar_bars.items():
-                limits = (nm.min([v[0] for v, _, _ in vs]),
-                          nm.max([v[1] for v, _, _ in vs]))
-                scalar_bar_limits[k] = limits
 
         width, height = options.scalar_bar_size
         position_x, position_y, shift_x, shift_y = options.scalar_bar_position
         nslots = len(scalar_bars)
         for k, vs in scalar_bars.items():
-            clim = scalar_bar_limits[k]
+            clim = scalar_bar_limits.get(k, (None, None))
+            if clim[0] is None:
+               clim = (nm.min([v[0] for v, _, _ in vs]), clim[1])
+            if clim[1] is None:
+               clim = (clim[0], nm.max([v[1] for v, _, _ in vs]))
+
             for _, mapper, _ in vs:
                 mapper.scalar_range = clim
             _, mapper, slot = vs[0]
