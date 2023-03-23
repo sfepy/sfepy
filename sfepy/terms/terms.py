@@ -138,7 +138,7 @@ def split_complex_args(args):
 
     return newargs
 
-def create_arg_parser(allow_derivatives=True):
+def create_arg_parser(allow_derivatives=False):
     from pyparsing import (Literal, Word, OneOrMore, delimitedList, Group,
                            StringStart, StringEnd, Combine, Optional, nums,
                            alphas, alphanums)
@@ -427,7 +427,7 @@ class Term(Struct):
         if self.integral is not None:
             self.integral_name = self.integral.name
 
-    def setup(self, allow_derivatives=True):
+    def setup(self, allow_derivatives=False):
         self.function = Struct.get(self, 'function', None)
 
         self.step = 0
@@ -443,7 +443,7 @@ class Term(Struct):
         else:
             self.args = []
 
-    def setup_formal_args(self, allow_derivatives=True):
+    def setup_formal_args(self, allow_derivatives=False):
         self.arg_names = []
         self.arg_steps = {}
         self.arg_derivatives = {}
