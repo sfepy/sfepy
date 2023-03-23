@@ -1241,11 +1241,11 @@ class Problem(Struct):
                 else:
                     var_names = self.ed_var_names
 
-                self.solver.var_names = var_names
+                self.solver.conf.var_names = var_names
 
-            elif solver.get('var_names', None) is None:
+            elif solver.conf.get('var_names', None) is None:
                 raise ValueError('specify names of dynamic variables by'
-                                 ' defining `solver.var_names`!')
+                                 ' defining `solver.conf.var_names`!')
 
         elif isinstance(solver, NonlinearSolver):
             self.solver = StationarySolver({}, nls=solver.copy(),

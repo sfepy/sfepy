@@ -500,12 +500,22 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
          'The number of time steps. Has precedence over `dt`.'),
         ('is_linear', 'bool', False, False,
          'If True, the problem is considered to be linear.'),
+        ('var_names', 'dict', None, True,
+         """The mapping of variables with keys 'u', 'du', 'ddu' and 'extra',
+            and values corresponding to the names of the actual variables.
+            See `var_names` returned from :func:`transform_equations_ed()`"""),
     ]
 
     def __init__(self, conf, nls=None, tsc=None, context=None, **kwargs):
         TimeSteppingSolver.__init__(self, conf, nls=nls, tsc=tsc,
                                     context=context, **kwargs)
         self.conf.quasistatic = False
+
+        if sorted(self.conf.var_names.keys())[:3] != ['ddu', 'du', 'u']:
+            raise ValueError(
+                "var_names have to contain 'u', 'du', 'ddu' keys!"
+            )
+
         if self.tsc is None:
             self.tsc = FixedTSC({})
 
@@ -573,7 +583,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
     def get_initial_vec(self, nls, vec0, init_fun, prestep_fun, poststep_fun):
         unpack, pack = gen_multi_vec_packing(
-            self.di, self.var_names,
+            self.di, self.conf.var_names,
             extra_variables=self.get('extra_variables', False),
         )
 
