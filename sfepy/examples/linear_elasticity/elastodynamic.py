@@ -27,7 +27,10 @@ definition. Then the solver can automatically extract the mass, damping (zero
 here), and stiffness matrices as diagonal blocks of the global matrix. Note
 also the use of the ``'dw_zero'`` (do-nothing) term that prevents the
 velocity-related variables to be removed from the equations in the absence of a
-damping term.
+damping term. This manual declaration of variables and ``'dw_zero'`` can be
+avoided by setting the ``'auto_transform_equations'`` option to True, see
+:ref:`linear_elasticity-seismic_load` or
+:ref:`multi_physics-piezo_elastodynamic`.
 
 Usage Examples
 --------------
