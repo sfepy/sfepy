@@ -64,6 +64,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
         'dv' : ('test field', 'displacement', 'du'),
         'ddv' : ('test field', 'displacement', 'ddu'),
     }
+    var_names = {'u' : 'u', 'du' : 'du', 'ddu' : 'ddu'}
 
     ebcs = {
         'fix' : ('Left', {'u.all' : 0.0, 'du.all' : 0.0, 'ddu.all' : 0.0}),
@@ -126,6 +127,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
@@ -137,6 +139,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsn' : ('ts.newmark', {
@@ -150,6 +153,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'beta' : 0.25,
             'gamma' : 0.5,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsga' : ('ts.generalized_alpha', {
@@ -166,6 +170,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'beta' : None,
             'gamma' : None,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsb' : ('ts.bathe', {
@@ -176,6 +181,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tscedb' : ('tsc.ed_basic', {
