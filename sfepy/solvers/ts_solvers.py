@@ -488,6 +488,20 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
     Assumes block-diagonal matrix in `u`, `v`, `a`.
     """
+
+    _common_parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
+    ]
+
     def __init__(self, conf, nls=None, tsc=None, context=None, **kwargs):
         TimeSteppingSolver.__init__(self, conf, nls=nls, tsc=tsc,
                                     context=context, **kwargs)
@@ -672,17 +686,7 @@ class VelocityVerletTS(ElastodynamicsBaseTS):
     name = 'ts.velocity_verlet'
 
     _parameters = [
-        ('t0', 'float', 0.0, False,
-         'The initial time.'),
-        ('t1', 'float', 1.0, False,
-         'The final time.'),
-        ('dt', 'float', None, False,
-         'The time step. Used if `n_step` is not given.'),
-        ('n_step', 'int', 10, False,
-         'The number of time steps. Has precedence over `dt`.'),
-        ('is_linear', 'bool', False, False,
-         'If True, the problem is considered to be linear.'),
-    ]
+    ] + ElastodynamicsBaseTS._common_parameters
 
     def create_nlst(self, nls, dt, u0, v0, a0):
         vm = v0 + 0.5 * dt * a0
@@ -747,17 +751,7 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
     name = 'ts.central_difference'
 
     _parameters = [
-        ('t0', 'float', 0.0, False,
-         'The initial time.'),
-        ('t1', 'float', 1.0, False,
-         'The final time.'),
-        ('dt', 'float', None, False,
-         'The time step. Used if `n_step` is not given.'),
-        ('n_step', 'int', 10, False,
-         'The number of time steps. Has precedence over `dt`.'),
-        ('is_linear', 'bool', False, False,
-         'If True, the problem is considered to be linear.'),
-    ]
+    ] + ElastodynamicsBaseTS._common_parameters
 
     def _create_nlst_a(self, nls, dt, ufun, vfun, cc, cache_name, is_rmm=False):
         nlst = nls.copy()
@@ -882,19 +876,9 @@ class NewmarkTS(ElastodynamicsBaseTS):
     extra_variables = True
 
     _parameters = [
-        ('t0', 'float', 0.0, False,
-         'The initial time.'),
-        ('t1', 'float', 1.0, False,
-         'The final time.'),
-        ('dt', 'float', None, False,
-         'The time step. Used if `n_step` is not given.'),
-        ('n_step', 'int', 10, False,
-         'The number of time steps. Has precedence over `dt`.'),
-        ('is_linear', 'bool', False, False,
-         'If True, the problem is considered to be linear.'),
         ('beta', 'float', 0.25, False, 'The Newmark method parameter beta.'),
         ('gamma', 'float', 0.5, False, 'The Newmark method parameter gamma.'),
-    ]
+    ] + ElastodynamicsBaseTS._common_parameters
 
     def create_nlst(self, nls, dt, gamma, beta, u0, e0, v0, a0, pack, unpack):
         dt2 = dt**2
@@ -1012,16 +996,6 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
     name = 'ts.generalized_alpha'
 
     _parameters = [
-        ('t0', 'float', 0.0, False,
-         'The initial time.'),
-        ('t1', 'float', 1.0, False,
-         'The final time.'),
-        ('dt', 'float', None, False,
-         'The time step. Used if `n_step` is not given.'),
-        ('n_step', 'int', 10, False,
-         'The number of time steps. Has precedence over `dt`.'),
-        ('is_linear', 'bool', False, False,
-         'If True, the problem is considered to be linear.'),
         ('rho_inf', 'float', 0.5, False,
          """The spectral radius in the high frequency limit (user specified
             high-frequency dissipation) in [0, 1]:
@@ -1034,7 +1008,7 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
          r'The Newmark-like parameter :math:`\beta`.'),
         ('gamma', 'float', None, False,
          r'The Newmark-like parameter :math:`\gamma`.'),
-    ]
+    ] + ElastodynamicsBaseTS._common_parameters
 
     def __init__(self, conf, nls=None, tsc=None, context=None, **kwargs):
         ElastodynamicsBaseTS.__init__(self, conf, nls=nls, tsc=tsc,
@@ -1148,17 +1122,7 @@ class BatheTS(ElastodynamicsBaseTS):
     name = 'ts.bathe'
 
     _parameters = [
-        ('t0', 'float', 0.0, False,
-         'The initial time.'),
-        ('t1', 'float', 1.0, False,
-         'The final time.'),
-        ('dt', 'float', None, False,
-         'The time step. Used if `n_step` is not given.'),
-        ('n_step', 'int', 10, False,
-         'The number of time steps. Has precedence over `dt`.'),
-        ('is_linear', 'bool', False, False,
-         'If True, the problem is considered to be linear.'),
-    ]
+    ] + ElastodynamicsBaseTS._common_parameters
 
     def __init__(self, conf, nls=None, context=None, **kwargs):
         ElastodynamicsBaseTS.__init__(self, conf, nls=nls, context=context,
