@@ -529,11 +529,13 @@ class Problem(Struct):
             default_user.update(user)
         user = default_user
         eterm_options = self.conf.options.get('eterm', {})
+        transform = self.conf.options.get('auto_transform_equations', False)
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
                                         materials, self.integrals,
                                         user=user,
-                                        eterm_options=eterm_options)
+                                        eterm_options=eterm_options,
+                                        allow_derivatives=transform)
 
         self.equations = equations
         self.set_ics(self.conf.ics)

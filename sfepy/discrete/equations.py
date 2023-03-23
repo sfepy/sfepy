@@ -50,7 +50,8 @@ class Equations(Container):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, integrals,
-                  user=None, eterm_options=None, verbose=True):
+                  user=None, eterm_options=None, allow_derivatives=False,
+                  verbose=True):
 
         objs = OneTypeList(Equation)
 
@@ -63,7 +64,8 @@ class Equations(Container):
                 output(desc)
             eq = Equation.from_desc(name, desc, variables, regions,
                                     materials, integrals, user=user,
-                                    eterm_options=eterm_options)
+                                    eterm_options=eterm_options,
+                                    allow_derivatives=allow_derivatives)
             objs.append(eq)
             ii += 1
 
@@ -736,11 +738,11 @@ class Equation(Struct):
 
     @staticmethod
     def from_desc(name, desc, variables, regions, materials, integrals,
-                  user=None, eterm_options=None):
+                  user=None, eterm_options=None, allow_derivatives=False):
         term_descs = parse_definition(desc)
         terms = Terms.from_desc(term_descs, regions, integrals)
 
-        terms.setup()
+        terms.setup(allow_derivatives=allow_derivatives)
         terms.assign_args(variables, materials, user)
 
         if eterm_options is not None:

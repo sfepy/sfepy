@@ -287,9 +287,9 @@ class Terms(Container):
     def __neg__(self):
         return -1.0 * self
 
-    def setup(self):
+    def setup(self, **kwargs):
         for term in self:
-            term.setup()
+            term.setup(**kwargs)
 
     def assign_args(self, variables, materials, user=None):
         """
