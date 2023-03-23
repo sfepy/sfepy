@@ -229,6 +229,9 @@ def define(
         'dv' : ('test field', 'displacement', 'du'),
         'ddv' : ('test field', 'displacement', 'ddu'),
     }
+    # The mapping of variables for the elastodynamics solvers - keys are given,
+    # values correspond to the names of the actual variables.
+    var_names = {'u' : 'u', 'du' : 'du', 'ddu' : 'ddu'}
 
     ebcs = {
         'Impact' : ('Impact', {'u.0' : 0.0, 'du.0' : 0.0, 'ddu.0' : 0.0}),
@@ -311,6 +314,7 @@ def define(
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
@@ -322,6 +326,7 @@ def define(
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsn' : ('ts.newmark', {
@@ -335,6 +340,7 @@ def define(
             'beta' : 0.25,
             'gamma' : 0.5,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsga' : ('ts.generalized_alpha', {
@@ -351,6 +357,7 @@ def define(
             'beta' : None,
             'gamma' : None,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsb' : ('ts.bathe', {
@@ -361,6 +368,7 @@ def define(
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tscedb' : ('tsc.ed_basic', {
@@ -391,6 +399,7 @@ def define(
         'save_times' : save_times,
 
         'active_only' : active_only,
+        'auto_transform_equations' : False,
 
         'output_format' : 'h5',
         'output_dir' : output_dir,
