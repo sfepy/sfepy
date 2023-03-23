@@ -1205,6 +1205,8 @@ class Problem(Struct):
         ----------
         solver : NonlinearSolver or TimeSteppingSolver instance
             The nonlinear or time-stepping solver.
+        status : dict-like, optional
+            The user-supplied object to hold the solver convergence statistics.
 
         Notes
         -----
@@ -1218,26 +1220,32 @@ class Problem(Struct):
         False), the problem equations are automatically transformed to a form
         suitable for the given solver. Implemented for
         :class:`ElastodynamicsBaseTS
-        <sfepy.solvers.ts_solvers.ElastodynamicsBaseTS>`-based solvers.
+        <sfepy.solvers.ts_solvers.ElastodynamicsBaseTS>`-based solvers. If it
+        is False, `solver.var_names` have to be defined.
         """
         transform = self.conf.options.get('auto_transform_equations', False)
-        if transform and isinstance(solver, ElastodynamicsBaseTS):
+        if isinstance(solver, ElastodynamicsBaseTS):
             self.solver = solver.copy()
-            if self.get('orig_equations', None) is None:
-                equations, var_names = transform_equations_ed(
-                    self.equations, self.get_materials(),
-                )
-                self.orig_equations = self.equations
-                self.ed_var_names = var_names
-                self.equations = equations
+            if transform:
+                if self.get('orig_equations', None) is None:
+                    equations, var_names = transform_equations_ed(
+                        self.equations, self.get_materials(),
+                    )
+                    self.orig_equations = self.equations
+                    self.ed_var_names = var_names
+                    self.equations = equations
 
-                output('transformed equations of elastodynamics solvers:')
-                self.equations.print_terms()
+                    output('transformed equations of elastodynamics solvers:')
+                    self.equations.print_terms()
 
-            else:
-                var_names = self.ed_var_names
+                else:
+                    var_names = self.ed_var_names
 
-            self.solver.var_names = var_names
+                self.solver.var_names = var_names
+
+            elif solver.get('var_names', None) is None:
+                raise ValueError('specify names of dynamic variables by'
+                                 ' defining `solver.var_names`!')
 
         elif isinstance(solver, NonlinearSolver):
             self.solver = StationarySolver({}, nls=solver.copy(),
