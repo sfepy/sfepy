@@ -1,7 +1,6 @@
 """
 Classes of equations composed of terms.
 """
-from __future__ import absolute_import
 from copy import copy
 
 import numpy as nm
@@ -14,7 +13,6 @@ from sfepy.discrete import Materials, Variables, create_adof_conns
 from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
 from sfepy.terms.terms_multilinear import ETermBase
-import six
 
 def parse_definition(equation_def):
     """
@@ -52,20 +50,22 @@ class Equations(Container):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, integrals,
-                  user=None, eterm_options=None, verbose=True):
+                  user=None, eterm_options=None, allow_derivatives=False,
+                  verbose=True):
 
         objs = OneTypeList(Equation)
 
         conf = copy(conf)
 
         ii = 0
-        for name, desc in six.iteritems(conf):
+        for name, desc in conf.items():
             if verbose:
                 output('equation "%s":' %  name)
                 output(desc)
             eq = Equation.from_desc(name, desc, variables, regions,
                                     materials, integrals, user=user,
-                                    eterm_options=eterm_options)
+                                    eterm_options=eterm_options,
+                                    allow_derivatives=allow_derivatives)
             objs.append(eq)
             ii += 1
 
@@ -738,11 +738,11 @@ class Equation(Struct):
 
     @staticmethod
     def from_desc(name, desc, variables, regions, materials, integrals,
-                  user=None, eterm_options=None):
+                  user=None, eterm_options=None, allow_derivatives=False):
         term_descs = parse_definition(desc)
         terms = Terms.from_desc(term_descs, regions, integrals)
 
-        terms.setup()
+        terms.setup(allow_derivatives=allow_derivatives)
         terms.assign_args(variables, materials, user)
 
         if eterm_options is not None:
@@ -751,11 +751,11 @@ class Equation(Struct):
                     term.set_verbosity(eterm_options.get('verbosity', 0))
                     term.set_backend(**eterm_options.get('backend_args', {}))
 
-        obj = Equation(name, terms)
+        obj = Equation(name, terms, setup=False)
 
         return obj
 
-    def __init__(self, name, terms):
+    def __init__(self, name, terms, setup=True):
         Struct.__init__(self, name=name)
 
         if isinstance(terms, Term): # A single term.
@@ -763,7 +763,8 @@ class Equation(Struct):
 
         self.terms = terms
 
-        self.terms.setup()
+        if setup:
+            self.terms.setup()
 
     def collect_materials(self):
         """

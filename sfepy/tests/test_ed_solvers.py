@@ -64,6 +64,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
         'dv' : ('test field', 'displacement', 'du'),
         'ddv' : ('test field', 'displacement', 'ddu'),
     }
+    var_names = {'u' : 'u', 'du' : 'du', 'ddu' : 'ddu'}
 
     ebcs = {
         'fix' : ('Left', {'u.all' : 0.0, 'du.all' : 0.0, 'ddu.all' : 0.0}),
@@ -76,7 +77,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
 
         elif mode == 'du':
             xmax = coors[:, 0].max()
-            val[:, 2] = nm.where((coors[:, 0] > (xmax - 1e-12)), 1.0, 0.0)
+            val[:, -1] = nm.where((coors[:, 0] > (xmax - 1e-12)), 1.0, 0.0)
 
         return val
 
@@ -126,6 +127,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tscd' : ('ts.central_difference', {
@@ -137,6 +139,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsn' : ('ts.newmark', {
@@ -150,6 +153,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'beta' : 0.25,
             'gamma' : 0.5,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsga' : ('ts.generalized_alpha', {
@@ -166,6 +170,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
             'beta' : None,
             'gamma' : None,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tsb' : ('ts.bathe', {
@@ -176,6 +181,7 @@ def define(t1=15e-6, dt=1e-6, dims=(0.1, 0.02, 0.005), shape=(11, 3, 3),
 
             'is_linear'  : True,
 
+            'var_names' : var_names,
             'verbose' : 1,
         }),
         'tscedb' : ('tsc.ed_basic', {
@@ -408,3 +414,27 @@ def test_rmm_solver(problem, output_dir):
     assert ierrs[1] < 3 * ratio * 1e-13
     assert ierrs[2] < 1e-11
     assert ierrs[3] < 1e-11
+
+def test_active_only(output_dir):
+    """
+    Note: with tsc the results would differ, as eval_scaled_norm() depends on
+    the vector length.
+    """
+    import sys
+    from sfepy.discrete import Problem
+    from sfepy.base.conf import ProblemConf
+
+    define_dict = define(dims=(0.1, 0.02), shape=(3, 3))
+    conf = ProblemConf.from_dict(define_dict, sys.modules[__name__])
+
+    conf.options.active_only = False
+    pb = Problem.from_conf(conf)
+    pb.tsc_conf = None
+    variables_f = pb.solve()
+
+    conf.options.active_only = True
+    pb = Problem.from_conf(conf)
+    pb.tsc_conf = None
+    variables_t = pb.solve()
+
+    assert nm.allclose(variables_f(), variables_t(), atol=1e-7, rtol=0)

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import re
 from copy import copy
 
@@ -10,9 +9,6 @@ from sfepy.base.compat import in1d
 
 # Used for imports in term files.
 from sfepy.terms.extmods import terms
-import six
-from six.moves import range
-from functools import reduce
 
 _match_args = re.compile(r'^([^\(\}]*)\((.*)\)$').match
 _match_virtual = re.compile('^virtual$').match
@@ -142,9 +138,10 @@ def split_complex_args(args):
 
     return newargs
 
-def create_arg_parser():
-    from pyparsing import Literal, Word, delimitedList, Group, \
-         StringStart, StringEnd, Optional, nums, alphas, alphanums
+def create_arg_parser(allow_derivatives=False):
+    from pyparsing import (Literal, Word, OneOrMore, delimitedList, Group,
+                           StringStart, StringEnd, Combine, Optional, nums,
+                           alphas, alphanums)
 
     ident = Word(alphas, alphanums + "_")
     inumber = Word("+-" + nums, nums)
@@ -164,7 +161,12 @@ def create_arg_parser():
                   + variable
                   + Literal(')').suppress())
 
-    generalized_var = derivative | trace | variable
+    if allow_derivatives:
+        derivative2 = Group(Combine(OneOrMore(Literal('d'))) + variable)
+        generalized_var = derivative | derivative2 | trace | variable
+
+    else:
+        generalized_var = derivative | trace | variable
 
     args = StringStart() + delimitedList(generalized_var) + StringEnd()
 
@@ -285,9 +287,9 @@ class Terms(Container):
     def __neg__(self):
         return -1.0 * self
 
-    def setup(self):
+    def setup(self, **kwargs):
         for term in self:
-            term.setup()
+            term.setup(**kwargs)
 
     def assign_args(self, variables, materials, user=None):
         """
@@ -425,7 +427,7 @@ class Term(Struct):
         if self.integral is not None:
             self.integral_name = self.integral.name
 
-    def setup(self):
+    def setup(self, allow_derivatives=False):
         self.function = Struct.get(self, 'function', None)
 
         self.step = 0
@@ -433,7 +435,7 @@ class Term(Struct):
         self.is_quasistatic = False
         self.has_region = True
 
-        self.setup_formal_args()
+        self.setup_formal_args(allow_derivatives=allow_derivatives)
 
         if self._kwargs:
             self.setup_args(**self._kwargs)
@@ -441,14 +443,14 @@ class Term(Struct):
         else:
             self.args = []
 
-    def setup_formal_args(self):
+    def setup_formal_args(self, allow_derivatives=False):
         self.arg_names = []
         self.arg_steps = {}
         self.arg_derivatives = {}
         self.arg_traces = {}
         self.arg_trace_regions = {}
 
-        parser = create_arg_parser()
+        parser = create_arg_parser(allow_derivatives=allow_derivatives)
         self.arg_desc = parser.parseString(self.arg_str)
         for arg in self.arg_desc:
             derivative = None
@@ -460,9 +462,15 @@ class Term(Struct):
 
             else:
                 kind = arg[0]
-                if kind == 'd':
-                    name, step = arg[1]
-                    derivative = arg[2]
+                if 'd' in kind:
+                    if len(arg) == 3:
+                        name, step = arg[1]
+                        derivative = arg[2]
+
+                    else:
+                        name, step = arg[1]
+                        derivative = len(kind)
+
                 elif kind == 'tr':
                     trace = True
                     trace_region = arg[1]
@@ -1575,7 +1583,7 @@ class Term(Struct):
                 val = val.astype(nm.complex128)
 
             sign = 1.0
-            if self.arg_derivatives[svar.name]:
+            if self.arg_derivatives[svar.name] == 'dt':
                 if not self.is_quasistatic or (self.step > 0):
                     sign *= 1.0 / self.dt
 

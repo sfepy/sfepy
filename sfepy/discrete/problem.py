@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 import os.path as op
 from copy import copy
@@ -27,9 +26,8 @@ from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.evaluate import Evaluator
 from sfepy.solvers import Solver, NonlinearSolver
 from sfepy.solvers.solvers import use_first_available
-from sfepy.solvers.ts_solvers import StationarySolver
-import six
-from six.moves import range
+from sfepy.solvers.ts_solvers import (StationarySolver, ElastodynamicsBaseTS,
+                                      transform_equations_ed)
 
 def make_is_save(options):
     """
@@ -531,11 +529,13 @@ class Problem(Struct):
             default_user.update(user)
         user = default_user
         eterm_options = self.conf.options.get('eterm', {})
+        transform = self.conf.options.get('auto_transform_equations', False)
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
                                         materials, self.integrals,
                                         user=user,
-                                        eterm_options=eterm_options)
+                                        eterm_options=eterm_options,
+                                        allow_derivatives=transform)
 
         self.equations = equations
         self.set_ics(self.conf.ics)
@@ -858,7 +858,7 @@ class Problem(Struct):
                 out = post_process_hook(out, self, state, extend=extend)
 
         if linearization.kind == 'adaptive':
-            for key, val in six.iteritems(out):
+            for key, val in out.items():
                 mesh = val.get('mesh', self.domain.mesh)
                 aux = io.edit_filename(filename, suffix='_' + val.var_name)
                 mesh.write(aux, io='auto', out={key : val},
@@ -956,7 +956,7 @@ class Problem(Struct):
 
         if force:
             vals = dict_from_keys_init(variables.state)
-            for ii, key in enumerate(six.iterkeys(vals)):
+            for ii, key in enumerate(vals.keys()):
                 vals[key] = ii + 1
 
             variables.apply_ebc(force_values=vals)
@@ -1056,12 +1056,12 @@ class Problem(Struct):
         conf_solvers = get_default(conf_solvers, self.conf.solvers)
         self.solver_confs = {}
 
-        for key, val in six.iteritems(conf_solvers):
+        for key, val in conf_solvers.items():
             self.solver_confs[val.name] = val
 
         def _find_suitable(prefix):
             cands = []
-            for key, val in six.iteritems(self.solver_confs):
+            for key, val in self.solver_confs.items():
                 if val.kind.find(prefix) == 0:
                     if val.name == prefix[:-1]:
                         return val
@@ -1205,6 +1205,8 @@ class Problem(Struct):
         ----------
         solver : NonlinearSolver or TimeSteppingSolver instance
             The nonlinear or time-stepping solver.
+        status : dict-like, optional
+            The user-supplied object to hold the solver convergence statistics.
 
         Notes
         -----
@@ -1213,14 +1215,47 @@ class Problem(Struct):
         set already. If a nonlinear solver is set, a default StationarySolver
         instance is created automatically as the time-stepping solver. Also
         sets `self.ts` attribute.
-        """
-        if isinstance(solver, NonlinearSolver):
-            solver = StationarySolver({}, nls=solver.copy(),
-                                      ts=self.get_default_ts(),
-                                      status=status)
 
-        self.solver = solver.copy()
-        self.ts = solver.ts
+        If `self.conf.options.auto_transform_equations` is True (the default is
+        False), the problem equations are automatically transformed to a form
+        suitable for the given solver. Implemented for
+        :class:`ElastodynamicsBaseTS
+        <sfepy.solvers.ts_solvers.ElastodynamicsBaseTS>`-based solvers. If it
+        is False, `solver.var_names` have to be defined.
+        """
+        transform = self.conf.options.get('auto_transform_equations', False)
+        if isinstance(solver, ElastodynamicsBaseTS):
+            self.solver = solver.copy()
+            if transform:
+                if self.get('orig_equations', None) is None:
+                    equations, var_names = transform_equations_ed(
+                        self.equations, self.get_materials(),
+                    )
+                    self.orig_equations = self.equations
+                    self.ed_var_names = var_names
+                    self.equations = equations
+
+                    output('transformed equations of elastodynamics solvers:')
+                    self.equations.print_terms()
+
+                else:
+                    var_names = self.ed_var_names
+
+                self.solver.conf.var_names = var_names
+
+            elif solver.conf.get('var_names', None) is None:
+                raise ValueError('specify names of dynamic variables by'
+                                 ' defining `solver.conf.var_names`!')
+
+        elif isinstance(solver, NonlinearSolver):
+            self.solver = StationarySolver({}, nls=solver.copy(),
+                                           ts=self.get_default_ts(),
+                                           status=status)
+
+        else:
+            self.solver = solver.copy()
+
+        self.ts = self.solver.ts
         self.status = get_default(solver.status, IndexedStruct())
 
         # Assign the nonlinear solver functions.
@@ -1300,7 +1335,8 @@ class Problem(Struct):
             if update_bcs:
                 self.time_update(ts)
                 variables = self.equations.variables
-                variables.set_state(vec, self.active_only, apply_ebc=True)
+                # EBCs are applied in Evaluator.eval_residual().
+                variables.set_state(vec, self.active_only, apply_ebc=False)
 
             if update_materials:
                 self.update_materials(ts, verbose=self.conf.get('verbose', True))
@@ -1309,6 +1345,8 @@ class Problem(Struct):
 
         def poststep_fun(ts, vec):
             variables = self.equations.variables
+            # EBCs need to be applied here because of algrbraically computed
+            # variables in elastodynamics solvers.
             variables.set_state(vec, self.active_only, apply_ebc=True)
             if step_hook is not None:
                 step_hook(self, ts, variables)
@@ -1483,6 +1521,7 @@ class Problem(Struct):
                 save_results=save_results,
                 step_hook=step_hook, post_process_hook=post_process_hook)
 
+            tss.set_dof_info(variables.adi)
             vec = tss(variables.get_state(self.active_only, force=True),
                       init_fun=init_fun,
                       prestep_fun=prestep_fun,
@@ -1515,7 +1554,7 @@ class Problem(Struct):
 
         def replace_virtuals(deps, pairs):
             out = {}
-            for key, val in six.iteritems(deps):
+            for key, val in deps.items():
                 out[pairs[key]] = val
 
             return out
@@ -1677,12 +1716,12 @@ class Problem(Struct):
         """
         from sfepy.discrete.equations import get_expression_arg_names
 
-        variables = Variables(six.itervalues(get_default(var_dict, {})))
+        variables = Variables(get_default(var_dict, {}).values())
         var_context = get_default(var_dict, {})
 
         if try_equations and self.equations is not None:
             # Make a copy, so that possible variable caches are preserved.
-            for key, var in six.iteritems(self.equations.variables.as_dict()):
+            for key, var in self.equations.variables.as_dict().items():
                 if key in variables:
                     continue
                 var = var.copy(name=key)
@@ -1703,7 +1742,7 @@ class Problem(Struct):
             materials = Materials(objs=materials._objs)
 
         _kwargs = copy(kwargs)
-        for key, val in six.iteritems(kwargs):
+        for key, val in kwargs.items():
             if isinstance(val, Variable):
                 if val.name != key:
                     msg = 'inconsistent variable name! (%s == %s)' \
@@ -1742,7 +1781,7 @@ class Problem(Struct):
 
         if not strip_variables:
             variables = out[1]
-            variables.extend([var for var in six.itervalues(var_context)
+            variables.extend([var for var in var_context.values()
                               if var not in variables])
 
         equations = out[0]
@@ -1987,7 +2026,7 @@ class Problem(Struct):
         fd = pt.open_file(filename, mode='w', title='SfePy restart file')
 
         tgroup = fd.create_group('/', 'ts', 'ts')
-        for key, val in six.iteritems(ts.get_state()):
+        for key, val in ts.get_state().items():
             fd.create_array(tgroup, key, val, key)
 
         variables = self.get_variables()

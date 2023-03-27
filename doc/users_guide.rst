@@ -960,6 +960,11 @@ Additional options (including solver selection)::
         # pre-allocate the matrix graph. If False, only cell region
         # connectivities are used.
         'any_dof_conn' : False,
+
+        # bool, default: False. If True, automatically transform equations to a
+        # form suitable for the given solver. Implemented for
+        # ElastodynamicsBaseTS-based solvers
+        'auto_transform_equations' : True,
     }
 
 * ``post_process_hook`` enables computing derived quantities, like

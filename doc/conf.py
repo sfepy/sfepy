@@ -283,6 +283,7 @@ latex_elements = {
 \def\vb{\bm{v}}
 \def\Mb{\bm{M}}
 \def\vphib{\bm{\varphi}}
+\def\veps{\varepsilon}
 ''',
 }
 # LS: Are the following needed as well?

@@ -1,14 +1,11 @@
-from __future__ import print_function
-from __future__ import absolute_import
 from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
      ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
      StringStart, StringEnd, CaselessLiteral, Forward, oneOf
-import six
 
 class TermParse(object):
     def __str__(self):
         ss = "%s\n" % self.__class__
-        for key, val in six.iteritems(self.__dict__):
+        for key, val in self.__dict__.items():
             ss += "  %s:\n    %s\n" % (key, self.__dict__[key])
         return ss
 
@@ -68,15 +65,17 @@ def create_bnf(term_descs):
 
     variable = Combine(Word(alphas, alphanums + '._') + history)
 
-    derivative = Combine(Literal('d') + variable \
+    derivative = Combine(Literal('d') + variable
                          + Literal('/') + Literal('dt'))
+    # Not needed here, just for correspondence with create_arg_parser().
+    derivative2 = Combine(OneOrMore(Literal('d')) + variable)
 
     trace = Combine(Literal('tr') + '('
                     + Optional(ident + Literal(','))
                     + variable
                     + ')', adjacent=False)
 
-    generalized_var = derivative | trace | variable
+    generalized_var = derivative | derivative2 | trace | variable
     args = Group(delimitedList(generalized_var))
 
     flag = Literal('a')

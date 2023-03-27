@@ -14,6 +14,10 @@ def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
     diagonal for master EPBC DOFs, -1 to the [master, slave] entries. It is
     assumed, that the matrix contains zeros in EBC and master EPBC DOFs rows
     and columns.
+
+    When used within a nonlinear solver, the actual values on the EBC DOFs
+    diagonal positions do not matter, as the residual is zero at those
+    positions.
     """
     data, prows, cols = mtx.data, mtx.indptr, mtx.indices
     # Does not change the sparsity pattern.
@@ -30,9 +34,9 @@ def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', SparseEfficiencyWarning)
-            # Changes sparsity pattern in-place - allocates new entries! The master
-            # DOFs are not allocated by Equations.create_matrix_graph(), see
-            # create_adof_conns().
+            # Changes sparsity pattern in-place - allocates new entries! The
+            # master DOFs are not allocated by Equations.create_matrix_graph(),
+            # see create_adof_conns().
             mtx[master, master] = 1.0
             mtx[master, slave] = -1.0
 
@@ -75,6 +79,9 @@ class Evaluator(Struct):
         if not is_full and self.problem.active_only:
             vec = self.make_full_vec(vec)
 
+        else:
+            self.problem.equations.variables.apply_ebc(vec)
+
         vec_r = self.problem.equations.eval_residuals(vec)
         if self.matrix_hook is not None:
             vec_r = self.matrix_hook(vec_r, self.problem, call_mode='residual')
@@ -95,7 +102,10 @@ class Evaluator(Struct):
             return get_default(mtx, self.problem.mtx_a)
 
         if not is_full and self.problem.active_only:
-            vec = self.make_full_vec( vec )
+            vec = self.make_full_vec(vec)
+
+        elif vec is not None:
+            self.problem.equations.variables.apply_ebc(vec)
 
         pb = self.problem
         if mtx is None:

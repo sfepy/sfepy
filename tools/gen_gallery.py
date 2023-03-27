@@ -174,6 +174,21 @@ custom = {
             'grid_vector1': [0, 1.2, 0]
         },
     },
+    'multi_physics/piezo_elasticity.py': {
+        '': {'fields': ['u:g:p0', 'cauchy_strain:p1',
+                        'elastic_stress:p2', 'piezo_stress:p3'],
+             'grid_vector1': [1.2, 0, 0],
+             'max_plots': 4},
+    },
+    'multi_physics/piezo_elastodynamic.py': {
+        '': {
+            'fields': ['p:wu:f2000:p0', '1:vw:wu:f2000:p0'],
+            'camera_position': [-0.0125588,-0.00559266,0.0117482,
+                                0.00438669,0.00487109,0.00135715,
+                                0.334487,0.333581,0.881387],
+            'color_map': 'seismic',
+        }
+    },
     'multi_physics/thermo_elasticity_ess.py': {
         '': {
             'fields': ['T:wu:f1e3:p0', '1:vw:p0'],
@@ -182,12 +197,6 @@ custom = {
     },
     'multi_physics/thermo_elasticity.py': {
         '': {'camera': [225, 75, 0.9]}
-    },
-    'multi_physics/piezo_elasticity.py': {
-        '': {'fields': ['u:g:p0', 'cauchy_strain:p1',
-                        'elastic_stress:p2', 'piezo_stress:p3'],
-             'grid_vector1': [1.2, 0, 0],
-             'max_plots': 4},
     },
     'quantum/boron.py': {
         '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3'],
