@@ -1127,9 +1127,9 @@ Common lower-level code and parent classes for FEM and IGA.
    src/sfepy/discrete/common/extmods/_fmfield
    src/sfepy/discrete/common/extmods/_geommech
    src/sfepy/discrete/common/extmods/assemble
+   src/sfepy/discrete/common/extmods/cmapping
    src/sfepy/discrete/common/extmods/cmesh
    src/sfepy/discrete/common/extmods/crefcoors
-   src/sfepy/discrete/common/extmods/mappings
    src/sfepy/discrete/common/fields
    src/sfepy/discrete/common/global_interp
    src/sfepy/discrete/common/mappings
