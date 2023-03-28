@@ -213,11 +213,11 @@ class FEMapping(Mapping):
             Is it the boundary of a region?
         extra: tuple
             The extra data for surface derivatives:
-              - the derivatives of the field boundary basis functions with
-                respect to the reference coordinates
-              - the boundary connectivity
-              - the derivatives of the domain boundary basis functions with
-                respect to the reference coordinates
+            - the derivatives of the field boundary basis functions with
+              respect to the reference coordinates
+            - the boundary connectivity
+            - the derivatives of the domain boundary basis functions with
+              respect to the reference coordinates
 
         Returns
         -------
