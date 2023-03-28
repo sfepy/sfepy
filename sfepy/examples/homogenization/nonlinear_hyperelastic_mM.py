@@ -81,7 +81,7 @@ def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
     state_u = problem.equations.variables[update_var]
     state_u.field.clear_mappings()
     family_data = problem.family_data(state_u, term.region,
-                                      term.integral, term.integration)
+                                      term.integral, term.act_integration)
 
     mtx_f = family_data.mtx_f.reshape((coors.shape[0],)
                                       + family_data.mtx_f.shape[-2:])

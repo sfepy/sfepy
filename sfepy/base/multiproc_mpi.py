@@ -19,35 +19,49 @@ global_multiproc_dict = {}
 mpi_master = 0
 
 
-class MPILogFile(MPI.File):
-    def write(self, *args, **kwargs):
-        self.Write_shared(*args, **kwargs)
+class MPILogFile(object):
+    def __init__(self, comm, filename, mode):
+        self._file = MPI.File.Open(comm, filename, mode)
+        self._file.Set_atomicity(True)
+
+    def write(self, msg):
+        try:
+            msg = msg.encode()
+        except AttributeError:
+            pass
+
+        self._file.Write_shared(msg)
+
+    def sync(self):
+        self._file.Sync()
+
+    def close(self):
+        self.sync()
+        self._file.Close()
 
 
-class MPIFileHandler(logging.FileHandler):
+class MPIFileHandler(logging.StreamHandler):
     "MPI file class for logging process communication."
-    def __init__(self, filename, mode=MPI.MODE_WRONLY,
-                 encoding=None, delay=0, comm=MPI.COMM_WORLD):
+    def __init__(self, filename, mode=MPI.MODE_WRONLY, comm=MPI.COMM_WORLD):
         self.baseFilename = os.path.abspath(filename)
         self.mode = mode
-        self.encoding = encoding
         self.comm = comm
-        if delay:
-            logging.Handler.__init__(self)
-            self.stream = None
-        else:
-            logging.StreamHandler.__init__(self, self._open())
+
+        super(MPIFileHandler, self).__init__(self._open())
 
     def _open(self):
-        stream = MPILogFile.Open(self.comm, self.baseFilename, self.mode)
-        stream.Set_atomicity(True)
+        stream = MPILogFile(self.comm, self.baseFilename, self.mode)
         return stream
 
     def close(self):
         if self.stream:
-            self.stream.Sync()
-            self.stream.Close()
+            self.stream.close()
             self.stream = None
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.stream.write('{}{}'.format(msg, self.terminator))
+        self.flush()
 
 
 def set_logging_level(log_level='info'):
