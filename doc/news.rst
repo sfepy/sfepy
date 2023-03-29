@@ -1,6 +1,12 @@
 News
 ====
 
+* **29.03.2023** Version 2023.1 released (support meshes with cells of
+  different topological dimensions, unified treatment of volume and surface
+  integrals, updated elastodynamics solvers, reciprocal mass matrix algorithm,
+  seismic load and piezo-elastodynamics examples, use GitHub Actions for CI,
+  etc.), see :ref:`release notes <2022.4-2023.1>`.
+
 * **29.12.2022** Version 2022.4 released (new examples: transient heat equation
   with several material domains and scalar Helmholtz equation, adaptive time
   step control for elastodynamics solvers, central difference elastodynamics
@@ -19,10 +25,5 @@ News
   and State class removal, many new sensitivity analysis terms based on
   multi-linear term implementation, etc.), see :ref:`release notes
   <2021.4-2022.1>`.
-
-* **29.12.2021** Version 2021.4 released (improved pyvista-based visualization
-  script resview.py, gallery images generated using resview.py, homogenization
-  tools: new parallel recovery of multiple microstructures, new "dry water"
-  flow example, etc.), see :ref:`release notes <2021.3-2021.4>`.
 
 For historians: see :ref:`archived_news`.
