@@ -1,5 +1,366 @@
 # created: 20.07.2007 (-1)
 
+.. _2022.4-2023.1:
+
+from 2022.4 to 2023.1
+=====================
+
+- merge pull request #917 from rc/fix-typos
+
+  - fix typos
+
+- merge pull request #918 from rc/convert-mesh-force-3d
+
+  - convert_mesh.py: new --3d option in main()
+
+- merge pull request #919 from rc/resview-camera-position-handling
+
+  - resview.py: unify camera position handling in animation and normal modes
+
+    - set default value of --view option to None
+    - --camera-position and --view have precedence over --2d-view
+    - new _get_cpos(), update main()
+
+- merge pull request #920 from vlukes/on_screen_animations
+
+  - fix the off-screen animation issue mentioned in #919
+
+- merge pull request #921 from rc/mass-term-amm-rmm
+
+  - new sfepy/terms/terms_mass.py: new MassTerm (de_mass)
+  - update MassTerm docstring
+  - docs: sync module index of developer guide with current sources
+  - new ReciprocalMassMatrixSolver (ls.rmm) (WIP) - new .__init__(),
+    .init_rmm(), .__call__()
+  - update MassTerm.get_function() for residual mode
+  - rename ReciprocalMassMatrixSolver -> RMMSolver, update docstring
+  - obey active_only in RMMSolver.init_rmm(), update .__call__()
+  - use dedicated NoNLS for RMM in CentralDifferenceTS - update
+    ._create_nlst_a(), .create_nlst()
+  - explain a0 in RMMSolver.__call__()
+  - new output_dir define() argument in elastodynamic.py example
+  - update elastodynamic.py example to show RMMSolver use, support mass
+    lumping - new mass_beta, mass_lumping, fast_rmm define() arguments
+  - set tscedl as default in define() of elastodynamic.py example
+  - new dt, edt_safety define() arguments, update docstring of elastodynamic.py
+  - update docstring of MassTerm
+  - update docstring of RMMSolver
+  - update docstrings of VelocityVerletTS, CentralDifferenceTS
+  - optimize beta == 0 branch in fun() in MassTerm.get_function()
+  - new test_rmm_solver(), update define() in test_ed_solvers.py
+  - improve code for ths storing in test_ed_solvers()
+  - update make_term_args(), _test_single_term() for MassTerm - fixes
+    test_term_call_modes()
+
+- merge pull request #922 from rc/variable-has-ebc
+
+  - new FieldVariable.has_ebc(), update Variables.has_ebc(), add verbose
+    argument
+
+- merge pull request #923 from rc/resview-animation-cpos
+
+  - resview.py: fix and simplify setting camera position in animation mode
+
+- merge pull request #924 from vlukes/match_dofs
+
+  - new MatchDOFsOperator: tie DOFs of two fields
+
+- merge pull request #928 from rc/sfepy-view-png-anim
+
+  - resview.py: support saving animation as PNG sequence in main()
+
+- merge pull request #925 from vlukes/multi_topo
+
+  - new copy_coors argument in CMesh.from_data()
+  - read mesh contaning cells of various topological dimensions
+  - cmesh linked to regions according to the topological dimension of cells
+  - update FEDomain.fix_element_orientation(): check "real" cells only
+  - cleanup: remove six
+  - link cmeshs to fields by topological dimensions
+  - update mappings
+  - update DG field
+  - update IGA domain
+  - update recover_micro_hook()
+  - fix domain.region_leaf(): 'KW_COG' -> 'E_COG'
+  - fix assert_equal(): add nm.number to assert_base_types
+  - move back to cmesh (cmesh_highest -> cmesh)
+  - fix _check_region(): region.cmesh can not be None
+  - update docstrings
+
+- merge pull request #929 from vlukes/new_example
+
+  - add link to 'reinforced shell beam' example
+
+- merge pull request #930 from vlukes/fix_multi_topo
+
+  - new tdim argument of function Region.light_copy()
+
+- merge pull request #935 from vlukes/update_mirror_regions
+
+  - fix region.copy(): call light_copy with tdim=self.tdim argument
+  - fig setup_mirror_region(): return mirror_name if ret_name is True
+  - update mirror region: mirror with tdim = dim - 1
+  - replace 'is_trace' by 'trace_region'
+  - fields_base.py clean-up
+
+- merge pull request #934 from yosefm/numpy-dep-py39
+
+  - Fix build dependency for Python 3.9
+
+- merge pull request #936 from rc/multilinear-terms-surface-extra
+
+  - support surface_extra integration in ExpressionBuilder - update
+    .add_virtual_arg(), .add_state_arg(), ExpressionArg.get_bf()
+  - new SurfaceFluxOperatorTerm (de_surface_flux)
+
+- merge pull request #939 from yosefm/fix-pyvista-deprecation
+
+  - Pyvista deprecation: must provide inplace parameter
+
+- merge pull request #910 from flothesof/add_github_ci
+
+  - add CI script
+  - reformat ci file
+  - try other branch name
+  - disable build on push to master and add documentation
+  - add link to CI file in description
+  - add changes proposed by @rc
+
+- merge pull request #940 from yosefm/fix-elastodynamic-solver-return
+
+  - Return last vec from elastodynamic solvers
+
+- merge pull request #943 from yosefm/remove-setuptools-limitation
+
+  - Remove setuptools limitation
+
+- merge pull request #946 from rc/update-variable-ts-print-info
+
+  - use supplied n_step for print info in VariableTimeStepper.set_from_data()
+
+- merge pull request #945 from yosefm/explain-missing-odes
+
+  - Explain the relations between variables in example Elastodynamic problem
+    defines 3 "independent" variables that are dependent by solver magic.
+  - CR tweaks
+
+- merge pull request #937 from vlukes/mappings_refactoring
+
+  - unification of VolumeMapping and SurfaceMapping
+  - element diameters calculated in domain, not in CMapping
+  - remove refmaps.c, replaced by DMapping class and eval_mapping_data_in_qp()
+  - employ DMapping in FE and IGA mappings
+  - update FE fields for new mapping
+  - use CMapping instead of DMapping when callig C functions
+  - translete DMapping to CMapping in fargs for C functions
+  - CMapping.shape removed, use DMapping.n_el instead
+  - add docstring to eval_mapping_data_in_qp()
+  - call einsum with `optimize=True`
+  - rename DMapping -> PyCMapping
+  - rena coorIn to coor in eval_mapping_data_in_qp()
+  - improve docstrings
+  - clean-up in CMapping
+  - update docstrings
+  - rename (coor, weight) to (coors, weights)
+  - move raise_if_too_large() back
+  - fix PyCMapping.bfg computation
+  - improve calculation efficiency - use dets_fast and invs_fast
+  - use dets_fast() in invs_fast()
+  - fix 2x2 inversion
+  - test_install.py: tweak tolerance to accommodate different rounding errors
+
+- merge pull request #947 from rc/fix-surface-region-check
+
+  - fix region check in Term.setup_integration() for 1D, 2D
+
+- merge pull request #950 from rc/fix-region-copy
+
+  - fix Region.copy() to preserve region kind
+
+- merge pull request #949 from vlukes/update_de_grad_term
+
+  - de_grad term: grad can be multiplied by vector or matrix
+  - more readable code
+
+- merge pull request #951 from rc/pass-variable-to-setter
+
+  - update FieldVariable._get_setter() to pass variable to setter functions
+  - update examples for variable argument of setter functions
+  - docs: update users guide for variable argument of setter functions
+
+- merge pull request #952 from rc/fix-typo
+
+  - fix typo in debug code in divgrad_build_gtg()
+
+- merge pull request #953 from rc/seismic-load-example
+
+  - new apply_ebc argument of Variables.set_state()
+  - apply EBCs in prestep_fun(), poststep_fun() - update
+    Problem.get_tss_functions()
+
+    - prestep_fun(), poststep_fun() return vec
+    - fixes seismic loading, hyperelastic.py with active_only set to False etc.
+
+  - update prestep_fun(). poststep_fun() calls to return vec
+  - new sfepy/examples/linear_elasticity/seismic_load.py
+  - update docstring and comments in elastodynamic.py example
+  - gen_gallery.py: add custom view for seismic_load.py example
+  - clean up get_ebcs() in seismic_load.py
+  - test seismic_load.py in test_examples()
+
+- merge pull request #954 from vlukes/mappings_refactoring_ii
+
+  - VolumeMapping and SurfaceMapping -> FEMapping
+  - fix docstring of Field.get_mapping()
+  - fields_base.py: remove six
+  - FEMapping.get_mapping(): simplify handling of bf
+  - fix naming: base function -> basis function
+  - eval_mapping_data_in_qp(): fix docstring
+
+- merge pull request #956 from rc/fix-mat-by-region-cell-facet, closes #955
+
+  - fix get_constants() in ConstantFunctionByRegion for mixed cell/facet
+    regions
+  - make Region.get_cell_indices() consistent with its definition, simplify
+
+- merge pull request #957 from vlukes/rename_integration
+
+  - rename integration: volume->cell, surface->facet,
+    surface_extra->facet_extra
+  - update test_term_call_modes
+  - rename integration II.
+  - update fields and variables
+  - remove unused argument 'integration' from get_econn()
+  - update region.set_kind(): edge, face -> facet
+  - fix test: volume -> cell
+  - get_data_shape(): fix docstrings
+
+- merge pull request #961 from rc/get-blocks-stats
+
+  - new get_blocks_stats()
+  - new test_get_blocks_stats()
+
+- merge pull request #962 from vlukes/fix_link_to_releases
+
+  - fix download link: -> https://github.com/sfepy/sfepy/tags
+
+- merge pull request #958 from vlukes/unification_of_fefields
+
+  - unification of VolumeField and SurfaceField, only FEField remains
+  - rearange function ordering in FEField
+  - fix format
+  - replace reference to VolumeField and SurfaceField by FEField
+  - FEField._setup_geoemtry(): fix region.kind check
+  - enable einsum optimization
+  - FEField: setup bubble dofs for surface field
+  - docs: replace volume -> cell, surface -> facet
+  - docs: fix typo
+
+- merge pull request #964 from rc/make-any_dof_conn-configurable
+
+  - update docstrings of Equations.get_graph_conns(), .create_matrix_graph() -
+    volume -> cell, surface -> facet
+  - add any_dof_conn argument to relevant functions, support it in conf.options
+
+    - update eval_equations()
+    - update Problem.update_equations(), .time_update(), .select_bcs(),
+    .evaluate(), .eval_equations()
+
+  - docs: update users guide
+
+- merge pull request #966 from rc/resview-plot-on-step-change-only
+
+  - return early from pv_plot() when step stays the same
+
+- merge pull request #967 from rc/plot-times-tight-layout
+
+  - plot_times.py: use tight layout
+
+- merge pull request #969 from lokik/scalar_bar_limits
+
+  - Allow one side of scalar_bar_limits to be computed in resview
+
+- merge pull request #970 from vlukes/update_homogenization
+
+  - update CoefExprPar class: variable setting is not required
+  - fix recovery for 2D plates
+
+- merge pull request #971 from rc/resview-fix-for-no-mat-id
+
+  - fix pv_plot() for meshes without mat_id array
+
+- merge pull request #968 from rc/update-elastodynamics, closes #972
+
+  - remove Python 2 compatibility code
+  - new TimeSteppingSolver.set_dof_info(), use in Problem.solve()
+  - update gen_multi_vec_packing() for extra variables (multiphysics)
+  - support extra variables in ElastodynamicsBaseTS
+
+    - update .get_matrices(), .get_a0(), .get_initial_vec()
+    - original unpacking supported in .get_initial_vec() for compatibility
+
+  - update NewmarkTS for extra variables - remove ._create_nlst_a(), update
+    .create_nlst(), .step()
+  - simplify gen_multi_vec_packing() - update
+    ElastodynamicsBaseTS.get_initial_vec(), NewmarkTS.step()
+  - fix NewmarkTS.create_nlst()
+  - update create_arg_parser() for d+name derivatives, new allow_derivatives
+    arg - update create_bnf() (no change in behaviour)
+  - add allow_derivatives arg to Term.setup(), .setup_formal_args()
+  - update Term.assemble_to() to ignore d+name derivatives
+  - do not setup terms twice when calling Equation.from_desc() - new setup
+    argument of Equation.__init__()
+  - new transform_equations_ed()
+  - support transforming elastodynamics equations in Problem.set_solver()
+  - update ElastodynamicsBasicTSC for extra variables
+
+    - extra variables are not used for time step control
+    - update .get_scaled_errors, .get_initial_dt(), .__call__()
+
+  - new sfepy/examples/multi_physics/piezo_elastodynamic.py
+  - test piezo_elastodynamic.py in test_examples()
+  - gen_gallery.py: add custom view for piezo_elastodynamic.py example
+  - docs: update latex_elements in conf.py
+  - remove debug print in transform_equations_ed()
+  - new auto_transform_equations option in Problem.set_solver(), transform only
+    once
+  - docs: update users guide
+  - simplify seismic_load.py example by using equations transformation
+  - fix Problem.set_solver() for setting nls
+  - set default value of auto_transform_equations to False - update
+    seismic_load.py, piezo_elastodynamic.py examples, docs
+  - update docstring of apply_ebc_to_matrix()
+  - apply EBCs to vec in Evaluator when active_only is False
+
+    - update .eval_residual(), .eval_tangent_matrix()
+    - the tangent matrix is usually computed just after the residual, so in
+      that case applying EBCs there is not needed, but the overhead is minimal
+
+  - update Problem.get_tss_functions() - do not apply EBCs in prestep_fun()
+  - change default output directory in piezo_elastodynamic.py example
+  - new active_only define() argument in elastodynamics examples - update
+    elastodynamic.py, seismic_load.py, piezo_elastodynamic.py
+  - set default value of allow_derivatives to False - update
+    create_arg_parser(), Term.setup(), .setup_formal_args()
+  - add allow_derivatives argument to Equations.from_conf(),
+    Equation.from_desc() - update Problem.set_equations(), Terms.setup()
+  - update Problem.set_solver() to check for solver.var_names
+  - new ElastodynamicsBaseTS._common_parameters, use in subclasses
+  - new var_names solver option in ElastodynamicsBaseTS._common_parameters -
+    update .__init__(), .get_initial_vec()
+  - add var_names to elastodynamics solver options in elastodynamic.py example
+  - update docstring of elastodynamic.py example
+  - make var_names optional in ElastodynamicsBaseTS._common_parameters - update
+    .__init__(), .get_initial_vec()
+  - add var_names to elastodynamics solver options in test_ed_solvers.py
+  - new test_active_only() in test_ed_solvers.py - update get_ic() in define()
+    for 2D
+
+- merge pull request #975 from vlukes/fix_nonlinhomog_example
+
+  - replace term.integration by term.act_integration
+  - fix MPI logging
+
 .. _2022.3-2022.4:
 
 from 2022.3 to 2022.4
