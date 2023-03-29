@@ -110,3 +110,5 @@
 .. _PETSc Users Manual: http://www.mcs.anl.gov/petsc/petsc-current/docs/manual.pdf
 .. _PETSc Documentation: http://www.mcs.anl.gov/petsc/petsc-current/docs
 .. _MUMPS: http://mumps-solver.org
+.. _GA21-16406S: https://www.isvavai.cz/cep?s=jednoduche-vyhledavani&ss=detail&h=GA21-16406S
+.. _GF22-00863K: https://www.isvavai.cz/cep?s=jednoduche-vyhledavani&ss=detail&n=0&h=GF22-00863K

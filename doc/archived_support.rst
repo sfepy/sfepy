@@ -5,6 +5,12 @@
 
    In past, work on SfePy was partially supported by the following projects:
 
+   - project GA19-04956S (Dynamic and nonlinear behaviour of smart structures;
+     modelling and optimization) of the Czech Science Foundation, since 2019;
+   - the European Regional Development Fund-Project "Application of Modern
+     Technologies in Medicine and Industry"
+     (No. CZ.02.1.01/0.0/0.0/17_048/0007280) of the Czech Ministry of
+     Education, Youth and Sports, since 2018.
    - project GA17-12925S (Strength of materials and mechanical components based
      on iron: Multi-scale approach) of Czech Science Foundation, in 2017-2019;
    - project GA17-01618S (Fluid Acoustics in Periodic Micro-Architectures) of
