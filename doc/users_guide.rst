@@ -548,7 +548,8 @@ Available LCBC kinds:
 - ``'integral_mean_value'`` - all DOFs in a region are summed to a single new
   DOF;
 - ``'shifted_periodic'`` - generalized periodic BCs that work with two
-  different variables and can have a non-zero mutual shift.
+  different variables and can have a non-zero mutual shift;
+- ``'match_dofs'`` - tie DOFs of two fields.
 
 Only the ``'shifted_periodic'`` LCBC needs the second region and the DOF
 mapping function, see below.
