@@ -159,6 +159,11 @@ def compose_cmake_args() -> list:
     cmake_args.append(f"-DDEBUG_FMF={cmake_bool('DEBUG_FMF' in debug_flags)}")
     cmake_args.append(f"-DDEBUG_MESH={cmake_bool('DEBUG_MESH' in debug_flags)}")
 
+    # On Azure CI images, Ninja isn't found automaticvally. Since this is harmless
+    # on other platforms, we specify it here.
+    # See https://conda-forge.org/docs/maintainer/maintainer_faq.html#mfaq-windows-cmake
+    cmake_args.extend(["-G", "Ninja"])
+
     return cmake_args
 
 

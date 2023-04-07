@@ -2,6 +2,7 @@
 # Minimum requirements for the build system to execute.
 requires = [
     "scikit-build>=0.16.7",
+    "ninja",
     "setuptools>=46.4",
     "wheel",
 	"Cython>=0.29.30",
