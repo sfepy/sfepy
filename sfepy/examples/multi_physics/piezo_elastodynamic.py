@@ -5,7 +5,7 @@ motion.
 Find the displacements :math:`\ul{u}(t)` and potential :math:`p(t)` such that:
 
 .. math::
-    - \int_\Omega \rho\ \ul{v} \cdot \ul{\ddot u}
+    \int_\Omega \rho\ \ul{v} \cdot \ul{\ddot u}
     + \int_\Omega C_{ijkl}\ \veps_{ij}(\ul{v}) \veps_{kl}(\ul{u})
     - \int_\Omega e_{kij}\ \veps_{ij}(\ul{v}) \nabla_k p
     = 0
