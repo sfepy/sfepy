@@ -72,22 +72,7 @@ class MiniAppBase(Struct):
         problem.init_solvers()
 
         if self.is_linear:
-            output('linear problem, trying to presolve...')
-            timer = Timer(start=True)
-
-            ev = problem.get_evaluator()
-
-            state = problem.create_state()
-            try:
-                mtx_a = ev.eval_tangent_matrix(state(), is_full=True)
-            except ValueError:
-                output('matrix evaluation failed, giving up...')
-                raise
-
             problem.set_linear(True)
-            problem.try_presolve(mtx_a)
-
-            output('...done in %.2f s' % timer.stop())
 
         else:
             problem.set_linear(False)
