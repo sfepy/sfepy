@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 import sysconfig
+from warnings import warn
 
 msg_unknown_os = """could not determine operating system!
 try setting it in site_cfg.py manually, see site_cfg_template.py"""
@@ -75,6 +76,12 @@ class Config(object):
     def compile_flags(self):
         if has_attr(site_cfg, 'compile_flags'):
             flags = site_cfg.compile_flags
+            if isinstance(flags, str):
+                warn('Compile flags should be given as a list of strings.'
+                     ' Space-separated strings may be removed in the near future.',
+                     DeprecationWarning, stacklevel=2)
+
+                flags = flags.split()
 
         else:
             flags = ['-g', '-O2']
