@@ -195,7 +195,8 @@ requirements = {
 }
 
 solvers = {
-    'ls': ('ls.auto_iterative', {}),
+    'ls': ('ls.auto_direct', {'use_presolve' : True}),
+    # 'ls': ('ls.auto_iterative', {}),
     'newton': ('nls.newton', {
         'i_max': 1,
         'eps_a': 1e2,
