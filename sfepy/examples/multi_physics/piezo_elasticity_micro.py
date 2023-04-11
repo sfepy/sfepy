@@ -283,7 +283,7 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
             'set_variables': [('Pi_u', 'pis_u', 'u')],
             'class': cb.CorrDimDim,
             'save_name': 'corrs_rs',
-            'solvers': {'ls': 'ls_i', 'nls': 'ns_ea6'},
+            'solvers': {'ls': 'ls_d', 'nls': 'ns_ea6'},
         },
     }
 
