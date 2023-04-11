@@ -153,7 +153,7 @@ def define(is_opt=False):
     }
 
     solvers = {
-        'ls' : ('ls.scipy_direct', {}),
+        'ls' : ('ls.auto_direct', {'use_presolve' : True}),
         'newton' : ('nls.newton', {
             'i_max' : 1,
             'eps_a' : 1e-4,

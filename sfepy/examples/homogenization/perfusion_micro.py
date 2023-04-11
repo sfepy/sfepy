@@ -659,7 +659,7 @@ for ch, val in six.iteritems(pb_def['channels']):
             })
 
 solvers = {
-    'ls': ('ls.scipy_direct', {}),
+    'ls': ('ls.auto_direct', {'use_presolve' : True}),
     'newton': ('nls.newton', {
         'i_max': 1,
     })
