@@ -266,7 +266,8 @@ class Problem(Struct):
 
             if conf is None:
                 self.conf = Struct(options={}, ics={},
-                                   ebcs={}, epbcs={}, lcbcs={}, materials={})
+                                   ebcs={}, epbcs={}, lcbcs={}, materials={},
+                                   solvers={})
 
         self.equations = equations
         self.fields = fields
