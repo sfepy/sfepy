@@ -70,12 +70,17 @@ class MiniAppBase(Struct):
 
         problem.set_conf_solvers(problem.conf.solvers, opts)
         problem.init_solvers()
+        problem.set_linear(self.is_linear)
 
         if self.is_linear:
-            problem.set_linear(True)
+            set_presolve = True
+            for v in problem.conf.solvers.values():
+                if v.kind.startswith('ls.') and hasattr(v, 'use_presolve'):
+                    set_presolve = False
 
-        else:
-            problem.set_linear(False)
+            ls_conf = problem.get_solver().nls.lin_solver.conf
+            if set_presolve and hasattr(ls_conf, 'use_presolve'):
+                ls_conf.use_presolve = True
 
     def _get_volume(self, volume):
         if isinstance(volume, dict):
