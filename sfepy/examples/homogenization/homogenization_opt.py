@@ -149,6 +149,7 @@ def define(is_opt=False):
             'set_variables' : [('Pi', 'pis', 'u')],
             'class' : cb.CorrDimDim,
             'save_name' : 'corrs_le',
+            'is_linear': True,
         },
     }
 

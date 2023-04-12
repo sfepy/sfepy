@@ -331,6 +331,7 @@ class BandGapsConf(Struct):
                 'save_name' : self.corrs_save_names['corrs_rs'],
                 'is_linear' : True,
                 'class' : cb.CorrDimDim,
+                'is_linear' : True,
             },
         }
         return requirements

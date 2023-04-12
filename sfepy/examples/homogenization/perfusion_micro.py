@@ -437,6 +437,7 @@ requirements = {
         'epbcs': [],
         'save_name': 'corrs_one_YM',
         'class': cb.CorrSetBCS,
+        'is_linear': True,
     },
 }
 
@@ -453,6 +454,7 @@ for ipm in ['p', 'm']:
                 },
             'class': cb.CorrOne,
             'save_name': 'corrs_%s_gamma_%s' % (pb_def['name'], ipm),
+            'is_linear': True,
         },
     })
 
@@ -552,6 +554,7 @@ for ch, val in six.iteritems(pb_def['channels']):
                 },
             'class': cb.CorrOne,
             'save_name': 'corrs_%s_eta%s' % (pb_def['name'], ch),
+            'is_linear': True,
         },
         'corrs_pi' + ch: {
             'requires': ['pis_' + ch],

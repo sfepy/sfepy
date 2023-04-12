@@ -284,6 +284,7 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
             'class': cb.CorrDimDim,
             'save_name': 'corrs_rs',
             'solvers': {'ls': 'ls_d', 'nls': 'ns_ea6'},
+            'is_linear' : True,
         },
     }
 
@@ -315,6 +316,7 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
                 'class': cb.CorrOne,
                 'save_name': 'corrs_k' + sk,
                 'solvers': {'ls': 'ls_d', 'nls': 'ns_ea0'},
+                'is_linear' : True,
             },
         })
 
