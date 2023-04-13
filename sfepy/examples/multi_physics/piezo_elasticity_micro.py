@@ -215,7 +215,7 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
     }
 
     solvers = {
-        'ls_d': ('ls.scipy_direct', {}),
+        'ls_d': ('ls.auto_direct', {'use_presolve' : True}),
         'ls_i': ('ls.scipy_iterative', {}),
         'ns_ea6': ('nls.newton', {'eps_a': 1e6, 'eps_r': 1e-3,}),
         'ns_ea0': ('nls.newton', {'eps_a': 1e0, 'eps_r': 1e-3,}),
@@ -283,7 +283,8 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
             'set_variables': [('Pi_u', 'pis_u', 'u')],
             'class': cb.CorrDimDim,
             'save_name': 'corrs_rs',
-            'solvers': {'ls': 'ls_i', 'nls': 'ns_ea6'},
+            'solvers': {'ls': 'ls_d', 'nls': 'ns_ea6'},
+            'is_linear' : True,
         },
     }
 
@@ -315,6 +316,7 @@ def define(eps0=1e-3, filename_mesh='meshes/3d/piezo_mesh_micro.vtk'):
                 'class': cb.CorrOne,
                 'save_name': 'corrs_k' + sk,
                 'solvers': {'ls': 'ls_d', 'nls': 'ns_ea0'},
+                'is_linear' : True,
             },
         })
 

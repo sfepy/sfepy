@@ -105,7 +105,7 @@ class BandGapsConf(Struct):
 
     def define_solvers(self):
         solvers = {
-            'ls_d' : ('ls.scipy_direct', {}),
+            'ls_d' : ('ls.auto_direct', {'use_presolve' : True}),
             'ls_i' : ('ls.scipy_iterative', {
                 'method' : 'cg',
                 'i_max'      : 1000,
@@ -331,6 +331,7 @@ class BandGapsConf(Struct):
                 'save_name' : self.corrs_save_names['corrs_rs'],
                 'is_linear' : True,
                 'class' : cb.CorrDimDim,
+                'is_linear' : True,
             },
         }
         return requirements
