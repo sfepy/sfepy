@@ -4,6 +4,10 @@ Modal analysis of a 3D cylinder.
 The first six modes are the rigid body modes because no boundary
 conditions are applied.
 
+Running the simulation::
+
+  sfepy-run sfepy/examples/linear_elasticity/modal_analysis_declarative.py
+
 The eigenvalues are saved to cylinder_eigs.txt and the eigenvectros to
 cylinder.vtk. View the results using::
 
@@ -13,7 +17,6 @@ import numpy as nm
 from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy import data_dir
-
 
 def report_eigs(pb, evp):
     eigs = evp.eigs
