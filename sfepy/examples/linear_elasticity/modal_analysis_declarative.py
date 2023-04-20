@@ -18,6 +18,7 @@ from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy import data_dir
 
+
 def report_eigs(pb, evp):
     eigs = evp.eigs
     n_rbm = evp.pb.conf.n_rbm
@@ -83,7 +84,7 @@ def define(n_eigs=5, approx_order=1):
     solvers = {
         'eig': ('eig.scipy', {
             'method': 'eigsh',
-            'tol': 1e-6,
+            'tol': 1e-3,
             'maxiter': 1000,
         }),
     }
