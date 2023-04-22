@@ -12,9 +12,31 @@ exclude sfepy/discrete/__config__.py
 
 include AUTHORS MANIFEST.in README.rst Makefile site_cfg_template.py
 include pyproject.toml
+global-include CMakeLists.txt
+
 include sfepy/discrete/common/extmods/version.h.in
-include sfepy/discrete/fem/extmods/lobatto1d_template.c
-include sfepy/discrete/fem/extmods/lobatto1d_template.h
+include sfepy/discrete/common/extmods/common.h
+include sfepy/discrete/common/extmods/common_python.c
+include sfepy/discrete/common/extmods/fmfield.[ch]
+include sfepy/discrete/common/extmods/geommech.[ch]
+include sfepy/discrete/common/extmods/geomtrans.[ch]
+include sfepy/discrete/common/extmods/mesh.[ch]
+include sfepy/discrete/common/extmods/meshutils.[ch]
+include sfepy/discrete/common/extmods/refcoors.[ch]
+include sfepy/discrete/common/extmods/refmaps.[ch]
+include sfepy/discrete/common/extmods/sort.[ch]
+include sfepy/discrete/common/extmods/types.h
+
+include sfepy/discrete/fem/extmods/lagrange.[ch]
+include sfepy/discrete/fem/extmods/lobatto*.[ch]
+include sfepy/discrete/fem/extmods/lobatto1d_template.[ch]
+
+include sfepy/discrete/iga/extmods/nurbs.[ch]
+
+include sfepy/terms/extmods/*.[ch]
+include sfepy/mechanics/extmods/contres.[ch]
+
 include sfepy/solvers/matlab_eig.m
 
+global-include *.pyx *.pxd
 global-exclude *.py[cod]
