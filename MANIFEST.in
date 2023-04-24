@@ -4,6 +4,7 @@ prune sfepy/examples/*/output
 prune sfepy/examples/*/*/output
 prune doc/_build
 prune sfepy/tests/.pytest_cache
+recursive-exclude _skbuild
 exclude doc/logo/*.vtk
 exclude doc/publish.py
 exclude doc/sfepy_manual.pdf
@@ -12,7 +13,8 @@ exclude sfepy/discrete/__config__.py
 
 include AUTHORS MANIFEST.in README.rst Makefile site_cfg_template.py
 include pyproject.toml
-global-include CMakeLists.txt
+include CMakeLists.txt
+recursive-include sfepy CMakeLists.txt
 
 include sfepy/discrete/common/extmods/version.h.in
 include sfepy/discrete/common/extmods/common.h
@@ -38,5 +40,5 @@ include sfepy/mechanics/extmods/contres.[ch]
 
 include sfepy/solvers/matlab_eig.m
 
-global-include *.pyx *.pxd
+recursive-include sfepy *.pyx *.pxd
 global-exclude *.py[cod]
