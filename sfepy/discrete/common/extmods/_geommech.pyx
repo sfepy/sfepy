@@ -7,8 +7,9 @@ cimport cython
 cimport sfepy.discrete.common.extmods._geommech as gmch
 from types cimport int32
 
-from sfepy.discrete.common.extmods._fmfield cimport\
-    (FMField, FMF_SetCell, array2fmfield4)
+from sfepy.discrete.common.extmods._fmfield cimport (
+    FMField, FMF_SetCell, array2fmfield4,
+)
 
 cimport numpy as np
 import numpy as np

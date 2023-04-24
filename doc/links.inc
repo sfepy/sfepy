@@ -47,6 +47,9 @@
 .. _WinPython: https://winpython.github.io/
 
 .. _cython: http://cython.org
+.. _scikit-build: https://scikit-build.readthedocs.io
+.. _cmake: https://cmake.org/
+.. _ninja: https://ninja-build.org/
 .. _pytables: http://www.pytables.org
 .. _sympy: http://sympy.org
 .. _ipython: http://ipython.org

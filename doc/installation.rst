@@ -137,6 +137,9 @@ Installation prerequisites, required to build *SfePy*:
 - `Python`_ 3.x,
 - `NumPy`_,
 - `Cython`_.
+- `Cmake`_
+- `scikit-build`_
+- `ninja`_
 
 Python packages required for using *SfePy*:
 

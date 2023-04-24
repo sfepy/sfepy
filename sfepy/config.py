@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 import sysconfig
+from warnings import warn
 
 msg_unknown_os = """could not determine operating system!
 try setting it in site_cfg.py manually, see site_cfg_template.py"""
@@ -24,6 +25,23 @@ except ImportError:
     site_cfg = None
 
 has_attr = lambda obj, attr: obj and hasattr(obj, attr)
+
+
+def compose_system_compile_flags(is_posix: bool) -> list:
+    """
+    Provides a list of compile flags that tries to be as similar as possible
+    to what Python itself was built with. This has been done historically by
+    numpy.distutils (now deprecated) and a squeezed version of it is brought
+    over to here.
+    """
+    if not is_posix:
+        return []
+
+    cflags, configure_cppflags, configure_cflags = sysconfig.get_config_vars(
+        'CFLAGS', 'CONFIGURE_CPPFLAGS', 'CONFIGURE_CFLAGS')
+
+    return (cflags + configure_cppflags + configure_cflags).split()
+
 
 class Config(object):
     def python_version(self):
@@ -58,26 +76,23 @@ class Config(object):
     def compile_flags(self):
         if has_attr(site_cfg, 'compile_flags'):
             flags = site_cfg.compile_flags
+            if isinstance(flags, str):
+                warn('Compile flags should be given as a list of strings.'
+                     ' Space-separated strings may be removed in the near future.',
+                     DeprecationWarning, stacklevel=2)
+
+                flags = flags.split()
 
         else:
-            flags = '-g -O2'
+            flags = ['-g', '-O2']
 
-        return flags.split()
+        return flags + compose_system_compile_flags(self.system() == 'posix')
 
-    def link_flags(self):
-        if has_attr(site_cfg, 'link_flags'):
-            flags =  site_cfg.link_flags
-
-        else:
-            flags = ''
-
-        return flags.split()
-
-    def debug_flags(self):
+    def debug_flags(self) -> list:
         if has_attr(site_cfg, 'debug_flags'):
             return site_cfg.debug_flags
         else:
-            return ''
+            return []
 
     def numpydoc_path(self):
         if (has_attr(site_cfg, 'numpydoc_path') and
