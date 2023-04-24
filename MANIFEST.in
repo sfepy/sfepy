@@ -25,7 +25,7 @@ include sfepy/discrete/common/extmods/geomtrans.[ch]
 include sfepy/discrete/common/extmods/mesh.[ch]
 include sfepy/discrete/common/extmods/meshutils.[ch]
 include sfepy/discrete/common/extmods/refcoors.[ch]
-include sfepy/discrete/common/extmods/refmaps.[ch]
+include sfepy/discrete/common/extmods/refmaps.h
 include sfepy/discrete/common/extmods/sort.[ch]
 include sfepy/discrete/common/extmods/types.h
 
