@@ -805,9 +805,6 @@ class MUMPSSolver(LinearSolver):
     def __init__(self, conf, **kwargs):
         import sfepy.solvers.ls_mumps as mumps
 
-        if not mumps.use_mpi:
-            raise AttributeError('No mpi4py found! Required by MUMPS solver.')
-
         LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
                               mumps_presolved=False, **kwargs)
         mumps.load_mumps_libraries()  # try to load MUMPS libraries
