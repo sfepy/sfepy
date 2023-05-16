@@ -1003,14 +1003,6 @@ class Problem(Struct):
         self.domain.save_regions_as_groups(filename,
                                            region_names=region_names)
 
-    def save_field_meshes(self, filename_trunk):
-
-        output('saving field meshes...')
-        for field in self.fields:
-            output(field.name)
-            field.write_mesh(filename_trunk + '_%s')
-        output('...done')
-
     def get_evaluator(self, reuse=False):
         """
         Either create a new Evaluator instance (reuse == False),

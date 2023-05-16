@@ -332,7 +332,6 @@ def generate_images(images_dir, examples_dir):
                      save_ebc=False,
                      save_ebc_nodes=False,
                      save_regions=False,
-                     save_field_meshes=False,
                      save_regions_as_groups=False,
                      solve_not=False)
 
