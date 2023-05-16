@@ -897,10 +897,13 @@ Additional options (including solver selection)::
         'allow_empty_regions' : True,
 
         # string, output directory
-        'output_dir'        : 'output/<output_dir>',
+        'output_dir' : 'output/<output_dir>',
 
         # 'vtk' or 'h5', output file (results) format
-        'output_format'     : 'h5',
+        'output_format' : 'vtk',
+
+        # output file format variant compatible with 'output_format'
+        'file_format' : 'vtk-ascii',
 
         # string, nonlinear solver name
         'nls' : 'newton',
@@ -923,7 +926,7 @@ Additional options (including solver selection)::
         'save_restart' : -1,
 
         # string, a function to be called after each time step
-        'step_hook'  : '<step_hook_function>',
+        'step_hook' : '<step_hook_function>',
 
         # string, a function to be called after each time step, used to
         # update the results to be saved
@@ -933,10 +936,10 @@ Additional options (including solver selection)::
         'post_process_hook_final' : '<post_process_hook_final_function>',
 
         # string, a function to generate probe instances
-        'gen_probes'        : '<gen_probes_function>',
+        'gen_probes' : '<gen_probes_function>',
 
         # string, a function to probe data
-        'probe_hook'        : '<probe_hook_function>',
+        'probe_hook' : '<probe_hook_function>',
 
         # string, a function to modify problem definition parameters
         'parametric_hook' : '<parametric_hook_function>',
