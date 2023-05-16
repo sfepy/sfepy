@@ -143,8 +143,12 @@ def make_grid_from_mesh(mesh, add_mat_id=False):
     cells, cell_type, offset = make_cells_from_conn(
         {desc: mesh.get_conn(desc)}, vtk_cell_types,
     )
+    try:
+        grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
 
-    grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
+    except TypeError: # Pyvista >= 0.39.0
+        grid = pv.UnstructuredGrid(cells, cell_type, points)
+
     if add_mat_id:
         add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
 
