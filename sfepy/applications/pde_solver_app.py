@@ -44,7 +44,6 @@ def solve_pde(conf, options=None, status=None, **app_options):
                          save_ebc=False,
                          save_ebc_nodes=False,
                          save_regions=False,
-                         save_field_meshes=False,
                          save_regions_as_groups=False,
                          solve_not=False)
 
@@ -75,9 +74,6 @@ def save_only(conf, save_names, problem=None):
 
     if save_names.regions_as_groups is not None:
         problem.save_regions_as_groups(save_names.regions_as_groups)
-
-    if save_names.field_meshes is not None:
-        problem.save_field_meshes(save_names.field_meshes)
 
     if save_names.ebc is not None:
         problem.save_ebc(save_names.ebc, force=False)
@@ -214,10 +210,7 @@ class PDESolverApp(Application):
                                  if options.save_regions else None,
 
                                  regions_as_groups=ofn_trunk + '_regions'
-                                 if options.save_regions_as_groups else None,
-
-                                 field_meshes=ofn_trunk + '_field'
-                                 if options.save_field_meshes else None)
+                                 if options.save_regions_as_groups else None)
 
         if any(self.save_names.to_dict().values()):
             save_only(self.conf, self.save_names, problem=problem)

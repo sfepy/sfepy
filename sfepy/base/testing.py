@@ -141,7 +141,6 @@ def run_declaratice_example(ex_filename, output_dir, ext='.vtk',
                      save_ebc=False, save_ebc_nodes=False,
                      save_regions=False,
                      save_regions_as_groups=False,
-                     save_field_meshes=False,
                      solve_not=False)
     status = IndexedStruct(nls_status=NLSStatus(conditions=[]))
 

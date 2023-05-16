@@ -34,7 +34,6 @@ class MaterialOptimizer(object):
                          save_ebc_nodes=False,
                          save_regions=False,
                          save_regions_as_groups=False,
-                         save_field_meshes=False,
                          solve_not=False)
 
         if is_homog:
