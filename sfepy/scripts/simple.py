@@ -105,8 +105,6 @@ helps = {
     'save_regions_as_groups' :
     'save problem regions in a single mesh but mark them by using different'
     ' element/node group numbers',
-    'save_field_meshes' :
-    'save meshes of problem fields (with extra DOF nodes)',
     'solve_not' :
     'do not solve (use in connection with --save-*)',
     'detect_band_gaps' :
@@ -174,9 +172,6 @@ def main():
     parser.add_argument('--save-regions-as-groups',
                         action='store_true', dest='save_regions_as_groups',
                         default=False, help=helps['save_regions_as_groups'])
-    parser.add_argument('--save-field-meshes',
-                        action='store_true', dest='save_field_meshes',
-                        default=False, help=helps['save_field_meshes'])
     parser.add_argument('--solve-not',
                         action='store_true', dest='solve_not',
                         default=False, help=helps['solve_not'])
