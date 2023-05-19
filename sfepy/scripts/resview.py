@@ -449,7 +449,8 @@ def pv_plot(filenames, options, plotter=None, step=None,
         if isinstance(factor, tuple):
             ws = nm.diff(nm.reshape(pipe[-1].bounds, (-1, 2)), axis=1)
             size = ws[ws > 0.0].min()
-            fmax = nm.abs(pipe[-1][field]).max()
+            factor_field = warp if warp is not None else field
+            fmax = nm.abs(pipe[-1][factor_field]).max()
             factor = 0.01 * float(factor[1]) * size / fmax
 
         if warp:
