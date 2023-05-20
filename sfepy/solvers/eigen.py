@@ -234,8 +234,8 @@ class LOBPCGEigenvalueSolver(EigenvalueSolver):
         else:
             n_eigs = min(n_eigs, mtx_a.shape[0])
 
-        x = nm.zeros((mtx_a.shape[0], n_eigs), dtype=nm.float64)
-        x[:n_eigs] = nm.eye(n_eigs, dtype=nm.float64)
+        rng = nm.random.default_rng(12345)
+        x = rng.normal(size=(mtx_a.shape[0], n_eigs))
 
         out = self.lobpcg(mtx_a, x, mtx_b,
                           M=conf.precond,
