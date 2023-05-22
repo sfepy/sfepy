@@ -367,9 +367,13 @@ def transform_equations_ed(equations, materials):
     dvname = 'd' + vname
     ddvname = 'dd' + vname
     new_variables = variables.copy()
+    if new_variables[uname]._order is None:
+        raise ValueError('state variable orders have to be specified when using'
+                         ' auto_transform_equations!')
+    num = len(new_variables.state)
     new_variables.extend([
-        FieldVariable(duname, 'unknown', variables[uname].field),
-        FieldVariable(dduname, 'unknown', variables[uname].field),
+        FieldVariable(duname, 'unknown', variables[uname].field, order=num),
+        FieldVariable(dduname, 'unknown', variables[uname].field, order=num + 1),
         FieldVariable(dvname, 'test', variables[uname].field,
                       primary_var_name=duname),
         FieldVariable(ddvname, 'test', variables[uname].field,
