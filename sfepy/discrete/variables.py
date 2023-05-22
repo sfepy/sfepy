@@ -170,7 +170,6 @@ class Variables(Container):
             obj[var.name] = var
 
         obj.setup_dtype()
-        obj.setup_ordering()
 
         return obj
 
@@ -191,8 +190,6 @@ class Variables(Container):
         if variables is not None:
             for var in variables:
                 self[var.name] = var
-
-            self.setup_ordering()
 
         self.setup_dtype()
 
