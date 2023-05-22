@@ -275,25 +275,26 @@ class Variables(Container):
         """
         self.link_duals()
 
-        orders = []
-        for var in self:
-            try:
-                orders.append(var._order)
-            except:
-                pass
-        orders.sort()
+        is_given = [self[name]._order is not None for name in self.state]
+        if any(is_given) and not all(is_given):
+            raise ValueError('either all or none of state variables have to'
+                             ' be crreated with a given order!')
 
-        self.ordered_state = [None] * len(self.state)
-        for var in self.iter_state(ordered=False):
-            ii = orders.index(var._order)
-            self.ordered_state[ii] = var.name
+        if all(is_given):
+            aux = [self[name]._order for name in self.state]
+            assert_(len(aux) == len(set(aux)),
+                    msg='orders of state variables are not unique! (%s)'
+                    % aux)
+            orders = [(self[name]._order, name) for name in self.state]
 
-        self.ordered_virtual = [None] * len(self.virtual)
-        ii = 0
-        for var in self.iter_state(ordered=False):
-            if var.dual_var_name is not None:
-                self.ordered_virtual[ii] = var.dual_var_name
-                ii += 1
+        else:
+            orders = [ii for ii in enumerate(self.state)]
+
+        if len(orders):
+            self.ordered_state = [name for order, name in sorted(orders)]
+            self.ordered_virtual = [var.dual_var_name
+                                    for var in self.iter_state(ordered=True)
+                                    if var.dual_var_name is not None]
 
     def has_virtuals(self):
         return len(self.virtual) > 0
