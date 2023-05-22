@@ -163,11 +163,6 @@ class Variables(Container):
 
     @staticmethod
     def from_conf(conf, fields):
-        """
-        This method resets the variable counters for automatic order!
-        """
-        Variable.reset()
-
         obj = Variables()
         for key, val in six.iteritems(conf):
             var = Variable.from_conf(key, val, fields)
@@ -956,15 +951,6 @@ class Variables(Container):
             var.advance(ts)
 
 class Variable(Struct):
-    _count = 0
-    _orders = []
-    _all_var_names = set()
-
-    @staticmethod
-    def reset():
-        Variable._count = 0
-        Variable._orders = []
-        Variable._all_var_names = set()
 
     @staticmethod
     def from_conf(key, conf, fields):
@@ -1046,22 +1032,11 @@ class Variable(Struct):
             self.data.append(None)
 
         self._set_kind(kind, order, primary_var_name, special=special)
-        Variable._all_var_names.add(name)
 
     def _set_kind(self, kind, order, primary_var_name, special=None):
         if kind == 'unknown':
             self.flags.add(is_state)
-            if order is not None:
-                if order in Variable._orders:
-                    raise ValueError('order %d already used!' % order)
-                else:
-                    self._order = order
-                    Variable._orders.append(order)
-
-            else:
-                self._order = Variable._count
-                Variable._orders.append(self._order)
-            Variable._count += 1
+            self._order = order
 
             self.dof_name = self.name
 
