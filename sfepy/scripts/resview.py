@@ -103,6 +103,12 @@ def parse_options(opts, separator=':'):
     return out
 
 
+def make_title(filenames):
+    title = ', '.join(filenames)
+    title = title if len(title) < 80 else title[:77] + '...'
+    return title
+
+
 def make_cells_from_conn(conns, convert_to_vtk_type):
     cells, cell_type, offset = [], [], []
     _offset = 0
@@ -326,7 +332,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
     color = None
 
     if plotter is None:
-        plotter = pv.Plotter()
+        plotter = pv.Plotter(title=make_title(filenames))
 
     if step_inc is not None:
         plotter.clear()
@@ -838,7 +844,8 @@ def main():
     options = parser.parse_args()
 
     pv.set_plot_theme("document")
-    plotter = pv.Plotter(off_screen=options.off_screen)
+    plotter = pv.Plotter(off_screen=options.off_screen,
+                         title=make_title(options.filenames))
 
     if options.anim_output_file:
         _, n_steps = read_mesh(options.filenames, ret_n_steps=True)
