@@ -1,5 +1,5 @@
 """
-Modal analysis of a 3D cylinder.
+Modal analysis of a wheel set.
 
 The first six modes are the rigid body modes because no boundary
 conditions are applied.
@@ -8,10 +8,10 @@ Running the simulation::
 
   sfepy-run sfepy/examples/linear_elasticity/modal_analysis_declarative.py
 
-The eigenvalues are saved to cylinder_eigs.txt and the eigenvectros to
-cylinder.vtk. View the results using::
+The eigenvalues are saved to wheelset_eigs.txt and the eigenvectros to
+wheelset.vtk. View the results using::
 
-  sfepy-view cylinder.vtk -f u008:wu008:f0.005
+  sfepy-view wheelset.vtk -f u007:wu007:f2
 """
 import numpy as nm
 from sfepy.base.base import output
@@ -38,10 +38,10 @@ def report_eigs(pb, evp):
                % (ii + 1, eig, omegas[ii], freqs[ii]))
 
 
-def define(n_eigs=5, approx_order=1):
-    filename_mesh, dim = data_dir + '/meshes/3d/cylinder.mesh', 3
+def define(n_eigs=8, approx_order=1, density=7850., young=210e9, poisson=0.3):
+    filename_mesh, dim = data_dir + '/meshes/3d/wheelset.vtk', 3
 
-    n_rbm = dim * (dim + 1) // 2  # number of rigid body modes
+    n_rbm = 0
 
     options = {
         'n_eigs': n_eigs + n_rbm,
@@ -52,12 +52,13 @@ def define(n_eigs=5, approx_order=1):
 
     regions = {
         'Omega': 'all',
+        'Fix': ('vertices in (x < -1.08999)', 'vertex'),
     }
 
     materials = {
         'm': ({
-            'D': stiffness_from_youngpoisson(dim, 210e+9, 0.3),
-            'rho': 7850.0,
+            'D': stiffness_from_youngpoisson(dim, young, poisson),
+            'rho': density,
         },),
     }
 
@@ -79,13 +80,19 @@ def define(n_eigs=5, approx_order=1):
         'rhs': 'dw_dot.i.Omega(m.rho, v, u)',
     }
 
-    ebcs = {}
+    ebcs = {
+        'fix': ('Fix', {'u.all': 0.0})  # fix rigid body modes
+    }
 
     solvers = {
-        'eig': ('eig.scipy', {
-            'method': 'eigsh',
-            'tol': 1e-3,
-            'maxiter': 1000,
+        # 'eig': ('eig.matlab', {
+        #     'method': 'eigs',
+        #     'which': 'sm',
+        #     'eps': 1e-6,
+        # }),
+        'eig': ('eig.primme', {
+            'which': 'SM',
+            'tol': 1e-8,
         }),
     }
 
