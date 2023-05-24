@@ -481,7 +481,7 @@ class PrimmeEigenvalueSolver(EigenvalueSolver):
         solver_kwargs = self.build_solver_kwargs(conf)
 
         eigs, vecs = self.primme.eigsh(mtx_a, n_eigs, M=mtx_b,
-                                       which=conf.which,
+                                       which=conf.which.upper(),
                                        tol=conf.tol,
                                        maxiter=conf.maxiter,
                                        sigma=conf.sigma,
