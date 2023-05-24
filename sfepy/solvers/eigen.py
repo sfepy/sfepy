@@ -462,7 +462,7 @@ class PrimmeEigenvalueSolver(EigenvalueSolver):
         ('sigma', 'float', None, False,
          'Find eigenvalues near sigma.'),
         ('maxiter', 'int', None, False, 'Maximum number of iterations.'),
-        ('tol', 'float', None, False,
+        ('tol', 'float', 0, False,
          'Tolerance for eigenpairs (stopping criterion).'),
         ('*', '*', None, False,
          'Additional parameters supported by eigsh().'),
