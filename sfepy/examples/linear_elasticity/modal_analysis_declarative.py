@@ -11,7 +11,7 @@ Running the simulation::
 The eigenvalues are saved to wheelset_eigs.txt and the eigenvectros to
 wheelset.vtk. View the results using::
 
-  sfepy-view wheelset.vtk -f u007:wu007:f2
+  sfepy-view wheelset.vtk -f u007:wu007:f30%:p0 1:vw:p0
 """
 import numpy as nm
 from sfepy.base.base import output
