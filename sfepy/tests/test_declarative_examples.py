@@ -43,7 +43,6 @@ examples = [
     'linear_elasticity/linear_elastic_up.py',
     'linear_elasticity/linear_viscoelastic.py',
     'linear_elasticity/material_nonlinearity.py',
-    'linear_elasticity/modal_analysis_declarative.py',
     'linear_elasticity/nodal_lcbcs.py',
     'linear_elasticity/prestress_fibres.py',
     'linear_elasticity/seismic_load.py',
@@ -80,6 +79,18 @@ else:
         'linear_elasticity/linear_elastic_iga.py',
         'navier_stokes/navier_stokes2d_iga.py',
     ])
+
+try:
+    import primme
+
+except ImportError:
+    pass
+
+else:
+    examples.extend([
+        'linear_elasticity/modal_analysis_declarative.py',
+    ])
+
 
 @pytest.mark.parametrize('ex_filename', examples)
 def test_examples(ex_filename, output_dir):
