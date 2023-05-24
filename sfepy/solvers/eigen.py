@@ -443,3 +443,52 @@ class MatlabEigenvalueSolver(EigenvalueSolver):
             out =  (out, evp['vecs'])
 
         return out
+
+
+class PrimmeEigenvalueSolver(EigenvalueSolver):
+    """
+    PRIMME eigenvalue problem solver.
+
+    https://github.com/primme/primme
+
+    Installation: pip install primme
+    """
+    name = 'eig.primme'
+
+    _parameters = [
+        ('which',
+         "{'LM', 'SM', 'LA', 'SA', 'CLT', 'CGT'}", 'LM', False,
+         'Which eigenvectors and eigenvalues to find.'),
+        ('sigma', 'float', None, False,
+         'Find eigenvalues near sigma.'),
+        ('maxiter', 'int', None, False, 'Maximum number of iterations.'),
+        ('tol', 'float', None, False,
+         'Tolerance for eigenpairs (stopping criterion).'),
+        ('*', '*', None, False,
+         'Additional parameters supported by eigsh().'),
+    ]
+
+    def __init__(self, conf, comm=None, context=None, **kwargs):
+        import primme
+
+        EigenvalueSolver.__init__(self, conf, primme=primme, context=context,
+                                  **kwargs)
+
+    @standard_call
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+                 status=None, conf=None, comm=None, context=None):
+
+        solver_kwargs = self.build_solver_kwargs(conf)
+
+        eigs, vecs = self.primme.eigsh(mtx_a, n_eigs, M=mtx_b,
+                                       which=conf.which,
+                                       tol=conf.tol,
+                                       maxiter=conf.maxiter,
+                                       sigma=conf.sigma,
+                                       **solver_kwargs)
+
+        out = eigs
+        if eigenvectors:
+            out = (out, vecs)
+
+        return out
