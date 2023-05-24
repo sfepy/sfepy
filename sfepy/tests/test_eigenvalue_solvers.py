@@ -84,13 +84,18 @@ solvers = {
         'tol' : 1e-10,
         'which' : 'sr',
     }),
+    'evp6' : ('eig.primme', {
+        'maxiter' : 200,
+        'tol' : 1e-10,
+        'which' : 'sa',
+    }),
 }
 
 eigs_expected = [nm.array([0.04904454, 0.12170685, 0.12170685,
                            0.19257998, 0.24082108]),
                  []]
 
-can_fail = ['eig.slepc', 'eig.matlab']
+can_fail = ['eig.slepc', 'eig.matlab', 'eig.primme']
 can_miss = ['evp0'] # Depending on scipy version, evp0 can miss an
                     # eigenvalue.
 
