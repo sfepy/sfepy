@@ -80,6 +80,18 @@ else:
         'navier_stokes/navier_stokes2d_iga.py',
     ])
 
+try:
+    import primme
+
+except ImportError:
+    pass
+
+else:
+    examples.extend([
+        'linear_elasticity/modal_analysis_declarative.py',
+    ])
+
+
 @pytest.mark.parametrize('ex_filename', examples)
 def test_examples(ex_filename, output_dir):
     conditions = run_declaratice_example(

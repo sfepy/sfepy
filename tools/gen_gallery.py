@@ -154,6 +154,14 @@ custom = {
     'linear_elasticity/linear_viscoelastic.py': {
         '': {'camera': [225, 75, 0.88]}
     },
+    'linear_elasticity/modal_analysis_declarative.py': {
+        '': {
+            'fields': ['u007:wu007:f30%:p0', '1:vw:p0'],
+            'camera_position': [-2.30562,-2.2604,-0.325838,
+                                -0.0714771,0.0374911,0.0287214,
+                                -0.0245554,-0.129086,0.991329],
+        },
+    },
     'linear_elasticity/seismic_load.py': {
         '': {
             'fields': ['cauchy_stress:wu:f10:p0', '1:vw:p0'],
