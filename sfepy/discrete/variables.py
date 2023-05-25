@@ -275,7 +275,7 @@ class Variables(Container):
         is_given = [self[name]._order is not None for name in self.state]
         if any(is_given) and not all(is_given):
             raise ValueError('either all or none of state variables have to'
-                             ' be crreated with a given order!')
+                             ' be created with a given order!')
 
         if all(is_given):
             aux = [self[name]._order for name in self.state]
