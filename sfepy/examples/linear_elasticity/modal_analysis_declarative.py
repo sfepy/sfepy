@@ -12,6 +12,14 @@ The eigenvalues are saved to wheelset_eigs.txt and the eigenvectros to
 wheelset.vtk. View the results using::
 
   sfepy-view wheelset.vtk -f u007:wu007:f30%:p0 1:vw:p0
+
+The first six frequencies calculated by SfePy::
+
+  [11.287, 11.317, 34.432, 80.709, 80.901, 93.144]
+
+The results of modal analysis performed in Ansys::
+
+  [11.306, 11.316, 34.486, 80.901, 81.139, 93.472]
 """
 import numpy as nm
 from sfepy.base.base import output
@@ -38,7 +46,7 @@ def report_eigs(pb, evp):
                % (ii + 1, eig, omegas[ii], freqs[ii]))
 
 
-def define(n_eigs=8, approx_order=1, density=7850., young=210e9, poisson=0.3):
+def define(n_eigs=6, approx_order=1, density=7850., young=210e9, poisson=0.3):
     filename_mesh, dim = data_dir + '/meshes/3d/wheelset.vtk', 3
 
     n_rbm = 0
