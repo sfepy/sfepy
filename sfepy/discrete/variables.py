@@ -163,11 +163,6 @@ class Variables(Container):
 
     @staticmethod
     def from_conf(conf, fields):
-        """
-        This method resets the variable counters for automatic order!
-        """
-        Variable.reset()
-
         obj = Variables()
         for key, val in six.iteritems(conf):
             var = Variable.from_conf(key, val, fields)
@@ -175,7 +170,6 @@ class Variables(Container):
             obj[var.name] = var
 
         obj.setup_dtype()
-        obj.setup_ordering()
 
         return obj
 
@@ -196,8 +190,6 @@ class Variables(Container):
         if variables is not None:
             for var in variables:
                 self[var.name] = var
-
-            self.setup_ordering()
 
         self.setup_dtype()
 
@@ -280,25 +272,26 @@ class Variables(Container):
         """
         self.link_duals()
 
-        orders = []
-        for var in self:
-            try:
-                orders.append(var._order)
-            except:
-                pass
-        orders.sort()
+        is_given = [self[name]._order is not None for name in self.state]
+        if any(is_given) and not all(is_given):
+            raise ValueError('either all or none of state variables have to'
+                             ' be created with a given order!')
 
-        self.ordered_state = [None] * len(self.state)
-        for var in self.iter_state(ordered=False):
-            ii = orders.index(var._order)
-            self.ordered_state[ii] = var.name
+        if all(is_given):
+            aux = [self[name]._order for name in self.state]
+            assert_(len(aux) == len(set(aux)),
+                    msg='orders of state variables are not unique! (%s)'
+                    % aux)
+            orders = [(self[name]._order, name) for name in self.state]
 
-        self.ordered_virtual = [None] * len(self.virtual)
-        ii = 0
-        for var in self.iter_state(ordered=False):
-            if var.dual_var_name is not None:
-                self.ordered_virtual[ii] = var.dual_var_name
-                ii += 1
+        else:
+            orders = [ii for ii in enumerate(self.state)]
+
+        if len(orders):
+            self.ordered_state = [name for order, name in sorted(orders)]
+            self.ordered_virtual = [var.dual_var_name
+                                    for var in self.iter_state(ordered=True)
+                                    if var.dual_var_name is not None]
 
     def has_virtuals(self):
         return len(self.virtual) > 0
@@ -956,15 +949,6 @@ class Variables(Container):
             var.advance(ts)
 
 class Variable(Struct):
-    _count = 0
-    _orders = []
-    _all_var_names = set()
-
-    @staticmethod
-    def reset():
-        Variable._count = 0
-        Variable._orders = []
-        Variable._all_var_names = set()
 
     @staticmethod
     def from_conf(key, conf, fields):
@@ -1046,22 +1030,11 @@ class Variable(Struct):
             self.data.append(None)
 
         self._set_kind(kind, order, primary_var_name, special=special)
-        Variable._all_var_names.add(name)
 
     def _set_kind(self, kind, order, primary_var_name, special=None):
         if kind == 'unknown':
             self.flags.add(is_state)
-            if order is not None:
-                if order in Variable._orders:
-                    raise ValueError('order %d already used!' % order)
-                else:
-                    self._order = order
-                    Variable._orders.append(order)
-
-            else:
-                self._order = Variable._count
-                Variable._orders.append(self._order)
-            Variable._count += 1
+            self._order = order
 
             self.dof_name = self.name
 
