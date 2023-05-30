@@ -66,9 +66,9 @@ def dets_fast(a):
     out : array
         The output array with shape (m,): out[i] = det(a[i, :, :]).
     """
-    from distutils.version import LooseVersion
+    from pkg_resources import parse_version
 
-    if LooseVersion(nm.__version__) >= '1.8':
+    if parse_version(nm.__version__) >= parse_version('1.8'):
         return nm.linalg.det(a)
 
     else:

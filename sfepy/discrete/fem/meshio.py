@@ -1,10 +1,8 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 from copy import copy
 from io import StringIO
+from pkg_resources import parse_version
 import numpy as nm
-from distutils.version import LooseVersion
 
 from sfepy.base.base import (complex_types, dict_from_keys_init,
                              assert_, is_derived_class, ordered_iteritems,
@@ -457,7 +455,7 @@ class MeshioLibIO(MeshIO):
          cell_sets) = self._create_out_data(mesh, out,
                                             format=self.file_format)
 
-        if LooseVersion(meshiolib.__version__) >= LooseVersion('4.0.3') and\
+        if parse_version(meshiolib.__version__) >= parse_version('4.0.3') and\
            ('-ascii' in self.file_format or '-binary' in self.file_format):
             self.file_format, ab_str = self.file_format.split('-')
             kwargs['binary'] = True if 'binary' in ab_str else False
