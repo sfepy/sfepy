@@ -189,7 +189,7 @@ def post_process_hook(out, pb, state, extend=False):
         m = ax1.imshow(temperature_image.T, origin='lower', aspect='auto')
         ax1.set_xlabel("time step")
         ax1.set_ylabel("distance across build\nplate and cylinder")
-        plt.colorbar(m, label="temperature")
+        fig.colorbar(m, ax=ax1, label="temperature")
         ax2.plot(temperature_image.T[0], label="bottom")
         ax2.plot(temperature_image.T[-1], label="top")
         ax2.set_xlabel("time step")
