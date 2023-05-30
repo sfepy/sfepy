@@ -9,7 +9,7 @@ python_version = '3.*'
 # determination.
 system = None
 
-# Extra flags added to the flags supplied by distutils to compile C
+# Extra flags added to the flags supplied by scikit-build to compile C
 # extension modules.
 compile_flags = ['-g', '-O2']
 
