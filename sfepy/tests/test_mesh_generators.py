@@ -53,7 +53,7 @@ def test_gen_tiled_mesh(output_dir):
     assert nm.linalg.norm(csum - nm.array([945, 630, 4725])) < tolerance
 
 def test_gen_mesh_from_geom(output_dir):
-    from distutils.spawn import find_executable
+    from shutil import which
     from sfepy.mesh.geom_tools import geometry
     from sfepy.mesh.mesh_generators import gen_mesh_from_geom
 
@@ -61,7 +61,7 @@ def test_gen_mesh_from_geom(output_dir):
 
     ok = True
     # 2D
-    if find_executable('triangle'):
+    if which('triangle'):
         geo = geometry(2)
         geo.addpoint(0, [0, 0])
         geo.addpoint(1, [nx, 0])
@@ -83,7 +83,7 @@ def test_gen_mesh_from_geom(output_dir):
         ok = ok and nm.abs((actn - orign) / float(orign)) < 0.05
 
     # 3D
-    if find_executable('tetgen'):
+    if which('tetgen'):
         geo = geometry(3)
         geo.addpoint(0, [0, 0 , 0])
         geo.addpoint(1, [nx, 0, 0])
