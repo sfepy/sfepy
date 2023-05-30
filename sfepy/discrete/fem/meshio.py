@@ -1967,9 +1967,9 @@ class GmshIO(MeshioLibIO):
         try:
             basename, step_num, extension = filename.split(".")
         except ValueError:
-            raise ValueError("Filename of automatically loaded GMSH data must be:"
-                             + "<base name>.<step number>.msh, {} does to "
-                             + "correspond to that"
+            raise ValueError("Filename of automatically loaded GMSH data must"
+                             " be: <base name>.<step number>.msh, {} has to "
+                             "correspond to that"
                              .format(filename))
         n_digits = len(step_num)
         return basename + ".{:0"+str(n_digits)+"d}." + extension
@@ -1978,9 +1978,9 @@ class GmshIO(MeshioLibIO):
         try:
             basename, step_num, extension = filename.split(".")
         except ValueError:
-            raise ValueError("Filename of automatically loaded GMSH data must be:"
-                              + "<base name>.<step number>.msh, {} does to "
-                              + "correspond to that"
+            raise ValueError("Filename of automatically loaded GMSH data must"
+                             " be: <base name>.<step number>.msh, {} has to "
+                             "correspond to that"
                              .format(filename))
         return basename + ".*[0-9]." + extension
 
