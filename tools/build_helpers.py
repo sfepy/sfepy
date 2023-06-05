@@ -1,9 +1,6 @@
 """
 Build helpers for setup.py.
 
-Includes package dependency checks and monkey-patch to numpy.distutils
-to work with Cython.
-
 Notes
 -----
 The original version of this file was adapted from NiPy project [1].
@@ -16,15 +13,11 @@ import os
 import shutil
 import glob
 import fnmatch
-from distutils.cmd import Command
-from os.path import join as pjoin, dirname
-from distutils.command.clean import clean
-from distutils.dep_util import newer_group
-from distutils.errors import DistutilsError
+import logging as log
+from setuptools import Command
+from skbuild.command.clean import clean
 from pkg_resources import parse_version
 
-from numpy.distutils.misc_util import appendpath
-from numpy.distutils import log
 from install_data import install_data
 
 import sfepy.version as INFO
@@ -136,8 +129,8 @@ def recursive_glob(top_dir, pattern):
 
 class Clean(clean):
     """
-    Distutils Command class to clean, enhanced to clean also files
-    generated during `python setup.py build_ext --inplace`.
+    Command class to clean, enhanced to clean also files generated during
+    `python setup.py build_ext --inplace`.
     """
 
     def run(self):
@@ -147,18 +140,6 @@ class Clean(clean):
         suffixes = ['*.pyc', '*.o', '*.so', '*.pyd',
                     '*_wrap.c', '*.bak', '*~', '*%']
         for filename in recursive_glob('sfepy', suffixes):
-            print(filename)
-            os.remove(filename)
-
-        for filename in recursive_glob('examples', suffixes):
-            print(filename)
-            os.remove(filename)
-
-        for filename in recursive_glob('script', suffixes):
-            print(filename)
-            os.remove(filename)
-
-        for filename in recursive_glob('tests', suffixes):
             print(filename)
             os.remove(filename)
 
@@ -181,7 +162,7 @@ class Clean(clean):
             except OSError:
                 pass
 
-# The command classes for distutils, used by setup.py.
+# The command classes used by setup.py.
 cmdclass = {
     'htmldocs' : SphinxHTMLDocs,
     'pdfdocs' : SphinxPDFDocs,
@@ -196,52 +177,6 @@ def have_good_cython():
     except ImportError:
         return False
     return parse_version(version) >= parse_version(CYTHON_MIN_VERSION)
-
-def generate_a_pyrex_source(self, base, ext_name, source, extension):
-    '''
-    Monkey patch for numpy build_src.build_src method
-
-    Uses Cython instead of Pyrex.
-    '''
-    good_cython = have_good_cython()
-    if self.inplace or not good_cython:
-        target_dir = dirname(base)
-    else:
-        target_dir = appendpath(self.build_src, dirname(base))
-    target_file = pjoin(target_dir, ext_name + '.c')
-    depends = [source] + extension.depends
-    sources_changed = newer_group(depends, target_file, 'newer')
-    if self.force or sources_changed:
-        if good_cython:
-            # add distribution (package-wide) include directories, in order
-            # to pick up needed .pxd files for cython compilation
-            incl_dirs = extension.include_dirs[:]
-            dist_incl_dirs = self.distribution.include_dirs
-            if not dist_incl_dirs is None:
-                incl_dirs += dist_incl_dirs
-            import Cython.Compiler.Main
-            log.info("cythonc:> %s" % (target_file))
-            self.mkpath(target_dir)
-            options = Cython.Compiler.Main.CompilationOptions(
-                defaults=Cython.Compiler.Main.default_options,
-                include_path=incl_dirs,
-                output_file=target_file)
-            cython_result = Cython.Compiler.Main.compile(source,
-                                                       options=options)
-            if cython_result.num_errors != 0:
-                raise DistutilsError("%d errors while compiling "
-                                     "%r with Cython"
-                                     % (cython_result.num_errors, source))
-        elif sources_changed and os.path.isfile(target_file):
-            raise DistutilsError("Cython >=%s required for compiling %r"
-                                 " because sources (%s) have changed" %
-                                 (CYTHON_MIN_VERSION, source,
-                                  ','.join(depends)))
-        else:
-            raise DistutilsError("Cython >=%s required for compiling %r"
-                                 " but not available" %
-                                 (CYTHON_MIN_VERSION, source))
-    return target_file
 
 def package_check(pkg_name, version=None, optional=False, checker=parse_version,
                   version_getter=None, messages=None, show_only=False):

@@ -353,10 +353,10 @@ class ScipyIterative(LinearSolver):
 
         solver_kwargs.update(prec_args)
         if conf.method == 'gmres':
+            from pkg_resources import parse_version
             import scipy as sp
-            from distutils.version import LooseVersion
 
-            if LooseVersion(sp.__version__) >= '1.4.0':
+            if parse_version(sp.__version__) >= parse_version('1.4.0'):
                 solver_kwargs.update({'callback_type' : 'legacy'})
 
         try:

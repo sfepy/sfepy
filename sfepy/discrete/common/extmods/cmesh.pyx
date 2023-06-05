@@ -279,7 +279,7 @@ cdef class CMesh:
                 cmesh.vertex_groups = self.vertex_groups[vertices].copy()
 
                 remap = np.empty(vertices[-1] + 1, dtype=np.uint32)
-                remap.fill(-1)
+                remap.fill(n_new_vertex)
                 remap[vertices] = np.arange(n_new_vertex, dtype=np.uint32)
 
                 cconn.indices[:] = remap[indices]

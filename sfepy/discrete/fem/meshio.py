@@ -1,10 +1,8 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 from copy import copy
 from io import StringIO
+from pkg_resources import parse_version
 import numpy as nm
-from distutils.version import LooseVersion
 
 from sfepy.base.base import (complex_types, dict_from_keys_init,
                              assert_, is_derived_class, ordered_iteritems,
@@ -457,7 +455,7 @@ class MeshioLibIO(MeshIO):
          cell_sets) = self._create_out_data(mesh, out,
                                             format=self.file_format)
 
-        if LooseVersion(meshiolib.__version__) >= LooseVersion('4.0.3') and\
+        if parse_version(meshiolib.__version__) >= parse_version('4.0.3') and\
            ('-ascii' in self.file_format or '-binary' in self.file_format):
             self.file_format, ab_str = self.file_format.split('-')
             kwargs['binary'] = True if 'binary' in ab_str else False
@@ -1969,9 +1967,9 @@ class GmshIO(MeshioLibIO):
         try:
             basename, step_num, extension = filename.split(".")
         except ValueError:
-            raise ValueError("Filename of automatically loaded GMSH data must be:"
-                             + "<base name>.<step number>.msh, {} does to "
-                             + "correspond to that"
+            raise ValueError("Filename of automatically loaded GMSH data must"
+                             " be: <base name>.<step number>.msh, {} has to "
+                             "correspond to that"
                              .format(filename))
         n_digits = len(step_num)
         return basename + ".{:0"+str(n_digits)+"d}." + extension
@@ -1980,9 +1978,9 @@ class GmshIO(MeshioLibIO):
         try:
             basename, step_num, extension = filename.split(".")
         except ValueError:
-            raise ValueError("Filename of automatically loaded GMSH data must be:"
-                              + "<base name>.<step number>.msh, {} does to "
-                              + "correspond to that"
+            raise ValueError("Filename of automatically loaded GMSH data must"
+                             " be: <base name>.<step number>.msh, {} has to "
+                             "correspond to that"
                              .format(filename))
         return basename + ".*[0-9]." + extension
 
