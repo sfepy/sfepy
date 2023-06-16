@@ -320,6 +320,7 @@ class Term(Struct):
     name = ''
     arg_types = ()
     arg_shapes = {}
+    diff_info = {}
     integration = 'cell'
     geometries = ['1_2', '2_3', '2_4', '3_4', '3_8']
 
@@ -1456,7 +1457,16 @@ class Term(Struct):
                                  % self.get_str())
 
             if diff_var is not None:
-                varc = self.get_variables(as_list=False)[diff_var]
+                tvariables = self.get_variables(as_list=False)
+                if diff_var in tvariables:
+                    varc = tvariables[diff_var]
+
+                elif diff_var in self.diff_info:
+                    varc = None
+
+                else:
+                    raise ValueError(f'variable "{diff_var}" is neither in'
+                                     ' term variables nor in term.diff_info!')
 
             args = self.get_args(**kwargs)
             self.check_shapes(*args)
@@ -1468,8 +1478,12 @@ class Term(Struct):
                 shape = (n_elr, 1, n_row, 1)
 
             else:
-                n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
-                n_col = n_cc * n_enc
+                if varc is not None:
+                    n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
+                    n_col = n_cc * n_enc
+
+                else:
+                    n_col = self.diff_info[diff_var]
 
                 shape = (n_elr, 1, n_row, n_col)
 
