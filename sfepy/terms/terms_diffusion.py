@@ -569,8 +569,7 @@ class NonLinearVolumeForceTerm(Term):
 
         if diff_var is None:
             geo = vg1
-            val_qp = fun(self.get(var2, 'val'))
-            
+            val_qp = fun(self.get(var2, 'val'))            
             out_qp = dot_sequences(vg1.bf, val_qp,'ATB')
             
             fmode = 0
@@ -578,8 +577,6 @@ class NonLinearVolumeForceTerm(Term):
         else:
             geo = vg1
             val_d_qp = dfun(self.get(var2, 'val'))
-            val_qp = fun(self.get(var2, 'val'))
-            
             out_qp = dot_sequences(vg1.bf, val_d_qp*vg2.bf,'ATB')
                 
             fmode = 1
