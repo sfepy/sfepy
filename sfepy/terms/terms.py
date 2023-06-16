@@ -1412,6 +1412,11 @@ class Term(Struct):
             The local elements indices in 'weak' mode. Only provided in
             non-'eval' modes.
         """
+        if (mode == 'eval') and not (hasattr(self, 'get_eval_shape')):
+            raise ValueError(
+                f'term "{self.name}" cannot be evaluated in "eval" mode!'
+            )
+
         if standalone:
             self.standalone_setup()
 
