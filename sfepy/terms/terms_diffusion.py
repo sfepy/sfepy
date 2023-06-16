@@ -549,7 +549,7 @@ class NonLinearVolumeForceTerm(Term):
 
     """
     name = 'dw_volume_nvf'
-    arg_types = ('fun', 'fun_d', 'virtual')
+    arg_types = ('fun', 'fun_d', 'virtual', 'state')
     arg_shapes = {'material_fun'        : '1: 1',
                    'material_fun_d'      : '1: 1',
                    'virtual'  : (1, 'state'),
