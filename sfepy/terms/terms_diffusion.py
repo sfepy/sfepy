@@ -533,54 +533,5 @@ class NonlinearDiffusionTerm(Term):
 
         return out_qp, geo, fmode
 
-class NonLinearVolumeForceTerm(Term):
-    """
-     Product of virtual and function of state.
-
-    :Definition:
-
-    .. math::
-        \int_{\Omega} q f(p)
-
-    :Arguments 1:
-        - function : :math:`f`
-        - virtual  : :math:`q`
-        - state    : :math:`p`
-
-    """
-    name = 'dw_volume_nvf'
-    arg_types = ('fun', 'fun_d', 'virtual', 'state')
-    arg_shapes = {'material_fun'        : '1: 1',
-                   'material_fun_d'      : '1: 1',
-                   'virtual'  : (1, 'state'),
-                   'state'    : 1}
-    
-
-    @staticmethod
-    def function(out, out_qp, geo, fmode):
-        status = geo.integrate(out, out_qp)
-        return status
-
-
-    def get_fargs(self, fun, dfun, var1, var2,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg1, _ = self.get_mapping(var1)
-        vg2, _ = self.get_mapping(var2)
-
-        if diff_var is None:
-            geo = vg1
-            val_qp = fun(self.get(var2, 'val'))            
-            out_qp = dot_sequences(vg1.bf, val_qp,'ATB')
-            
-            fmode = 0
-
-        else:
-            geo = vg1
-            val_d_qp = dfun(self.get(var2, 'val'))
-            out_qp = dot_sequences(vg1.bf, val_d_qp*vg2.bf,'ATB')
-                
-            fmode = 1
-
-        return out_qp, geo, fmode
 
 
