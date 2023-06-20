@@ -30,7 +30,8 @@ class LinearVolumeForceTerm(Term):
 
 class NonLinearVolumeForceTerm(Term):
     """
-    The volume force term with the force given by a user supplied function of the state variable.
+    The volume force term with the force given by 
+    a user supplied function of the state variable.
 
     :Definition:
 
@@ -48,8 +49,7 @@ class NonLinearVolumeForceTerm(Term):
     arg_shapes = {'material_fun'        : '1: 1',
                   'material_fun_d'      : '1: 1',
                   'virtual'  : (1, 'state'),
-                  'state'    : 1}
-    
+                  'state'    : 1}  
 
     @staticmethod
     def function(out, out_qp, geo):
@@ -66,7 +66,7 @@ class NonLinearVolumeForceTerm(Term):
             geo = vg1
             val_qp = fun(self.get(var2, 'val'))            
             out_qp = dot_sequences(vg1.bf, val_qp,'ATB')
-            
+
 
         else:
             geo = vg1

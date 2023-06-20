@@ -483,7 +483,8 @@ class AdvectDivFreeTerm(ScalarDotMGradScalarTerm):
 
 class NonlinearDiffusionTerm(Term):
     """
-    The diffusion term with a scalar coefficient given by a user supplied function of the state variable.
+    The diffusion term with a scalar coefficient given by a user 
+    supplied function of the state variable.
 
     :Definition:
 
@@ -530,6 +531,3 @@ class NonlinearDiffusionTerm(Term):
 
 
         return out_qp, geo
-
-
-
