@@ -30,7 +30,7 @@ class LinearVolumeForceTerm(Term):
 
 class NonLinearVolumeForceTerm(Term):
     """
-     Product of virtual and function of state.
+    The volume force term with the force given by a user supplied function of the state variable.
 
     :Definition:
 
@@ -46,13 +46,13 @@ class NonLinearVolumeForceTerm(Term):
     name = 'dw_volume_nvf'
     arg_types = ('fun', 'fun_d', 'virtual', 'state')
     arg_shapes = {'material_fun'        : '1: 1',
-                   'material_fun_d'      : '1: 1',
-                   'virtual'  : (1, 'state'),
-                   'state'    : 1}
+                  'material_fun_d'      : '1: 1',
+                  'virtual'  : (1, 'state'),
+                  'state'    : 1}
     
 
     @staticmethod
-    def function(out, out_qp, geo, fmode):
+    def function(out, out_qp, geo):
         status = geo.integrate(out, out_qp)
         return status
 
@@ -67,13 +67,11 @@ class NonLinearVolumeForceTerm(Term):
             val_qp = fun(self.get(var2, 'val'))            
             out_qp = dot_sequences(vg1.bf, val_qp,'ATB')
             
-            fmode = 0
 
         else:
             geo = vg1
             val_d_qp = dfun(self.get(var2, 'val'))
             out_qp = dot_sequences(vg1.bf, val_d_qp*vg2.bf,'ATB')
-                
-            fmode = 1
 
-        return out_qp, geo, fmode
+
+        return out_qp, geo

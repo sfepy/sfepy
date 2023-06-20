@@ -483,7 +483,7 @@ class AdvectDivFreeTerm(ScalarDotMGradScalarTerm):
 
 class NonlinearDiffusionTerm(Term):
     """
-     Product of gradient of virtual, gradient of state and function of state.
+    The diffusion term with a scalar coefficient given by a user supplied function of the state variable.
 
     :Definition:
 
@@ -498,13 +498,12 @@ class NonlinearDiffusionTerm(Term):
     name = 'dw_nl_diffusion'
     arg_types = ('fun', 'fun_d', 'virtual', 'state')
     arg_shapes = {'material_fun'        : '1: 1',
-                   'material_fun_d'      : '1: 1',
-                   'virtual'  : (1, 'state'),
-                   'state'    : 1}
-    
+                  'material_fun_d'      : '1: 1',
+                  'virtual'  : (1, 'state'),
+                  'state'    : 1}
 
     @staticmethod
-    def function(out, out_qp, geo, fmode):
+    def function(out, out_qp, geo):
         status = geo.integrate(out, out_qp)
         return status
 
@@ -519,19 +518,18 @@ class NonlinearDiffusionTerm(Term):
             val_grad_qp = self.get(var2, 'grad')
             val_qp = fun(self.get(var2, 'val'))
             out_qp = dot_sequences(vg1.bfg, val_grad_qp*val_qp,'ATB')
-            
-            fmode = 0
+
 
         else:
             geo = vg1
             val_grad_qp = self.get(var2, 'grad')
             val_d_qp = dfun(self.get(var2, 'val'))
             val_qp = fun(self.get(var2, 'val'))
-            out_qp = dot_sequences(vg1.bfg, vg2.bfg*val_qp,'ATB') + dot_sequences(vg1.bfg, val_grad_qp*val_d_qp,'ATB')*vg2.bf
-            
-            fmode = 1
+            out_qp = (dot_sequences(vg1.bfg, vg2.bfg*val_qp,'ATB') +
+                      dot_sequences(vg1.bfg, val_grad_qp*val_d_qp,'ATB')*vg2.bf)
 
-        return out_qp, geo, fmode
+
+        return out_qp, geo
 
 
 
