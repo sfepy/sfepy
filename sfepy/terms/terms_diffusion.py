@@ -482,7 +482,7 @@ class AdvectDivFreeTerm(ScalarDotMGradScalarTerm):
 
 
 class NonlinearDiffusionTerm(Term):
-    """
+    r"""
     The diffusion term with a scalar coefficient given by a user
     supplied function of the state variable.
 
@@ -507,7 +507,6 @@ class NonlinearDiffusionTerm(Term):
     def function(out, out_qp, geo):
         status = geo.integrate(out, out_qp)
         return status
-
 
     def get_fargs(self, fun, dfun, var1, var2,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
