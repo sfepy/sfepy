@@ -159,7 +159,7 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
 
         else:
             str_args.append('user%d' % ii)
-            args[str_args[-1]] = None
+            args[str_args[-1]] = sh if callable(sh) else None
 
     materials = Materials(materials)
     variables = Variables(variables)
