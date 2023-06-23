@@ -500,7 +500,7 @@ class NonlinearDiffusionTerm(Term):
     name = 'dw_nl_diffusion'
     arg_types = ('fun', 'dfun', 'virtual', 'state')
     arg_shapes = {'fun'     : lambda x: x,
-                  'dfun'   : lambda x: x,
+                  'dfun'    : lambda x: x,
                   'virtual' : (1, 'state'),
                   'state'   : 1}
 
