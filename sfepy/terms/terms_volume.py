@@ -39,16 +39,17 @@ class NonlinearVolumeForceTerm(Term):
     .. math::
         \int_{\Omega} q f(p)
 
-    :Arguments 1:
-        - function : :math:`f`
-        - virtual  : :math:`q`
-        - state    : :math:`p`
+    :Arguments:
+        - fun : :math:`f(p)`
+        - dfun : :math:`\partial f(p) / \partial p`
+        - virtual : :math:`q`
+        - state : :math:`p`
 
     """
     name = 'dw_volume_nvf'
-    arg_types = ('fun', 'fun_d', 'virtual', 'state')
+    arg_types = ('fun', 'dfun', 'virtual', 'state')
     arg_shapes = {'fun'     : lambda x: x,
-                  'fun_d'   : lambda x: x,
+                  'dfun'    : lambda x: x,
                   'virtual' : (1, 'state'),
                   'state'   : 1}
 
