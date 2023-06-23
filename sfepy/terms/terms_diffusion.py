@@ -479,3 +479,53 @@ class AdvectDivFreeTerm(ScalarDotMGradScalarTerm):
     arg_shapes = {'material' : 'D, 1', 'virtual' : ('1', 'state'),
                   'state' : '1'}
     mode = 'grad_state'
+
+
+class NonlinearDiffusionTerm(Term):
+    r"""
+    The diffusion term with a scalar coefficient given by a user
+    supplied function of the state variable.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \nabla q \cdot \nabla p f(p)
+
+    :Arguments:
+        - fun : :math:`f(p)`
+        - dfun : :math:`\partial f(p) / \partial p`
+        - virtual : :math:`q`
+        - state : :math:`p`
+    """
+    name = 'dw_nl_diffusion'
+    arg_types = ('fun', 'dfun', 'virtual', 'state')
+    arg_shapes = {'fun'     : lambda x: x,
+                  'dfun'    : lambda x: x,
+                  'virtual' : (1, 'state'),
+                  'state'   : 1}
+
+    @staticmethod
+    def function(out, out_qp, geo):
+        status = geo.integrate(out, out_qp)
+        return status
+
+    def get_fargs(self, fun, dfun, var1, var2,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg1, _ = self.get_mapping(var1)
+        vg2, _ = self.get_mapping(var2)
+
+        if diff_var is None:
+            geo = vg1
+            val_grad_qp = self.get(var2, 'grad')
+            val_qp = fun(self.get(var2, 'val'))
+            out_qp = dot_sequences(vg1.bfg, val_grad_qp*val_qp,'ATB')
+
+        else:
+            geo = vg1
+            val_grad_qp = self.get(var2, 'grad')
+            val_d_qp = dfun(self.get(var2, 'val'))
+            val_qp = fun(self.get(var2, 'val'))
+            out_qp = (dot_sequences(vg1.bfg, vg2.bfg*val_qp,'ATB') +
+                      dot_sequences(vg1.bfg, val_grad_qp*val_d_qp,'ATB')*vg2.bf)
+
+        return out_qp, geo
