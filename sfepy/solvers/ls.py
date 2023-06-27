@@ -808,6 +808,8 @@ class MUMPSSolver(LinearSolver):
         LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
                               mumps_presolved=False, **kwargs)
         mumps.load_mumps_libraries()  # try to load MUMPS libraries
+        if not mumps.use_mpi:
+            raise AttributeError('No mpi4py found! Required by MUMPS solver.')
 
         self.clear()
 
