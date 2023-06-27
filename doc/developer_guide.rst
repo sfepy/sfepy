@@ -1439,6 +1439,7 @@ Tools
    src/tools/gen_serendipity_basis
    src/tools/gen_solver_table
    src/tools/gen_term_table
+   src/tools/install_data
    src/tools/show_authors
    src/tools/show_terms_use
    src/tools/sync_module_docs
