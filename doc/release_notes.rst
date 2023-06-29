@@ -1,5 +1,191 @@
 # created: 20.07.2007 (-1)
 
+.. _2023.1-2023.2:
+
+from 2023.1 to 2023.2
+=====================
+
+- merge pull request #977 from rc/docs-update-support
+
+  - docs: update support
+
+- merge pull request #978 from vlukes/update_users_guide
+
+  - update User's guide: new 'match_dofs' lcbcs
+  - fix punctation
+
+- merge pull request #979 from rc/fix-piezo-ed-example-doctring
+
+  - fix docstring of piezo_elastodynamic.py example
+
+- merge pull request #980 from rc/fix-presolve-in-homogenization
+
+  - do not presolve in MiniAppBase.init_solvers()
+  - replace ls.scipy_direct by ls.auto_direct with presolve in hom. examples
+  - replace ls.auto_iterative by ls.auto_direct with presolve in example
+  - use direct solver for rs correctors in example
+  - set is_linear to True in hom. examples where appropriate
+  - set empty solvers dict to default conf in Problem.__init__()
+  - set automatically use_presolve to True in MiniAppBase.init_solvers()
+
+- merge pull request #960 from yosefm/numpy-distutils-byebye, closes #944
+
+  - initial make files
+  - File removed in master
+  - Add another depenency of terms to CMakeLists
+  - Don't ignore cmake
+  - Build file depending on another directory
+  - Change installation target dir
+  - Make install testable
+  - Change order of commands to what's apparently expected. See
+    https://scikit-build.readthedocsa.io/en/latest/cmake-modules/PythonExtensions.html
+    'Amend the configuration of the library target (created using add_library)
+    ... '
+  - sfepy_common should be static Otherwise it's not found on runtime. Also, no
+    need to install it then.
+  - More builds Should get us done with sfepy.discrete, but tests fail to
+    import (but not `from ... import`)
+  - Get tems.extmods fully built So that sfepy.discrete can import
+  - Install tests as data files so that tests actually run. some of them fail
+    on not finding their meshes, but that's for next commit.
+  - Add meshes directory to install Maybe would be preferable to follow the
+    setuptools current advice and move it into the package, but this branch is
+    already shaking the boat pretty hard, so let's leave it for a later PR.
+  - Fix some missing links
+  - Add mechanics/extmods first time all tests pass
+  - Move common definitions to main CMake file
+  - clean up a bit
+  - Clean up early experiments
+  - Compose compile flags as in numpy distutils
+  - distutils only adds cflags for unices
+  - Handle debug flags in site_cfg
+  - Responsibility for link flags moves to CMake fully Until anyone demands it
+    back. It would be better to do this through CMakeLists anyway.
+  - Install examples too Leave wider pyproject.toml reform for later :)
+  - Feature completion
+  - Use setup_test.py as the new setup.py
+  - Add skbuild to pyproject.toml
+  - Remove 3.9 annotations
+  - Steal distutils hack to install data with package.
+  - Editable install not well-supported by skbuild
+  - Fix: doesn't write the version file.
+  - Run coverage using installed package
+  - Fix relative paths
+  - Windows peculiariuty?
+  - Removals
+  - One more removal
+  - Observe line length in an skbuild-acceptable way
+  - disable C++ in CMake As it will not be found in the conda recipe and is not
+    actually needed, since the conda recipe always specified onlt a C compiler.
+  - Languages also inb setup.py
+  - Use Ninja generator explicitly
+  - Add new build dependencies also to docs
+  - Keep support for space-separated flag strings
+  - Manually include compiled files in manifest
+  - replace global-include by recursive-include, exclude _skbuild
+  - Catch manifest up with removed file in master
+
+- merge pull request #987 from rc/fix-missing-mumps_ls-attribute
+
+  - fix no mumps_ls attribute in MUMPSSolver.clear() (via .__del__())
+
+- merge pull request #988 from rc/fix-resview-for-pyvista-0.39.0
+
+  - fix make_grid_from_mesh() for pyvista>=0.39.0
+
+- merge pull request #989 from rc/remove-save-field-meshes
+
+  - remove unused Problem.save_field_meshes() - Field.write_mesh() was removed
+    already in 2011.1
+  - remove save_field_meshes from default options
+  - simple.py: remove --save-field-meshes option
+
+- merge pull request #990 from rc/document-file-format-option
+
+  - docs: document file_format option in users guide, clean up
+
+- merge pull request #991 from rc/update-lobpcg-init
+
+  - initialize lobpcg() in LOBPCGEigenvalueSolver.__call__() by random data -
+    seed fixed for repeatability
+
+- merge pull request #992 from rc/resview-factor-by-warp
+
+  - compute factor in pv_plot() from warp field if given
+
+- merge pull request #994 from rc/resview-window-title
+
+  - resview.py: set window title to filename(s), new make_title() - update
+    pv_plot(), main()
+
+- merge pull request #995 from vlukes/primme_eigensolver
+
+  - new eigenvalue solver: PRIMME
+  - set default value of 'tol' to 0
+  - conf.which() -> conf.which.upper()
+  - return eigenvectors?
+  - add eig.primme to test_eigenvalue_solvers()
+
+- merge pull request #982 from vlukes/modal_analysis_declarative
+
+  - new example: simple modal analysis in declarative description
+  - update docstring: running the simulation
+  - add the example to tests
+  - increase solver tolerance
+  - new mesh (wheelset.vtk) and eigenvalue solver (primme)
+  - new mesh file
+  - update tests: modal_analysis_declarative.py uses the optional PRIMME solver
+  - update mesh
+  - update docstring of modal_analysis_declarative.py
+  - gen_gallery.py: add custom view for modal_analysis_declarative.py example
+
+- merge pull request #993 from rc/remove-ordering-variables-attributes
+
+  - remove Variable.reset(), ._count, ._orders, ._all_var_names
+
+    - update .__init__(), ._set_kind()
+    - update Variables.from_conf()
+
+  - update Variables.setup_ordering()
+  - do not call .setup_ordering() in Variables.from_conf(), .__init__() - it is
+    called in .setup_ordering()
+  - update transform_equations_ed() for new Variables.setup_ordering()
+  - fix typo in Variables.setup_ordering()
+
+- merge pull request #996 from vlukes/update_modal_analysis_example update
+  example: add comparison to ansys results
+
+  - update example: add comparison to Ansys results
+
+- merge pull request #997 from rc/remove-distutils-remains, closes #984
+
+  - update site_cfg_template.py
+  - replace distutils in tools/build_helpers.py, remove
+    generate_a_pyrex_source(). update Clean
+  - replace LooseVersion by parse_version()
+  - replace find_executable() with which() in test_gen_mesh_from_geom()
+  - fix warning and wrong type in CMesh.create_new()
+  - fix error messages in GmshIO
+  - fix matplotlib warning in time_heat_equation_multi_material.py exemple,
+    update post_process_hook()
+  - update warning filters in pytest.ini
+
+- merge pull request #1001 from peppe988/my-feature
+
+  - new non linear term
+  - Update terms_diffusion.py
+  - Update terms_volume.py
+  - updated
+  - solved a few whitespace errors
+  - allow callable in place of shape in make_term_args()
+  - update arg_shapes of NonlinearDiffusionTerm, NonlinearVolumeForceTerm
+
+    - add missing import
+    - test_term_call_modes.py::test_term_call_modes now passes
+
+  - fixed latex mode and empty lines
+  - fix indent
+
 .. _2022.4-2023.1:
 
 from 2022.4 to 2023.1

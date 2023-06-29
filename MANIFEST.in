@@ -4,7 +4,7 @@ prune sfepy/examples/*/output
 prune sfepy/examples/*/*/output
 prune doc/_build
 prune sfepy/tests/.pytest_cache
-recursive-exclude _skbuild
+recursive-exclude _skbuild *
 exclude doc/logo/*.vtk
 exclude doc/publish.py
 exclude doc/sfepy_manual.pdf

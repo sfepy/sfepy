@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **30.03.2022** Version 2022.1 released (new handling of state variables data
+  and State class removal, many new sensitivity analysis terms based on
+  multi-linear term implementation, etc.), see :ref:`release notes
+  <2021.4-2022.1>`.
+
 * **29.12.2021** Version 2021.4 released (improved pyvista-based visualization
   script resview.py, gallery images generated using resview.py, homogenization
   tools: new parallel recovery of multiple microstructures, new "dry water"
