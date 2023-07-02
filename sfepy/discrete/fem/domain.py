@@ -134,7 +134,7 @@ class FEDomain(Domain):
                                 ori.roots, ori.vecs,
                                 ori.swap_from, ori.swap_to)
 
-                if nm.alltrue(flag == 0):
+                if nm.all(flag == 0):
                     if itry > 0: output('...corrected')
                     itry = -1
                     break
