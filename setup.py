@@ -205,6 +205,7 @@ def setup_package():
         'scipy',
         'sympy',
         'tables',
+        'packaging',
     ]
 
     setup(
