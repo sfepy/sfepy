@@ -69,44 +69,22 @@ If the installation succeeded, proceed with `Testing Installation`_.
 Using SfePy Docker Images
 ---------------------------
 
-Besides the classical installation we also provide experimental Docker images
-with ready-to-run Anaconda and *Sfepy* installation.
+Besides the classical installation we also provide official Docker images
+with ready-to-run Anaconda and *SfePy* installation.
 
 Before you start using *SfePy* images, you need to first install and configure
 Docker on your computer. To do this follow official
 `Docker documentation <https://docs.docker.com/get-docker/>`__.
 
-Currently available images are:
+Currently available all-in-one image is:
 
-- `sfepy/sfepy-notebook <https://hub.docker.com/r/sfepy/sfepy-notebook>`__ -
-  basic command line interface and web browser access to
-  Jupyter notebook/JupyterLab interface,
-
-- `sfepy/sfepy-x11vnc-desktop
-  <https://hub.docker.com/r/sfepy/sfepy-x11vnc-desktop>`__ -
-  optimized Ubuntu desktop environment accessible via standard web browser
-  or VNC client.
+- `sfepy/sfepy-desktop
+  <https://hub.docker.com/r/sfepy/sfepy-desktop>`__ -
+  an Ubuntu based containers containing full desktop environments in officially supported
+  flavors accessible via any modern web browser.
 
 For available runtime options and further information see
 `sfepy-docker <https://github.com/sfepy/sfepy-docker>`__ project on Github.
-
-As a convenience, use the following Docker compose file, which will start the
-*SfePy* image, run Jupyter Lab, and map the contents of the local directory
-to the *SfePy* home directory within the image. Just create an empty folder and
-add the following to a file named ``docker-compose.yml``. Then, run ``docker-compose up``
-in the same directory.
-
-.. code-block:: yaml
-   version: "3"
-   services:
-     sfepy:
-       container_name: sfepy_container
-       image: sfepy/sfepy-notebook
-       command: jupyter lab
-       volumes:
-         - .:/home/sfepy/code/
-       ports:
-         - "8888:8888"
 
 .. _installing_from_sources:
 
