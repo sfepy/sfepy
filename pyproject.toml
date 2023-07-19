@@ -5,7 +5,7 @@ requires = [
     "ninja",
     "setuptools>=46.4",
     "wheel",
-	"Cython>=0.29.30",
+	"Cython>=0.29.30,<3.0",
     "matplotlib",
     "meshio",
     "numpy==1.20.*; python_version <= '3.9'", # meshio undeclared constraint.
