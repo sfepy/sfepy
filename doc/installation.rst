@@ -80,8 +80,8 @@ Currently available all-in-one image is:
 
 - `sfepy/sfepy-desktop
   <https://hub.docker.com/r/sfepy/sfepy-desktop>`__ -
-  an Ubuntu based containers containing full desktop environments in officially supported
-  flavors accessible via any modern web browser.
+  an Ubuntu based container containing a full desktop environment in
+  officially supported flavors accessible via any modern web browser.
 
 For available runtime options and further information see
 `sfepy-docker <https://github.com/sfepy/sfepy-docker>`__ project on Github.
