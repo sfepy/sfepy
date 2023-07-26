@@ -44,7 +44,6 @@ def d_nl_src(T):
     Calculates the derivative of the nl_src term and returns it.
     """
     val = 10*(2*T)
-    print('ciaooooo')
     return val
 
 materials = {
