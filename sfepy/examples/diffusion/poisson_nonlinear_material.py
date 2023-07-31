@@ -1,8 +1,9 @@
 r"""
-Example usage of the non linear diffusion and non linear volume terms.
+Nonlinear Poisson's equation example demonstrating 
+the nonlinear diffusion and nonlinear volume force terms.
 
 The example is an adaptation of:
-https://sfepy.org/doc-devel/examples/diffusion-poisson_field_dependent_material.html
+:ref:`diffusion-poisson_field_dependent_material`
 
 Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
 
@@ -11,39 +12,41 @@ Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
     = 0
     \;, \quad \forall s \;.
 
-where :math:`c(T) and g(T)` are the :math:`T` dependent coefficients.
+where :math:`c(T)` and :math:`g(T)`  are the :math:`T` dependent coefficients.
 """
 from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.base.base import output
+import numpy as np
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 
 def get_conductivity(T):
     """
-    Calculates the conductivity as  2+10*(T+2) and returns it.
+    Calculates the conductivity as (1 + T**4) and returns it.
     """
-    val = 2 + 10 * (T + 2)
+    val = 1 + T**4
     return val
+   
 def d_get_conductivity(T):
     """
-    Calculates the derivative of the conductivity and returns it.
+    Calculates the derivative of get_conductivity and returns it.
     """
-    val = 10
+    val = 4*T**3
     return val
 
 def nl_src(T):
     """
-    Calculates a non linear source term as 10*(T**2 +2) and returns it.
+    Calculates a non linear source term as np.sinh(T) and returns it.
     """
-    val = 10 * (T**2 + 2)
+    val = np.sinh(T)
     return val
 
 def d_nl_src(T):
     """
     Calculates the derivative of the nl_src term and returns it.
     """
-    val = 10*(2*T)
+    val = np.cosh(T)
     return val
 
 materials = {
@@ -77,21 +80,23 @@ functions = {
 }
 
 ics = {
-    'ic' : ('Omega', {'T.0' : 0.0}),
 }
 
 integrals = {
-    'i' : 1,
+    'i' : 10,
 }
 
 equations = {
-    'Temperature' : """dw_nl_diffusion.i.Omega(get_conductivity, d_get_conductivity, s, T ) + dw_volume_nvf.i.Omega(nl_src, d_nl_src,s,T) = 0"""
+    'Temperature' : """
+       dw_nl_diffusion.i.Omega(get_conductivity, d_get_conductivity, s, T)
+     + dw_volume_nvf.i.Omega(nl_src, d_nl_src, s, T) = 0
+     """
 }
 
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
     'newton' : ('nls.newton', {
-        'i_max' : 10,
+        'i_max' : 15,
         'eps_a' : 1e-10,
         'eps_r' : 1.0,
     }),
