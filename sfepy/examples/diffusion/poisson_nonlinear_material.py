@@ -5,7 +5,7 @@ the nonlinear diffusion and nonlinear volume force terms.
 The example is an adaptation of:
 :ref:`diffusion-poisson_field_dependent_material`
 
-Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
+Find :math:`T` such that:
 
 .. math::
    \int_{\Omega} c(T) \nabla s \cdot \nabla T + \int_{\Omega} g(T) \cdot s
