@@ -1,5 +1,5 @@
 r"""
-Nonlinear Poisson's equation example demonstrating 
+Nonlinear Poisson's equation example demonstrating
 the nonlinear diffusion and nonlinear volume force terms.
 
 The example is an adaptation of:
@@ -26,7 +26,7 @@ def get_conductivity(T):
     """
     val = 1 + T**4
     return val
-   
+
 def d_get_conductivity(T):
     """
     Calculates the derivative of get_conductivity and returns it.
@@ -97,6 +97,7 @@ solvers = {
     'newton' : ('nls.newton', {
         'i_max' : 15,
         'eps_a' : 1e-10,
+        'ls_on' : 10,
         'eps_r' : 1.0,
     }),
 }
