@@ -14,7 +14,6 @@ Find :math:`T` such that:
 
 where :math:`c(T)` and :math:`g(T)`  are the :math:`T` dependent coefficients.
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.base.base import output
 import numpy as np
