@@ -1,9 +1,9 @@
 r"""
-Nonlinear Poisson's equation example demonstrating
-the nonlinear diffusion and nonlinear volume force terms.
+Nonlinear Poisson's equation example demonstrating the nonlinear diffusion
+and nonlinear volume force terms.
 
 The example is an adaptation of:
-:ref:`diffusion-poisson_field_dependent_material`
+:ref:`diffusion-poisson_field_dependent_material`.
 
 Find :math:`T` such that:
 
@@ -97,8 +97,8 @@ solvers = {
     'newton' : ('nls.newton', {
         'i_max' : 15,
         'eps_a' : 1e-10,
-        'ls_on' : 10,
         'eps_r' : 1.0,
+        'ls_on' : 10,
     }),
 }
 
