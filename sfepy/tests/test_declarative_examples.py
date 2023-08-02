@@ -22,6 +22,7 @@ examples = [
     'diffusion/poisson_field_dependent_material.py',
     'diffusion/poisson_functions.py',
     'diffusion/poisson_neumann.py',
+    'diffusion/poisson_nonlinear_material.py',
     'diffusion/poisson_periodic_boundary_condition.py',
     'diffusion/sinbc.py',
     'diffusion/time_advection_diffusion.py',
