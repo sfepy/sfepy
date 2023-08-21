@@ -208,6 +208,9 @@ class Solver(Struct, metaclass=SolverMeta):
         elif isinstance(conf, dict):
             conf = Struct(**conf)
 
+        else:
+            conf = conf.copy()
+
         if conf.get('name', None) is None:
             conf.name = 'auto_' + self.__class__.__name__
 
