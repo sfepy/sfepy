@@ -131,4 +131,7 @@ class FibresActiveTLTerm(HyperElasticTLBase):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
         sym = dim2sym(dim)
 
-        return (n_el, 1, sym, 1), state.dtype
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, sym, 1), state.dtype
