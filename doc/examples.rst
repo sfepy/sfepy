@@ -21,6 +21,7 @@ generated list of the standard examples that come with SfePy.
 Example Applications
 --------------------
 
+- `Homogenization of peristaltic flows in piezoelectric porous media <https://sfepy.org/sfepy_examples/example_piezo_flow>`_ (2023)
 - `Deformation of a foam-reinforced shell beam <https://sfepy.org/sfepy_examples/example_shell_beam>`_ (2023)
 - `Two-scale numerical simulation of a large deforming fluid-saturated porous structure <https://sfepy.org/sfepy_examples/example_largedef_porous/>`_ (2021)
 - `Homogenization of the vibro-acoustic transmission on perforated plates with embedded resonators <https://sfepy.org/sfepy_examples/example_vibroacoustics/>`_ (2021)
