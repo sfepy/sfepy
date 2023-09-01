@@ -176,8 +176,8 @@ class ESDStokesTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} p\, I_{ij} {\partial v_i \over \partial x_j} \mbox{ , }
-        \int_{\Omega} q\, I_{ij} {\partial u_i \over \partial x_j}
+        \int_{\Omega} p\, \hat{I}_{ij} {\partial v_i \over \partial x_j} \mbox{ , }
+        \int_{\Omega} q\, \hat{I}_{ij} {\partial u_i \over \partial x_j}
 
     .. math::
         \hat{I}_{ij} = \delta_{ij} \nabla \cdot \Vcal
