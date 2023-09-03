@@ -572,16 +572,26 @@ class Equations(Container):
         return self.variables.get_lcbc_operator()
 
     def evaluate(self, names=None, mode='eval', dw_mode='vector',
-                 term_mode=None, asm_obj=None):
+                 term_mode=None, diff_vars=None, asm_obj=None):
         """
         Evaluate the equations.
 
         Parameters
         ----------
-        mode : one of 'eval', 'el_avg', 'qp', 'weak'
-            The evaluation mode.
         names : str or sequence of str, optional
             Evaluate only equations of the given name(s).
+        mode : one of 'eval', 'el_avg', 'qp', 'weak'
+            The evaluation mode.
+        dw_mode : one of 'vector', 'matrix', 'sensitivity'
+            The particular evaluation mode if `mode` is ``'weak'``.
+        term_mode : str
+            The term evaluation mode, used mostly if `mode` is ``'eval'`` in
+            some terms.
+        diff_vars : list of str
+            The names of parameters with respect to the equations are
+            differentiated if `dw_mode` is ``'sensitivity'``.
+        asm_obj : ndarray or spmatrix
+            The object for storing the evaluation result in the ``'weak'`` mode.
 
         Returns
         -------
@@ -605,7 +615,8 @@ class Equations(Container):
             extras = []
             for eq in eqs:
                 out = eq.evaluate(mode=mode, dw_mode=dw_mode,
-                                  term_mode=term_mode, asm_obj=asm_obj)
+                                  term_mode=term_mode, diff_vars=diff_vars,
+                                  asm_obj=asm_obj)
                 if isinstance(out, tuple): extras.extend(out[1])
 
             out = asm_obj
@@ -805,12 +816,30 @@ class Equation(Struct):
             conn_info[key] = term.get_conn_info()
 
     def evaluate(self, mode='eval', dw_mode='vector', term_mode=None,
-                 asm_obj=None):
+                 diff_vars=None, asm_obj=None):
         """
+        Evaluate the equation.
+
         Parameters
         ----------
         mode : one of 'eval', 'el_eval', 'el_avg', 'qp', 'weak'
             The evaluation mode.
+        dw_mode : one of 'vector', 'matrix', 'sensitivity'
+            The particular evaluation mode if `mode` is ``'weak'``.
+        term_mode : str
+            The term evaluation mode, used mostly if `mode` is ``'eval'`` in
+            some terms.
+        diff_vars : list of str
+            The names of parameters with respect to the equation is
+            differentiated if `dw_mode` is ``'sensitivity'``.
+        asm_obj : ndarray or spmatrix
+            The object for storing the evaluation result in the ``'weak'`` mode.
+
+        Returns
+        -------
+        out : result
+            The evaluation result. In 'weak' mode it is the
+            `asm_obj`.
         """
         if mode in ('eval', 'el_eval', 'el_avg', 'qp'):
             val = 0.0
@@ -853,6 +882,22 @@ class Equation(Struct):
                         if extra is not None: extras.append(extra)
 
                 out = (asm_obj, extras) if len(extras) else asm_obj
+
+            elif dw_mode == 'sensitivity':
+                # Differentiation w.r.t. material parameters.
+                if diff_vars is None: diff_vars = ()
+
+                for ic, diff_var in enumerate(diff_vars):
+                    for term in self.terms:
+                        if diff_var not in term.diff_info: continue
+                        val, iels, status = term.evaluate(mode=mode,
+                                                          term_mode=term_mode,
+                                                          diff_var=diff_var,
+                                                          standalone=False,
+                                                          ret_status=True)
+                        term.assemble_to(asm_obj[:, ic], val, iels)
+
+                out = asm_obj
 
             else:
                 raise ValueError('unknown assembling mode! (%s)' % dw_mode)
