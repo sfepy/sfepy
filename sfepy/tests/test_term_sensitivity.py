@@ -72,6 +72,7 @@ test_terms = [
     ('ev_sd_surface_ltr', 'dw_surface_ltr', 'Interface', 'mat.s', 'U1', None),
     ('de_sd_surface_ltr', 'de_surface_ltr', 'Interface', 'mat.s', 'U1', None),
     ('de_sd_surface_ltr', 'de_surface_ltr', 'Interface', 'mat.c', 'U1', None),
+    ('de_sd_v_dot_grad_s', 'dw_v_dot_grad_s', 'Omega', 'mat.c', 'U1', 'P1'),
 ]
 
 
