@@ -400,7 +400,8 @@ class ESDVectorDotGradScalarTerm(ESDStokesTerm):
     :Definition:
 
     .. math::
-        \int_{\Omega} \hat{I}_{ij} {\partial p \over \partial x_j}\, v_i\mbox{ , }
+        \int_{\Omega} \hat{I}_{ij} {\partial p \over \partial x_j}\, v_i
+        \mbox{ , }
         \int_{\Omega} \hat{I}_{ij} {\partial q \over \partial x_j}\, u_i
 
     .. math::
