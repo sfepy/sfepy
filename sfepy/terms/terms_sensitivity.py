@@ -176,8 +176,8 @@ class ESDStokesTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} p\, I_{ij} {\partial v_i \over \partial x_j} \mbox{ , }
-        \int_{\Omega} q\, I_{ij} {\partial u_i \over \partial x_j}
+        \int_{\Omega} p\, \hat{I}_{ij} {\partial v_i \over \partial x_j} \mbox{ , }
+        \int_{\Omega} q\, \hat{I}_{ij} {\partial u_i \over \partial x_j}
 
     .. math::
         \hat{I}_{ij} = \delta_{ij} \nabla \cdot \Vcal
@@ -203,6 +203,7 @@ class ESDStokesTerm(ETermBase):
                    'parameter_v': 'D', 'parameter_s': 1, 'parameter_mv': 'D'},
                   {'opt_material': None}]
     modes = ('grad', 'div', 'eval')
+    texpr = 'ij,i.j,0'
 
     def get_function(self, coef, vvar, svar, par_mv,
                      mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -215,7 +216,7 @@ class ESDStokesTerm(ETermBase):
         mat_sd = (nm.eye(dim) * div_mv - grad_mv) * mul
 
         fun = self.make_function(
-            'ij,i.j,0', (mat_sd, 'material'), vvar, svar, diff_var=diff_var
+            self.texpr, (mat_sd, 'material'), vvar, svar, diff_var=diff_var
         )
 
         return fun
@@ -390,3 +391,32 @@ class ESDLinearTractionTerm(ETermBase):
         )
 
         return fun
+
+
+class ESDVectorDotGradScalarTerm(ESDStokesTerm):
+    r"""
+    Sensitivity of volume dot product of a vector and a gradient of scalar.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \hat{I}_{ij} {\partial p \over \partial x_j}\, v_i
+        \mbox{ , }
+        \int_{\Omega} \hat{I}_{ij} {\partial q \over \partial x_j}\, u_i
+
+    .. math::
+        \hat{I}_{ij} = \delta_{ij} \nabla \cdot \Vcal
+          - {\partial \Vcal_j \over \partial x_i}
+
+    :Arguments 1:
+        - virtual/parameter_v: :math:`\ul{v}`
+        - state/parameter_s: :math:`p`
+        - parameter_mv: :math:`\ul{\Vcal}`
+
+    :Arguments 2:
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`q`
+        - parameter_mv: :math:`\ul{\Vcal}`
+    """
+    name = 'de_sd_v_dot_grad_s'
+    texpr = 'ij,i,0.j'
