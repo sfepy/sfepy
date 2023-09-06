@@ -40,7 +40,7 @@ def compose_system_compile_flags(is_posix: bool) -> list:
     cflags, configure_cppflags, configure_cflags = sysconfig.get_config_vars(
         'CFLAGS', 'CONFIGURE_CPPFLAGS', 'CONFIGURE_CFLAGS')
 
-    return (cflags + configure_cppflags + configure_cflags).split()
+    return (cflags + ' ' + configure_cppflags + ' ' + configure_cflags).split()
 
 
 class Config(object):
