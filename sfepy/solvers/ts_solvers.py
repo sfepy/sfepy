@@ -592,6 +592,8 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
             self.di, self.conf.var_names,
             extra_variables=self.get('extra_variables', False),
         )
+        self.unpack = unpack
+        self.pack = pack
 
         ts = self.ts
         vec0 = init_fun(ts, vec0)
