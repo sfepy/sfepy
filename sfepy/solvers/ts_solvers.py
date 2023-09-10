@@ -621,9 +621,11 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
         return vec, unpack, pack
 
-    def clear_lin_solver(self):
+    def clear_lin_solver(self, clear_constant_matrices=True):
         self.nls.lin_solver.clear()
         self.matrix = None
+        if clear_constant_matrices:
+            self.constant_matrices = None
 
     @standard_ts_call
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
@@ -659,7 +661,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
                 output('dt:', ts.dt, 'new dt:', new_dt, 'status:', status,
                        verbose=self.verbose)
                 if new_dt != ts.dt:
-                    self.clear_lin_solver()
+                    self.clear_lin_solver(clear_constant_matrices=False)
 
                 if status.result == 'accept':
                     break
@@ -1220,11 +1222,12 @@ class BatheTS(ElastodynamicsBaseTS):
         nlst.lin_solver = self.ls2
         return nlst
 
-    def clear_lin_solver(self):
-        self.nls.lin_solver.clear()
+    def clear_lin_solver(self, clear_constant_matrices=True):
+        ElastodynamicsBaseTS.clear_lin_solver(
+            self, clear_constant_matrices=clear_constant_matrices,
+        )
         self.ls1 = self.ls2 = None
         self.matrix1 = None
-        self.matrix = None
 
     def step(self, ts, vec, nls, pack, unpack, prestep_fun):
         """
