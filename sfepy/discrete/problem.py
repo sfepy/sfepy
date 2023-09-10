@@ -1484,6 +1484,7 @@ class Problem(Struct):
             self.init_solvers(status=status)
 
         tss = self.get_solver()
+        tss.clear_lin_solver()
 
         self.equations.set_data(var_data, ignore_unknown=True)
 
