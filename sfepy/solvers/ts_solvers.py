@@ -1,6 +1,8 @@
 """
 Time stepping solvers.
 """
+from inspect import signature
+from functools import partial
 import numpy as nm
 
 from sfepy.base.base import (get_default, output, assert_,
@@ -630,6 +632,14 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
     @standard_ts_call
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
                  poststep_fun=None, status=None, **kwargs):
+        sig = signature(init_fun)
+        if len(sig.parameters) == 3:
+            init_fun = partial(init_fun, self)
+
+        sig = signature(poststep_fun)
+        if len(sig.parameters) == 3:
+            poststep_fun = partial(poststep_fun, self)
+
         vec, unpack, pack = self.get_initial_vec(
             nls, vec0, init_fun, prestep_fun, poststep_fun)
 
