@@ -821,7 +821,11 @@ class MUMPSSolver(LinearSolver):
 
         self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest)
 
-        out = rhs.copy()
+        if len(rhs.shape) == 2 and rhs.shape[1] > 1:
+            out = nm.asfortranarray(rhs)
+        else:
+            out = rhs.copy()
+
         self.mumps_ls.set_rhs(out)
         self.mumps_ls(3)  # solve
 
