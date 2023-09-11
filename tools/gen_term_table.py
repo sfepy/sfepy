@@ -121,7 +121,7 @@ def typeset_to_indent(txt, indent0, indent, width):
     return text
 
 def typeset_term_syntax(term_class):
-    if ((len(term_class.arg_types) > 1) and not
+    if ((len(term_class.arg_types) >= 1) and not
             isinstance(term_class.arg_types[0], str)):
         is_param = len([arg for arg in term_class.arg_types[-1]
                         if arg.startswith('parameter')]) > 0
