@@ -972,7 +972,12 @@ class SchurMumps(MUMPSSolver):
             schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i'))
 
         self.mumps_ls.set_mtx_centralized(mtx)
-        out = rhs.copy()
+
+        if len(rhs.shape) == 2 and rhs.shape[1] > 1:
+            out = nm.asfortranarray(rhs)
+        else:
+            out = rhs.copy()
+
         self.mumps_ls.set_rhs(out)
 
         S, y2 = self.mumps_ls.get_schur(nm.hstack(schur_list))
