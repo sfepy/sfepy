@@ -797,7 +797,9 @@ class MumpsSolver(object):
         6: analyse, factorize, solve
         """
         self.struct.job = job
-        self._mumps_c(ctypes.byref(self.struct))
+
+        if ctypes is not None:
+            self._mumps_c(ctypes.byref(self.struct))
 
         if self.struct.infog[0] < 0:
             raise RuntimeError("MUMPS error: %d" % self.struct.infog[0])
