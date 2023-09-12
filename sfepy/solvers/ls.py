@@ -821,10 +821,7 @@ class MUMPSSolver(LinearSolver):
 
         self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest)
 
-        if len(rhs.shape) == 2 and rhs.shape[1] > 1:
-            out = nm.asfortranarray(rhs)
-        else:
-            out = rhs.copy()
+        out = rhs.copy(order='F')
 
         self.mumps_ls.set_rhs(out)
         self.mumps_ls(3)  # solve
@@ -973,10 +970,7 @@ class SchurMumps(MUMPSSolver):
 
         self.mumps_ls.set_mtx_centralized(mtx)
 
-        if len(rhs.shape) == 2 and rhs.shape[1] > 1:
-            out = nm.asfortranarray(rhs)
-        else:
-            out = rhs.copy()
+        out = rhs.copy(order='F')
 
         self.mumps_ls.set_rhs(out)
 
