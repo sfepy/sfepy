@@ -821,7 +821,8 @@ class MUMPSSolver(LinearSolver):
 
         self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest)
 
-        out = rhs.copy()
+        out = rhs.copy(order='F')
+
         self.mumps_ls.set_rhs(out)
         self.mumps_ls(3)  # solve
 
@@ -968,7 +969,9 @@ class SchurMumps(MUMPSSolver):
             schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i'))
 
         self.mumps_ls.set_mtx_centralized(mtx)
-        out = rhs.copy()
+
+        out = rhs.copy(order='F')
+
         self.mumps_ls.set_rhs(out)
 
         S, y2 = self.mumps_ls.get_schur(nm.hstack(schur_list))

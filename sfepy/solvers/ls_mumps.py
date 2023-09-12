@@ -710,6 +710,9 @@ class MumpsSolver(object):
         """Set the right hand side of the linear system."""
         self._data.update(rhs=rhs)
         self.struct.rhs = rhs.ctypes.data_as(mumps_pcomplex)
+        self.struct.lrhs = rhs.shape[0]
+        if len(rhs.shape) == 2:
+            self.struct.nrhs = rhs.shape[1]
 
     def __call__(self, job):
         """Set the job and call MUMPS."""
@@ -794,7 +797,9 @@ class MumpsSolver(object):
         6: analyse, factorize, solve
         """
         self.struct.job = job
-        self._mumps_c(ctypes.byref(self.struct))
+
+        if ctypes is not None:
+            self._mumps_c(ctypes.byref(self.struct))
 
         if self.struct.infog[0] < 0:
             raise RuntimeError("MUMPS error: %d" % self.struct.infog[0])
