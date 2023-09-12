@@ -271,6 +271,9 @@ def main():
     out, err = check_output('python3 sfepy/examples/linear_elasticity/linear_elastic_interactive.py')
     eok += report(out, '...', -16, 0, '1.62128841139e-14', eps=1e-13)
 
+    out, err = check_output('python3 sfepy/examples/linear_elasticity/elastodynamic_identification.py --opt-conf=xtol=0.5')
+    eok += report(out, '...', -5, 0, '2', match_numbers=True)
+
     out, err = check_output('python3 sfepy/examples/linear_elasticity/modal_analysis.py')
     eok += report(out, '...', -12, 5, '12142.11470773', eps=1e-13)
 
