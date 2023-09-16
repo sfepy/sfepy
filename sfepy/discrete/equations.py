@@ -889,7 +889,9 @@ class Equation(Struct):
 
                 for ic, diff_var in enumerate(diff_vars):
                     for term in self.terms:
-                        if diff_var not in term.diff_info: continue
+                        if not (term.diff_info and
+                                (diff_var in term.get_material_names(part=1))):
+                            continue
                         val, iels, status = term.evaluate(mode=mode,
                                                           term_mode=term_mode,
                                                           diff_var=diff_var,

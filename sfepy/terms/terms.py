@@ -1466,8 +1466,10 @@ class Term(Struct):
                 if diff_var in tvariables:
                     varc = tvariables[diff_var]
 
-                elif diff_var in self.diff_info:
+                elif diff_var in self.get_material_names(part=1):
                     varc = None
+                    ii = self.get_material_names(part=1).index(diff_var)
+                    diff_var = self.ats[ii]
 
                 else:
                     raise ValueError(f'variable "{diff_var}" is neither in'
