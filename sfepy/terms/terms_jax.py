@@ -93,7 +93,7 @@ class LinearElasticLADTerm(Term):
     arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     modes = ('weak',)
-    diff_info = {'lame1' : 1, 'lame2' : 1}
+    diff_info = {'material_1' : 1, 'material_2' : 1}
 
     def get_fargs(self, material1, material2, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -113,10 +113,10 @@ class LinearElasticLADTerm(Term):
         elif diff_var == state.name:
             fun = eval_jac_elasticity_l
 
-        elif diff_var == 'lame1':
+        elif diff_var == 'material_1':
             fun = eval_lam_elasticity_l
 
-        elif diff_var == 'lame2':
+        elif diff_var == 'material_2':
             fun = eval_mu_elasticity_l
 
         else:
@@ -155,7 +155,7 @@ class LinearElasticYPADTerm(Term):
     arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     modes = ('weak',)
-    diff_info = {'young' : 1, 'poisson' : 1}
+    diff_info = {'material_1' : 1, 'material_2' : 1}
 
     def get_fargs(self, material1, material2, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -175,10 +175,10 @@ class LinearElasticYPADTerm(Term):
         elif diff_var == state.name:
             fun = eval_jac_elasticity_yp
 
-        elif diff_var == 'young':
+        elif diff_var == 'material_1':
             fun = eval_young_elasticity_yp
 
-        elif diff_var == 'poisson':
+        elif diff_var == 'material_2':
             fun = eval_poisson_elasticity_yp
 
         else:
@@ -222,11 +222,11 @@ class MassADTerm(Term):
         - state: :math:`\ul{u}`
     """
     name = 'dw_mass_ad'
-    arg_types = (('material_1', 'virtual', 'state'),)
-    arg_shapes = {'material_1' : '1, 1',
+    arg_types = (('material', 'virtual', 'state'),)
+    arg_shapes = {'material' : '1, 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     modes = ('weak',)
-    diff_info = {'density' : 1}
+    diff_info = {'material' : 1}
 
     def get_fargs(self, material_density, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -245,7 +245,7 @@ class MassADTerm(Term):
         elif diff_var == state.name:
             fun = eval_jac_mass
 
-        elif diff_var == 'density':
+        elif diff_var == 'material':
             fun = eval_density_mass
 
         else:
