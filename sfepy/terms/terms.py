@@ -679,11 +679,11 @@ class Term(Struct):
     def get_variable_names(self):
         return self.names.variable
 
-    def get_material_names(self):
+    def get_material_names(self, part=0):
         out = []
         for aux in self.names.material:
             if aux[0] is not None:
-                out.append(aux[0])
+                out.append(aux[part])
         return out
 
     def get_user_names(self):
