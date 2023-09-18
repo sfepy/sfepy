@@ -492,6 +492,7 @@ def eval_jac(pars, data, pb, options, par_names, par_info, opt_data, plog,
     update_pars(materials, options, pars, par_names, par_info)
 
     pb.ts.set_step() # Reset ts.
+    pb.get_solver().clear_lin_solver() # No digest -> clear manually.
 
     variables = pb.get_initial_state()
     n_dof = variables.adi.ptr[-1]
