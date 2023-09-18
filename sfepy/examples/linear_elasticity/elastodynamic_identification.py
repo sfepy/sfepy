@@ -467,10 +467,8 @@ def eval_fun(pars, data, pb, options, par_names, par_info, opt_data, plog,
 
     return res
 
-def eval_jac_fd(pars, data, pb, options, par_names, par_info, opt_data, plog,
-                inodir):
-    v0 = eval_fun(pars, data, pb, options, par_names, par_info, opt_data, plog,
-                  inodir)
+def eval_jac_fd(pars, *args, **kwargs):
+    v0 = eval_fun(pars, *args, **kwargs)
 
     eps = 1e-6
     jac = []
@@ -479,8 +477,7 @@ def eval_jac_fd(pars, data, pb, options, par_names, par_info, opt_data, plog,
         dp = eps * par
         pars1[ip] += dp
 
-        v1 = eval_fun(pars1, data, pb, options, par_names, par_info, opt_data,
-                      plog, inodir)
+        v1 = eval_fun(pars1, *args, **kwargs)
         jac.append((v1 - v0) / dp)
 
     jac = nm.array(jac).T
