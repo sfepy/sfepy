@@ -400,7 +400,7 @@ register_solver(NewmarkSATS)
 
 def apply_sensor(pb, ts, state, out):
     us = state['u'].get_state_in_region(pb.domain.regions['Sensor'])
-    print('sensor', ts.step, us)
+    output('sensor', ts.step, us)
     out.append(us)
 
 def update_pars(materials, options, pars, par_names, par_info):
@@ -580,12 +580,12 @@ def eval_jac(pars, data, pb, options, par_names, par_info, opt_data, plog,
     if options.check_jac:
         jac_fd = eval_jac_fd(pars, data, pb, options, par_names, par_info,
                              opt_data, plog, inodir)
-        print('Jacobian:')
-        print(jac)
-        print('Jacobian using finite differences:')
-        print(jac_fd)
-        print('Relative difference:')
-        print((jac_fd - jac) / nm.where(jac_fd, jac_fd, 1.0))
+        output('Jacobian:')
+        output(jac)
+        output('Jacobian using finite differences:')
+        output(jac_fd)
+        output('Relative difference:')
+        output((jac_fd - jac) / nm.where(jac_fd, jac_fd, 1.0))
 
         opt_data.jac = jac.copy()
         opt_data.jac_fd = jac_fd
