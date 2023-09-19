@@ -64,6 +64,7 @@ import sfepy.mechanics.matcoefs as mc
 
 def define(
         young=200e9, poisson=0.3, density=7800,
+        alpha=0.0, beta=0.0,
         plane='strain',
         dims=(1e-2, 2.5e-3, 2.5e-3),
         shape=(21, 6, 6),
@@ -209,10 +210,11 @@ def define(
     }
 
     equations = {
-        'balance_of_forces' :
-        """
+        'eq' :
+        f"""
          + dw_mass_ad.i.Omega(m.density, ddv, ddu)
-         + dw_zero.i.Omega(dv, du)
+         + {alpha} * dw_mass_ad.i.Omega(m.density, dv, du)
+         + {beta} * dw_lin_elastic_yp_ad.i.Omega(m.young, m.poisson, dv, du)
          + dw_lin_elastic_yp_ad.i.Omega(m.young, m.poisson, v, u) = 0""",
     }
 
