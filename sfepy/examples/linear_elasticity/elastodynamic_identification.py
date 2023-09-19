@@ -42,6 +42,10 @@ Usage Examples
 
     python3 sfepy/examples/linear_elasticity/elastodynamic_identification.py --opt-conf=max_nfev=1 --check-jac --shell
 
+- Identify also the damping parameters (zero by default)::
+
+    python3 sfepy/examples/linear_elasticity/elastodynamic_identification.py --par-names=young,poisson,density,alpha,beta --plot-log --shell
+
 See also :ref:`linear_elasticity-elastodynamic`.
 """
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
@@ -379,6 +383,24 @@ class NewmarkSATS(NewmarkTS):
                 mode='weak', dw_mode='sensitivity',
                 diff_vars=self.sa_info.par_names, asm_obj=mtx,
             )
+            for ic, name in enumerate(self.sa_info.par_names):
+                if name == 'alpha': # = M v
+                    info = self.sa_info.par_info['alpha']
+
+                elif name == 'beta': # = K v
+                    info = self.sa_info.par_info['beta']
+
+                else:
+                    continue
+
+                term = self.context.equations[info[1]].terms[info[2]]
+                val, iels, status = term.evaluate(mode='weak',
+                                                  diff_var=None,
+                                                  standalone=False,
+                                                  ret_status=True)
+                val /= term.sign
+                term.assemble_to(mtx[:, ic], val, iels)
+
             Vt = mtx[iu] + mtx[iv] + mtx[ia]
             zz = nm.zeros_like(Vt, dtype=nm.float64)
             return nm.block([[Vt],
@@ -405,7 +427,7 @@ def apply_sensor(pb, ts, state, out):
     output('sensor', ts.step, us)
     out.append(us)
 
-def update_pars(materials, options, pars, par_names, par_info):
+def update_pars(materials, equations, pars, par_names, par_info):
     """
     Materials and options are updated in place.
     """
@@ -415,9 +437,8 @@ def update_pars(materials, options, pars, par_names, par_info):
 
         info = par_info[key]
         ip = par_names.index(key)
-        if info[0] is None: # Update options.
-            opars = getattr(options, info[1])
-            setattr(opars, key, pars[ip])
+        if info[0] == 'term': # Update term coefficient.
+            equations[info[1]].terms[info[2]].sign = pars[ip]
 
         else: # Update materials.
             mat = materials[info[0]]
@@ -438,7 +459,7 @@ def eval_fun(pars, data, pb, options, par_names, par_info, opt_data, plog,
     opt_data.tfun.start()
 
     materials = pb.get_materials()
-    update_pars(materials, options, pars, par_names, par_info)
+    update_pars(materials, pb.equations, pars, par_names, par_info)
 
     pb.ts.set_step() # Reset ts.
     pb.get_solver().clear_lin_solver() # No digest -> clear manually.
@@ -491,7 +512,7 @@ def eval_jac(pars, data, pb, options, par_names, par_info, opt_data, plog,
     opt_data.tjac.start()
 
     materials = pb.get_materials()
-    update_pars(materials, options, pars, par_names, par_info)
+    update_pars(materials, pb.equations, pars, par_names, par_info)
 
     pb.ts.set_step() # Reset ts.
     pb.get_solver().clear_lin_solver() # No digest -> clear manually.
@@ -506,7 +527,7 @@ def eval_jac(pars, data, pb, options, par_names, par_info, opt_data, plog,
 
     tss = Solver.any_from_conf(conf, nls=_tss.nls, tsc=_tss.tsc, context=pb)
     tss.sa_info = Struct(
-        par_names=par_names, n_par=n_par, n_dof=n_dof,
+        par_info=par_info, par_names=par_names, n_par=n_par, n_dof=n_dof,
     )
     tss.matrix_sa = tss.matrix_sa0 = tss.matrix_pars = None
 
@@ -608,13 +629,15 @@ def parse_args(args=None):
     opts = dict(
         par_names = ('density,young,poisson', 'parameters to be identified'),
         opt_conf = (sdefault_opt_conf, 'optimization solver options'),
-        jac = (True, 'do not use the semi-analytical jacobian calculation'),
+        jac = (True, 'do not use the semi-analytical Jacobian calculation'),
         check_jac = (False,
                      'check the Jacobian using finite differences'),
         multi_rhs = (False, 'solve all rhs of sensitivity analysis in one call'),
         young = (200e9, """Young's modulus"""),
         poisson = (0.3, """Poisson's ratio"""),
-        density = (7800, 'density'),
+        density = (7800.0, 'density'),
+        alpha = (0.0, 'proportional damping coefficient (M)'),
+        beta = (0.0, 'proportional damping coefficient (K)'),
         dims = ('1e-2,2.5e-3,2.5e-3',
                 'physical dimensions of the block (L, d, x)'),
         shape = ('21,6,6',
@@ -682,6 +705,8 @@ def parse_args(args=None):
         'density' : [0.5 * options.density, 1.5 * options.density],
         'young' : [0.5 * options.young, 1.5 * options.young],
         'poisson' : [0.9 * options.poisson, 1.1 * options.poisson],
+        'alpha' : [0, 1e4],
+        'beta' : [0, 1e-4],
     }
 
     return options, helps
@@ -720,6 +745,8 @@ def main():
         'density' : ('m', 'Omega', 'density', options.density),
         'young' : ('m', 'Omega', 'young', options.young * 0.8),
         'poisson' : ('m', 'Omega', 'poisson', options.poisson),
+        'alpha' : ('term', 'eq', 1, 1000),
+        'beta' : ('term', 'eq', 2, 1e-5),
     }
     par_names = options.par_names
     all_par_names = set(par_info.keys())
