@@ -68,17 +68,18 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
         return adc
 
     def _assign(adof_conns, info, region, var, field, trace_region):
-        key = (var.name, region.name, info.dc_type.type, trace_region)
+        key = (var.name, region.name, info.dof_conn_type, trace_region)
         if not key in adof_conns:
-            econn = field.get_econn(info.dc_type, region, trace_region)
+            econn = field.get_econn(info.dof_conn_type, region, trace_region)
             if econn is None: return
 
             adof_conns[key] = _create(var, econn)
 
         if info.trace_region is not None:
-            key = (var.name, region.name, info.dc_type.type, None)
+            key = (var.name, region.name, info.dof_conn_type, None)
             if not key in adof_conns:
-                econn = field.get_econn(info.dc_type, region, trace_region=None)
+                econn = field.get_econn(info.dof_conn_type, region,
+                                        trace_region=None)
 
                 adof_conns[key] = _create(var, econn)
 
@@ -1419,7 +1420,7 @@ class FieldVariable(Variable):
                                      return_key=return_key)
         return out
 
-    def get_dof_conn(self, dc_type, trace_region=None):
+    def get_dof_conn(self, region_name, dct, trace_region=None):
         """
         Get active dof connectivity of a variable.
 
@@ -1436,14 +1437,14 @@ class FieldVariable(Variable):
             var_name = self.name
 
         if trace_region is None:
-            region_name, mregion_name = dc_type.region_name, None
+            mregion_name = None
         else:
-            mregion = self.field.domain.regions[dc_type.region_name]
+            mregion = self.field.domain.regions[region_name]
             region = mregion.get_mirror_region(trace_region)
             region_name = region.name
             mregion_name = mregion.name
 
-        key = (var_name, region_name, dc_type.type, mregion_name)
+        key = (var_name, region_name, dct, mregion_name)
         dc = self.adof_conns[key]
 
         return dc

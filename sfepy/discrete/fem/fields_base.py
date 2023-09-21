@@ -1077,9 +1077,7 @@ class FEField(Field):
         """
         Get extended connectivity of the given type in the given region.
         """
-        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
-
-        if ct in ('cell', 'custom'):
+        if conn_type in ('cell', 'custom'):
             if region.name == self.region.name:
                 conn = self.econn
             else:
@@ -1088,7 +1086,7 @@ class FEField(Field):
                 ii = self.region.get_cell_indices(cells, true_cells_only=tco)
                 conn = nm.take(self.econn, ii, axis=0)
 
-        elif ct == 'facet':
+        elif conn_type == 'facet':
             if region.name not in self.surface_data:
                 self.domain.create_surface_group(region)
                 self.setup_surface_data(region)
@@ -1098,7 +1096,7 @@ class FEField(Field):
             sd = self.surface_data[region.name]
             conn = sd.get_connectivity(local=local, trace_region=trace_region)
 
-        elif ct == 'point':
+        elif conn_type == 'point':
             conn = self.point_data[region.name]
 
         else:
@@ -1107,7 +1105,7 @@ class FEField(Field):
         return conn
 
     def setup_extra_data(self, geometry, info):
-        dct = info.dc_type.type
+        dct = info.dof_conn_type
 
         if dct == 'facet':
             reg = info.get_region()

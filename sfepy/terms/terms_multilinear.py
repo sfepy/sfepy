@@ -213,7 +213,7 @@ class ExpressionArg(Struct):
             # # axis 0: cells, axis 1: node, axis 2: component
             # dofs = dofs_vec[conn]
             # axis 0: cells, axis 1: component, axis 2: node
-            conn = arg.field.get_econn(self.term.get_dof_conn_type(),
+            conn = arg.field.get_econn(self.term.dof_conn_type,
                                        self.term.region)
             dofs = dofs_vec[conn].transpose((0, 2, 1))
             if arg.n_components == 1:
