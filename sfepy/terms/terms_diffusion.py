@@ -394,7 +394,7 @@ class SurfaceFluxOperatorTerm(Term):
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(state)
-        sd = state.field.surface_data[self.region.name]
+        sd = state.field.extra_data[f'sd_{self.region.name}']
         bf = state.field.get_base(sd.bkey, 0, self.integral)
 
         if mat is None:

@@ -251,8 +251,7 @@ class FEField(Field):
         self._setup_kind()
         self._setup_shape()
 
-        self.surface_data = {}
-        self.point_data = {}
+        self.extra_data = {}
         self.ori = None
         self._create_interpolant()
         self._setup_global_base()
@@ -398,7 +397,7 @@ class FEField(Field):
             faces = gel.get_surface_entities()
             aux = FESurface('aux', region, faces, conn)
             self.econn[:, :aux.n_fp] = aux.leconn
-            self.surface_data[region.name] = aux
+            self.extra_data[f'sd_{region.name}'] = aux
         else:
             self.econn[:, :conn.shape[1]] = nm.take(remap, conn[region.cells])
 
@@ -532,12 +531,13 @@ class FEField(Field):
             integration == region.kind
 
         if 'facet' in integration:
-            if region_name not in self.surface_data:
+            name = f'sd_{region_name}'
+            if name not in self.extra_data:
                 reg = self.domain.regions[region_name]
                 self.domain.create_surface_group(reg)
                 self.setup_surface_data(reg, None)
 
-            sd = self.surface_data[region_name]
+            sd = self.extra_data[name]
 
             # This works also for surface fields.
             key = sd.face_type
@@ -742,7 +742,7 @@ class FEField(Field):
     def create_bqp(self, region_name, integral):
         gel = self.gel
 
-        sd = self.surface_data[region_name]
+        sd = self.extra_data[f'sd_{region_name}']
         bqpkey = (integral.order, sd.bkey)
         if bqpkey not in self.qp_coors:
             qp = self.get_qp(sd.face_type, integral)
@@ -1087,17 +1087,18 @@ class FEField(Field):
                 conn = nm.take(self.econn, ii, axis=0)
 
         elif conn_type == 'facet':
-            if region.name not in self.surface_data:
+            name = f'sd_{region.name}'
+            if name not in self.extra_data:
                 self.domain.create_surface_group(region)
                 self.setup_surface_data(region)
 
             if self.is_surface:
                 local = True
-            sd = self.surface_data[region.name]
+            sd = self.extra_data[name]
             conn = sd.get_connectivity(local=local, trace_region=trace_region)
 
         elif conn_type == 'point':
-            conn = self.point_data[region.name]
+            conn = self.extra_data[f'pd_{region.name}']
 
         else:
             raise NotImplementedError('connectivity type %s' % ct)
@@ -1126,26 +1127,25 @@ class FEField(Field):
     def setup_surface_data(self, region, trace_region=None):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
-        if region.name not in self.surface_data:
-            name = 'surface_data_%s' % region.name
+        name = f'sd_{region.name}'
+        if name not in self.extra_data:
             if trace_region is not None and region.tdim == (region.dim - 1):
                 sd = FEPhantomSurface(name, region, self.econn)
             else:
                 sd = FESurface(name, region, self.efaces, self.econn,
                                self.region)
-            self.surface_data[region.name] = sd
+            self.extra_data[name] = sd
 
-        if region.name in self.surface_data and trace_region is not None:
-            sd = self.surface_data[region.name]
+        if name in self.extra_data and trace_region is not None:
+            sd = self.extra_data[name]
             sd.setup_mirror_connectivity(region, trace_region)
 
-        return self.surface_data[region.name]
-
     def setup_point_data(self, field, region):
-        if region.name not in self.point_data:
+        name = f'pd_{region.name}'
+        if name not in self.extra_data:
             conn = field.get_dofs_in_region(region, merge=True)
             conn.shape += (1,)
-            self.point_data[region.name] = conn
+            self.extra_data[name] = conn
 
     def create_mapping(self, region, integral, integration,
                        return_mapping=True):
@@ -1196,7 +1196,7 @@ class FEField(Field):
                 raise ValueError(msg)
 
             sd = domain.surface_groups[region.name]
-            esd = self.surface_data[region.name]
+            esd = self.extra_data[f'sd_{region.name}']
 
             conn = sd.get_connectivity()
             mapping = FEMapping(coors, conn, poly_space=geo_ps)

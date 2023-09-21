@@ -11,7 +11,7 @@ class ContactInfo(Struct):
     """
     def __init__(self, region, integral, geo, state):
         # Uses field connectivity (higher order nodes).
-        sd = state.field.surface_data[region.name]
+        sd = state.field.extra_data[f'sd_{region.name}']
 
         ISN = state.field.efaces.T.copy()
         nsd = region.dim

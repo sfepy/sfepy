@@ -166,7 +166,7 @@ class TLMembraneTerm(Term):
         vv, vu = virtual, state
 
         sg, _ = self.get_mapping(vv)
-        sd = vv.field.surface_data[self.region.name]
+        sd = vv.field.extra_data[f'sd_{self.region.name}']
 
         if self.mtx_t is None:
             aux = membranes.describe_geometry(vu.field,

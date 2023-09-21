@@ -206,7 +206,7 @@ class VolumeSurfaceTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(parameter)
 
-        sd = parameter.field.surface_data[self.region.name]
+        sd = parameter.field.extra_data[f'sd_{self.region.name}']
         coor = parameter.field.get_coor()
 
         return coor, sg, sd.econn.copy()
@@ -242,7 +242,7 @@ class SurfaceMomentTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(parameter)
 
-        sd = parameter.field.surface_data[self.region.name]
+        sd = parameter.field.extra_data[f'sd_{self.region.name}']
         coor = parameter.field.get_coor() \
                - nm.asarray(material, dtype=nm.float64)[None,:]
 
