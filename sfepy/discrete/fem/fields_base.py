@@ -549,6 +549,10 @@ class FEField(Field):
             else:
                 data_shape = (sd.n_fa, n_qp, dim, sd.n_fp)
 
+        elif (integration == 'cell' and self.region.tdim > 1 and
+              region.tdim == 1):
+            data_shape = (shape.n_cell, 0, dim, 2)  # bar elements
+
         elif integration in ('cell', 'custom'):
             _, weights = integral.get_qp(self.gel.name)
             n_qp = weights.shape[0]
@@ -1077,7 +1081,11 @@ class FEField(Field):
         """
         Get extended connectivity of the given type in the given region.
         """
-        if conn_type in ('cell', 'custom'):
+        if (conn_type == 'cell' and self.region.tdim > 1 and region.tdim == 1):
+            # bar elements
+            conn = self.extra_data[f'bars_{region.name}']
+
+        elif conn_type in ('cell', 'custom'):
             if region.name == self.region.name:
                 conn = self.econn
             else:
@@ -1121,6 +1129,11 @@ class FEField(Field):
         elif dct == 'point':
             self.setup_point_data(self, info.region)
 
+        elif (dct == 'cell' and self.region.tdim > 1 and
+              tdim is not None and tdim == 1):
+            # bar elements
+            self.setup_bar_data(self, info.region)
+
         elif dct not in ('cell', 'custom'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
@@ -1145,6 +1158,12 @@ class FEField(Field):
         if name not in self.extra_data:
             conn = field.get_dofs_in_region(region, merge=True)
             conn.shape += (1,)
+            self.extra_data[name] = conn
+
+    def setup_bar_data(self, field, region):
+        name = f'bars_{region.name}'
+        if name not in self.extra_data:
+            conn = region.domain.get_conn(tdim=1)[region.cells]
             self.extra_data[name] = conn
 
     def create_mapping(self, region, integral, integration,
