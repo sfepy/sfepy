@@ -93,9 +93,10 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
         if info.primary is not None:
             var = info.primary
             field = var.get_field()
-            field.setup_extra_data(info.ps_tg, info)
 
             region = info.get_region()
+            field.setup_extra_data(info, tdim=region.tdim)
+
             mreg_name = info.get_region_name(can_trace=False)
             mreg_name = None if region.name == mreg_name else mreg_name
             _assign(adof_conns, info, region, var, field, mreg_name)
@@ -103,7 +104,7 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
         if info.has_virtual and info.trace_region is None:
             var = info.virtual
             field = var.get_field()
-            field.setup_extra_data(info.v_tg, info)
+            field.setup_extra_data(info)
 
             aux = var.get_primary()
             var = aux if aux is not None else var

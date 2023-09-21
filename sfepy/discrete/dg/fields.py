@@ -994,16 +994,13 @@ class DGField(FEField):
 
         return conn
 
-    def setup_extra_data(self, geometry, info):
+    def setup_extra_data(self, info, tdim=None):
         """This is called in create_adof_conns(conn_info, var_indx=None,
                                                 active_only=True, verbose=True)
         for each variable but has no effect.
 
         Parameters
         ----------
-        geometry :
-            ignored
-            
         info :
             set to self.info
         """

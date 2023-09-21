@@ -392,7 +392,7 @@ class FEField(Field):
         n_dof = region.vertices.shape[0]
 
         # Remap vertex node connectivity to field-local numbering.
-        conn, gel = self.domain.get_conn(ret_gel=True)
+        conn, gel = self.domain.get_conn(ret_gel=True, tdim=region.tdim)
         if self.is_surface:
             faces = gel.get_surface_entities()
             aux = FESurface('aux', region, faces, conn)
@@ -1105,7 +1105,7 @@ class FEField(Field):
 
         return conn
 
-    def setup_extra_data(self, geometry, info):
+    def setup_extra_data(self, info, tdim=None):
         dct = info.dof_conn_type
 
         if dct == 'facet':

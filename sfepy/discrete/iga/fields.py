@@ -244,7 +244,7 @@ class IGField(Field):
 
         return all_qp, all_fbfs, all_dets
 
-    def setup_extra_data(self, geometry, info):
+    def setup_extra_data(self, info, tdim=None):
         dct = info.dof_conn_type
 
         if dct != 'cell':
