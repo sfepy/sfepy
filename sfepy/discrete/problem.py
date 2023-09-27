@@ -1338,7 +1338,7 @@ class Problem(Struct):
 
         def poststep_fun(ts, vec):
             variables = self.equations.variables
-            # EBCs need to be applied here because of algrbraically computed
+            # EBCs need to be applied here because of algebraically computed
             # variables in elastodynamics solvers.
             variables.set_state(vec, self.active_only, apply_ebc=True)
             if step_hook is not None:

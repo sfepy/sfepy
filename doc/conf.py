@@ -321,7 +321,7 @@ def process_terms(app, what_, name, obj, options, lines):
     if isinstance(obj, type_type):
         if issubclass(obj, Term) and len(obj.name):
             arg_types = obj.arg_types
-            if ((len(arg_types) > 1) and not isinstance(arg_types[0], str)):
+            if ((len(arg_types) >= 1) and not isinstance(arg_types[0], str)):
                 arg_types = [u', '.join(['%s' % arg for arg in arg_type])
                              for arg_type in arg_types]
                 at_lines = [u'``(%s)``' % arg_type for arg_type in arg_types]
