@@ -477,6 +477,8 @@ class PrimmeEigenvalueSolver(EigenvalueSolver):
     @standard_call
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
                  status=None, conf=None, comm=None, context=None):
+        if n_eigs is None:
+            n_eigs = mtx_a.shape[0]
 
         solver_kwargs = self.build_solver_kwargs(conf)
 
