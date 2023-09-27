@@ -1183,7 +1183,7 @@ class FEField(Field):
         """
         domain = self.domain
         coors = domain.get_mesh_coors(actual=True)
-        dconn = domain.get_conn()
+        dconn = domain.get_conn(tdim=region.tdim)
 
         iels = region.get_cells(true_cells_only=(region.kind == 'cell'))
         transform = (self.basis_transform[iels] if self.basis_transform
