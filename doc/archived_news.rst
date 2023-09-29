@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **29.06.2022** Version 2022.2 released (custom testing code replaced by
+  pytest, improved pyvista-based visualization script, etc.), see :ref:`release
+  notes <2022.1-2022.2>`.
+
 * **30.03.2022** Version 2022.1 released (new handling of state variables data
   and State class removal, many new sensitivity analysis terms based on
   multi-linear term implementation, etc.), see :ref:`release notes
