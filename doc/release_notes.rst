@@ -1,5 +1,119 @@
 # created: 20.07.2007 (-1)
 
+.. _2023.2-2023.3:
+
+from 2023.2 to 2023.3
+=====================
+
+- merge pull request #1006 from yosefm/deprecation-warnings
+
+  - Fix some deprecations on NumPy 1.25 and newer setuptools
+  - Explicit dependency, just for safety
+
+- merge pull request #1009 from yosefm/cython_version
+
+  - Restrict Cython
+
+- merge pull request #1008 from bubulk/sfepy-docker
+
+  - Updated sfepy-docker doc.
+
+- merge pull request from #1012 from peppe988/my-feature
+
+  - example for the new non linear terms
+  - Update Non_linear_general_poisson_equation.py
+  - Update and rename Non_linear_general_poisson_equation.py to
+    poisson_nonlinear_material.py
+
+- merge pull request #1013 from rc/test-poisson-nonlinear-material
+
+  - test poisson_nonlinear_material.py in test_examples()
+  - tweak formatting of poisson_nonlinear_material.py example
+
+- merge pull request #1015 from rc/fix-solver-init
+
+  - do not modify conf argument in Solver.__init__()
+
+- merge pull request #1016 from rc/fix-active-tl-fibres-qp-mode
+
+  - fix FibresActiveTLTerm.get_eval_shape() for qp mode
+
+- merge pull request #1017 from vlukes/piezo_flow_example
+
+  - add a new example application
+
+- merge pull request #1020 from vlukes/new_v_dot_grad_s_sensitivity_term
+
+  - fix docstring
+  - new sensitivity term: de_sd_v_dot_grad_s
+  - fix format
+
+- merge pull request #1022 from ostueker/ostueker-patch-1
+
+  - include spaces when joining cflags, configure_cppflags, configure_cflags
+
+- merge pull request #1024 from vlukes/mumps_multiple_rhs, closes #1023
+
+  - implement multiple RHS for mumps solver
+  - multiple RHS for SchurMumps() solver
+  - always make a copy of rhs
+  - fix for using ls_mumps standalone
+
+- merge pull request #1025 from rc/differentiable-terms
+
+  - new Term.diff_info attribute, update .evaluate()
+  - check 'eval' mode availability in Term.evaluate()
+  - support sensitivity dw_mode in Equations.evaluate(), Equation.evaluate() -
+    new diff_vars argument
+  - optionally clear constant_matrices in
+    ElastodynamicsBaseTS.clear_lin_solver()
+
+    - update .__call__()
+    - update BatheTS.clear_lin_solver()
+
+  - clear linear solver in Problem.solve()
+  - allow passing ElastodynamicsBaseTS instance to init_fun(), poststep_fun() -
+    update .__call__()
+  - store pack(), unpack() in ElastodynamicsBaseTS instance in
+    .get_initial_vec()
+  - fix typo in comment
+  - new sfepy/terms/terms_jax.py - JAX-based terms with automatic
+    differentiation
+
+    - new LinearElasticLADTerm (dw_lin_elastic_l_ad)
+    - new LinearElasticYPADTerm (dw_lin_elastic_yp_ad)
+    - new MassADTerm (dw_mass_ad)
+    - new get_strain(), get_stress(), ceval_elasticity_l(),
+      ceval_elasticity_yp(),   ceval_mass()
+
+  - fix process_terms(), typeset_term_syntax() in tools/gen_term_table.py
+  - new sfepy/examples/linear_elasticity/elastodynamic_identification.py
+    example
+
+    - new define(), apply_sensor(), update_pars(), eval_fun(), eval_jac_fd(),
+    eval_jac(), parse_args(), main()
+    - new NewmarkSATS, .create_nlst()
+
+  - docs: sync module index of developer guide with current sources
+  - clear linear solver explicitly in eval_fun(), revert Problem.solve() -
+    update elastodynamic_identification.py example
+  - test_install.py: test elastodynamic_identification.py example
+  - use argument type names in *ADTerm.diff_info - update LinearElasticLADTerm,
+    LinearElasticYPADTerm, MassADTerm
+  - new part argument in Term.get_material_names()
+  - update Equation.evaluate(), Term.evaluate() for actual Term.diff_info
+  - elastodynamic_identification.py: simplify eval_jac_fd()
+  - elastodynamic_identification.py: clear linear solver in eval_jac()
+  - elastodynamic_identification.py: print() -> output()
+  - elastodynamic_identification.py: implement proportional damping in define()
+  - elastodynamic_identification.py: new --alpha, --beta options, identify
+    damping - update efun_grad_par(), update_pars(), eval_fun(), eval_jac(),
+    parse_args(), main()
+
+- merge pull request #1026 from rc/fix-primme-n-eigs-none
+
+  - fix PrimmeEigenvalueSolver.__call__() for no n_eigs provided
+
 .. _2023.1-2023.2:
 
 from 2023.1 to 2023.2
