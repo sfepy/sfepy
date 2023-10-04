@@ -15,7 +15,6 @@ Find :math:`T` such that:
 where :math:`c(T)` and :math:`g(T)`  are the :math:`T` dependent coefficients.
 """
 from sfepy import data_dir
-from sfepy.base.base import output
 import numpy as np
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
@@ -69,16 +68,6 @@ regions = {
 ebcs = {
     'T1' : ('Gamma_Left', {'T.0' : 2.0}),
     'T2' : ('Gamma_Right', {'T.0' : -2.0}),
-}
-
-functions = {
-    'get_conductivity' : (get_conductivity,),
-    'd_get_conductivity' : (d_get_conductivity,),
-    'nl_src' : (nl_src,),
-    'd_nl_src' : (d_nl_src,),
-}
-
-ics = {
 }
 
 integrals = {
