@@ -321,7 +321,7 @@ def apply_view_options(views, default):
     return out
 
 
-def generate_images(images_dir, examples_dir):
+def generate_images(images_dir, examples_dir, pattern='*.py'):
     """
     Generate images from results of running examples found in
     `examples_dir` directory.
@@ -369,7 +369,7 @@ def generate_images(images_dir, examples_dir):
 
     ensure_path(images_dir + os.path.sep)
 
-    for ex_filename in locate_files('*.py', examples_dir):
+    for ex_filename in locate_files(pattern, examples_dir):
         if _omit(ex_filename, omits + omit_images, omit_dirs):
             continue
 
@@ -488,7 +488,7 @@ _include = """\
 """
 
 
-def generate_rst_files(rst_dir, examples_dir, images_dir):
+def generate_rst_files(rst_dir, examples_dir, images_dir, pattern='*.py'):
     """
     Generate Sphinx rst files for examples in `examples_dir` with images
     in `images_dir` and put them into `rst_dir`.
@@ -503,7 +503,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
     output('generating rst files...')
 
     dir_map = {}
-    for ex_filename in locate_files('*.py', examples_dir):
+    for ex_filename in locate_files(pattern, examples_dir):
         if _omit(ex_filename, omits, omit_dirs):
             continue
 
@@ -667,6 +667,7 @@ def generate_gallery(examples_dir, output_filename, doc_dir,
 
 helps = {
     'doc_dir': 'top level directory of gallery files',
+    'pattern': 'example files search pattern [default: %(default)s]',
     'no_images': 'do not (re)generate images and thumbnails',
     'output_filename': 'output file name [default: %(default)s]',
 }
@@ -679,6 +680,9 @@ def main():
     parser.add_argument('-d', '--doc-dir', metavar='doc_dir',
                         action='store', dest='doc_dir',
                         default='doc', help=helps['doc_dir'])
+    parser.add_argument('-p', '--pattern', metavar='pattern',
+                        action='store', dest='pattern',
+                        default='*.py', help=helps['pattern'])
     parser.add_argument('-n', '--no-images',
                         action='store_true', dest='no_images',
                         default=False, help=helps['no_images'])
@@ -698,10 +702,11 @@ def main():
     output_filename = os.path.join(full_rst_dir, options.output_filename)
 
     if not options.no_images:
-        generate_images(images_dir, examples_dir)
+        generate_images(images_dir, examples_dir, pattern=options.pattern)
         generate_thumbnails(thumbnails_dir, images_dir)
 
-    dir_map = generate_rst_files(full_rst_dir, examples_dir, images_dir)
+    dir_map = generate_rst_files(full_rst_dir, examples_dir, images_dir,
+                                 pattern=options.pattern)
 
     generate_gallery(examples_dir, output_filename, doc_dir,
                      rst_dir, thumbnails_dir, dir_map)
