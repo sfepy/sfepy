@@ -4,6 +4,7 @@ from sfepy.linalg import dot_sequences
 from sfepy.homogenization.utils import iter_sym
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
+import sfepy.mechanics.membranes as membranes
 
 ## expr = """
 ## e = 1/2 * (grad( vec( u ) ) + grad( vec( u ) ).T)
@@ -850,3 +851,229 @@ class ElasticWaveCauchyTerm(Term):
             fmode = 1
 
         return out_qp, geo, fmode
+
+
+class LinearSpringTerm(Term):
+    r"""Linear spring element.
+
+    :Definition:
+
+    .. math::
+        \ul{f}^{(i)} = - \ul{f}^{(j)} = k (\ul{u}^{(j)} - \ul{u}^{(i)})\\
+        \quad \forall \mbox{ elements } T_K^{i,j}\\
+        \mbox{ in a region connecting nodes } i, j
+
+    :Arguments 1:
+        - material : :math:`k`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+    name = 'dw_lin_spring'
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material': '1, 1', 'virtual': ('D', 'state'), 'state': 'D'}
+
+    @staticmethod
+    def function(out, stiffness, vec, diff_var):
+        dim = out.shape[-2] // 2
+        if diff_var is None:
+            aux = nm.array([-1, 1])
+            for k in nm.arange(dim) * dim:
+                du = (vec[:, k] - vec[:, k + 1])[:, None]
+                out[:, 0, k:(k + 2), 0] = aux * du
+
+        else:
+            eye = nm.eye(2 * dim, 2 * dim, dtype=nm.float64)
+            eye.shape = (1, 1) + eye.shape
+            out[...] = - stiffness * eye
+            for k in nm.arange(dim) * dim:
+                out[..., k, k + 1] = out[..., k + 1, k] = 1
+
+            out *= stiffness
+
+        return 0
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+
+        if diff_var is None:
+            from sfepy.discrete.variables import create_adof_conn
+            econn = virtual.field.get_econn('cell', self.region)
+            _, _, _, _, n_c = self.get_data_shape(virtual)
+            adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
+                                   econn, n_c, 0)
+
+            return mat, state()[adc], diff_var
+        else:
+            return mat, None, diff_var
+
+
+class LinearTrussTerm(Term):
+    r"""
+    Evaluate internal force in the element direction. To be used with
+    'el_avg' or 'qp' evaluation modes which give the same results.
+    The material parameter :math:`EA` is equal to
+    Young modulus times element coss-section. The internal force
+    is given by :math:`F^{(i)} = -F^{(j)} = EA / l (U^{(j)} - U^{(i)})`,
+    where :math:`l` is the element length and :math:`U`, :math:`F` are
+    the nodal displacements and the nodal forces in the element direction.
+
+    :Definition:
+
+    .. math::
+        F^{(i)} = -F^{(j)} = EA / l (U^{(j)} - U^{(i)})\\
+        \quad \forall \mbox{ elements } T_K^{i,j}\\
+        \mbox{ in a region connecting nodes } i, j
+
+    :Arguments:
+        - material : :math:`EA`
+        - parameter : :math:`\ul{w}`
+    """
+    name = 'dw_lin_truss'
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material': '1, 1', 'virtual': ('D', 'state'),
+                  'state': 'D'}
+
+    @staticmethod
+    def function(out, mat, vec, mtx_t, length, diff_var):
+        dim = mtx_t.shape[-1]
+        if diff_var is None:
+            if dim == 2:
+                du = vec[:, [1, 3]] - vec[:, [0, 2]]
+            elif dim == 3:
+                du = vec[:, [1, 3, 5]] - vec[:, [0, 2, 4]]
+
+            dx = nm.matmul(mtx_t.transpose((0, 2, 1)), du[..., None])[:, 0, :]
+            Fe = nm.zeros((2 * dim,), dtype=nm.float64)
+            Fe[0] = -1
+            Fe[1] = 1
+            out[...] = (Fe * dx)[:, None, :, None] * mat
+
+            if mtx_t is not None:
+                membranes.transform_asm_vectors(out, mtx_t)
+
+        else:
+            Ke = nm.zeros((2 * dim, 2 * dim), dtype=nm.float64)
+            Ke[0, 0] = Ke[1, 1] = 1
+            Ke[1, 0] = Ke[0, 1] = -1
+            out[...] = Ke * mat
+
+            if mtx_t is not None:
+                membranes.transform_asm_matrices(out, mtx_t)
+
+        return 0
+
+    @staticmethod
+    def get_mtx_t_and_length(coors):
+        from sfepy.linalg import norm_l2_along_axis as norm
+
+        dim = coors.shape[-1]
+        dx = coors[:, 1, :] - coors[:, 0, :]
+        mtx_t = nm.zeros((coors.shape[0], dim, dim), dtype=nm.float64)
+        length = norm(dx)[:, None]
+        v1 = dx / length
+        mtx_t[:, :, 0] = v1
+
+        if dim == 2:
+            v2 = nm.zeros_like(v1)
+            mtx_t[:, 0, 1] = -v1[:, 1]
+            mtx_t[:, 1, 1] = v1[:, 0]
+        elif dim == 3:
+            v2 = nm.zeros_like(v1)
+            for k in range(dim):
+                v2_ = nm.zeros((1, dim), dtype=nm.float64)
+                v2_[0, k] = 1.
+                dot = nm.abs(nm.sum(v2_ * v1, axis=1))
+                v2[(1 - dot) > 1e-12] = v2_
+
+            v3 = nm.cross(v1, v2)
+            v2 = nm.cross(v3, v1)
+            v2 = v2 / norm(v2)[:, None]
+            v3 = v3 / norm(v3)[:, None]
+            mtx_t[:, :, 1] = v2
+            mtx_t[:, :, 2] = v3
+        else:
+            raise ValueError(f'unsupported element dimension {dim}!')
+
+        return mtx_t, length
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import create_adof_conn
+
+        econn = virtual.field.get_econn('cell', self.region)
+        coors = virtual.field.get_coor()[econn]
+
+        mtx_t, length = self.get_mtx_t_and_length(coors)
+
+        mat = mat / length[..., None, None]
+
+        if diff_var is None:
+            _, _, _, _, n_c = self.get_data_shape(virtual)
+            adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
+                                   econn, n_c, 0)
+
+            return mat, state()[adc], mtx_t, length, diff_var
+        else:
+            return mat, None, mtx_t, length, diff_var
+
+
+class LinearTrussInternalForceTerm(Term):
+    r"""
+    Evaluate internal force in the element direction. To be used with
+    'el_avg' or 'qp' evaluation modes which give the same results.
+    The material parameter :math:`EA` is equal to
+    Young modulus times element coss-section. The internal force
+    is given by :math:`F^{(i)} = -F^{(j)} = EA / l (U^{(j)} - U^{(i)})`,
+    where :math:`l` is the element length and :math:`U`, :math:`F` are
+    the nodal displacements and the nodal forces in the element direction.
+
+    :Definition:
+
+    .. math::
+        F = EA / l (U^{(j)} - U^{(i)})\\
+        \quad \forall \mbox{ elements } T_K^{i,j}\\
+        \mbox{ in a region connecting nodes } i, j
+
+    :Arguments:
+        - material : :math:`EA`
+        - parameter : :math:`\ul{w}`
+    """
+    name = 'ev_lin_truss_force'
+    arg_types = ('material', 'parameter')
+    arg_shapes = {'material': '1, 1', 'parameter': 'D'}
+
+    @staticmethod
+    def function(out, mat, vec, mtx_t):
+        dim = mtx_t.shape[-1]
+        if dim == 2:
+            du = vec[:, [1, 3]] - vec[:, [0, 2]]
+        elif dim == 3:
+            du = vec[:, [1, 3, 5]] - vec[:, [0, 2, 4]]
+
+        dx = nm.matmul(mtx_t.transpose((0, 2, 1)), du[..., None])[:, 0, :]
+        out[...] = dx[:, None, None, :] * mat
+
+        return 0
+
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import create_adof_conn
+
+        econn = parameter.field.get_econn('cell', self.region)
+        coors = parameter.field.get_coor()[econn]
+
+        mtx_t, length = LinearTrussTerm.get_mtx_t_and_length(coors)
+
+        mat = mat / length[..., None, None]
+
+        _, _, _, _, n_c = self.get_data_shape(parameter)
+        adc = create_adof_conn(nm.arange(parameter.n_dof, dtype=nm.int32),
+                               econn, n_c, 0)
+
+        return mat, parameter()[adc], mtx_t
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, _, _, _, _ = self.get_data_shape(parameter)
+
+        return (n_el, 1, 1, 1), parameter.dtype

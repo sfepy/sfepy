@@ -35,7 +35,7 @@ def _get_bqp(geometry, order):
                           [gel.conn[None, :]], [[0]], [geometry])
     domain = FEDomain('domain', mesh)
     omega = domain.create_region('Omega', 'all')
-    surf =  domain.create_region('Surf', 'vertices of surface', 'facet')
+    surf = domain.create_region('Surf', 'vertices of surface', 'facet')
     field = Field.from_args('f', nm.float64, shape=1,
                             region=omega, approx_order=1)
     field.setup_surface_data(surf)
@@ -43,7 +43,7 @@ def _get_bqp(geometry, order):
     integral = Integral('aux', order=order)
     field.create_bqp('Surf', integral)
 
-    sd = field.surface_data['Surf']
+    sd = field.extra_data['sd_Surf']
     qp = field.qp_coors[(integral.order, sd.bkey)]
 
     output('geometry:', geometry, 'order:', order, 'num. points:',

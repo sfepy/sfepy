@@ -75,7 +75,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     cmap, _ = field.get_mapping(region, integral, 'surface')
     e_normals = cmap.normal[..., 0]
 
-    sd = field.surface_data[region.name]
+    sd = field.extra_data[f'sd_{region.name}']
     econn = sd.get_connectivity()
     mask[econn] += 1
 

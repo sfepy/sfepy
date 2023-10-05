@@ -69,7 +69,7 @@ def setup_extra_data(conn_info):
         for var in info.all_vars:
             field = var.get_field()
             if var == info.primary:
-                field.setup_extra_data(info.ps_tg, info)
+                field.setup_extra_data(info)
 
 def fields_from_conf(conf, regions):
     fields = {}

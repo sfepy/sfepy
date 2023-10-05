@@ -213,7 +213,7 @@ class ExpressionArg(Struct):
             # # axis 0: cells, axis 1: node, axis 2: component
             # dofs = dofs_vec[conn]
             # axis 0: cells, axis 1: component, axis 2: node
-            conn = arg.field.get_econn(self.term.get_dof_conn_type(),
+            conn = arg.field.get_econn(self.term.dof_conn_type,
                                        self.term.region)
             dofs = dofs_vec[conn].transpose((0, 2, 1))
             if arg.n_components == 1:
@@ -230,7 +230,7 @@ class ExpressionArg(Struct):
     def get_bf(self, expr_cache):
         ag, _ = self.term.get_mapping(self.arg)
         if self.term.integration == 'facet_extra':
-            sd = self.arg.field.surface_data[self.term.region.name]
+            sd = self.arg.field.extra_data[f'sd_{self.term.region.name}']
             _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
             bf = _bf[sd.fis[:, 1], ...]
 

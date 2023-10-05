@@ -689,7 +689,7 @@ class HyperElasticSurfaceTLFamilyData(HyperElasticFamilyData):
         sg, _ = state.field.get_mapping(region,
                                         integral, integration,
                                         get_saved=True)
-        sd = state.field.surface_data[region.name]
+        sd = state.field.extra_data[f'sd_{region.name}']
 
         vec = state(step=step, derivative=derivative)
 
@@ -789,7 +789,7 @@ class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(virtual)
-        sd = virtual.field.surface_data[self.region.name]
+        sd = virtual.field.extra_data[f'sd_{self.region.name}']
         bf = virtual.field.get_base(sd.bkey, 0, self.integral)
 
         name = state.name
@@ -838,7 +838,7 @@ class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(parameter)
-        sd = parameter.field.surface_data[self.region.name]
+        sd = parameter.field.extra_data[f'sd_{self.region.name}']
         bf = parameter.field.get_base(sd.bkey, 0, self.integral)
 
         name = parameter.name

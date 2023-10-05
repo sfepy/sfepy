@@ -219,7 +219,12 @@ class Domain(Struct):
         region.name = name
         region.definition = select
         region.set_kind(kind)
-        region.finalize(allow_empty=allow_empty)
+        finalize = True
+        if (extra_options is not None and
+                not(extra_options.get('finalize', True))):
+            finalize = False
+        if finalize:
+            region.finalize(allow_empty=allow_empty)
         region.parent = parent
         region.extra_options = extra_options
         region.update_shape()

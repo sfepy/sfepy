@@ -106,7 +106,7 @@ class Mapping(Struct):
             if kind == 's':
                 coors = coors[region.vertices]
 
-            conn, gel = region.domain.get_conn(ret_gel=True)
+            conn, gel = region.domain.get_conn(ret_gel=True, tdim=region.tdim)
 
             if kind == 'v':
                 cells = region.get_cells()

@@ -244,8 +244,8 @@ class IGField(Field):
 
         return all_qp, all_fbfs, all_dets
 
-    def setup_extra_data(self, geometry, info):
-        dct = info.dc_type.type
+    def setup_extra_data(self, info, tdim=None):
+        dct = info.dof_conn_type
 
         if dct != 'cell':
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
