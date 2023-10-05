@@ -175,6 +175,27 @@ custom = {
             'grid_vector1': [1, 0, 0],
         },
     },
+    'linear_elasticity/truss_bridge.py': {
+        '': {
+            'view_2d': True,
+            'fields': ['u:wu:p0', '1:vw:p0', 'S:e:p1'],
+            'grid_vector1': [0, 2, 0],
+        },
+    },
+    'linear_elasticity/truss_bridge3d.py': {
+        '_Solid': {
+            'fields': ['u_solid:wu_solid:f1e3:p0'],
+            'camera_position': [-5.912, -6.64883, 1.80888,
+                                5.05199, 2.28013, -1.49468,
+                                0, 0, 1],
+        },
+        '_Struct': {
+            'fields': ['u_struct:wu_struct:f1e3:p0'],
+            'camera_position': [-5.912, -6.64883, 1.80888,
+                                5.05199, 2.28013, -1.49468,
+                                0, 0, 1],
+        },
+    },
     'navier_stokes/stokes_slip_bc.py': {
         '': {
             'fields': ['u:g:f.25:p0', 'u:o.4:p0', 'p:p1'],
