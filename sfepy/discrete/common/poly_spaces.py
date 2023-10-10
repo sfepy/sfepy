@@ -33,6 +33,10 @@ def _get_table():
                                       name_attr='name')
     return PolySpace._all
 
+def register_poly_space(cls):
+    table = _get_table()
+    table[cls.name] = cls
+
 class PolySpace(Struct):
     """Abstract polynomial space class."""
     _all = None
