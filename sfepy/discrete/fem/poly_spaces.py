@@ -1156,3 +1156,115 @@ class BernsteinTensorProductPolySpace(FEPolySpace):
                             base[iq, iv, :] *= B[ii, ni]
 
         return base
+
+def get_lgl_nodes(p):
+    """
+    Compute the Legendre-Gauss-Lobatto nodes and weights.
+    """
+    from numpy.polynomial.legendre import legvander
+
+    # Use the Chebyshev-Gauss-Lobatto nodes as the first guess.
+    xs = nm.cos(nm.pi * nm.arange(p + 1) / p)
+
+    eps = nm.finfo(nm.float64).eps
+    xs0 = 2.0
+    while nm.linalg.norm(xs - xs0, ord=nm.inf) > eps:
+        xs0 = xs
+        V = legvander(xs, p)
+        xs = xs0 - (xs * V[:, p] - V[:,p-1]) / ((p+1) * V[:,p])
+
+    ws = 2.0 / (p * (p+1) * V[:,p]**2)
+
+    return xs, ws
+
+def eval_lagrange1d_basis(coors, ncoors):
+    n_nod = len(ncoors)
+    n_coors = len(coors)
+
+    val = nm.ones((n_coors, n_nod), dtype=nm.float64)
+    dval = nm.zeros((n_coors, n_nod), dtype=nm.float64)
+    for ib in range(n_nod):
+        for ic in range(n_nod):
+            if ib != ic:
+                val[:, ib] *= ((coors - ncoors[ic])
+                               / (ncoors[ib] - ncoors[ic]))
+
+        for ik in range(n_nod):
+            if ib == ik: continue
+            aux = 1.0 / (ncoors[ib] - ncoors[ik])
+            for ic in range(n_nod):
+                if (ib != ic) and (ik != ic):
+                    aux *= ((coors - ncoors[ic])
+                            / (ncoors[ib] - ncoors[ic]))
+
+            dval[:, ib] += aux
+
+    return val, dval
+
+class SEMTensorProductPolySpace(FEPolySpace):
+    """
+    Spectral element method polynomial space = Lagrange polynomial space with
+    Legendre-Gauss-Lobatto nodes. The same nodes and corresponding weights
+    should be used for numerical quadrature to obtain a diagonal mass matrix.
+    """
+    name = 'sem_tensor_product'
+
+    def __init__(self, name, geometry, order, init_context=True):
+        PolySpace.__init__(self, name, geometry, order)
+
+        (self.nodes, self.nts,
+         node_coors, self.node_weights,
+         self.node_coors1d, self.weights1d) = self._define_nodes()
+        self.node_coors = nm.ascontiguousarray(node_coors)
+
+        self.n_nod = self.nodes.shape[0]
+        self.eval_ctx = None
+
+    def _define_nodes(self):
+        nn, nts, node_coors = LagrangeTensorProductPolySpace._define_nodes(self)
+        nodes = nn[:, 1::2]
+
+        node_coors1d, weights1d = get_lgl_nodes(self.order)
+        # Transform node_coors1d from [1, -1] to [0, 1].
+        node_coors1d = 0.5 * (1 - node_coors1d)
+        weights1d *= 0.5
+
+        node_weights = nm.ones_like(node_coors[:, 0])
+        for ii, ni in enumerate(nodes.T):
+            node_coors[:, ii] = node_coors1d[ni]
+            node_weights[:] *= weights1d[ni]
+
+        return nodes, nts, node_coors, node_weights, node_coors1d, weights1d
+
+    def _eval_base(self, coors, diff=0, ori=None,
+                   suppress_errors=False, eps=1e-15):
+        """
+        See :func:`PolySpace.eval_base()`.
+        """
+        dim = self.geometry.dim
+        bdim = dim if diff else 1
+
+        assert diff in (0, 1)
+
+        out = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+        vals = []
+        dvals = []
+        for ii in range(dim):
+            b1d, db1d = eval_lagrange1d_basis(coors[:, ii], self.node_coors1d)
+            vals.append(b1d)
+            dvals.append(db1d)
+
+        if diff == 0:
+            for ii, ni in enumerate(self.nodes.T):
+                out[:, 0, :] *= vals[ii][:, ni]
+
+        else:
+            for ii, ni in enumerate(self.nodes.T):
+                for iv in range(bdim):
+                    if ii == iv:
+                        out[:, iv, :] *= dvals[ii][:, ni]
+
+                    else:
+                        out[:, iv, :] *= vals[ii][:, ni]
+
+        return out
