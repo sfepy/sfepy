@@ -443,6 +443,24 @@ class H1SNodalVolumeField(H1NodalVolumeField):
 
         return ctx
 
+class H1SEMVolumeField(H1NodalVolumeField):
+    family_name = 'volume_H1_sem'
+
+    def create_basis_context(self):
+        """
+        Create the context required for evaluating the field basis.
+        """
+        # Hack for tests to pass - the reference coordinates are determined
+        # from vertices only - we can use the Lagrange basis context for the
+        # moment. The true context for Field.evaluate_at() is not implemented.
+        gps = self.gel.poly_space
+        mesh = self.create_mesh(extra_nodes=False)
+
+        ctx = geo_ctx = gps.create_context(self.cmesh, 0, 1e-15, 100, 1e-8)
+        ctx.geo_ctx = geo_ctx
+
+        return ctx
+
 class H1DiscontinuousField(H1NodalMixin, FEField):
     family_name = 'volume_H1_lagrange_discontinuous'
 
@@ -528,3 +546,6 @@ class H1NodalSurfaceField(H1NodalMixin, FEField):
 
 class H1SNodalSurfaceField(H1NodalSurfaceField):
     family_name = 'surface_H1_serendipity'
+
+class H1SEMSurfaceField(H1NodalSurfaceField):
+    family_name = 'surface_H1_sem'
