@@ -90,7 +90,7 @@ def _gen_common_data(orders, gels):
 
     bases = ([ii for ii in combine([['2_4', '3_8'],
                                     ['lagrange', 'serendipity', 'bernstein',
-                                     'lobatto']])]
+                                     'lobatto', 'sem']])]
              + [ii for ii in combine([['2_3', '3_4'],
                                       ['lagrange', 'bernstein']])])
     for geom, poly_space_base in bases:
@@ -201,7 +201,7 @@ def test_partition_of_unity(gels):
     orders = {'2_3' : 5, '2_4' : 5, '3_4' : 5, '3_8' : 5}
     bases = (
         [ii for ii in combine([['2_4', '3_8'],
-                               ['lagrange', 'serendipity', 'bernstein']]
+                               ['lagrange', 'serendipity', 'bernstein', 'sem']]
         )]
         + [ii for ii in combine([['2_3', '3_4'],
                                  ['lagrange', 'bernstein']])]
@@ -211,6 +211,8 @@ def test_partition_of_unity(gels):
         max_order = orders[geom]
         for order in range(max_order + 1):
             if (poly_space_base == 'serendipity') and not (0 < order < 4):
+                continue
+            if (poly_space_base == 'sem') and not (0 < order):
                 continue
             tst.report('geometry: %s, base: %s, order: %d'
                        % (geom, poly_space_base, order))
@@ -238,7 +240,7 @@ def test_continuity(gels):
          field, ps, rrc, rcell, crc, ccell, vec,
          edofs, fdofs) in _gen_common_data(orders, gels):
 
-        if poly_space_base in ('lagrange', 'serendipity', 'bernstein'):
+        if poly_space_base in ('lagrange', 'serendipity', 'bernstein', 'sem'):
             rbf = ps.eval_base(rrc)
             cbf = ps.eval_base(crc)
 
