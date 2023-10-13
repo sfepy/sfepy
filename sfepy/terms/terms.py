@@ -182,10 +182,7 @@ class ConnInfo(Struct):
             return self.region
 
     def get_region_name(self, can_trace=True):
-        if self.trace_region is not None and can_trace:
-            reg = self.region.get_mirror_region(self.trace_region)
-        else:
-            reg = self.region
+        reg = self.get_region(can_trace)
 
         if reg is not None:
             return reg.name
