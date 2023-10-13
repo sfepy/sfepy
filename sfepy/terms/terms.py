@@ -726,19 +726,7 @@ class Term(Struct):
 
         all_vars = self.get_variables()
 
-        tgs = self.get_geometry_types()
-
-        v_tg = None
-        if vvar is not None:
-            field = vvar.get_field()
-            if field is not None:
-                if vvar.name in tgs:
-                    v_tg = tgs[vvar.name]
-
-                else:
-                    v_tg = None
-
-        else:
+        if vvar is None:
             # No virtual variable -> all unknowns are in fact known parameters.
             pvars += svars
             svars = []
@@ -767,11 +755,6 @@ class Term(Struct):
             field = svar.get_field()
             trace_region = self.arg_trace_regions[svar.name]
 
-            if svar.name in tgs:
-                ps_tg = tgs[svar.name]
-            else:
-                ps_tg = v_tg
-
             val = ConnInfo(virtual=vvar,
                            state=svar,
                            primary=svar,
@@ -779,8 +762,6 @@ class Term(Struct):
                            has_state=True,
                            trace_region=trace_region,
                            dof_conn_type=self.get_dof_conn_type(svar.name),
-                           v_tg=v_tg,
-                           ps_tg=ps_tg,
                            region=region,
                            all_vars=all_vars)
             vals.append(val)
@@ -790,11 +771,6 @@ class Term(Struct):
             field = pvar.get_field()
             trace_region = self.arg_trace_regions[pvar.name]
 
-            if pvar.name in tgs:
-                ps_tg = tgs[pvar.name]
-            else:
-                ps_tg = v_tg
-
             val = ConnInfo(virtual=vvar,
                            state=None,
                            primary=pvar.get_primary(),
@@ -802,8 +778,6 @@ class Term(Struct):
                            has_state=False,
                            trace_region=trace_region,
                            dof_conn_type=self.get_dof_conn_type(pvar.name),
-                           v_tg=v_tg,
-                           ps_tg=ps_tg,
                            region=region,
                            all_vars=all_vars)
             vals.append(val)
@@ -817,8 +791,6 @@ class Term(Struct):
                            has_state=False,
                            trace_region=None,
                            dof_conn_type=self.get_dof_conn_type(vvar.name),
-                           v_tg=v_tg,
-                           ps_tg=v_tg,
                            region=region,
                            all_vars=all_vars)
             vals.append(val)
