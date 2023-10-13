@@ -95,7 +95,7 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
             field = var.get_field()
 
             region = info.get_region()
-            field.setup_extra_data(info, tdim=region.tdim)
+            field.setup_extra_data(info)
 
             mreg_name = info.get_region_name(can_trace=False)
             mreg_name = None if region.name == mreg_name else mreg_name

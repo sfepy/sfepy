@@ -500,6 +500,7 @@ class Term(Struct):
 
         self.classify_args()
         self.check_args()
+        self.setup_geometry_types()
 
     def assign_args(self, variables, materials, user=None):
         """
@@ -780,7 +781,7 @@ class Term(Struct):
                            has_virtual=True,
                            has_state=True,
                            trace_region=trace_region,
-                           dof_conn_type=self.dof_conn_type,
+                           dof_conn_type=self.get_dof_conn_type(svar.name),
                            v_tg=v_tg,
                            ps_tg=ps_tg,
                            region=region,
@@ -803,7 +804,7 @@ class Term(Struct):
                            has_virtual=vvar is not None,
                            has_state=False,
                            trace_region=trace_region,
-                           dof_conn_type=self.dof_conn_type,
+                           dof_conn_type=self.get_dof_conn_type(pvar.name),
                            v_tg=v_tg,
                            ps_tg=ps_tg,
                            region=region,
@@ -818,7 +819,7 @@ class Term(Struct):
                            has_virtual=True,
                            has_state=False,
                            trace_region=None,
-                           dof_conn_type=self.dof_conn_type,
+                           dof_conn_type=self.get_dof_conn_type(vvar.name),
                            v_tg=v_tg,
                            ps_tg=v_tg,
                            region=region,
@@ -919,10 +920,32 @@ class Term(Struct):
 
         return name
 
+    def setup_geometry_types(self):
+        self.geometry_types = {}
+
+        for var in self.get_variables():
+            mreg_name = self.arg_trace_regions[var.name]
+
+            if mreg_name is not None:
+                reg = self.region.get_mirror_region(mreg_name)
+            else:
+                reg = self.region
+
+            if isinstance(self.integration, tuple):
+                if reg.kind in self.integration:
+                    integration = reg.kind
+                elif reg.kind == 'facet' and 'facet_extra' in self.integration:
+                    integration = 'facet_extra'
+                else:
+                    raise ValueError(f'region "{reg.name}" cannot be used as '
+                                     f'"{self.name}" term integration domain!')
+            else:
+                integration = self.integration
+
+            self.geometry_types[var.name] = integration, reg.tdim
+
     def setup_integration(self):
         self.has_geometry = True
-
-        self.geometry_types = {}
         reg = self.region
 
         if isinstance(self.integration, tuple):
@@ -936,29 +959,10 @@ class Term(Struct):
         else:
             integration = self.integration
 
-        for var in self.get_variables():
-            self.geometry_types[var.name] = integration
-
-        gtypes = list(set(self.geometry_types.values()))
-
-        if 'facet_extra' in gtypes:
-            self.dof_conn_type = 'cell'
-        elif len(gtypes):
-            self.dof_conn_type = gtypes[0]
-
         self.act_integration = integration
 
     def get_region(self):
         return self.region
-
-    def get_geometry_types(self):
-        """
-        Returns
-        -------
-        out : dict
-            The required geometry types for each variable argument.
-        """
-        return self.geometry_types
 
     def get_assembling_cells(self, shape=None):
         """
@@ -1068,7 +1072,7 @@ class Term(Struct):
         This is a convenience wrapper of Field.get_mapping() that
         initializes the arguments using the term data.
         """
-        integration = self.geometry_types[variable.name]
+        integration = self.geometry_types[variable.name][0]
         mreg_name = self.arg_trace_regions[variable.name]
 
         if mreg_name is not None:
@@ -1093,7 +1097,7 @@ class Term(Struct):
         This is a convenience wrapper of FieldVariable.get_data_shape() that
         initializes the arguments using the term data.
         """
-        integration = self.geometry_types[variable.name]
+        integration, _ = self.geometry_types[variable.name]
         mreg_name = self.arg_trace_regions[variable.name]
 
         if mreg_name is not None:
@@ -1120,7 +1124,7 @@ class Term(Struct):
         step = get_default(step, self.arg_steps[name])
         time_derivative = get_default(time_derivative,
                                       self.arg_derivatives[name])
-        integration = get_default(integration, self.geometry_types[name])
+        integration = get_default(integration, self.geometry_types[name][0])
 
         data = variable.evaluate(mode=quantity_name,
                                  region=self.region, integral=self.integral,
@@ -1533,6 +1537,14 @@ class Term(Struct):
 
         return out
 
+    def get_dof_conn_type(self, var_name):
+        dct = self.geometry_types[var_name]
+
+        if dct[0] == 'facet_extra':
+            return ('cell', dct[1])
+        else:
+            return dct
+
     def assemble_to(self, asm_obj, val, iels, mode='vector', diff_var=None):
         """
         Assemble the results of term evaluation.
@@ -1551,8 +1563,8 @@ class Term(Struct):
 
         vvar = self.get_virtual_variable()
         rname = self.region.name
-        dct = self.dof_conn_type
         extra = None
+        rdct = self.get_dof_conn_type(vvar.name)
 
         if mode == 'vector':
             if asm_obj.dtype == nm.float64:
@@ -1566,7 +1578,7 @@ class Term(Struct):
                         val[ii] = nm.complex128(val[ii])
 
             if not isinstance(val, tuple):
-                dc = vvar.get_dof_conn(rname, dct)
+                dc = vvar.get_dof_conn(rname, rdct)
                 assert_(val.shape[2] == dc.shape[1])
 
                 assemble(asm_obj, val, iels, 1.0, dc)
@@ -1607,10 +1619,11 @@ class Term(Struct):
                     sign = 0.0
 
             if not isinstance(val, tuple):
-                rdc = vvar.get_dof_conn(rname, dct)
+                rdc = vvar.get_dof_conn(rname, rdct)
 
                 trace_region = self.arg_trace_regions[svar.name]
-                cdc = svar.get_dof_conn(rname, dct, trace_region)
+                cdct = self.get_dof_conn_type(svar.name)
+                cdc = svar.get_dof_conn(rname, cdct, trace_region)
                 assert_(val.shape[2:] == (rdc.shape[1], cdc.shape[1]))
 
                 assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)

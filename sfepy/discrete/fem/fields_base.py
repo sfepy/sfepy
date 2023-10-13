@@ -1136,8 +1136,8 @@ class FEField(Field):
 
         return conn
 
-    def setup_extra_data(self, info, tdim=None):
-        dct = info.dof_conn_type
+    def setup_extra_data(self, info):
+        dct, tdim = info.dof_conn_type
 
         if dct == 'facet':
             reg = info.get_region()
@@ -1152,8 +1152,7 @@ class FEField(Field):
         elif dct == 'point':
             self.setup_point_data(self, info.region)
 
-        elif (dct == 'cell' and self.region.tdim > 1 and
-              tdim is not None and tdim == 1):
+        elif dct == 'cell' and tdim == 1 and self.region.tdim > 1:
             # bar elements
             self.setup_bar_data(self, info.region)
 
