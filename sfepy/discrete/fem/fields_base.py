@@ -1131,27 +1131,26 @@ class FEField(Field):
         return conn
 
     def setup_extra_data(self, info):
-        dct, tdim = info.dof_conn_type
+        for dct, tdim in set(info.dof_conn_types.values()):
+            if dct == 'facet':
+                reg = info.get_region()
+                mreg_name = info.get_region_name(can_trace=False)
+                mreg_name = None if reg.name == mreg_name else mreg_name
+                self.domain.create_surface_group(reg)
+                self.setup_surface_data(reg, mreg_name)
 
-        if dct == 'facet':
-            reg = info.get_region()
-            mreg_name = info.get_region_name(can_trace=False)
-            mreg_name = None if reg.name == mreg_name else mreg_name
-            self.domain.create_surface_group(reg)
-            self.setup_surface_data(reg, mreg_name)
+            elif dct == 'edge':
+                raise NotImplementedError('dof connectivity type %s' % dct)
 
-        elif dct == 'edge':
-            raise NotImplementedError('dof connectivity type %s' % dct)
+            elif dct == 'point':
+                self.setup_point_data(self, info.region)
 
-        elif dct == 'point':
-            self.setup_point_data(self, info.region)
+            elif dct == 'cell' and tdim == 1 and self.region.tdim > 1:
+                # bar elements
+                self.setup_bar_data(self, info.region)
 
-        elif dct == 'cell' and tdim == 1 and self.region.tdim > 1:
-            # bar elements
-            self.setup_bar_data(self, info.region)
-
-        elif dct not in ('cell', 'custom'):
-            raise ValueError('unknown dof connectivity type! (%s)' % dct)
+            elif dct not in ('cell', 'custom'):
+                raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     def setup_surface_data(self, region, trace_region=None):
         """nodes[leconn] == econn"""

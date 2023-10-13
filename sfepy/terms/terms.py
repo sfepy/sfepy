@@ -725,6 +725,11 @@ class Term(Struct):
         pvars = self.get_parameter_variables()
 
         all_vars = self.get_variables()
+        dof_conn_types = {}
+        for var in all_vars:
+            aux = var.get_primary()
+            pvar = aux if aux is not None else var
+            dof_conn_types[pvar.name] = self.get_dof_conn_type(var.name)
 
         if vvar is None:
             # No virtual variable -> all unknowns are in fact known parameters.
@@ -761,7 +766,7 @@ class Term(Struct):
                            has_virtual=True,
                            has_state=True,
                            trace_region=trace_region,
-                           dof_conn_type=self.get_dof_conn_type(svar.name),
+                           dof_conn_types=dof_conn_types,
                            region=region,
                            all_vars=all_vars)
             vals.append(val)
@@ -777,7 +782,7 @@ class Term(Struct):
                            has_virtual=vvar is not None,
                            has_state=False,
                            trace_region=trace_region,
-                           dof_conn_type=self.get_dof_conn_type(pvar.name),
+                           dof_conn_types=dof_conn_types,
                            region=region,
                            all_vars=all_vars)
             vals.append(val)
@@ -790,7 +795,7 @@ class Term(Struct):
                            has_virtual=True,
                            has_state=False,
                            trace_region=None,
-                           dof_conn_type=self.get_dof_conn_type(vvar.name),
+                           dof_conn_types=dof_conn_types,
                            region=region,
                            all_vars=all_vars)
             vals.append(val)
@@ -1041,7 +1046,7 @@ class Term(Struct):
         This is a convenience wrapper of Field.get_mapping() that
         initializes the arguments using the term data.
         """
-        integration = self.geometry_types[variable.name][0]
+        integration, _ = self.geometry_types[variable.name]
         mreg_name = self.arg_trace_regions[variable.name]
 
         if mreg_name is not None:

@@ -67,18 +67,18 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
 
         return adc
 
-    def _assign(adof_conns, info, region, var, field, trace_region):
-        key = (var.name, region.name, info.dof_conn_type, trace_region)
+    def _assign(adof_conns, dof_conn_type, region, var, field, trace_region):
+        key = (var.name, region.name, dof_conn_type, trace_region)
         if not key in adof_conns:
-            econn = field.get_econn(info.dof_conn_type, region, trace_region)
+            econn = field.get_econn(dof_conn_type, region, trace_region)
             if econn is None: return
 
             adof_conns[key] = _create(var, econn)
 
-        if info.trace_region is not None:
-            key = (var.name, region.name, info.dof_conn_type, None)
+        if trace_region is not None:
+            key = (var.name, region.name, dof_conn_type, None)
             if not key in adof_conns:
-                econn = field.get_econn(info.dof_conn_type, region,
+                econn = field.get_econn(dof_conn_type, region,
                                         trace_region=None)
 
                 adof_conns[key] = _create(var, econn)
@@ -99,7 +99,8 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
 
             mreg_name = info.get_region_name(can_trace=False)
             mreg_name = None if region.name == mreg_name else mreg_name
-            _assign(adof_conns, info, region, var, field, mreg_name)
+            dct = info.dof_conn_types[var.name]
+            _assign(adof_conns, dct, region, var, field, mreg_name)
 
         if info.has_virtual and info.trace_region is None:
             var = info.virtual
@@ -110,7 +111,8 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
             var = aux if aux is not None else var
 
             region = info.get_region(can_trace=False)
-            _assign(adof_conns, info, region, var, field, None)
+            dct = info.dof_conn_types[var.name]
+            _assign(adof_conns, dct, region, var, field, None)
 
     if verbose:
         output('...done in %.2f s' % timer.stop())

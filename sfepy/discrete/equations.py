@@ -393,18 +393,15 @@ class Equations(Container):
 
             is_surface = rvar.is_surface or cvar.is_surface
 
-            dct = info.dof_conn_type
-            if not (dct[0] in ('cell', 'custom') or is_surface
-                    or info.trace_region is not None or any_dof_conn):
-                continue
-
             rreg_name = info.get_region_name(can_trace=False)
             creg_name = info.get_region_name()
             mreg_name = None if creg_name == rreg_name else rreg_name
 
             rname = rvar.get_primary_name()
-            rkey = (rname, rreg_name, dct, None)
-            ckey = (cvar.name, creg_name, dct, mreg_name)
+            cpname = cvar.get_primary_name()
+            rkey = (rname, rreg_name, info.dof_conn_types[rname], None)
+            ckey = (cvar.name, creg_name, info.dof_conn_types[cpname],
+                    mreg_name)
 
             dc_key = (rkey, ckey)
 
