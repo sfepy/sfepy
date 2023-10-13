@@ -101,8 +101,7 @@ class IGField(Field):
         """
         Get DOF connectivity of the given type in the given region.
         """
-        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
-
+        ct = conn_type[0] if isinstance(conn_type, tuple) else conn_type
         nconn = self.nurbs.conn
 
         if ct == 'cell':
@@ -244,8 +243,8 @@ class IGField(Field):
 
         return all_qp, all_fbfs, all_dets
 
-    def setup_extra_data(self, info, tdim=None):
-        dct = info.dof_conn_type
+    def setup_extra_data(self, info):
+        dct, _ = info.dof_conn_type
 
         if dct != 'cell':
             raise ValueError('unknown dof connectivity type! (%s)' % dct)

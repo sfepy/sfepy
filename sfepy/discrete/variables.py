@@ -1697,14 +1697,15 @@ class FieldVariable(Variable):
                                         return_key=True)
         key += (time_derivative, trace_region)
 
+        dct = ('cell' if integration == 'facet_extra' else integration,
+               region.tdim)
+
         if key in cache:
             out = cache[key]
 
         else:
             vec = self(step=step, derivative=time_derivative, dt=dt)
-
-            ct = 'cell' if integration == 'facet_extra' else integration
-            conn = field.get_econn(ct, region, trace_region)
+            conn = field.get_econn(dct, region, trace_region)
 
             shape = self.get_data_shape(integral, integration, region.name)
 

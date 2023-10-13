@@ -968,8 +968,8 @@ class DGField(FEField):
 
         Parameters
         ----------
-        conn_type : string or Struct
-            'volume' is only supported
+        conn_type : tuple or string
+            ('cell', dim) or 'cell' is only supported
         region : sfepy.discrete.common.region.Region
         trace_region : ignored
              (Default value = None)
@@ -981,8 +981,7 @@ class DGField(FEField):
             connectivity information
 
         """
-
-        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
+        ct = conn_type[0] if isinstance(conn_type, tuple) else conn_type
 
         if ct == 'cell':
             if region.name == self.region.name:
@@ -994,7 +993,7 @@ class DGField(FEField):
 
         return conn
 
-    def setup_extra_data(self, info, tdim=None):
+    def setup_extra_data(self, info):
         """This is called in create_adof_conns(conn_info, var_indx=None,
                                                 active_only=True, verbose=True)
         for each variable but has no effect.

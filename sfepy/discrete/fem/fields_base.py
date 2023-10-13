@@ -1080,12 +1080,35 @@ class FEField(Field):
     def get_econn(self, conn_type, region, trace_region=None, local=False):
         """
         Get extended connectivity of the given type in the given region.
+
+        Parameters
+        ----------
+        conn_type: tuple or string
+            DOF connectivity type, eg. ('cell', 3) or 'cell'.
+            If the topological dimension not specified, taken from region.tdim.
+        region: sfepy.discrete.common.region.Region
+            The region for which the connectivity is required.
+        trace_region: None or string
+            If not None, return mirror connectivity according to `local`.
+        local: bool
+            If True, return local connectivity w.r.t. surface nodes,
+            otherwise return global connectivity w.r.t. all mesh nodes.
+
+        Returns
+        -------
+        econn: numpy.ndarray
+            Connectivity information.
         """
-        if (conn_type == 'cell' and self.region.tdim > 1 and region.tdim == 1):
+        if isinstance(conn_type, tuple):
+            integration, tdim = conn_type
+        else:
+            integration, tdim = conn_type, region.tdim
+
+        if integration == 'cell' and tdim == 1 and self.region.tdim > 1:
             # bar elements
             conn = self.extra_data[f'bars_{region.name}']
 
-        elif conn_type in ('cell', 'custom'):
+        elif integration in ('cell', 'custom'):
             if region.name == self.region.name:
                 conn = self.econn
             else:
@@ -1094,7 +1117,7 @@ class FEField(Field):
                 ii = self.region.get_cell_indices(cells, true_cells_only=tco)
                 conn = nm.take(self.econn, ii, axis=0)
 
-        elif conn_type == 'facet':
+        elif integration == 'facet':
             name = f'sd_{region.name}'
             if name not in self.extra_data:
                 self.domain.create_surface_group(region)
@@ -1105,7 +1128,7 @@ class FEField(Field):
             sd = self.extra_data[name]
             conn = sd.get_connectivity(local=local, trace_region=trace_region)
 
-        elif conn_type == 'point':
+        elif integration == 'point':
             conn = self.extra_data[f'pd_{region.name}']
 
         else:
