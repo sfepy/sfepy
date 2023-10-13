@@ -1071,12 +1071,6 @@ class FEField(Field):
         else:
             return self.coors[nods]
 
-    def get_connectivity(self, region, integration, trace_region=None):
-        """
-        Convenience alias to `Field.get_econn()`, that is used in some terms.
-        """
-        return self.get_econn(integration, region, trace_region=trace_region)
-
     def get_econn(self, conn_type, region, trace_region=None, local=False):
         """
         Get extended connectivity of the given type in the given region.

@@ -675,7 +675,7 @@ class PSPGCStabilizationTerm(Term):
         vvg, _ = self.get_mapping(state)
 
         val_qp = self.get(parameter, 'val')
-        conn = state.field.get_connectivity(self.region, self.act_integration)
+        conn = state.field.get_econn(self.act_integration, self.region)
 
         if diff_var is None:
             fmode = 0
@@ -755,8 +755,7 @@ class SUPGCStabilizationTerm(Term):
         vg, _ = self.get_mapping(virtual)
 
         val_qp = self.get(parameter, 'val')
-        conn = virtual.field.get_connectivity(self.region,
-                                              self.act_integration)
+        conn = virtual.field.get_econn(self.act_integration, self.region)
 
         if diff_var is None:
             fmode = 0
