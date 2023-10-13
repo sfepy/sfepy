@@ -132,7 +132,7 @@ def plot_local_dofs(axs, field, field_i, omega_gi, output_dir, rank):
 
     ax = pc.plot_wireframe(axs[1], mesh.cmesh)
     coors = field.get_coor()
-    econn = field.get_econn('volume', omega_gi, 0)
+    econn = field.get_econn(('cell', omega_gi.tdim), omega_gi, 0)
     ax = pd.plot_global_dofs(ax, coors, econn)
     ax.set_title('global DOFs on task %d' % rank)
     ax.figure.savefig(os.path.join(output_dir, 'local_global_%02d.png' % rank),
