@@ -203,7 +203,7 @@ def define(order=1, refine=0, evps='eig-p', n_eigs=1, eigs_only=True,
 def get_figname(name, options):
     rel = 'r' if options.relative else 'a'
     figname = (f'{name}-{options.kind}-{options.basis}-{options.evps}'
-               f'-{options.transform}-{rel}.pdf')
+               f'-{options.transform}-{rel}{options.fig_suffix}')
     return figname
 
 def parse_args(args=None):
@@ -221,6 +221,7 @@ def parse_args(args=None):
         transform = (('none', 'freqs'), 'eigenvalues transformation'),
         relative = (False, 'plot relative errors'),
         sparsity = (False, 'plot sparsity patterns of matrices'),
+        fig_suffix = ('.pdf', 'file suffix for saving figures'),
         plot_rc_params = ('', 'matplotlib resources'),
         output_dir = ('output', 'output directory'),
         show = (True, 'do not show matplotlib figures'),
