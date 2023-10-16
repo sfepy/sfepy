@@ -21,7 +21,7 @@ from sfepy.discrete import Problem
 from sfepy.solvers import Solver
 from sfepy.discrete.fem.poly_spaces import SEMTensorProductPolySpace
 
-def define(order=1, refine=0, evps='eig-p', n_eigs=1, eigs_only=True,
+def define(order=1, refine=0, evps='primme', n_eigs=1, eigs_only=True,
            kind='laplace', basis='lagrange', beta=1.0, mass_lumping='none',
            transform='none', output_dir='output', **kwargs):
 
@@ -177,17 +177,17 @@ def define(order=1, refine=0, evps='eig-p', n_eigs=1, eigs_only=True,
     filename_mesh = UserMeshIO(mesh_hook)
 
     solvers = {
-        'eig-m': ('eig.matlab', {
+        'matlab': ('eig.matlab', {
             'method': 'eigs',
             'which': 'sm',
             'eps': 1e-14,
         }),
-        'eig-p' : ('eig.primme', {
+        'primme' : ('eig.primme', {
             'which' : 'SM',
              # Prevent hanging with 1x1 matrices and tol = 1e-14.
             'tol' : 1e-13 if refine == 0 else 1e-14,
         }),
-        'eig-s' : ('eig.scipy', {
+        'scipy' : ('eig.scipy', {
             'method' : 'eigsh',
             'tol' : 1e-14,
             # 'maxiter' : 150,
@@ -212,7 +212,7 @@ def parse_args(args=None):
     opts = dict(
         max_order = (1, 'max. approximation order'),
         max_refine = (0, 'max. uniform refinement level'),
-        evps = ('eig-p', 'solver name'),
+        evps = ('primme', 'solver name'),
         n_eigs = (1, 'number of eigenvalues'),
         kind = (('laplace', 'elasticity', 'elasticity-lumping'), 'problem kind'),
         basis = (('lagrange', 'lobatto', 'sem'), 'field basis'),
