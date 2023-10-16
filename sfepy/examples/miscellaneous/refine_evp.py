@@ -149,11 +149,12 @@ def define(order=1, refine=0, evps='primme', n_eigs=1, eigs_only=True,
                                            v, u)""",
             })
 
-        import exact_frequencies as ef
         def eval_exact(n_eigs):
-            freqs = ef.freqs_fixed_free_bar(
-                n_eigs, young=young, density=density, length=1,
-            )
+            c0 = nm.sqrt(young / density)
+
+            ns = nm.arange(1, n_eigs+1)
+            freqs = 0.5 * (ns - 0.5) * c0 / dims[0]
+
             if transform == 'none':
                 eigs = (2 * nm.pi * freqs)**2
 
