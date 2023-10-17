@@ -241,7 +241,7 @@ class FEField(Field):
         -----
         Assumes one cell type for the whole region!
         """
-        shape = parse_shape(shape, region.domain.shape.dim)
+        shape = parse_shape(shape, region.cmesh.tdim)
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
         self.domain = self.region.domain
@@ -525,7 +525,7 @@ class FEField(Field):
         """
         region = self.domain.regions[region_name]
         shape = region.shape
-        dim = region.dim
+        dim = region.cmesh.tdim
 
         if integration is None:
             integration == region.kind

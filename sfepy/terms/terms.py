@@ -1115,7 +1115,7 @@ class Term(Struct):
         from sfepy.base.base import output
         from sfepy.mechanics.tensors import dim2sym
 
-        dim = self.region.dim
+        dim = self.region.tdim
         sym = dim2sym(dim)
 
         def _parse_scalar_shape(sh):
