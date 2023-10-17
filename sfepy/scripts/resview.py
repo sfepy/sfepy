@@ -426,6 +426,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                                      use_cache=use_cache)
 
         pipe = [steps[fstep].copy()]
+        pos_bnds = pipe[0].bounds
 
         if field in fields_map:  # subregion
             mat_val = fields_map[field]
@@ -478,9 +479,8 @@ def pv_plot(filenames, options, plotter=None, step=None,
             plot_info.append('warp=%s, factor=%.2e' % (warp, factor))
 
         position = opts.get('p', 0)  # determine plotting slot
-        bnds = pipe[-1].bounds
         if 'p' in opts:
-            size = nm.array(bnds[1::2]) - nm.array(bnds[::2])
+            size = nm.array(pos_bnds[1::2]) - nm.array(pos_bnds[::2])
             pipe.append(pipe[-1].copy())
             pos1 = position % options.max_plots
             pos2 = position // options.max_plots
