@@ -11,9 +11,52 @@ from sfepy.discrete import PolySpace
 from sfepy.linalg.utils import invs_fast, dets_fast
 
 
-def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
+def tranform_coors_to_lower_dim(coors, to_dim):
+    """
+    Transform element coordinates into XY plane.
+
+    See:
+      https://math.stackexchange.com/questions/1167717/transform-a-plane-to-the-xy-plane
+      https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
+    """
+    if coors.shape[-1] == 3 and to_dim == 2:
+        bv = nm.cross(coors[:, 1, :] - coors[:, 0, :],
+                      coors[:, -1, :] - coors[:, 0, :])
+
+        b = nm.linalg.norm(bv, axis=1)
+        ab = nm.sqrt(bv[:, 0]**2 + bv[:, 1]**2)
+        cphi = bv[:, 2] / b
+        sphi = ab / b
+
+        mtxR = nm.eye(3, 3) * cphi[:, None, None]
+        idxs = nm.where(nm.abs(ab) > 1e-16)[0]
+
+        if len(idxs) > 0:
+            u1 = bv[idxs, 1] / ab[idxs]
+            u2 = - bv[idxs, 0] / ab[idxs]
+            cphi1 = 1 - cphi[idxs]
+            sphi = sphi[idxs]
+
+            R0 = nm.array([
+                [u1**2 * cphi1, u1 * u2 * cphi1, u2 * sphi],
+                [u1 * u2 * cphi1, u2**2 * cphi1, -u1 * sphi],
+                [-u2 * sphi, u1 * sphi, 0]
+            ]).transpose(2, 0, 1)
+
+            mtxR[idxs, ...] += R0
+
+        out = nm.einsum('qij,qkj->qki', mtxR, coors, optimize=True)
+
+        return out[:, :, :to_dim]
+    else:
+        msg = (f'Coordinate transformation from dimension {coors.shape[-1]}'
+               f' to dimension {to_dim} is not supported!')
+        raise NotImplemented(msg)
+
+
+def eval_mapping_data_in_qp(coors, conn, bf_g, weights,
                             ebf_g=None, is_face=False, eps=1e-15,
-                            se_conn=None, se_bf_bg=None):
+                            se_conn=None, se_bf_bg=None, ecoors=None):
     """
     Evaluate mapping data.
 
@@ -23,8 +66,6 @@ def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
         The nodal coordinates.
     conn: numpy.ndarray
         The element connectivity.
-    dim: int
-        The space dimension.
     bf_g: numpy.ndarray
         The derivatives of the domain basis functions with respect to the
         reference coordinates.
@@ -42,6 +83,8 @@ def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
     se_bf_bg: numpy.ndarray
         The surface basis function derivatives with respect to the reference
         coordinates.
+    ecoors: numpy.ndarray
+        The element nodal coordinates.
 
     Returns
     -------
@@ -56,12 +99,15 @@ def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
     normal: numpy.ndarray
         The normal vectors for the surface elements in integration points.
     """
-    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, coors[conn, :dim], optimize=True)
+    if ecoors is None:
+        ecoors = coors[conn, :]
+    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, ecoors, optimize=True)
 
     n_el, n_qp = mtxRM.shape[:2]
 
     if is_face:
         # outward unit normal vector
+        dim = coors.shape[1]
         normal = nm.ones((n_el, n_qp, dim, 1), dtype=nm.float64)
         if dim == 1:
             det = nm.tile(weights, (n_el, 1)).reshape(n_el, n_qp, 1, 1)
@@ -100,7 +146,7 @@ def eval_mapping_data_in_qp(coors, conn, dim, bf_g, weights,
 
     if ebf_g is not None:
         if is_face and se_conn is not None and se_bf_bg is not None:
-            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, coors[se_conn, :dim],
+            mtxRM = nm.einsum('cqij,cjk->cqik', se_bf_bg, coors[se_conn, :],
                               optimize=True)
             mtxRMI = invs_fast(mtxRM)
             bfg = nm.einsum('cqij,cqjk->cqik', mtxRMI, ebf_g, optimize=True)
@@ -240,16 +286,24 @@ class FEMapping(Mapping):
         else:
             se_conn, se_bf_bg, ebf_g = extra
 
-        margs = eval_mapping_data_in_qp(self.coors, self.conn, self.dim,
+        tdim = poly_space.geometry.dim
+        if not is_face and tdim < self.dim:
+            ecoors = tranform_coors_to_lower_dim(self.coors[self.conn, :],
+                                                 tdim)
+        else:
+            ecoors = None
+
+        margs = eval_mapping_data_in_qp(self.coors, self.conn,
                                         bf_g, weights, ebf_g, is_face=is_face,
-                                        se_conn=se_conn, se_bf_bg=se_bf_bg)
+                                        se_conn=se_conn, se_bf_bg=se_bf_bg,
+                                        ecoors=ecoors)
 
         if bf is None:
             bf = nm.array([[[[0.]]]])
         elif len(bf.shape) == 3:
             bf = bf[None, ...]
 
-        margs = (nm.ascontiguousarray(bf),) + margs + (self.dim,)
+        margs = (nm.ascontiguousarray(bf),) + margs + (tdim,)
         pycmap = PyCMapping(*margs)
 
         return pycmap
