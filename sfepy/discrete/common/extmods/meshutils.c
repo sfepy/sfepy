@@ -37,86 +37,53 @@ int32 orient_elements(int32 *flag, int32 flag_n_row,
   Indices cell_vertices[1];
   MeshEntityIterator it0[1];
   MeshConnectivity *cD0 = 0; // D -> 0
-  int32 ir, iel, ii, ip0, ip1, ip2, ip3, tmp, nc;
-  float64 v0[3], v1[3], v2[3], v3[3], cross[3], dot[1];
+  int32 ir, iel, ii, ip0, ip1, ip2, ip3, tmp, nc, tdim;
+  float64 v0[3], v1[3], v2[3], v3[3], cross[3], dot[1], val;
 
   cD0 = mesh->topology->conn[IJ(D, D, 0)];
 
   nc = mesh->geometry->dim;
-  if (nc == 3) { // 3D.
-    for (mei_init_sub(it0, mesh, cells, dcells); mei_go(it0); mei_next(it0)) {
-      iel = it0->entity->ii;
-      flag[iel] = 0;
+  tdim = mesh->topology->max_dim;
 
-      me_get_incident2(it0->entity, cell_vertices, cD0);
+  for (mei_init_sub(it0, mesh, cells, dcells); mei_go(it0); mei_next(it0)) {
+    iel = it0->entity->ii;
+    flag[iel] = 0;
 
-      for (ir = 0; ir < v_roots_n_row; ir++) {
-        ip0 = IR(ir);
-        ip1 = IV(ir, 0);
-        ip2 = IV(ir, 1);
-        ip3 = IV(ir, 2);
-        for (ii = 0; ii < 3; ii++) {
-          v0[ii] = coors[nc*ip0+ii];
-          v1[ii] = coors[nc*ip1+ii] - v0[ii];
-          v2[ii] = coors[nc*ip2+ii] - v0[ii];
-          v3[ii] = coors[nc*ip3+ii] - v0[ii];
-        }
-        gtr_cross_product(cross, v1, v2);
-        gtr_dot_v3(dot, v3, cross, 3);
-        /* output("%d %d -> %d %d %d %d %e\n", iel, ir, ip0, ip1, ip2, ip3, */
-        /*        dot[0]); */
-        if (dot[0] < 0.0) {
-          flag[iel]++;
-          for (ii = 0; ii < swap_from_n_col; ii++) {
-            SwapValues(CONN(SWF(ir, ii)), CONN(SWT(ir, ii)), tmp);
-            /* output("%d %d\n", SWF(ir, ii), SWT(ir, ii)); */
-          }
-        }
-      }
-    }
-  } else if (nc == 2) { // 2D.
-    for (mei_init_sub(it0, mesh, cells, dcells); mei_go(it0); mei_next(it0)) {
-      iel = it0->entity->ii;
-      flag[iel] = 0;
+    me_get_incident2(it0->entity, cell_vertices, cD0);
 
-      me_get_incident2(it0->entity, cell_vertices, cD0);
+    for (ir = 0; ir < v_roots_n_row; ir++) {
+      ip0 = IR(ir);
+      ip1 = IV(ir, 0);
 
-      for (ir = 0; ir < v_roots_n_row; ir++) {
-        ip0 = IR(ir);
-        ip1 = IV(ir, 0);
-        ip2 = IV(ir, 1);
-        for (ii = 0; ii < 2; ii++) {
-          v0[ii] = coors[nc*ip0+ii];
-          v1[ii] = coors[nc*ip1+ii] - v0[ii];
-          v2[ii] = coors[nc*ip2+ii] - v0[ii];
-        }
-        v1[2] = v2[2] = 0.0;
-        gtr_cross_product(cross, v1, v2);
-        if (cross[2] < 0.0) {
-          flag[iel]++;
-          for (ii = 0; ii < swap_from_n_col; ii++) {
-            SwapValues(CONN(SWF(ir, ii)), CONN(SWT(ir, ii)), tmp);
-          }
-        }
-      }
-    }
-  } else if (nc == 1) { // 1D
-    for (mei_init_sub(it0, mesh, cells, dcells); mei_go(it0); mei_next(it0)) {
-      iel = it0->entity->ii;
-      flag[iel] = 0;
-
-      me_get_incident2(it0->entity, cell_vertices, cD0);
-
-      for (ir = 0; ir < v_roots_n_row; ir++) {
-        ip0 = IR(ir);
-        ip1 = IV(ir, 0);
-
+      if (tdim == 1) {
         v0[0] = coors[ip0];
         v1[0] = coors[ip1] - v0[0];
+        val = v1[0];
+      } else if (tdim >= 2) {
+        ip2 = IV(ir, 1);
+        v1[2] = v2[2] = 0.0;
+        for (ii = 0; ii < nc; ii++) {
+          v0[ii] = coors[nc*ip0+ii];
+          v1[ii] = coors[nc*ip1+ii] - v0[ii];
+          v2[ii] = coors[nc*ip2+ii] - v0[ii];
+        }
+        gtr_cross_product(cross, v1, v2);
+        val = cross[2];
+      }
 
-        if (v1[0] < 0.0){
-          flag[iel]++;
-          SwapValues(CONN(SWF(ir, 0)), CONN(SWT(ir, 0)), tmp);
+      if (tdim == 3) {
+        ip3 = IV(ir, 2);
+        for (ii = 0; ii < nc; ii++) {
+          v3[ii] = coors[nc*ip3+ii] - v0[ii];
+        }
+        gtr_dot_v3(dot, v3, cross, 3);
+        val = dot[0];
+      }
+
+      if (val < 0.0) {
+        flag[iel]++;
+        for (ii = 0; ii < swap_from_n_col; ii++) {
+          SwapValues(CONN(SWF(ir, ii)), CONN(SWT(ir, ii)), tmp);
         }
       }
     }

@@ -191,6 +191,54 @@ class Domain(Struct):
         self._region_stack = []
         self._bnf = create_bnf(self._region_stack)
 
+    def create_extra_tdim_region(self, region, functions, tdim):
+        from sfepy.discrete.fem.geometry_element import (GeometryElement,
+            create_geometry_elements)
+        from sfepy.discrete import PolySpace
+        """
+        Create a new region which has its own cmesh with
+        topological dimension tdim.
+        """
+        mesh = self.mesh
+        if mesh.cmesh_tdim[tdim] is not None:
+            raise ValueError(f'cmesh of dimension {tdim} already exists!')
+
+        aux = mesh.from_region(region, mesh, tdim=tdim)
+        cmesh = aux.cmesh
+        new_mat_id = nm.max([nm.max(k.cell_groups) for k in mesh.cmesh_tdim
+                             if k is not None]) + 1
+        cmesh.cell_groups[:] = new_mat_id
+        mesh.cmesh_tdim[tdim] = cmesh
+        mesh.descs += aux.descs
+        mesh.dims += aux.dims
+        mesh.n_el += aux.n_el
+        cmesh.set_local_entities(create_geometry_elements())
+        cmesh.setup_entities()
+
+        gel = GeometryElement(aux.descs[0])
+        if gel.dim > 0:
+            gel.create_surface_facet()
+
+        new_gel_entry = {aux.descs[0]: gel}
+        self.geom_els.update(new_gel_entry)
+
+        self.fix_element_orientation(geom_els=new_gel_entry, force_check=True)
+
+        key = gel.get_interpolation_name()
+
+        gel.poly_space = PolySpace.any_from_args(key, gel, 1)
+        gel = gel.surface_facet
+        if gel is not None:
+            key = gel.get_interpolation_name()
+            gel.poly_space = PolySpace.any_from_args(key, gel, 1)
+
+        select = f'cells of group {new_mat_id}'
+        self._bnf.parseString(select)
+        region = visit_stack(self._region_stack, region_op,
+                             region_leaf(self, self.regions, select,
+                                         functions, tdim))
+        return region
+
     def create_region(self, name, select, kind='cell', parent=None,
                       check_parents=True, extra_options=None, functions=None,
                       add_to_regions=True, allow_empty=False):
@@ -216,6 +264,11 @@ class Domain(Struct):
         region = visit_stack(stack, region_op,
                              region_leaf(self, self.regions, select,
                                          functions, tdim))
+
+        if extra_options is not None and 'tdim' in extra_options:
+            region = self.create_extra_tdim_region(region, functions,
+                                                   extra_options['tdim'])
+
         region.name = name
         region.definition = select
         region.set_kind(kind)

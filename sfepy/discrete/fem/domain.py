@@ -105,17 +105,20 @@ class FEDomain(Domain):
         bbox = self.get_mesh_bounding_box()
         return (bbox[1,:] - bbox[0,:]).max()
 
-    def fix_element_orientation(self):
+    def fix_element_orientation(self, geom_els=None, force_check=False):
         """
         Ensure element vertices ordering giving positive cell volumes.
         """
         from sfepy.discrete.common.extmods.cmesh import orient_elements
 
-        for key, gel in self.geom_els.items():
+        if geom_els is None:
+            geom_els = self.geom_els
+
+        for key, gel in geom_els.items():
             ori = gel.orientation
 
             cmesh = self.cmesh_tdim[gel.dim]
-            if cmesh.tdim != cmesh.dim:
+            if cmesh.tdim != cmesh.dim and not force_check:
                 output('warning: mesh with topological dimension %d lower than'
                        ' space dimension %d' % (cmesh.tdim, cmesh.dim))
                 output('- element orientation not checked!')
