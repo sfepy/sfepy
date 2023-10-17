@@ -265,9 +265,9 @@ class Domain(Struct):
                              region_leaf(self, self.regions, select,
                                          functions, tdim))
 
-        if extra_options is not None and 'tdim' in extra_options:
+        if extra_options is not None and 'mesh_dim' in extra_options:
             region = self.create_extra_tdim_region(region, functions,
-                                                   extra_options['tdim'])
+                                                   extra_options['mesh_dim'])
 
         region.name = name
         region.definition = select
