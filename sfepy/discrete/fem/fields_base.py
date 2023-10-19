@@ -1079,19 +1079,20 @@ class FEField(Field):
         ----------
         conn_type: tuple or string
             DOF connectivity type, eg. ('cell', 3) or 'cell'.
-            If the topological dimension not specified, taken from region.tdim.
+            If the topological dimension not specified, it is taken from
+            region.tdim.
         region: sfepy.discrete.common.region.Region
             The region for which the connectivity is required.
         trace_region: None or string
             If not None, return mirror connectivity according to `local`.
         local: bool
-            If True, return local connectivity w.r.t. surface nodes,
+            If True, return local connectivity w.r.t. facet nodes,
             otherwise return global connectivity w.r.t. all mesh nodes.
 
         Returns
         -------
         econn: numpy.ndarray
-            Connectivity information.
+            The extended connectivity array.
         """
         if isinstance(conn_type, tuple):
             integration, tdim = conn_type
