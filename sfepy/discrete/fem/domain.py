@@ -118,7 +118,7 @@ class FEDomain(Domain):
             ori = gel.orientation
 
             cmesh = self.cmesh_tdim[gel.dim]
-            if cmesh.tdim != cmesh.dim and not force_check:
+            if (cmesh.tdim != cmesh.dim) and (not force_check):
                 output('warning: mesh with topological dimension %d lower than'
                        ' space dimension %d' % (cmesh.tdim, cmesh.dim))
                 output('- element orientation not checked!')
