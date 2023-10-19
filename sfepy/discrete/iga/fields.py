@@ -244,9 +244,9 @@ class IGField(Field):
         return all_qp, all_fbfs, all_dets
 
     def setup_extra_data(self, info):
-        dct, _ = info.dof_conn_type
+        dcts = set([k for k, _ in info.dof_conn_types.values()])
 
-        if dct != 'cell':
+        if (len(dcts) != 1) or (dcts.pop() != 'cell'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     def create_mapping(self, region, integral, integration):
