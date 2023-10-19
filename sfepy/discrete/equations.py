@@ -398,9 +398,9 @@ class Equations(Container):
             mreg_name = None if creg_name == rreg_name else rreg_name
 
             rname = rvar.get_primary_name()
-            cpname = cvar.get_primary_name()
+            cname = cvar.get_primary_name()
             rkey = (rname, rreg_name, info.dof_conn_types[rname], None)
-            ckey = (cvar.name, creg_name, info.dof_conn_types[cpname],
+            ckey = (cvar.name, creg_name, info.dof_conn_types[cname],
                     mreg_name)
 
             dc_key = (rkey, ckey)
