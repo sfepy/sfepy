@@ -1103,7 +1103,7 @@ class FEField(Field):
             # bar elements
             conn = self.extra_data[f'bars_{region.name}']
 
-        elif integration in ('cell', 'custom'):
+        elif (integration in ('cell', 'custom')) and (trace_region is None):
             if region.name == self.region.name:
                 conn = self.econn
             else:
@@ -1111,6 +1111,11 @@ class FEField(Field):
                 cells = region.get_cells(true_cells_only=tco)
                 ii = self.region.get_cell_indices(cells, true_cells_only=tco)
                 conn = nm.take(self.econn, ii, axis=0)
+
+        elif integration == 'cell' and trace_region is not None:
+            name = f'sd_{region.name}'
+            sd = self.extra_data[name]  # FEPhantomSurface
+            conn = sd.get_connectivity(local=local, trace_region=trace_region)
 
         elif integration == 'facet':
             name = f'sd_{region.name}'
