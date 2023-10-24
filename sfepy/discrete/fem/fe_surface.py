@@ -57,7 +57,8 @@ class FESurface(Struct):
         self.leconn = leconn
         self.face_type = face_type
         self.bkey = bkey
-        self.meconn = self.mleconn = None
+        self.meconn = {}
+        self.mleconn = {}
         self.set_orientation_map()
 
     def set_orientation_map(self):
@@ -93,6 +94,9 @@ class FESurface(Struct):
                 fis = reg.get_facet_indices()
                 return ori_map[oris[conn.indptr[fis[:, 0]] + fis[:, 1]]]
 
+        if mirror_name in self.meconn:
+            return
+
         mregion = region.get_mirror_region(mirror_name)
         mmap = get_omap(mregion, self.ori_map)
         omap = get_omap(region, self.ori_map)
@@ -106,12 +110,13 @@ class FESurface(Struct):
 
         n_el, n_ep = econn.shape
         ii = nm.repeat(nm.arange(n_el)[:, None], n_ep, 1)
-        self.meconn = nm.empty_like(econn)
-        self.meconn[ii, omap] = econn[ii, mmap]
+        meconn = nm.empty_like(econn)
+        meconn[ii, omap] = econn[ii, mmap]
 
-        nodes = nm.unique(self.meconn)
+        nodes = nm.unique(meconn)
         remap = prepare_remap(nodes, nodes.max() + 1)
-        self.mleconn = remap[self.meconn].copy()
+        self.meconn[mirror_name] = meconn
+        self.mleconn[mirror_name] = remap[meconn].copy()
 
     def get_connectivity(self, local=False, trace_region=None):
         """
@@ -134,10 +139,10 @@ class FESurface(Struct):
 
         else:
             if local:
-                return self.mleconn
+                return self.mleconn[trace_region]
 
             else:
-                return self.meconn
+                return self.meconn[trace_region]
 
 
 class FEPhantomSurface(FESurface):
@@ -172,5 +177,6 @@ class FEPhantomSurface(FESurface):
         self.leconn = leconn
         self.face_type = face_type
         self.bkey = bkey
-        self.meconn = self.mleconn = None
+        self.meconn = {}
+        self.mleconn = {}
         self.set_orientation_map()
