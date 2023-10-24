@@ -1684,7 +1684,9 @@ class FieldVariable(Variable):
             region = field.region
 
         if trace_region is not None:
-            region = region.get_mirror_region(trace_region)
+            mregion = region.get_mirror_region(trace_region)
+            trace_region = region.name
+            region = mregion
 
         if (region is not field.region) and not region.is_empty:
             assert_(field.region.contains(region))
