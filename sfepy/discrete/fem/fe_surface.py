@@ -111,7 +111,7 @@ class FESurface(Struct):
         n_el, n_ep = econn.shape
         ii = nm.repeat(nm.arange(n_el)[:, None], n_ep, 1)
         meconn = nm.empty_like(econn)
-        meconn[ii, omap] = econn[ii, mmap]
+        meconn[ii, mmap] = econn[ii, omap]
 
         nodes = nm.unique(meconn)
         remap = prepare_remap(nodes, nodes.max() + 1)
