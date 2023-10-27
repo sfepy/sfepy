@@ -434,19 +434,20 @@ class Field(Struct):
             cmode = 1
 
         ctx = self.create_basis_context()
+        econn = self.get_econn(('cell', self.region.tdim), self.region)
 
         if source_vals.dtype in complex_types:
             valsi = vals.copy()
             evaluate_in_rc(vals, ref_coors, cells, status,
                            nm.ascontiguousarray(source_vals.real),
-                           self.get_econn('cell', self.region), cmode, ctx)
+                           econn, cmode, ctx)
             evaluate_in_rc(valsi, ref_coors, cells, status,
                            nm.ascontiguousarray(source_vals.imag),
-                           self.get_econn('cell', self.region), cmode, ctx)
+                           econn, cmode, ctx)
             vals = vals + valsi * 1j
         else:
             evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                           self.get_econn('cell', self.region), cmode, ctx)
+                           econn, cmode, ctx)
 
         output('interpolation: %f s' % timer.stop(),verbose=verbose)
 

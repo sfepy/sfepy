@@ -225,14 +225,19 @@ class Mesh(Struct):
         return mesh
 
     @staticmethod
-    def from_region(region, mesh_in, localize=False, is_surface=False):
+    def from_region(region, mesh_in, localize=False, is_surface=False,
+                    tdim=None):
         """
-        Create a mesh corresponding to cells, or, if `is_surface` is True, to
-        facets, of a given region.
+        Create a mesh corresponding to cells, or lower dimensional entities
+        according tdim parameter, of a given region. If `is_surface` is True,
+        then tdim = dim - 1.
         """
         cmesh_in = region.cmesh
 
-        if not is_surface:
+        if is_surface:
+            tdim = region.tdim - 1
+
+        if tdim is None:
             if not region.shape.n_cell:
                 raise ValueError('region %s has no cells!' % region.name)
 
@@ -240,11 +245,12 @@ class Mesh(Struct):
                                         localize=localize)
 
         else:
-            if not region.shape.n_facet:
-                raise ValueError('region %s has no facets!' % region.name)
+            entity = region.entities[tdim]
+            if len(region.entities[tdim]) < 1:
+                raise ValueError(f'region {region.name} has no entities'
+                                 f' of dimension {tdim}!')
 
-            cmesh = cmesh_in.create_new(region.facets, region.tdim - 1,
-                                        localize=localize)
+            cmesh = cmesh_in.create_new(entity, tdim, localize=localize)
 
         mesh = Mesh(mesh_in.name + "_reg", cmesh=cmesh)
 

@@ -241,7 +241,7 @@ class FEField(Field):
         -----
         Assumes one cell type for the whole region!
         """
-        shape = parse_shape(shape, region.domain.shape.dim)
+        shape = parse_shape(shape, region.cmesh.tdim)
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
         self.domain = self.region.domain
@@ -525,7 +525,7 @@ class FEField(Field):
         """
         region = self.domain.regions[region_name]
         shape = region.shape
-        dim = region.dim
+        dim = region.cmesh.tdim
 
         if integration is None:
             integration == region.kind
@@ -1071,21 +1071,39 @@ class FEField(Field):
         else:
             return self.coors[nods]
 
-    def get_connectivity(self, region, integration, trace_region=None):
-        """
-        Convenience alias to `Field.get_econn()`, that is used in some terms.
-        """
-        return self.get_econn(integration, region, trace_region=trace_region)
-
     def get_econn(self, conn_type, region, trace_region=None, local=False):
         """
         Get extended connectivity of the given type in the given region.
+
+        Parameters
+        ----------
+        conn_type: tuple or string
+            DOF connectivity type, eg. ('cell', 3) or 'cell'.
+            If the topological dimension not specified, it is taken from
+            region.tdim.
+        region: sfepy.discrete.common.region.Region
+            The region for which the connectivity is required.
+        trace_region: None or string
+            If not None, return mirror connectivity according to `local`.
+        local: bool
+            If True, return local connectivity w.r.t. facet nodes,
+            otherwise return global connectivity w.r.t. all mesh nodes.
+
+        Returns
+        -------
+        econn: numpy.ndarray
+            The extended connectivity array.
         """
-        if (conn_type == 'cell' and self.region.tdim > 1 and region.tdim == 1):
+        if isinstance(conn_type, tuple):
+            integration, tdim = conn_type
+        else:
+            integration, tdim = conn_type, region.tdim
+
+        if integration == 'cell' and tdim == 1 and self.region.tdim > 1:
             # bar elements
             conn = self.extra_data[f'bars_{region.name}']
 
-        elif conn_type in ('cell', 'custom'):
+        elif (integration in ('cell', 'custom')) and (trace_region is None):
             if region.name == self.region.name:
                 conn = self.econn
             else:
@@ -1094,7 +1112,12 @@ class FEField(Field):
                 ii = self.region.get_cell_indices(cells, true_cells_only=tco)
                 conn = nm.take(self.econn, ii, axis=0)
 
-        elif conn_type == 'facet':
+        elif integration == 'cell' and trace_region is not None:
+            name = f'sd_{region.name}'
+            sd = self.extra_data[name]  # FEPhantomSurface
+            conn = sd.get_connectivity(local=local, trace_region=trace_region)
+
+        elif integration == 'facet':
             name = f'sd_{region.name}'
             if name not in self.extra_data:
                 self.domain.create_surface_group(region)
@@ -1105,7 +1128,7 @@ class FEField(Field):
             sd = self.extra_data[name]
             conn = sd.get_connectivity(local=local, trace_region=trace_region)
 
-        elif conn_type == 'point':
+        elif integration == 'point':
             conn = self.extra_data[f'pd_{region.name}']
 
         else:
@@ -1113,29 +1136,27 @@ class FEField(Field):
 
         return conn
 
-    def setup_extra_data(self, info, tdim=None):
-        dct = info.dof_conn_type
+    def setup_extra_data(self, info):
+        for dct, tdim in set(info.dof_conn_types.values()):
+            if dct == 'facet':
+                reg = info.get_region()
+                mreg_name = info.get_region_name(can_trace=False)
+                mreg_name = None if reg.name == mreg_name else mreg_name
+                self.domain.create_surface_group(reg)
+                self.setup_surface_data(reg, mreg_name)
 
-        if dct == 'facet':
-            reg = info.get_region()
-            mreg_name = info.get_region_name(can_trace=False)
-            mreg_name = None if reg.name == mreg_name else mreg_name
-            self.domain.create_surface_group(reg)
-            self.setup_surface_data(reg, mreg_name)
+            elif dct == 'edge':
+                raise NotImplementedError('dof connectivity type %s' % dct)
 
-        elif dct == 'edge':
-            raise NotImplementedError('dof connectivity type %s' % dct)
+            elif dct == 'point':
+                self.setup_point_data(self, info.region)
 
-        elif dct == 'point':
-            self.setup_point_data(self, info.region)
+            elif dct == 'cell' and tdim == 1 and self.region.tdim > 1:
+                # bar elements
+                self.setup_bar_data(self, info.region)
 
-        elif (dct == 'cell' and self.region.tdim > 1 and
-              tdim is not None and tdim == 1):
-            # bar elements
-            self.setup_bar_data(self, info.region)
-
-        elif dct not in ('cell', 'custom'):
-            raise ValueError('unknown dof connectivity type! (%s)' % dct)
+            elif dct not in ('cell', 'custom'):
+                raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     def setup_surface_data(self, region, trace_region=None):
         """nodes[leconn] == econn"""

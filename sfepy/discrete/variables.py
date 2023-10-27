@@ -67,18 +67,18 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
 
         return adc
 
-    def _assign(adof_conns, info, region, var, field, trace_region):
-        key = (var.name, region.name, info.dof_conn_type, trace_region)
+    def _assign(adof_conns, dof_conn_type, region, var, field, trace_region):
+        key = (var.name, region.name, dof_conn_type, trace_region)
         if not key in adof_conns:
-            econn = field.get_econn(info.dof_conn_type, region, trace_region)
+            econn = field.get_econn(dof_conn_type, region, trace_region)
             if econn is None: return
 
             adof_conns[key] = _create(var, econn)
 
-        if info.trace_region is not None:
-            key = (var.name, region.name, info.dof_conn_type, None)
+        if trace_region is not None:
+            key = (var.name, region.name, dof_conn_type, None)
             if not key in adof_conns:
-                econn = field.get_econn(info.dof_conn_type, region,
+                econn = field.get_econn(dof_conn_type, region,
                                         trace_region=None)
 
                 adof_conns[key] = _create(var, econn)
@@ -95,11 +95,12 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
             field = var.get_field()
 
             region = info.get_region()
-            field.setup_extra_data(info, tdim=region.tdim)
+            field.setup_extra_data(info)
 
             mreg_name = info.get_region_name(can_trace=False)
             mreg_name = None if region.name == mreg_name else mreg_name
-            _assign(adof_conns, info, region, var, field, mreg_name)
+            dct = info.dof_conn_types[var.name]
+            _assign(adof_conns, dct, region, var, field, mreg_name)
 
         if info.has_virtual and info.trace_region is None:
             var = info.virtual
@@ -110,7 +111,8 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
             var = aux if aux is not None else var
 
             region = info.get_region(can_trace=False)
-            _assign(adof_conns, info, region, var, field, None)
+            dct = info.dof_conn_types[var.name]
+            _assign(adof_conns, dct, region, var, field, None)
 
     if verbose:
         output('...done in %.2f s' % timer.stop())
@@ -1682,7 +1684,9 @@ class FieldVariable(Variable):
             region = field.region
 
         if trace_region is not None:
-            region = region.get_mirror_region(trace_region)
+            mregion = region.get_mirror_region(trace_region)
+            trace_region = region.name
+            region = mregion
 
         if (region is not field.region) and not region.is_empty:
             assert_(field.region.contains(region))
@@ -1697,14 +1701,15 @@ class FieldVariable(Variable):
                                         return_key=True)
         key += (time_derivative, trace_region)
 
+        dct = ('cell' if integration == 'facet_extra' else integration,
+               region.tdim)
+
         if key in cache:
             out = cache[key]
 
         else:
             vec = self(step=step, derivative=time_derivative, dt=dt)
-
-            ct = 'cell' if integration == 'facet_extra' else integration
-            conn = field.get_econn(ct, region, trace_region)
+            conn = field.get_econn(dct, region, trace_region)
 
             shape = self.get_data_shape(integral, integration, region.name)
 
@@ -1920,7 +1925,7 @@ class FieldVariable(Variable):
 
         integral = Integral('i_tmp', 1)
 
-        vg, _ = field.get_mapping(field.region, integral, 'volume')
+        vg, _ = field.get_mapping(field.region, integral, 'cell')
 
         diameters = domain.get_element_diameters(cells, vg.volume, mode,
                                                  square=square)

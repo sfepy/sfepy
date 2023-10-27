@@ -684,16 +684,17 @@ class HyperElasticSurfaceTLFamilyData(HyperElasticFamilyData):
     cache_name = 'tl_surface_common'
     data_names = ('mtx_f', 'det_f', 'inv_f')
 
-    def __call__(self, state, region, integral, integration,
+    def __call__(self, state, region, integral, geometry_type,
                  step=0, derivative=None):
         sg, _ = state.field.get_mapping(region,
-                                        integral, integration,
+                                        integral, geometry_type[0],
                                         get_saved=True)
         sd = state.field.extra_data[f'sd_{region.name}']
 
         vec = state(step=step, derivative=derivative)
 
-        st_shape = state.get_data_shape(integral, integration, region.name)
+        st_shape = state.get_data_shape(integral, geometry_type[0],
+                                        region.name)
         data = self.init_data_struct(st_shape, name='surface_family_data')
 
         fargs = tuple([getattr(data, k) for k in self.data_names])

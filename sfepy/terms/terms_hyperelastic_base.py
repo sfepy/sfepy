@@ -44,12 +44,12 @@ class HyperElasticFamilyData(Struct):
 
         return data
 
-    def __call__(self, state, region, integral, integration,
+    def __call__(self, state, region, integral, geometry_type,
                  step=0, derivative=None):
         step_cache = state.evaluate_cache.setdefault(self.cache_name, {})
         cache = step_cache.setdefault(step, {})
 
-        key = (region.name, integral.order, integration)
+        key = (region.name, integral.order, geometry_type)
         data_key = key + (derivative,)
 
         if data_key in cache:
@@ -57,12 +57,13 @@ class HyperElasticFamilyData(Struct):
 
         else:
             vg, _ = state.field.get_mapping(region,
-                                            integral, integration,
+                                            integral, geometry_type[0],
                                             get_saved=True)
 
             vec = state(step=step, derivative=derivative)
 
-            st_shape = state.get_data_shape(integral, integration, region.name)
+            st_shape = state.get_data_shape(integral, geometry_type[0],
+                                            region.name)
             data = self.init_data_struct(st_shape)
 
             fargs = tuple([getattr(data, k) for k in self.data_names])
