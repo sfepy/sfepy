@@ -17,14 +17,15 @@ updated example files:
 
    $ python setup.py htmldocs
 """
-from __future__ import absolute_import
 import sys
-import six
 sys.path.append('.')
 import os
 import tempfile
 import glob
 import re
+import shutil
+import subprocess
+from itertools import chain
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
@@ -295,14 +296,30 @@ def _omit(filename, omits, omit_dirs):
 def ebase2fbase(ebase):
     return os.path.splitext(ebase)[0].replace(os.path.sep, '-')
 
+def _get_image_names(custom_options):
+    for key, val in custom_options.items():
+        if key.startswith('image'):
+                yield val
 
 def _get_fig_filenames(ebase, images_dir):
     fig_base = ebase2fbase(ebase)
 
     if ebase in custom:
-        suffixes = sorted(custom[ebase].keys())
-        for suffix in suffixes:
-            yield os.path.join(images_dir, fig_base + suffix + '.png')
+        custom_options = custom.get(ebase)
+        if 'sfepy-view-options' in custom_options:
+            custom_view_options = custom_options['sfepy-view-options']
+
+            for fig_filename in _get_image_names(custom_options):
+                yield os.path.join(images_dir, os.path.basename(fig_filename))
+
+        else:
+            custom_view_options = custom_options
+
+        if custom_view_options:
+            suffixes = sorted(custom_view_options.keys())
+            for suffix in suffixes:
+                yield os.path.join(images_dir, fig_base + suffix + '.png')
+
     else:
         yield os.path.join(images_dir, fig_base + '.png')
 
@@ -323,6 +340,16 @@ def _make_sphinx_path(path, relative=False):
         sphinx_path = path.replace(sfepy.data_dir, '/..')
 
     return sphinx_path
+
+
+def _apply_commands(custom_options, images_dir):
+    for key, val in custom_options.items():
+        if key.startswith('command'):
+            cmd = custom_options[key]
+            subprocess.call(cmd.split())
+
+        if key.startswith('image'):
+            shutil.copy(val, images_dir)
 
 
 def apply_view_options(views, default):
@@ -399,38 +426,49 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
         ebase = ex_filename.replace(examples_dir, '')[1:]
         output('trying "%s"...' % ebase)
 
-        try:
-            problem, state = solve_pde(ex_filename, options=options)
+        custom_options = custom.get(ebase)
+        if custom_options and 'sfepy-view-options' in custom_options:
+            _apply_commands(custom_options, images_dir)
 
-        except KeyboardInterrupt:
-            raise
+            filename = custom_options.get('result')
+            dim = custom_options.get('dim')
+            custom_view_options = custom_options['sfepy-view-options']
 
-        except:
-            problem = None
-            output('***** failed! *****')
-
-        if problem is not None:
-            if ebase in custom:
-                views = apply_view_options(custom[ebase], view_options)
-            else:
-                views = {'': view_options.copy()}
+        else:
+            custom_view_options = custom_options
 
             try:
-                tsolver = problem.get_solver()
+                problem, state = solve_pde(ex_filename, options=options)
+                try:
+                    tsolver = problem.get_solver()
 
-            except ValueError:
-                suffix = None
-
-            else:
-                if isinstance(tsolver, StationarySolver):
+                except ValueError:
                     suffix = None
 
                 else:
-                    suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
+                    if isinstance(tsolver, StationarySolver):
+                        suffix = None
 
-            filename = problem.get_output_name(suffix=suffix)
-            dim = problem.get_dim()
-            for suffix, kwargs in six.iteritems(views):
+                    else:
+                        suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
+
+                filename = problem.get_output_name(suffix=suffix)
+                dim = problem.get_dim()
+
+            except KeyboardInterrupt:
+                raise
+
+            except:
+                filename = None
+                output('***** failed! *****')
+
+        if filename is not None:
+            if custom_view_options is not None:
+                views = apply_view_options(custom_view_options, view_options)
+            else:
+                views = {'': view_options.copy()}
+
+            for suffix, kwargs in views.items():
                 if dim in (1, 2) and not kwargs.force_view_3d:
                     kwargs.view_2d = True
                     kwargs.scalar_bar_position = [0.04, 0.92, 1.7, 0]
@@ -533,7 +571,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir, pattern='*.py'):
         rst_filename = ebase2fbase(ebase) + '.rst'
         dir_map.setdefault(base_dir, []).append((ex_filename, rst_filename))
 
-    for dirname, filenames in six.iteritems(dir_map):
+    for dirname, filenames in dir_map.items():
         filenames = sorted(filenames, key=lambda a: a[1])
         dir_map[dirname] = filenames
 
