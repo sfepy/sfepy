@@ -346,7 +346,7 @@ def _apply_commands(custom_options, images_dir):
     for key, val in custom_options.items():
         if key.startswith('command'):
             cmd = custom_options[key]
-            subprocess.call(cmd.split())
+            subprocess.run(cmd.split()).check_returncode()
 
         if key.startswith('image'):
             shutil.copy(val, images_dir)
@@ -428,11 +428,16 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
 
         custom_options = custom.get(ebase)
         if custom_options and 'sfepy-view-options' in custom_options:
-            _apply_commands(custom_options, images_dir)
+            try:
+                _apply_commands(custom_options, images_dir)
 
-            filename = custom_options.get('result')
-            dim = custom_options.get('dim')
-            custom_view_options = custom_options['sfepy-view-options']
+                filename = custom_options.get('result')
+                dim = custom_options.get('dim')
+                custom_view_options = custom_options['sfepy-view-options']
+
+            except subprocess.CalledProcessError:
+                filename = None
+                output('***** failed! *****')
 
         else:
             custom_view_options = custom_options
