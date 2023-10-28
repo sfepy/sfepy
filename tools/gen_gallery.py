@@ -981,8 +981,12 @@ def generate_gallery(examples_dir, output_filename, doc_dir,
             ebase = ex_filename.replace(examples_dir, '')[1:]
             link = os.path.splitext(rst_filename)[0]
 
-            thumbnail_filename = next(_get_fig_filenames(ebase,
-                                                         thumbnails_dir))
+            try:
+                thumbnail_filename = next(_get_fig_filenames(ebase,
+                                                             thumbnails_dir))
+            except StopIteration:
+                thumbnail_filename = ''
+
             if not os.path.isfile(thumbnail_filename):
                 # Skip examples with no image (= failed examples).
                 output('warning: figure "%s" not found' % thumbnail_filename)
