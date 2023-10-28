@@ -1,4 +1,7 @@
-from __future__ import absolute_import
+"""
+Linear elasticity with effective macroscopic properties determined
+according to the theory of homogenization from a periodic microstructure.
+"""
 import os
 from sfepy import data_dir, base_dir
 from sfepy.base.base import nm
