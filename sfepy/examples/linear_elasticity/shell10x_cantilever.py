@@ -1,5 +1,7 @@
 r"""
-Bending of a long thin cantilever beam computed using the
+Bending of a long thin cantilever beam, declarative problem description.
+
+The example demonstrates use of the
 :class:`dw_shell10x <sfepy.terms.terms_shells.Shell10XTerm>` term.
 
 Find displacements of the central plane :math:`\ul{u}`, and rotations
