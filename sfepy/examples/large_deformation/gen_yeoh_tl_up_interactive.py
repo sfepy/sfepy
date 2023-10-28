@@ -1,18 +1,9 @@
 #!/usr/bin/env python
 r"""
-This example shows the use of the `dw_tl_he_genyeoh` hyperelastic term, whose
-contribution to the deformation energy density per unit reference volume is
+Incompressible generalized Yeoh hyperelastic material model.
+
+In this model, the deformation energy density per unit reference volume is
 given by
-
-.. math::
-    W = K \, \left( \overline I_1 - 3 \right)^{p}
-
-where :math:`\overline I_1` is the first main invariant of the deviatoric part
-of the right Cauchy-Green deformation tensor :math:`\ull{C}` and `K` and `p`
-are its parameters.
-
-This term may be used to implement the generalized Yeoh hyperelastic material
-model [1] by adding three such terms:
 
 .. math::
     W =
@@ -20,9 +11,12 @@ model [1] by adding three such terms:
       +K_2 \, \left( \overline I_1 - 3 \right)^{p}
       +K_3 \, \left( \overline I_1 - 3 \right)^{q}
 
-where the coefficients :math:`K_1, K_2, K_3` and exponents :math:`m, p, q` are
-material parameters. Only a single term is used in this example for the sake of
-simplicity.
+where :math:`\overline I_1` is the first main invariant of the deviatoric part
+of the right Cauchy-Green deformation tensor :math:`\ull{C}`, the coefficients
+:math:`K_1, K_2, K_3` and exponents :math:`m, p, q` are material parameters.
+Only a single term (:class:`dw_tl_he_genyeoh
+<sfepy.terms.terms_hyperelastic_tl.GenYeohTLTerm>`) is used in this example for
+the sake of simplicity.
 
 Components of the second Piola-Kirchhoff stress are in the case of an
 incompressible material
@@ -216,7 +210,8 @@ def plot_graphs(
     ax_difference.set_xlabel(r'stretch $\mathrm{[-]}$')
     ax_difference.grid()
     plt.tight_layout()
-    plt.show()
+
+    return fig
 
 def stress_strain(
         out, problem, _state, order=1, global_stress=None,
@@ -366,9 +361,14 @@ def main(cli_args):
     pb.solve(save_results=True, post_process_hook=stress_strain_fun)
 
     if do_plot:
-        plot_graphs(
+        fig = plot_graphs(
             material_parameters, axial_stress, axial_displacement,
             undeformed_length=dims[0])
+
+        fig.savefig('gen_yeoh_tl_up_comparison.png', bbox_inches='tight')
+
+        if cli_args.show:
+            plt.show()
 
 def parse_argument_list(cli_arg, type_fun=None, value_separator=','):
     """
@@ -412,6 +412,9 @@ def parse_args():
     parser.add_argument(
         '-p', '--plot', action='store_true', default=False,
         help='Whether to plot a comparison with analytical formula.')
+    parser.add_argument(
+        '-n', '--no-show', dest='show', action='store_false', default=True,
+        help='Do not show matplotlib figures.')
     parser.add_argument(
         '-t', '--ts',
         type=str, default='0.0,2.0,11',
