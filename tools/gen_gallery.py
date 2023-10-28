@@ -59,7 +59,7 @@ omit_dirs = [
 
 custom = {
     'acoustics/vibro_acoustic3d.py': {
-        '_Gamma0_1': {'view_2d': True, 'max_plots': 2},
+        '_Gamma0': {'view_2d': True, 'max_plots': 2},
         '_Omega1': {'camera': [45, 55, 0.8]},
         '_Omega2': {'camera': [45, 55, 0.8]},
     },
