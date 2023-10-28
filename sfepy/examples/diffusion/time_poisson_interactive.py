@@ -80,7 +80,8 @@ def probe_results(ax_num, T, dvel, probe, label):
     ax = plt.subplot(2, 2, 2 * ax_num + 1)
     ax.cla()
     pars, vals = results['T']
-    ax.plot(pars, vals, label=r'$T$', lw=1, ls='-', marker='+', ms=3)
+
+    ax.plot(pars, vals[:, 0], label=r'$T$', lw=1, ls='-', marker='+', ms=3)
     dx = 0.05 * (pars[-1] - pars[0])
     ax.set_xlim(pars[0] - dx, pars[-1] + dx)
     ax.set_ylabel('temperature')
