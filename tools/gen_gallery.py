@@ -1129,7 +1129,8 @@ def generate_gallery(examples_dir, output_filename, doc_dir,
 helps = {
     'doc_dir': 'top level directory of gallery files',
     'pattern': 'example files search pattern [default: %(default)s]',
-    'no_images': 'do not (re)generate images and thumbnails',
+    'no_images': 'do not (re)generate images',
+    'no_thumbnails': 'do not (re)generate thumbnails',
     'output_filename': 'output file name [default: %(default)s]',
 }
 
@@ -1145,8 +1146,11 @@ def main():
                         action='store', dest='pattern',
                         default='*.py', help=helps['pattern'])
     parser.add_argument('-n', '--no-images',
-                        action='store_true', dest='no_images',
-                        default=False, help=helps['no_images'])
+                        action='store_false', dest='images',
+                        default=True, help=helps['no_images'])
+    parser.add_argument('--no-thumbnails',
+                        action='store_false', dest='thumbnails',
+                        default=True, help=helps['no_thumbnails'])
     parser.add_argument('-o', '--output', metavar='output_filename',
                         action='store', dest='output_filename',
                         default='gallery.rst',
@@ -1162,8 +1166,10 @@ def main():
 
     output_filename = os.path.join(full_rst_dir, options.output_filename)
 
-    if not options.no_images:
+    if options.images:
         generate_images(images_dir, examples_dir, pattern=options.pattern)
+
+    if options.thumbnails:
         generate_thumbnails(thumbnails_dir, images_dir)
 
     dir_map = generate_rst_files(full_rst_dir, examples_dir, images_dir,
