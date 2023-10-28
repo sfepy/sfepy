@@ -114,7 +114,6 @@ class LogPlotter(Struct):
 
             if self.yscales[ig] == 'log':
                 ymajor_formatter = ax.yaxis.get_major_formatter()
-                ymajor_formatter.label_minor(True)
                 yminor_locator = LogLocator()
             else:
                 yminor_locator = AutoLocator()
