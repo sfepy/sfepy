@@ -47,9 +47,13 @@ omit_images = [
     'band_gaps_conf.py',
     'dg_plot_1D.py',
     'example_dg_common.py',
+    'homogenization_opt.py', # Is parameterized.
     'linear_elasticity_opt.py', # Is parameterized.
-    'linear_homogenization.py', # Not used anywhere!
-    'piezo_elasticity_micro.py',
+    'linear_homogenization_postproc.py',
+    'linear_homogenization_up.py', # Used in linear_elastic_mM.py.
+    'material_opt.py', # Very long calculation.
+    'nonlinear_homogenization.py',
+    'piezo_elasticity_micro.py', # Used in piezo_elasticity_macro.py.
     'quantum_common.py',
 ]
 
@@ -190,6 +194,106 @@ custom = {
         'sfepy-view-options': {
             '': {
             },
+        },
+    },
+    'homogenization/linear_homogenization.py': {
+        'command': 'sfepy-run sfepy/examples/homogenization/linear_homogenization.py',
+        'result': 'output/corrs_le.vtk',
+        'sfepy-view-options': {
+            '': {
+                'max_plots' : 3,
+                'camera_position': [-8.57147,2.10122,2.76537,
+                                    0.37,2.04405,2.14477,
+                                    0,0,1],
+                'show_labels': False,
+                'show_scalar_bars': False,
+            }
+        },
+    },
+    'homogenization/perfusion_micro.py': {
+        'command': 'sfepy-run sfepy/examples/homogenization/perfusion_micro.py',
+        'result': 'output/corrs_3d_2ch.vtk',
+        'sfepy-view-options': {
+            '_etaA_YM': {
+                'camera_position': [-1.69531,-0.966016,2.3648,
+                                    0.480252,0.486045,0.46669,
+                                    0.51024,0.292658,0.808707],
+            },
+            '_etaB_YM': {
+                'camera_position': [-1.69531,-0.966016,2.3648,
+                                    0.480252,0.486045,0.46669,
+                                    0.51024,0.292658,0.808707],
+            },
+            # '_gamma_A_1_YA': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_A_2_YA': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_A_3_YA': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_B_1_YB': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_B_2_YB': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_B_3_YB': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_m_YM': {
+            #     'camera_position': [-1.69531,-0.966016,2.3648,
+            #                         0.480252,0.486045,0.46669,
+            #                         0.51024,0.292658,0.808707],
+            # },
+            '_gamma_p_YM': {
+                'camera_position': [-1.69531,-0.966016,2.3648,
+                                    0.480252,0.486045,0.46669,
+                                    0.51024,0.292658,0.808707],
+            },
+            # '_oneA_YM': {
+            #     'camera_position': [-1.69531,-0.966016,2.3648,
+            #                         0.480252,0.486045,0.46669,
+            #                         0.51024,0.292658,0.808707],
+            # },
+            # '_oneB_YM': {
+            #     'camera_position': [-1.69531,-0.966016,2.3648,
+            #                         0.480252,0.486045,0.46669,
+            #                         0.51024,0.292658,0.808707],
+            # },
+            # '_piA_YA': {
+            #     'max_plots' : 2,
+            #     'camera_position': [-2.02509,0.148141,3.9141,
+            #                         0.913524,1.35355,0.462869,
+            #                         0.714983,0.186315,0.673859],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_piB_YB': {
+            #     'max_plots' : 2,
+            #     'camera_position': [-2.02509,0.148141,3.9141,
+            #                         0.913524,1.35355,0.462869,
+            #                         0.714983,0.186315,0.673859],
+            #     'grid_vector1': [1.2,0,0],
+            # },
         },
     },
     'homogenization/rs_correctors.py': {
