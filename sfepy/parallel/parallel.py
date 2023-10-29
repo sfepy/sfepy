@@ -19,8 +19,17 @@ def init_petsc_args():
 
 init_petsc_args()
 
-from petsc4py import PETSc
-from mpi4py import MPI
+try:
+    from petsc4py import PETSc
+
+except (ModuleNotFoundError, ImportError):
+    PETSc = None
+
+try:
+    from mpi4py import MPI
+
+except (ModuleNotFoundError, ImportError):
+    MPI = None
 
 from sfepy.base.base import assert_, output, ordered_iteritems, Struct
 from sfepy.base.timing import Timer
