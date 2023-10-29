@@ -130,7 +130,7 @@ custom = {
     'diffusion/laplace_iga_interactive.py': {
         'command': 'python3 sfepy/examples/diffusion/laplace_iga_interactive.py -o output',
         'result': 'output/concentric_circles.vtk',
-        'dim' : 2,
+        'dim': 2,
         'sfepy-view-options': {
             '': {
             },
@@ -180,9 +180,9 @@ custom = {
         },
     },
     'diffusion/poisson_parametric_study.py': {
-        'command' : 'sfepy-run sfepy/examples/diffusion/poisson_parametric_study.py',
+        'command': 'sfepy-run sfepy/examples/diffusion/poisson_parametric_study.py',
         'result': 'output/r_omega1/circles_in_square_0_1_2_3_4_5_6.vtk',
-        'dim' : 2,
+        'dim': 2,
         'sfepy-view-options': {
             '': {
             },
@@ -208,8 +208,8 @@ custom = {
         },
     },
     'diffusion/time_poisson_interactive.py': {
-        'command' : 'python3 sfepy/examples/diffusion/time_poisson_interactive.py -p',
-        'image' : 'time_poisson_interactive_probe_04.png',
+        'command': 'python3 sfepy/examples/diffusion/time_poisson_interactive.py -p',
+        'image': 'time_poisson_interactive_probe_04.png',
         'result': 'domain.10.vtk',
         'sfepy-view-options': {
             '': {
@@ -221,7 +221,7 @@ custom = {
         'result': 'output/corrs_le.vtk',
         'sfepy-view-options': {
             '': {
-                'max_plots' : 3,
+                'max_plots': 3,
                 'camera_position': [-8.57147,2.10122,2.76537,
                                     0.37,2.04405,2.14477,
                                     0,0,1],
@@ -301,14 +301,14 @@ custom = {
             #                         0.51024,0.292658,0.808707],
             # },
             # '_piA_YA': {
-            #     'max_plots' : 2,
+            #     'max_plots': 2,
             #     'camera_position': [-2.02509,0.148141,3.9141,
             #                         0.913524,1.35355,0.462869,
             #                         0.714983,0.186315,0.673859],
             #     'grid_vector1': [1.2,0,0],
             # },
             # '_piB_YB': {
-            #     'max_plots' : 2,
+            #     'max_plots': 2,
             #     'camera_position': [-2.02509,0.148141,3.9141,
             #                         0.913524,1.35355,0.462869,
             #                         0.714983,0.186315,0.673859],
@@ -317,11 +317,11 @@ custom = {
         },
     },
     'homogenization/rs_correctors.py': {
-        'command' : 'python3 sfepy/examples/homogenization/rs_correctors.py -n',
+        'command': 'python3 sfepy/examples/homogenization/rs_correctors.py -n',
         'result': 'corrs_elastic.vtk',
         'sfepy-view-options': {
             '': {
-                'max_plots' : 2,
+                'max_plots': 2,
                 'camera_position': [1.16983,0.660181,7.63496,
                                     1.16983,0.660181,
                                     0,0,1,0],
@@ -329,17 +329,17 @@ custom = {
         },
     },
     'large_deformation/compare_elastic_materials.py': {
-        'command' : 'python3 sfepy/examples/large_deformation/compare_elastic_materials.py -n',
+        'command': 'python3 sfepy/examples/large_deformation/compare_elastic_materials.py -n',
         'image': 'pressure_displacement.png',
         'sfepy-view-options': {
         },
     },
     'large_deformation/gen_yeoh_tl_up_interactive.py': {
-        'command' : 'python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py -pn',
+        'command': 'python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py -pn',
         'image': 'gen_yeoh_tl_up_comparison.png',
         'result': 'domain.10.vtk',
         'sfepy-view-options': {
-            '' : {
+            '': {
                 'fields': ['stress:wu:f1:p0', '1:vw:p0'],
                 'camera_position': [-1.89068,-2.47529,0.674151,
                                     0.793688,0.209075,0.574171,
@@ -348,11 +348,11 @@ custom = {
         },
     },
     'large_deformation/hyperelastic_tl_up_interactive.py': {
-        'command' : 'python3 sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py -pn',
+        'command': 'python3 sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py -pn',
         'image': 'hyperelastic_tl_up_comparison.png',
         'result': 'domain.10.vtk',
         'sfepy-view-options': {
-            '' : {
+            '': {
                 'fields': ['stress:wu:f1:p0', '1:vw:p0'],
                 'camera_position': [-4.04955,-6.37091,3.78116,
                                     2.06774,-0.866196,1.16309,
@@ -361,7 +361,7 @@ custom = {
         },
     },
     'linear_elasticity/dispersion_analysis.py': {
-        'command' : 'python3 sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --no-show',
+        'command': 'python3 sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --no-show',
         'image': 'output/frequencies.png',
         'sfepy-view-options': {
         },
@@ -543,8 +543,8 @@ custom = {
         },
     },
     'miscellaneous/refine_evp.py': {
-        'command' : 'python3 sfepy/examples/miscellaneous/refine_evp.py --max-order=5 --max-refine=2 --fig-suffix=.png --no-show',
-        'image' : 'output/h-refinement-0-laplace-lagrange-primme-none-a.png',
+        'command': 'python3 sfepy/examples/miscellaneous/refine_evp.py --max-order=5 --max-refine=2 --fig-suffix=.png --no-show',
+        'image': 'output/h-refinement-0-laplace-lagrange-primme-none-a.png',
         'sfepy-view-options': {
         },
     },
@@ -626,7 +626,7 @@ custom = {
         'result': 'sfepy/examples/phononic/output/band_gaps_rigid/evp.vtk',
         'sfepy-view-options': {
             '': {
-                'fields' : list(chain(
+                'fields': list(chain(
                     *[[f'u{ii:03d}:vs:o.4:p{ii}', f'u{ii:03d}:g:p{ii}']
                       for ii in range(12)]
                 )),
