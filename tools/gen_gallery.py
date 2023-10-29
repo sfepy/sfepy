@@ -1001,8 +1001,16 @@ def generate_rst_files(rst_dir, examples_dir, images_dir, pattern='*.py'):
             rst_base = os.path.splitext(rst_filename)[0]
 
             rst_ex_filename = _make_sphinx_path(ex_filename)
-            docstring = get_default(import_file(ex_filename).__doc__,
-                                    'missing description!')
+            try:
+                docstring = get_default(import_file(ex_filename).__doc__,
+                                        'missing description!')
+
+            except KeyboardInterrupt:
+                raise
+
+            except:
+                output('***** failed! *****')
+                docstring = 'example import failed!'
 
             ifd.write('   %s <%s>\n' % (os.path.basename(ebase), rst_base))
             fig_include = ''
