@@ -98,7 +98,27 @@ custom = {
         '': {'fields': ['phi:p0', 'phi:t50:p0']},
     },
     'diffusion/laplace_1d.py': {
-        '': {'fields': ['t:wt:p0', 't:p0']},
+        '': {
+            'fields': ['t:wt:p0', 't:p0'],
+            'force_view_3d': True,
+            'camera_position': [0.243787,-1.51098,0.486608,
+                                0.5,0,0,
+                                0,0,1],
+        },
+    },
+    'dg/advection_1D.py': {
+        '': {
+            'fields': ['p_modal0:r:wp_modal0:p0', '1:vw:p0',
+                       'p_modal1:r:wp_modal1:p1', '1:vw:p1',
+                       'p_modal2:r:wp_modal2:p2', '1:vw:p2'],
+            'force_view_3d': True,
+            'camera_position': [0.300893,-2.41044,0.408743,
+                                0.4,0,0.55728,
+                                0,0,1],
+            'grid_vector2': [0, 0, 55],
+            'max_plots': 1,
+            'color_map': 'cool',
+        },
     },
     'diffusion/laplace_coupling_lcbcs.py': {
         '': {
