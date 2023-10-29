@@ -884,7 +884,16 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
                 disp_name = fig_filename.replace(sfepy.data_dir, '')
                 output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
-                resview_plot(fname, fig_filename, kwargs)
+                try:
+                    resview_plot(fname, fig_filename, kwargs)
+
+                except KeyboardInterrupt:
+                    raise
+
+                except Exception as exc:
+                    output(f'with plot arguments: {kwargs}')
+                    output('***** failed! *****')
+                    output(f'with {exc}')
 
                 output('...done')
 
