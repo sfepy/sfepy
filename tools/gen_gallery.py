@@ -819,7 +819,8 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
         ebase = ex_filename.replace(examples_dir, '')[1:]
         output('trying "%s"...' % ebase)
 
-        custom_options = custom.get(ebase)
+        _ebase = ebase.replace(os.path.sep, '/')
+        custom_options = custom.get(_ebase)
         if custom_options and 'sfepy-view-options' in custom_options:
             try:
                 _apply_commands(custom_options, images_dir)
