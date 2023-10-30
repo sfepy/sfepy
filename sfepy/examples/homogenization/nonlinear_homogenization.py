@@ -74,8 +74,8 @@ def def_mat(ts, mode, coors, term, pb):
     state_u.set_data(
         pb.domain.get_mesh_coors(actual=True) - pb.domain.get_mesh_coors())
     state_u.field.clear_mappings()
-    family_data = pb.family_data(state_u, term.region,
-                                 term.integral, term.act_integration)
+    family_data = pb.family_data(state_u, term.region, term.integral,
+                                 term.geometry_types['u'])
 
     if len(state_u.field.mappings0) == 0:
         state_u.field.save_mappings()
