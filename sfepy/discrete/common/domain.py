@@ -237,6 +237,8 @@ class Domain(Struct):
         region = visit_stack(self._region_stack, region_op,
                              region_leaf(self, self.regions, select,
                                          functions, tdim))
+        region.field_dim = tdim
+
         return region
 
     def create_region(self, name, select, kind='cell', parent=None,
