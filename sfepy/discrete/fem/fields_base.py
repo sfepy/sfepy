@@ -953,7 +953,11 @@ class FEField(Field):
 
             conns = [conn]
             mat_ids = [self.cmesh.cell_groups]
-            descs = mesh.descs[:1]
+            tdim = self.cmesh.tdim
+            descs = f'{tdim}_{conn.shape[1]}'
+            if descs not in mesh.descs:
+                msg = f'element type {descs} not in mesh! ({mesh.descs})'
+                raise ValueError(msg)
 
             if extra_nodes:
                 coors = self.coors
@@ -961,8 +965,8 @@ class FEField(Field):
             else:
                 coors = self.coors[:self.n_vertex_dof]
 
-            mesh = Mesh.from_data(self.name, coors, None, conns,
-                                  mat_ids, descs)
+            mesh = Mesh.from_data(self.name, coors[:, :tdim], None, conns,
+                                  mat_ids, [descs])
 
         return mesh
 
