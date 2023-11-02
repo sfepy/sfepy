@@ -400,7 +400,7 @@ custom = {
         'command_1': 'sfepy-probe sfepy/examples/linear_elasticity/its2D_4.py its2D.h5',
         'image_0': 'its2D_0.png',
         'image_1': 'its2D_1.png',
-        'result': 'its2D.vtk',
+        'result': 'its2D.h5',
         'dim': 2,
         'sfepy-view-options': {
             '': {
