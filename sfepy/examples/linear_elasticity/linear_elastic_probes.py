@@ -64,8 +64,6 @@ def post_process(out, problem, variables, extend=False):
     out : dict
         The updated output dictionary.
     """
-    import matplotlib
-    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     import matplotlib.font_manager as fm
 

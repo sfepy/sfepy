@@ -1,6 +1,7 @@
 # -*- coding: utf-8
 r"""
 Homogenization of the Darcy flow in a thin porous layer.
+
 The reference cell is composed of the matrix representing the dual porosity
 and of two disconnected channels representing the primary porosity,
 see paper [1].

@@ -17,14 +17,15 @@ updated example files:
 
    $ python setup.py htmldocs
 """
-from __future__ import absolute_import
 import sys
-import six
 sys.path.append('.')
 import os
 import tempfile
 import glob
 import re
+import shutil
+import subprocess
+from itertools import chain
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
@@ -43,9 +44,17 @@ omits = [
 ]
 
 omit_images = [
-    'vibro_acoustic3d_mid.py',
-    'its2D_5.py',
-    'linear_elastic_probes.py',
+    'band_gaps_conf.py',
+    'dg_plot_1D.py',
+    'example_dg_common.py',
+    'homogenization_opt.py', # Is parameterized.
+    'linear_elasticity_opt.py', # Is parameterized.
+    'linear_homogenization_postproc.py',
+    'linear_homogenization_up.py', # Used in linear_elastic_mM.py.
+    'material_opt.py', # Very long calculation.
+    'nonlinear_homogenization.py',
+    'piezo_elasticity_micro.py', # Used in piezo_elasticity_macro.py.
+    'quantum_common.py',
 ]
 
 omit_dirs = [
@@ -54,7 +63,7 @@ omit_dirs = [
 
 custom = {
     'acoustics/vibro_acoustic3d.py': {
-        '_Gamma0_1': {'view_2d': True, 'max_plots': 2},
+        '_Gamma0': {'view_2d': True, 'max_plots': 2},
         '_Omega1': {'camera': [45, 55, 0.8]},
         '_Omega2': {'camera': [45, 55, 0.8]},
     },
@@ -89,7 +98,27 @@ custom = {
         '': {'fields': ['phi:p0', 'phi:t50:p0']},
     },
     'diffusion/laplace_1d.py': {
-        '': {'fields': ['t:wt:p0', 't:p0']},
+        '': {
+            'fields': ['t:wt:p0', 't:p0'],
+            'force_view_3d': True,
+            'camera_position': [0.243787,-1.51098,0.486608,
+                                0.5,0,0,
+                                0,0,1],
+        },
+    },
+    'dg/advection_1D.py': {
+        '': {
+            'fields': ['p_modal0:r:wp_modal0:p0', '1:vw:p0',
+                       'p_modal1:r:wp_modal1:p1', '1:vw:p1',
+                       'p_modal2:r:wp_modal2:p2', '1:vw:p2'],
+            'force_view_3d': True,
+            'camera_position': [0.300893,-2.41044,0.408743,
+                                0.4,0,0.55728,
+                                0,0,1],
+            'grid_vector2': [0, 0, 55],
+            'max_plots': 1,
+            'color_map': 'cool',
+        },
     },
     'diffusion/laplace_coupling_lcbcs.py': {
         '': {
@@ -98,11 +127,65 @@ custom = {
             'force_view_3d': True,
         },
     },
+    'diffusion/laplace_iga_interactive.py': {
+        'command': 'python3 sfepy/examples/diffusion/laplace_iga_interactive.py -o output',
+        'result': 'output/concentric_circles.vtk',
+        'dim': 2,
+        'sfepy-view-options': {
+            '': {
+            },
+        },
+    },
+    'diffusion/laplace_refine_interactive.py': {
+        'command': 'python3 sfepy/examples/diffusion/laplace_refine_interactive.py output',
+        'result': 'output/hanging.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['u:wu', '1:vw'],
+                'camera_position': [-1.27046,-1.02066,2.28476,
+                                    -0.0525852,0.116151,0.00474463,
+                                    0.169164,0.842974,0.510664],
+            },
+        },
+    },
+    'diffusion/laplace_shifted_periodic.py': {
+        'command': 'python3 sfepy/examples/diffusion/laplace_shifted_periodic.py',
+        'result': 'laplace_shifted_periodic.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['u:wu:f0.5', '1:vw'],
+                'camera_position': [-1.42703,0.70237,1.33953,
+                                    -0.0817071,-0.0547046,0.0280939,
+                                    0.616241,-0.216582,0.757192],
+            },
+        },
+    },
     'diffusion/poisson_iga.py': {
         '': {
             'fields': ['t:wt:p0', 't:vw:o0.4:p0'],
             'force_view_3d': True,
             'camera': [30, 60, 1.],
+        },
+    },
+    'diffusion/poisson_parallel_interactive.py': {
+        'command': 'python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101',
+        'result': 'output-parallel/sol.h5',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['u:wu', '1:vw'],
+                'camera_position': [-1.00607,-1.49437,0.843106,
+                                    0.0141441,-0.0501477,-0.0173962,
+                                    0.309532,0.315757,0.896932],
+            },
+        },
+    },
+    'diffusion/poisson_parametric_study.py': {
+        'command': 'sfepy-run sfepy/examples/diffusion/poisson_parametric_study.py',
+        'result': 'output/r_omega1/circles_in_square_0_1_2_3_4_5_6.vtk',
+        'dim': 2,
+        'sfepy-view-options': {
+            '': {
+            },
         },
     },
     'diffusion/sinbc.py': {
@@ -122,6 +205,166 @@ custom = {
             'isosurfaces': 10,
             'outline': True,
             'camera': [-50, -230, 1],
+        },
+    },
+    'diffusion/time_poisson_interactive.py': {
+        'command': 'python3 sfepy/examples/diffusion/time_poisson_interactive.py -p',
+        'image': 'time_poisson_interactive_probe_04.png',
+        'result': 'domain.10.vtk',
+        'sfepy-view-options': {
+            '': {
+            },
+        },
+    },
+    'homogenization/linear_homogenization.py': {
+        'command': 'sfepy-run sfepy/examples/homogenization/linear_homogenization.py',
+        'result': 'output/corrs_le.vtk',
+        'sfepy-view-options': {
+            '': {
+                'max_plots': 3,
+                'camera_position': [-8.57147,2.10122,2.76537,
+                                    0.37,2.04405,2.14477,
+                                    0,0,1],
+                'show_labels': False,
+                'show_scalar_bars': False,
+            }
+        },
+    },
+    'homogenization/perfusion_micro.py': {
+        'command': 'sfepy-run sfepy/examples/homogenization/perfusion_micro.py',
+        'result': 'output/corrs_3d_2ch.vtk',
+        'sfepy-view-options': {
+            '_etaA_YM': {
+                'camera_position': [-1.69531,-0.966016,2.3648,
+                                    0.480252,0.486045,0.46669,
+                                    0.51024,0.292658,0.808707],
+            },
+            '_etaB_YM': {
+                'camera_position': [-1.69531,-0.966016,2.3648,
+                                    0.480252,0.486045,0.46669,
+                                    0.51024,0.292658,0.808707],
+            },
+            # '_gamma_A_1_YA': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_A_2_YA': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_A_3_YA': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_B_1_YB': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_B_2_YB': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_B_3_YB': {
+            #     'camera_position': [-0.96887,-2.21765,1.25047,
+            #                         1,0.4,0.5,
+            #                         0.107002,0.198813,0.974179],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_gamma_m_YM': {
+            #     'camera_position': [-1.69531,-0.966016,2.3648,
+            #                         0.480252,0.486045,0.46669,
+            #                         0.51024,0.292658,0.808707],
+            # },
+            '_gamma_p_YM': {
+                'camera_position': [-1.69531,-0.966016,2.3648,
+                                    0.480252,0.486045,0.46669,
+                                    0.51024,0.292658,0.808707],
+            },
+            # '_oneA_YM': {
+            #     'camera_position': [-1.69531,-0.966016,2.3648,
+            #                         0.480252,0.486045,0.46669,
+            #                         0.51024,0.292658,0.808707],
+            # },
+            # '_oneB_YM': {
+            #     'camera_position': [-1.69531,-0.966016,2.3648,
+            #                         0.480252,0.486045,0.46669,
+            #                         0.51024,0.292658,0.808707],
+            # },
+            # '_piA_YA': {
+            #     'max_plots': 2,
+            #     'camera_position': [-2.02509,0.148141,3.9141,
+            #                         0.913524,1.35355,0.462869,
+            #                         0.714983,0.186315,0.673859],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+            # '_piB_YB': {
+            #     'max_plots': 2,
+            #     'camera_position': [-2.02509,0.148141,3.9141,
+            #                         0.913524,1.35355,0.462869,
+            #                         0.714983,0.186315,0.673859],
+            #     'grid_vector1': [1.2,0,0],
+            # },
+        },
+    },
+    'homogenization/rs_correctors.py': {
+        'command': 'python3 sfepy/examples/homogenization/rs_correctors.py -n',
+        'result': 'corrs_elastic.vtk',
+        'sfepy-view-options': {
+            '': {
+                'max_plots': 2,
+                'camera_position': [1.16983,0.660181,7.63496,
+                                    1.16983,0.660181,
+                                    0,0,1,0],
+            },
+        },
+    },
+    'large_deformation/compare_elastic_materials.py': {
+        'command': 'python3 sfepy/examples/large_deformation/compare_elastic_materials.py -n',
+        'image': 'pressure_displacement.png',
+        'sfepy-view-options': {
+        },
+    },
+    'large_deformation/gen_yeoh_tl_up_interactive.py': {
+        'command': 'python3 sfepy/examples/large_deformation/gen_yeoh_tl_up_interactive.py -pn',
+        'image': 'gen_yeoh_tl_up_comparison.png',
+        'result': 'domain.10.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['stress:wu:f1:p0', '1:vw:p0'],
+                'camera_position': [-1.89068,-2.47529,0.674151,
+                                    0.793688,0.209075,0.574171,
+                                    0,0,1],
+            }
+        },
+    },
+    'large_deformation/hyperelastic_tl_up_interactive.py': {
+        'command': 'python3 sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py -pn',
+        'image': 'hyperelastic_tl_up_comparison.png',
+        'result': 'domain.10.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['stress:wu:f1:p0', '1:vw:p0'],
+                'camera_position': [-4.04955,-6.37091,3.78116,
+                                    2.06774,-0.866196,1.16309,
+                                    0.220544,0.208124,0.952914],
+            }
+        },
+    },
+    'linear_elasticity/dispersion_analysis.py': {
+        'command_0': 'python3 sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --no-show',
+        'command_1': 'python3 sfepy/scripts/plot_logs.py output/frequencies.txt -o output/frequencies.png -n',
+        'image': 'output/frequencies.png',
+        'sfepy-view-options': {
         },
     },
     'linear_elasticity/elastic_contact_planes.py': {
@@ -145,14 +388,96 @@ custom = {
                        'cauchy_strain:p1', 'cauchy_stress:p2'],
         },
     },
+    'linear_elasticity/elastodynamic_identification.py': {
+        'command_0': 'python3 sfepy/examples/linear_elasticity/elastodynamic_identification.py --output-dir=output/edi',
+        'image_0': 'output/edi/res00004.png',
+        'command_1': 'python3 sfepy/scripts/plot_logs.py output/edi/pars.txt -o output/edi/pars.png -n',
+        'image_1': 'output/edi/pars.png',
+        'sfepy-view-options': {
+        },
+    },
+    'linear_elasticity/its2D_4.py': {
+        'command_0': 'sfepy-run sfepy/examples/linear_elasticity/its2D_4.py',
+        'command_1': 'sfepy-probe sfepy/examples/linear_elasticity/its2D_4.py its2D.h5',
+        'image_0': 'its2D_0.png',
+        'image_1': 'its2D_1.png',
+        'result': 'its2D.h5',
+        'dim': 2,
+        'sfepy-view-options': {
+            '': {
+            },
+        },
+    },
+    'linear_elasticity/its2D_5.py': {
+        'command': 'sfepy-run sfepy/examples/linear_elasticity/its2D_5.py',
+        'image_0': 'its2D_probe_line0.png',
+        'image_1': 'its2D_probe_line1.png',
+        'result': 'its2D.vtk',
+        'dim': 2,
+        'sfepy-view-options': {
+            '': {
+            },
+        },
+    },
+    'linear_elasticity/its2D_interactive.py': {
+        'command': 'python3 sfepy/examples/linear_elasticity/its2D_interactive.py -p',
+        'image_0': 'its2D_interactive_probe_0.png',
+        'image_1': 'its2D_interactive_probe_1.png',
+        'result': 'its2D_interactive.vtk',
+        'dim': 2,
+        'sfepy-view-options': {
+            '': {
+            },
+        },
+    },
     'linear_elasticity/linear_elastic_iga.py': {
         '': {
             'fields': ['u:wu:p0', '1:vw:p0'],
             'camera': [-45, 55, 1],
         },
     },
+    'linear_elasticity/linear_elastic_interactive.py': {
+        'command': 'python3 sfepy/examples/linear_elasticity/linear_elastic_interactive.py',
+        'result': 'linear_elasticity.vtk',
+        'dim': 2,
+        'sfepy-view-options': {
+            '': {
+                'fields': ['u:wu:p0', '1:vw:p0'],
+            },
+        },
+    },
+    'linear_elasticity/linear_elastic_probes.py': {
+        'command': 'sfepy-run sfepy/examples/linear_elasticity/linear_elastic_probes.py',
+        'image_0': 'cylinder_probe_line.png',
+        'image_1': 'cylinder_probe_circle.png',
+        'image_2': 'cylinder_probe_ray.png',
+        'result': 'cylinder.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['cauchy_stress:wu:p0', '1:vw:p0'],
+                'camera_position': [-0.0496419,-0.132205,0.0339214,
+                                    0.0495001,0.00309172,-0.00112878,
+                                    0.146854,0.145842,0.978348],
+            },
+        },
+    },
     'linear_elasticity/linear_viscoelastic.py': {
         '': {'camera': [225, 75, 0.88]}
+    },
+    'linear_elasticity/modal_analysis.py': {
+        'command': 'python3 sfepy/examples/linear_elasticity/modal_analysis.py  -s 31,31 -n 3',
+        'result': 'eigenshapes.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['strain000:wu000:f10%:p0', '1:vw:p0',
+                           'strain001:wu001:f10%:p1', '1:vw:p1',
+                           'strain002:wu002:f10%:p2', '1:vw:p2'],
+                'camera_position': [1.1,-0.1,5.41561,
+                                    1.1,-0.1,
+                                    0,0,1,0],
+                'grid_vector1': [1.2,0,0],
+            },
+        },
     },
     'linear_elasticity/modal_analysis_declarative.py': {
         '': {
@@ -173,6 +498,19 @@ custom = {
                        'u_rot:p1', '1:vw:p1'],
             'camera': [-45, 75, 1],
             'grid_vector1': [1, 0, 0],
+        },
+    },
+    'linear_elasticity/shell10x_cantilever_interactive.py': {
+        'command': 'python3 sfepy/examples/linear_elasticity/shell10x_cantilever_interactive.py -t bend --plot --no-show output',
+        'image': 'output/shell10x_cantilever_convergence_bent.png',
+        'result': 'output/shell10x_cantilever.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['u_disp:wu_disp:p0', '1:vw:p0',
+                           'u_rot:p1', '1:vw:p1'],
+                'camera': [-45, 75, 1],
+                'grid_vector1': [1, 0, 0],
+            },
         },
     },
     'linear_elasticity/truss_bridge.py': {
@@ -196,11 +534,32 @@ custom = {
                                 0, 0, 1],
         },
     },
-    'navier_stokes/stokes_slip_bc.py': {
-        '': {
-            'fields': ['u:g:f.25:p0', 'u:o.4:p0', 'p:p1'],
-            'camera': [-45, 55, 1],
-            'grid_vector1': [0, 1.2, 0]
+    'miscellaneous/live_plot.py': {
+        'command_0': 'python3 sfepy/examples/miscellaneous/live_plot.py -o output',
+        'command_1': 'python3 sfepy/scripts/plot_logs.py output/live_plot.txt -o output/live_plot.png -n',
+        'image_1': 'output/live_plot.png',
+        'command_2': 'python3 sfepy/scripts/plot_logs.py output/live_plot2.txt -o output/live_plot2.png -n',
+        'image_2': 'output/live_plot2.png',
+        'sfepy-view-options': {
+        },
+    },
+    'miscellaneous/refine_evp.py': {
+        'command': 'python3 sfepy/examples/miscellaneous/refine_evp.py --max-order=5 --max-refine=2 --fig-suffix=.png --no-show',
+        'image': 'output/h-refinement-0-laplace-lagrange-primme-none-a.png',
+        'sfepy-view-options': {
+        },
+    },
+    'multi_physics/biot_parallel_interactive.py': {
+        'command': 'python3 sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel',
+        'result': 'output-parallel/sol.h5',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['u:t1000:p0', '1:vw:o0.1:p0', 'p:p1'],
+                'camera_position': [-0.740809,-2.67483,2.43604,
+                                    0.579298,-0.106475,0.0404841,
+                                    0.183213,0.618527,0.764106],
+                'grid_vector1': [1.2, 0, 0]
+            },
         },
     },
     'multi_physics/piezo_elasticity.py': {
@@ -218,6 +577,17 @@ custom = {
             'color_map': 'seismic',
         }
     },
+    'multi_physics/thermal_electric.py': {
+        'command': 'python3 sfepy/examples/multi_physics/thermal_electric.py',
+        'result': 'sfepy/examples/multi_physics/output/circle_in_square.vtk',
+        'dim': 2,
+        'sfepy-view-options': {
+            '.el': {
+            },
+            '.10': {
+            },
+        },
+    },
     'multi_physics/thermo_elasticity_ess.py': {
         '': {
             'fields': ['T:wu:f1e3:p0', '1:vw:p0'],
@@ -226,6 +596,51 @@ custom = {
     },
     'multi_physics/thermo_elasticity.py': {
         '': {'camera': [225, 75, 0.9]}
+    },
+    'navier_stokes/stokes_slip_bc.py': {
+        '': {
+            'fields': ['u:g:f.25:p0', 'u:o.4:p0', 'p:p1'],
+            'camera': [-45, 55, 1],
+            'grid_vector1': [0, 1.2, 0]
+        },
+    },
+    'phononic/band_gaps.py': {
+        'command': 'sfepy-run sfepy/examples/phononic/band_gaps.py --phonon-band-gaps --phonon-plot -O plot_options={show=False,legend=True},fig_suffix=\'.png\'',
+        'image': 'sfepy/examples/phononic/output/band_gaps/band_gaps.png',
+        'result': 'sfepy/examples/phononic/output/band_gaps/evp.vtk',
+        'sfepy-view-options': {
+            '': {
+                'camera_position': [1.8,-1.2,7.28269,
+                                    1.8,-1.2,0,
+                                    0,1,0],
+                'grid_vector1': [1.2, 0, 0],
+                'grid_vector2': [0, -1.2, 0],
+                'max_plots': 4,
+                'show_labels': False,
+                'show_scalar_bars': False,
+            },
+        },
+    },
+    'phononic/band_gaps_rigid.py': {
+        'command': 'sfepy-run sfepy/examples/phononic/band_gaps_rigid.py --phonon-band-gaps --phonon-plot -O plot_options={show=False,legend=True},fig_suffix=\'_rigid.png\'',
+        'image': 'sfepy/examples/phononic/output/band_gaps_rigid/band_gaps_rigid.png',
+        'result': 'sfepy/examples/phononic/output/band_gaps_rigid/evp.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': list(chain(
+                    *[[f'u{ii:03d}:vs:o.4:p{ii}', f'u{ii:03d}:g:p{ii}']
+                      for ii in range(12)]
+                )),
+                'camera_position': [1.8,-1.2,7.28269,
+                                    1.8,-1.2,0,
+                                    0,1,0],
+                'grid_vector1': [1.2, 0, 0],
+                'grid_vector2': [0, -1.2, 0],
+                'max_plots': 4,
+                'show_labels': False,
+                'show_scalar_bars': False,
+            },
+        },
     },
     'quantum/boron.py': {
         '': {'fields': ['Psi000:p0', 'Psi001:p1', 'Psi002:p2', 'Psi003:p3'],
@@ -295,14 +710,30 @@ def _omit(filename, omits, omit_dirs):
 def ebase2fbase(ebase):
     return os.path.splitext(ebase)[0].replace(os.path.sep, '-')
 
+def _get_image_names(custom_options):
+    for key, val in custom_options.items():
+        if key.startswith('image'):
+                yield val
 
 def _get_fig_filenames(ebase, images_dir):
     fig_base = ebase2fbase(ebase)
 
     if ebase in custom:
-        suffixes = sorted(custom[ebase].keys())
-        for suffix in suffixes:
-            yield os.path.join(images_dir, fig_base + suffix + '.png')
+        custom_options = custom.get(ebase)
+        if 'sfepy-view-options' in custom_options:
+            custom_view_options = custom_options['sfepy-view-options']
+
+            for fig_filename in _get_image_names(custom_options):
+                yield os.path.join(images_dir, os.path.basename(fig_filename))
+
+        else:
+            custom_view_options = custom_options
+
+        if custom_view_options:
+            suffixes = sorted(custom_view_options.keys())
+            for suffix in suffixes:
+                yield os.path.join(images_dir, fig_base + suffix + '.png')
+
     else:
         yield os.path.join(images_dir, fig_base + '.png')
 
@@ -323,6 +754,16 @@ def _make_sphinx_path(path, relative=False):
         sphinx_path = path.replace(sfepy.data_dir, '/..')
 
     return sphinx_path
+
+
+def _apply_commands(custom_options, images_dir):
+    for key, val in custom_options.items():
+        if key.startswith('command'):
+            cmd = custom_options[key]
+            subprocess.run(cmd.split()).check_returncode()
+
+        if key.startswith('image'):
+            shutil.copy(val, images_dir)
 
 
 def apply_view_options(views, default):
@@ -399,38 +840,55 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
         ebase = ex_filename.replace(examples_dir, '')[1:]
         output('trying "%s"...' % ebase)
 
-        try:
-            problem, state = solve_pde(ex_filename, options=options)
+        _ebase = ebase.replace(os.path.sep, '/')
+        custom_options = custom.get(_ebase)
+        if custom_options and 'sfepy-view-options' in custom_options:
+            try:
+                _apply_commands(custom_options, images_dir)
 
-        except KeyboardInterrupt:
-            raise
+                filename = custom_options.get('result')
+                dim = custom_options.get('dim')
+                custom_view_options = custom_options['sfepy-view-options']
 
-        except:
-            problem = None
-            output('***** failed! *****')
+            except subprocess.CalledProcessError:
+                filename = None
+                output('***** failed! *****')
 
-        if problem is not None:
-            if ebase in custom:
-                views = apply_view_options(custom[ebase], view_options)
-            else:
-                views = {'': view_options.copy()}
+        else:
+            custom_view_options = custom_options
 
             try:
-                tsolver = problem.get_solver()
+                problem, state = solve_pde(ex_filename, options=options)
+                try:
+                    tsolver = problem.get_solver()
 
-            except ValueError:
-                suffix = None
-
-            else:
-                if isinstance(tsolver, StationarySolver):
+                except ValueError:
                     suffix = None
 
                 else:
-                    suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
+                    if isinstance(tsolver, StationarySolver):
+                        suffix = None
 
-            filename = problem.get_output_name(suffix=suffix)
-            dim = problem.get_dim()
-            for suffix, kwargs in six.iteritems(views):
+                    else:
+                        suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
+
+                filename = problem.get_output_name(suffix=suffix)
+                dim = problem.get_dim()
+
+            except KeyboardInterrupt:
+                raise
+
+            except:
+                filename = None
+                output('***** failed! *****')
+
+        if filename is not None:
+            if custom_view_options is not None:
+                views = apply_view_options(custom_view_options, view_options)
+            else:
+                views = {'': view_options.copy()}
+
+            for suffix, kwargs in views.items():
                 if dim in (1, 2) and not kwargs.force_view_3d:
                     kwargs.view_2d = True
                     kwargs.scalar_bar_position = [0.04, 0.92, 1.7, 0]
@@ -447,7 +905,16 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
                 disp_name = fig_filename.replace(sfepy.data_dir, '')
                 output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
-                resview_plot(fname, fig_filename, kwargs)
+                try:
+                    resview_plot(fname, fig_filename, kwargs)
+
+                except KeyboardInterrupt:
+                    raise
+
+                except Exception as exc:
+                    output(f'with plot arguments: {kwargs}')
+                    output('***** failed! *****')
+                    output(f'with {exc}')
 
                 output('...done')
 
@@ -533,7 +1000,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir, pattern='*.py'):
         rst_filename = ebase2fbase(ebase) + '.rst'
         dir_map.setdefault(base_dir, []).append((ex_filename, rst_filename))
 
-    for dirname, filenames in six.iteritems(dir_map):
+    for dirname, filenames in dir_map.items():
         filenames = sorted(filenames, key=lambda a: a[1])
         dir_map[dirname] = filenames
 
@@ -555,8 +1022,16 @@ def generate_rst_files(rst_dir, examples_dir, images_dir, pattern='*.py'):
             rst_base = os.path.splitext(rst_filename)[0]
 
             rst_ex_filename = _make_sphinx_path(ex_filename)
-            docstring = get_default(import_file(ex_filename).__doc__,
-                                    'missing description!')
+            try:
+                docstring = get_default(import_file(ex_filename).__doc__,
+                                        'missing description!')
+
+            except KeyboardInterrupt:
+                raise
+
+            except:
+                output('***** failed! *****')
+                docstring = 'example import failed!'
 
             ifd.write('   %s <%s>\n' % (os.path.basename(ebase), rst_base))
             fig_include = ''
@@ -649,8 +1124,12 @@ def generate_gallery(examples_dir, output_filename, doc_dir,
             ebase = ex_filename.replace(examples_dir, '')[1:]
             link = os.path.splitext(rst_filename)[0]
 
-            thumbnail_filename = next(_get_fig_filenames(ebase,
-                                                         thumbnails_dir))
+            try:
+                thumbnail_filename = next(_get_fig_filenames(ebase,
+                                                             thumbnails_dir))
+            except StopIteration:
+                thumbnail_filename = ''
+
             if not os.path.isfile(thumbnail_filename):
                 # Skip examples with no image (= failed examples).
                 output('warning: figure "%s" not found' % thumbnail_filename)
@@ -689,7 +1168,8 @@ def generate_gallery(examples_dir, output_filename, doc_dir,
 helps = {
     'doc_dir': 'top level directory of gallery files',
     'pattern': 'example files search pattern [default: %(default)s]',
-    'no_images': 'do not (re)generate images and thumbnails',
+    'no_images': 'do not (re)generate images',
+    'no_thumbnails': 'do not (re)generate thumbnails',
     'output_filename': 'output file name [default: %(default)s]',
 }
 
@@ -705,8 +1185,11 @@ def main():
                         action='store', dest='pattern',
                         default='*.py', help=helps['pattern'])
     parser.add_argument('-n', '--no-images',
-                        action='store_true', dest='no_images',
-                        default=False, help=helps['no_images'])
+                        action='store_false', dest='images',
+                        default=True, help=helps['no_images'])
+    parser.add_argument('--no-thumbnails',
+                        action='store_false', dest='thumbnails',
+                        default=True, help=helps['no_thumbnails'])
     parser.add_argument('-o', '--output', metavar='output_filename',
                         action='store', dest='output_filename',
                         default='gallery.rst',
@@ -722,8 +1205,10 @@ def main():
 
     output_filename = os.path.join(full_rst_dir, options.output_filename)
 
-    if not options.no_images:
+    if options.images:
         generate_images(images_dir, examples_dir, pattern=options.pattern)
+
+    if options.thumbnails:
         generate_thumbnails(thumbnails_dir, images_dir)
 
     dir_map = generate_rst_files(full_rst_dir, examples_dir, images_dir,

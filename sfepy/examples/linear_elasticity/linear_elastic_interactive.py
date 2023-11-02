@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Linear elasticity example using the imperative API.
+"""
 from argparse import ArgumentParser
 import numpy as nm
 

@@ -481,6 +481,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
         position = opts.get('p', 0)  # determine plotting slot
         if 'p' in opts:
             size = nm.array(pos_bnds[1::2]) - nm.array(pos_bnds[::2])
+            size = nm.maximum(size, 1e-2 * size.max())
             pipe.append(pipe[-1].copy())
             pos1 = position % options.max_plots
             pos2 = position // options.max_plots

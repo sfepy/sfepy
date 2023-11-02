@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 r"""
-Bending of a long thin cantilever beam computed using the
+Bending of a long thin cantilever beam, imperative problem description.
+
+The example demonstrates use of the
 :class:`dw_shell10x <sfepy.terms.terms_shells.Shell10XTerm>` term.
 
 Find displacements of the central plane :math:`\ul{u}`, and rotations
@@ -214,6 +216,7 @@ helps = {
     'poisson' : "the Poisson's ratio [default: %(default)s]",
     'force' : "the force load [default: %(default)s]",
     'plot' : 'plot the max. displacement w.r.t. number of cells',
+    'no_show' : 'do not show matplotlib figures',
     'silent' : 'do not print messages to screen',
 }
 
@@ -242,6 +245,9 @@ def main():
     parser.add_argument('-p', '--plot',
                         action="store_true", dest='plot',
                         default=False, help=helps['plot'])
+    parser.add_argument('--no-show',
+                        dest='show', action='store_false',
+                        default=True, help=helps['no_show'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -355,8 +361,8 @@ def main():
                   'bend' : 'bent', 'twist' : 'twisted'}[options.transform]
         fig.savefig(odir('shell10x_cantilever_convergence_%s.png' % suffix))
 
-        plt.show()
-
+        if options.show:
+            plt.show()
 
 if __name__ == '__main__':
     main()

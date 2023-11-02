@@ -17,9 +17,9 @@ from sfepy.linalg import norm_l2_along_axis
 from sfepy.homogenization.coefficients import Coefficients
 
 from sfepy.examples.phononic.band_gaps_conf import (BandGapsRigidConf,
-                                                    get_pars, normalize)
+                                                    get_pars, clip)
 
-normalize # Make pyflakes happy...
+clip # Make pyflakes happy...
 
 incwd = InDir(__file__)
 
@@ -86,7 +86,7 @@ band_gaps_options = {
 options = {
     'post_process_hook' : 'post_process',
 
-    'plot_transform' : ('normalize', (-2, 2)),
+    'plot_transform' : ('clip', (-7000, 7000)),
 
     'fig_name' : 'band_gaps',
     'fig_suffix' : '.pdf',

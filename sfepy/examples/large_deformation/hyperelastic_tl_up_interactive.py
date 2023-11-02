@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 r"""
 Incompressible Mooney-Rivlin hyperelastic material model.
+
 In this model, the deformation energy density per unit reference volume is
 given by
 
@@ -178,7 +179,8 @@ def plot_graphs(
     ax_difference.set_ylabel(r'difference in true stress $\mathrm{[Pa]}$')
     ax_difference.set_xlabel(r'stretch $\mathrm{[-]}$')
     ax_difference.grid()
-    plt.show()
+
+    return fig
 
 def stress_strain(
         out, problem, _state, order=1, global_stress=None,
@@ -333,9 +335,14 @@ def main(cli_args):
     pb.solve(save_results=True, post_process_hook=stress_strain_fun)
 
     if do_plot:
-        plot_graphs(
+        fig = plot_graphs(
             material_parameters, axial_stress, axial_displacement,
             undeformed_length=dims[0])
+
+        fig.savefig('hyperelastic_tl_up_comparison.png', bbox_inches='tight')
+
+        if cli_args.show:
+            plt.show()
 
 def parse_argument_list(cli_arg, type_fun=None, value_separator=','):
     """
@@ -378,6 +385,9 @@ def parse_args():
     parser.add_argument(
         '-p', '--plot', action='store_true', default=False,
         help='Whether to plot a comparison with analytical formula.')
+    parser.add_argument(
+        '-n', '--no-show', dest='show', action='store_false', default=True,
+        help='Do not show matplotlib figures.')
     parser.add_argument(
         '-t', '--ts',
         type=str, default='0.0,10.0,11',
