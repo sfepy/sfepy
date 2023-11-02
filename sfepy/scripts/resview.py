@@ -626,8 +626,6 @@ def print_camera_position(plotter):
     cp = nm.array([k for k in plotter.camera_position]).ravel()
     cp = ','.join(['%g' % k for k in cp])
     print(f'--camera-position="{cp}"')
-    with open('cp.txt', 'w') as fd:
-        fd.write(f'--camera-position="{cp}"')
 
 
 def _get_cpos(plotter, options, camera_default=(225, 75, 0.9)):
