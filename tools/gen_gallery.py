@@ -361,7 +361,8 @@ custom = {
         },
     },
     'linear_elasticity/dispersion_analysis.py': {
-        'command': 'python3 sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --no-show',
+        'command_0': 'python3 sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --no-show',
+        'command_1': 'python3 sfepy/scripts/plot_logs.py output/frequencies.txt -o output/frequencies.png -n',
         'image': 'output/frequencies.png',
         'sfepy-view-options': {
         },
