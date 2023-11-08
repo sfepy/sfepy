@@ -166,7 +166,7 @@ def evaluate_contact_constraints(
 
     n = elementID.shape[0]
     nsd = X.shape[1]
-    ngp = GPs.shape[0] / n
+    ngp = GPs.shape[0] // n
     nsn = ISN.shape[0]
     nes = ISN.shape[1]
     nen = IEN.shape[1]
