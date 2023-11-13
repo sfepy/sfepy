@@ -116,7 +116,6 @@ class FEDomain(Domain):
 
         for key, gel in geom_els.items():
             ori = gel.orientation
-
             cmesh = self.cmesh_tdim[gel.dim]
             if (cmesh.tdim != cmesh.dim) and (not force_check):
                 output('warning: mesh with topological dimension %d lower than'
@@ -136,6 +135,8 @@ class FEDomain(Domain):
                 orient_elements(flag, cmesh, cells, gel.dim,
                                 ori.roots, ori.vecs,
                                 ori.swap_from, ori.swap_to)
+
+                flag = flag[cells]
 
                 if nm.all(flag == 0):
                     if itry > 0: output('...corrected')
