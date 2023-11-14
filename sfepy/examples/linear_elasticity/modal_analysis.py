@@ -273,7 +273,7 @@ def main():
     # Make full eigenvectors (add DOFs fixed by boundary conditions).
     variables = pb.set_default_state()
 
-    vecs = nm.empty((variables.di.ptr[-1], svecs.shape[1]),
+    vecs = nm.empty((variables.di.n_dof_total, svecs.shape[1]),
                     dtype=nm.float64)
     for ii in range(svecs.shape[1]):
         vecs[:, ii] = variables.make_full_vec(svecs[:, ii])

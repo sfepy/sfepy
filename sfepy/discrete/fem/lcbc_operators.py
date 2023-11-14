@@ -662,7 +662,7 @@ class LCBCOperators(Container):
 
         if len(self) == 0: return (None,) * 3
 
-        n_dof = self.variables.adi.ptr[-1]
+        n_dof = self.variables.adi.n_dof_total
         n_constrained = nm.sum([val for val in six.itervalues(self.n_master)])
         n_dof_free = nm.sum([val for val in six.itervalues(self.n_free)])
         n_dof_new = nm.sum([val for val in six.itervalues(self.n_new)])

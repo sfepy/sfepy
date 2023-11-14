@@ -471,7 +471,7 @@ class Variables(Container):
         if not self.has_eq_map:
             raise ValueError('call equation_mapping() first!')
 
-        return (self.avdi.ptr[-1], self.adi.ptr[-1])
+        return (self.avdi.n_dof_total, self.adi.n_dof_total)
 
     def setup_initial_conditions(self, ics, functions):
         self.ics = ics
@@ -513,11 +513,11 @@ class Variables(Container):
                     var.adof_conns[key] = val
 
     def create_vec(self):
-        vec = nm.zeros((self.di.ptr[-1],), dtype=self.dtype)
+        vec = nm.zeros((self.di.n_dof_total,), dtype=self.dtype)
         return vec
 
     def create_reduced_vec(self):
-        vec = nm.zeros((self.adi.ptr[-1],), dtype=self.dtype)
+        vec = nm.zeros((self.adi.n_dof_total,), dtype=self.dtype)
         return vec
 
     def check_vec_size(self, vec, reduced=False):
@@ -567,7 +567,7 @@ class Variables(Container):
         to False, for assembled vectors it should be set to True.
         """
         if svec is None:
-            svec = nm.empty((self.adi.ptr[-1],), dtype=self.dtype)
+            svec = nm.empty((self.adi.n_dof_total,), dtype=self.dtype)
         for var in self.iter_state():
             aindx = self.adi.indx[var.name]
             svec[aindx] = var.get_reduced(vec, self.di.indx[var.name].start,

@@ -7,7 +7,7 @@ import sfepy.base.testing as tst
 from sfepy import data_dir
 
 def init_vec(variables):
-    return nm.random.rand(variables.di.ptr[-1])
+    return nm.random.rand(variables.di.n_dof_total)
 
 def check_vec(vec, ii, ok, conds, variables):
     from sfepy.discrete.common.dof_info import expand_nodes_to_equations
