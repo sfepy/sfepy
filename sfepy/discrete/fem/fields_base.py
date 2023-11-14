@@ -394,14 +394,15 @@ class FEField(Field):
         n_dof = region.vertices.shape[0]
 
         # Remap vertex node connectivity to field-local numbering.
-        conn, gel = self.domain.get_conn(ret_gel=True, tdim=region.tdim)
         if self.is_surface:
+            conn, gel = self.domain.get_conn(ret_gel=True, tdim=region.tdim)
             faces = gel.get_surface_entities()
             aux = FESurface('aux', region, faces, conn)
             self.econn[:, :aux.n_fp] = aux.leconn
             self.extra_data[f'sd_{region.name}'] = aux
         else:
-            self.econn[:, :conn.shape[1]] = nm.take(remap, conn[region.cells])
+            conn = self.domain.get_conn(tdim=region.tdim, cells=region.cells)
+            self.econn[:, :conn.shape[1]] = nm.take(remap, conn)
 
         return n_dof, remap
 
@@ -1210,7 +1211,6 @@ class FEField(Field):
         """
         domain = self.domain
         coors = domain.get_mesh_coors(actual=True)
-        dconn = domain.get_conn(tdim=region.tdim)
 
         iels = region.get_cells(true_cells_only=(region.kind == 'cell'))
         transform = (self.basis_transform[iels] if self.basis_transform
@@ -1223,8 +1223,8 @@ class FEField(Field):
             qp = self.get_qp('v', integral)
             bf = self.get_base('v', 0, integral, iels=iels)
 
-            conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
-            mapping = FEMapping(coors, conn, poly_space=geo_ps)
+            dconn = domain.get_conn(tdim=region.tdim, cells=iels)
+            mapping = FEMapping(coors, dconn, poly_space=geo_ps)
             out = mapping.get_mapping(qp.vals, qp.weights, bf, poly_space=ps,
                                       ori=self.ori, transform=transform)
 
@@ -1244,6 +1244,7 @@ class FEField(Field):
             sd = domain.surface_groups[region.name]
             esd = self.extra_data[f'sd_{region.name}']
 
+            dconn = domain.get_conn(tdim=region.tdim)
             conn = sd.get_connectivity()
             mapping = FEMapping(coors, conn, poly_space=geo_ps)
 

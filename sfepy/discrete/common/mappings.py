@@ -106,16 +106,20 @@ class Mapping(Struct):
             if kind == 's':
                 coors = coors[region.vertices]
 
-            conn, gel = region.domain.get_conn(ret_gel=True, tdim=region.tdim)
-
             if kind == 'v':
                 cells = region.get_cells()
 
-                mapping = FEMapping(coors, conn[cells], gel=gel)
+                conn, gel = region.domain.get_conn(ret_gel=True,
+                                                   tdim=region.tdim,
+                                                   cells=region.cells)
+
+                mapping = FEMapping(coors, conn, gel=gel)
 
             elif kind == 's':
                 from sfepy.discrete.fem.fe_surface import FESurface
 
+                conn, gel = region.domain.get_conn(ret_gel=True,
+                                                   tdim=region.tdim)
                 aux = FESurface('aux', region, gel.get_surface_entities(),
                                 conn)
                 mapping = FEMapping(coors, aux.leconn, gel=gel.surface_facet)
