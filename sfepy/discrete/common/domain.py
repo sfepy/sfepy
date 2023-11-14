@@ -267,17 +267,23 @@ class Domain(Struct):
                              region_leaf(self, self.regions, select,
                                          functions, tdim))
 
-        if (extra_options is not None) and ('mesh_dim' in extra_options):
-            region = self.create_extra_tdim_region(region, functions,
-                                                   extra_options['mesh_dim'])
+        finalize = True
+        eopts = extra_options
+        if eopts is not None:
+            if 'mesh_dim' in eopts:
+                region = self.create_extra_tdim_region(region, functions,
+                                                       eopts['mesh_dim'])
+            if not(eopts.get('finalize', True)):
+                finalize = False
+
+            if 'vertices_from' in eopts:
+                vreg = eopts['vertices_from']
+                region.entities[0] = self.regions[vreg].vertices.copy()
+                finalize = False
 
         region.name = name
         region.definition = select
         region.set_kind(kind)
-        finalize = True
-        if (extra_options is not None and
-                not(extra_options.get('finalize', True))):
-            finalize = False
         if finalize:
             region.finalize(allow_empty=allow_empty)
         region.parent = parent
