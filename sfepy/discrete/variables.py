@@ -283,11 +283,7 @@ class Variables(Container):
 
         if all(is_given):
             aux = [self[name]._order for name in self.state]
-            assert_(len(aux) == len(set(aux)),
-                    msg='orders of state variables are not unique! (%s)'
-                    % aux)
             orders = [(self[name]._order, name) for name in self.state]
-
         else:
             orders = [ii for ii in enumerate(self.state)]
 
@@ -300,19 +296,29 @@ class Variables(Container):
     def has_virtuals(self):
         return len(self.virtual) > 0
 
+    def _create_dof_info(self, ordered_vars, flag, active=False):
+        orders = {}
+        di = DofInfo(f'{flag}_dof_info')
+        for var_name in ordered_vars:
+            var = self[var_name]
+            order = var._order
+            if order in orders:
+                di.append_variable(var, active=active, shared=orders[order])
+            else:
+                di.append_variable(var, active=active)
+                if order is not None:
+                    orders[order] = var_name
+
+        return di
+
     def setup_dof_info(self, make_virtual=False):
         """
         Setup global DOF information.
         """
-        self.di = DofInfo('state_dof_info')
-        for var_name in self.ordered_state:
-            self.di.append_variable(self[var_name])
+        self.di = self._create_dof_info(self.ordered_state, 'state')
 
         if make_virtual:
-            self.vdi = DofInfo('virtual_dof_info')
-            for var_name in self.ordered_virtual:
-                self.vdi.append_variable(self[var_name])
-
+            self.vdi = self._create_dof_info(self.ordered_virtual, 'virtual')
         else:
             self.vdi = self.di
 
@@ -436,15 +442,13 @@ class Variables(Container):
                                                problem=problem)
                 active_bcs.update(active)
 
-        self.adi = DofInfo('active_state_dof_info')
-        for var_name in self.ordered_state:
-            self.adi.append_variable(self[var_name], active=active_only)
+        self.adi = self._create_dof_info(self.ordered_state, 'active_state',
+                                         active=active_only)
 
         if self.has_virtual_dcs:
-            self.avdi = DofInfo('active_virtual_dof_info')
-            for var_name in self.ordered_virtual:
-                self.avdi.append_variable(self[var_name], active=active_only)
-
+            self.avdi = self._create_dof_info(self.ordered_virtual,
+                                              'active_virtual',
+                                              active=active_only)
         else:
             self.avdi = self.adi
 
@@ -1529,6 +1533,23 @@ class FieldVariable(Variable):
             The set of boundary conditions active in the current time.
         """
         self.eq_map = EquationMap('eq_map', self.dofs, var_di)
+
+        if var_di.shared_dofs_with is not None:
+            svar = self._variables[var_di.shared_dofs_with]
+            eq_map = self.eq_map
+            seq_map = svar.eq_map
+            eq_map.eq = seq_map.eq
+            eq_map.eq_ebc = seq_map.eq_ebc
+            eq_map.eqi = seq_map.eqi
+            eq_map.master = seq_map.master
+            eq_map.n_eq = seq_map.n_eq
+            eq_map.slave = seq_map.slave
+            eq_map.val_ebc = seq_map.val_ebc
+
+            self.n_adof = eq_map.n_eq
+
+            return {}
+
         if bcs is not None:
             bcs.canonize_dof_names(self.dofs)
             bcs.sort()

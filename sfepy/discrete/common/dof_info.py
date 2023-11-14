@@ -109,16 +109,22 @@ class DofInfo(Struct):
         self.n_dof_total = 0
         self.indx = {}
         self.details = {}
+        self.shared_dofs = {}
 
-    def _update_after_append(self, name):
-        indx0 = self.n_dof_total
-        n_dof = self.n_dof[name]
-        self.n_dof_total += n_dof
-        self.indx[name] = slice(indx0, indx0 + n_dof)
+    def _update_after_append(self, name, shared=None):
+        if shared is None:
+            indx0 = self.n_dof_total
+            n_dof = self.n_dof[name]
+            self.n_dof_total += n_dof
+            self.indx[name] = slice(indx0, indx0 + n_dof)
+        else:
+            self.indx[name] = self.indx[shared]
+            self.n_dof[name] = self.n_dof[shared]
+            self.shared_dofs[name] = shared
 
         self.n_var += 1
 
-    def append_variable(self, var, active=False):
+    def append_variable(self, var, active=False, shared=None):
         """
         Append DOFs of the given variable.
 
@@ -136,7 +142,7 @@ class DofInfo(Struct):
         self.var_names.append(name)
 
         self.n_dof[name], self.details[name] = var.get_dof_info(active=active)
-        self._update_after_append(name)
+        self._update_after_append(name, shared=shared)
 
     def append_raw(self, name, n_dof):
         """
@@ -194,7 +200,8 @@ class DofInfo(Struct):
                       var_name=var_name,
                       n_dof=self.n_dof[var_name],
                       indx=self.indx[var_name],
-                      details=self.details[var_name])
+                      details=self.details[var_name],
+                      shared_dofs_with=self.shared_dofs.get(var_name, None))
 
     def get_subset_info(self, var_names):
         """
