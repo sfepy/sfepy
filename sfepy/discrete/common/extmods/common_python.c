@@ -52,7 +52,10 @@ void errset(const char *msg)
 */
 void errclear()
 {
-  PyErr_Clear();
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+    PyErr_Clear();
+  }
   g_error = 0;
 }
 
