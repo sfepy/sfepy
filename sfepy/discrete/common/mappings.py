@@ -117,12 +117,8 @@ class Mapping(Struct):
 
             elif kind == 's':
                 from sfepy.discrete.fem.fe_surface import FESurface
-
-                conn, gel = region.domain.get_conn(ret_gel=True,
-                                                   tdim=region.tdim)
-                aux = FESurface('aux', region, gel.get_surface_entities(),
-                                conn)
-                mapping = FEMapping(coors, aux.leconn, gel=gel.surface_facet)
+                aux, gel = FESurface.from_region('aux', region, ret_gel=True)
+                mapping = FEMapping(coors, aux.leconn, gel=gel)
 
         elif isinstance(region.domain, IGDomain):
             from sfepy.discrete.iga.mappings import IGMapping

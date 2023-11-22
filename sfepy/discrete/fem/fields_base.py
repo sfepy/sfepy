@@ -395,9 +395,7 @@ class FEField(Field):
 
         # Remap vertex node connectivity to field-local numbering.
         if self.is_surface:
-            conn, gel = self.domain.get_conn(ret_gel=True, tdim=region.tdim)
-            faces = gel.get_surface_entities()
-            aux = FESurface('aux', region, faces, conn)
+            aux = FESurface.from_region('aux', region)
             self.econn[:, :aux.n_fp] = aux.leconn
             self.extra_data[f'sd_{region.name}'] = aux
         else:
