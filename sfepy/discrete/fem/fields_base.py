@@ -1242,7 +1242,9 @@ class FEField(Field):
             sd = domain.surface_groups[region.name]
             esd = self.extra_data[f'sd_{region.name}']
 
-            dconn = domain.get_conn(tdim=region.tdim)
+            face_indices = region.get_facet_indices()
+            cells = face_indices[:, 0]
+            dconn = domain.get_conn(tdim=region.tdim, cells=cells)
             conn = sd.get_connectivity()
             mapping = FEMapping(coors, conn, poly_space=geo_ps)
 
