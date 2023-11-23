@@ -321,6 +321,7 @@ class MeshioLibIO(MeshIO):
 
     cell_types = {
         ('hexahedron', 3): '3_8',
+        ('wedge', 3): '3_6',
         ('tetra', 3): '3_4',
         ('triangle', 3): '2_3',
         ('triangle', 2): '2_3',
