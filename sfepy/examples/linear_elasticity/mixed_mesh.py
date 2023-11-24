@@ -2,7 +2,7 @@ r"""
 A linear elastic beam loaded with a continuous force. The FE mesh consists
 of hexehedral and tetrahedral elements.
 
-The displacement at the beam end, is compared to the reference
+The displacement at the beam end is compared to the reference
 solution calculated on the homogeneous hexahedral mesh.
 
 Running the simulation::
