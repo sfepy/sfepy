@@ -1265,8 +1265,7 @@ class FEField(Field):
                     se_bf_bg = se_bf_bg[sd.fis[:, 1]]
                     se_ebf_bg = self.get_base(esd.bkey, 1, integral)
                     se_ebf_bg = se_ebf_bg[sd.fis[:, 1]]
-                    remap = -nm.ones((cells.max() + 1,), dtype=nm.int32)
-                    remap[cells] = nm.arange(len(cells))
+                    remap = prepare_remap(cells, cells.max() + 1)
                     se_conn = dconn[remap[sd.fis[:, 0]], :]
                 else:
                     se_bf_bg, se_ebf_bg, se_conn = None, None, None
