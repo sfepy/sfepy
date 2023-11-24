@@ -394,14 +394,13 @@ class FEField(Field):
         n_dof = region.vertices.shape[0]
 
         # Remap vertex node connectivity to field-local numbering.
-        conn, gel = self.domain.get_conn(ret_gel=True, tdim=region.tdim)
         if self.is_surface:
-            faces = gel.get_surface_entities()
-            aux = FESurface('aux', region, faces, conn)
+            aux = FESurface.from_region('aux', region)
             self.econn[:, :aux.n_fp] = aux.leconn
             self.extra_data[f'sd_{region.name}'] = aux
         else:
-            self.econn[:, :conn.shape[1]] = nm.take(remap, conn[region.cells])
+            conn = self.domain.get_conn(tdim=region.tdim, cells=region.cells)
+            self.econn[:, :conn.shape[1]] = nm.take(remap, conn)
 
         return n_dof, remap
 
@@ -1210,7 +1209,6 @@ class FEField(Field):
         """
         domain = self.domain
         coors = domain.get_mesh_coors(actual=True)
-        dconn = domain.get_conn(tdim=region.tdim)
 
         iels = region.get_cells(true_cells_only=(region.kind == 'cell'))
         transform = (self.basis_transform[iels] if self.basis_transform
@@ -1223,8 +1221,8 @@ class FEField(Field):
             qp = self.get_qp('v', integral)
             bf = self.get_base('v', 0, integral, iels=iels)
 
-            conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
-            mapping = FEMapping(coors, conn, poly_space=geo_ps)
+            dconn = domain.get_conn(tdim=region.tdim, cells=iels)
+            mapping = FEMapping(coors, dconn, poly_space=geo_ps)
             out = mapping.get_mapping(qp.vals, qp.weights, bf, poly_space=ps,
                                       ori=self.ori, transform=transform)
 
@@ -1244,6 +1242,9 @@ class FEField(Field):
             sd = domain.surface_groups[region.name]
             esd = self.extra_data[f'sd_{region.name}']
 
+            face_indices = region.get_facet_indices()
+            cells = face_indices[:, 0]
+            dconn = domain.get_conn(tdim=region.tdim, cells=cells)
             conn = sd.get_connectivity()
             mapping = FEMapping(coors, conn, poly_space=geo_ps)
 
@@ -1264,7 +1265,8 @@ class FEField(Field):
                     se_bf_bg = se_bf_bg[sd.fis[:, 1]]
                     se_ebf_bg = self.get_base(esd.bkey, 1, integral)
                     se_ebf_bg = se_ebf_bg[sd.fis[:, 1]]
-                    se_conn = dconn[sd.fis[:, 0], :]
+                    remap = prepare_remap(cells, cells.max() + 1)
+                    se_conn = dconn[remap[sd.fis[:, 0]], :]
                 else:
                     se_bf_bg, se_ebf_bg, se_conn = None, None, None
 

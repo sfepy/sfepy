@@ -594,7 +594,7 @@ class SimpleEVP(CorrMiniApp):
 
         variables = problem.get_variables()
 
-        mtx_phi = nm.empty((variables.di.ptr[-1], mtx_s_phi.shape[1]),
+        mtx_phi = nm.empty((variables.di.n_dof_total, mtx_s_phi.shape[1]),
                            dtype=nm.float64)
 
         make_full = variables.make_full_vec
@@ -655,7 +655,7 @@ class SchurEVP(SimpleEVP):
 
         variables = problem.get_variables()
 
-        mtx_phi = nm.empty((variables.di.ptr[-1], mtx_s_phi.shape[1]),
+        mtx_phi = nm.empty((variables.di.n_dof_total, mtx_s_phi.shape[1]),
                            dtype=nm.float64)
 
         make_full = variables.make_full_vec
@@ -666,7 +666,7 @@ class SchurEVP(SimpleEVP):
         eliminated_var = schur['eliminated_var']
 
         mtx_s_phi_schur = - sc.dot(mtx_dib, mtx_s_phi)
-        aux = nm.empty((variables.adi.ptr[-1],), dtype=nm.float64)
+        aux = nm.empty((variables.adi.n_dof_total,), dtype=nm.float64)
         setv = variables.set_vec_part
         for ii in range(n_eigs):
             setv(aux, primary_var, mtx_s_phi[:,ii], reduced=True)

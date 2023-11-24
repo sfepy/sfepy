@@ -440,8 +440,8 @@ def gen_multi_vec_packing(di, names, extra_variables=False):
     iu = di.indx[names['u']]
     iv = di.indx[names['du']]
     ia = di.indx[names['ddu']]
-    ie = slice(iu.stop, di.ptr[-3])
-    iue = slice(0, di.ptr[-3])
+    ie = slice(iu.stop, iv.start)
+    iue = slice(0, iv.start)
     assert_(iu.stop == di.n_dof[names['u']])
     assert_(iv.start == ie.stop)
     assert_(ia.start == iv.stop)
@@ -467,7 +467,7 @@ def gen_multi_vec_packing(di, names, extra_variables=False):
         return nm.concatenate(args)
 
     indices = dict(indices=(iue, iu, ie, iv, ia),
-                   n_dof=di.ptr[-1], n_uedof=ie.stop, n_arg=n_arg)
+                   n_dof=di.n_dof_total, n_uedof=ie.stop, n_arg=n_arg)
     unpack.__dict__.update(indices)
     pack.__dict__.update(indices)
     return unpack, pack

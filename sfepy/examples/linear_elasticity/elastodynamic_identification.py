@@ -518,7 +518,7 @@ def eval_jac(pars, data, pb, options, par_names, par_info, opt_data, plog,
     pb.get_solver().clear_lin_solver() # No digest -> clear manually.
 
     variables = pb.get_initial_state()
-    n_dof = variables.adi.ptr[-1]
+    n_dof = variables.adi.n_dof_total
     n_par = len(par_names)
 
     _tss = pb.get_solver()
@@ -541,7 +541,7 @@ def eval_jac(pars, data, pb, options, par_names, par_info, opt_data, plog,
 
     fu = pb.fields['displacement']
     ii = fu.get_dofs_in_region(pb.domain.regions['Sensor'])[0]
-    idof = int(fu.n_components * ii + 2 + variables.adi.ptr[0])
+    idof = int(fu.n_components * ii + 2 + variables.adi.indx['u'].start)
 
     def init_fun(tss, ts, vec0):
         vec0 = _init_fun(ts, vec0)

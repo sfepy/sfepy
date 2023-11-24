@@ -14,15 +14,16 @@ class FESurface(Struct):
 
         face_indices = region.get_facet_indices()
 
-        faces = efaces[face_indices[:,1]]
+        faces = efaces[face_indices[:, 1]]
         if faces.size == 0 and not region.is_empty:
             raise ValueError('region with no faces! (%s)' % region.name)
 
         if volume_region is None:
             ii = face_indices[:, 0]
-
-        else:
+        elif hasattr(volume_region, 'get_cell_indices'):
             ii = volume_region.get_cell_indices(face_indices[:, 0])
+        else:
+            ii = volume_region
 
         try:
             ee = volume_econn[ii]
@@ -60,6 +61,22 @@ class FESurface(Struct):
         self.meconn = {}
         self.mleconn = {}
         self.set_orientation_map()
+
+    @staticmethod
+    def from_region(name, region, ret_gel=False):
+        face_indices = region.get_facet_indices()
+        cells = face_indices[:, 0]
+
+        econn, gel = region.domain.get_conn(ret_gel=True,
+                                            tdim=region.tdim, cells=cells)
+
+        surface = FESurface(name, region, gel.get_surface_entities(), econn,
+                            slice(0, econn.shape[0]))
+
+        if ret_gel:
+            return surface, gel.surface_facet
+        else:
+            return surface
 
     def set_orientation_map(self):
         n_fp = self.n_fp

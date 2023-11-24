@@ -116,7 +116,6 @@ class FEDomain(Domain):
 
         for key, gel in geom_els.items():
             ori = gel.orientation
-
             cmesh = self.cmesh_tdim[gel.dim]
             if (cmesh.tdim != cmesh.dim) and (not force_check):
                 output('warning: mesh with topological dimension %d lower than'
@@ -137,6 +136,8 @@ class FEDomain(Domain):
                                 ori.roots, ori.vecs,
                                 ori.swap_from, ori.swap_to)
 
+                flag = flag[cells]
+
                 if nm.all(flag == 0):
                     if itry > 0: output('...corrected')
                     itry = -1
@@ -151,20 +152,34 @@ class FEDomain(Domain):
             elif flag[0] == -1:
                 output('warning: element orienation not checked')
 
-    def get_conn(self, ret_gel=False, tdim=None):
+    def get_conn(self, ret_gel=False, tdim=None, cells=None):
         """
         Get the cell-vertex connectivity and, if `ret_gel` is True, also the
         corresponding reference geometry element. If `tdim` is not None get
         the connectivity of the cells with topological dimension `tdim`.
         """
         cmesh = self.cmesh if tdim is None else self.cmesh_tdim[tdim]
-        conn = cmesh.get_conn(cmesh.tdim, 0).indices
-        conn = conn.reshape((cmesh.n_el, -1)).astype(nm.int32)
+        if cells is None:
+            conn = cmesh.get_conn(cmesh.tdim, 0).indices
+            conn = conn.reshape((cmesh.n_el, -1)).astype(nm.int32)
+        else:
+            conn = cmesh.get_conn(cmesh.tdim, 0)
+            aux = conn.offsets[cells]
+            nv = set(conn.offsets[cells + 1] - aux)
+            if len(nv) != 1:
+                raise ValueError('different cell types in a region!')
 
+            nc = cells.shape[0]
+            nv = nv.pop()
+            idxs = (nm.repeat(conn.offsets[cells], nv) +
+                    nm.tile(nm.arange(nv), nc))
+            conn = conn.indices[idxs].reshape((nc, nv))
+
+        name = f'{cmesh.tdim}_{conn.shape[1]}'
         if ret_gel:
             gel = None
             for gv in self.geom_els.values():
-                if gv.dim == cmesh.tdim:
+                if gv.name == name:
                     gel = gv
                     break
 
@@ -211,11 +226,8 @@ class FEDomain(Domain):
         """
         groups = self.surface_groups
         if region.name not in groups:
-            conn, gel = self.get_conn(ret_gel=True, tdim=region.tdim)
-            gel_faces = gel.get_surface_entities()
-
             name = 'surface_group_%s' % (region.name)
-            surface_group = FESurface(name, region, gel_faces, conn)
+            surface_group = FESurface.from_region(name, region)
 
             groups[region.name] = surface_group
 
