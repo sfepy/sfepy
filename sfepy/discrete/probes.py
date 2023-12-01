@@ -30,11 +30,8 @@ def write_results(filename, probe, results):
         pars, vals = result
         fd.write('\n# %s %d\n' % (key, vals.shape[-1]))
 
-        if vals.ndim == 1:
-            aux = nm.hstack((pars[:,None], vals[:,None]))
-
-        else:
-            aux = nm.hstack((pars[:,None], vals))
+        aux = nm.concatenate((pars[:, None], vals.reshape(pars.shape[0], -1)),
+                             axis=1)
 
         nm.savetxt(fd, aux)
 
