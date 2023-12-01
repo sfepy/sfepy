@@ -388,7 +388,7 @@ class Field(Struct):
         Returns
         -------
         vals : array
-            The interpolated values with shape ``(n_coor, n_components)`` or
+            The interpolated values with shape ``(n_coor, n_components, 1)`` or
             gradients with shape ``(n_coor, n_components, dim)`` according to
             the `mode`. If `ret_status` is False, the values where the status
             is greater than one are set to ``numpy.nan``.
