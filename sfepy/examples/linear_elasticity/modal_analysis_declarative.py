@@ -98,9 +98,16 @@ def define(n_eigs=6, approx_order=1, density=7850., young=210e9, poisson=0.3):
         #     'which': 'sm',
         #     'eps': 1e-6,
         # }),
-        'eig': ('eig.primme', {
-            'which': 'SM',
+        #'eig': ('eig.primme', {
+        #    'which': 'SM',
+        #    'tol': 1e-8,
+        #}),
+        'eig': ('eig.scipy', {
+            'method': 'eigsh',
+            'which': 'LM',
+            'sigma': 0,
             'tol': 1e-8,
+            'maxiter': 1000,
         }),
     }
 
