@@ -15,7 +15,7 @@ wheelset.vtk. View the results using::
 
 The first six frequencies calculated by SfePy::
 
-  [11.287, 11.317, 34.432, 80.709, 80.901, 93.144]
+  [11.272, 11.322, 34.432, 80.711, 80.895, 93.149]
 
 The results of modal analysis performed in Ansys::
 
