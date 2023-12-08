@@ -15,7 +15,7 @@ wheelset.vtk. View the results using::
 
 The first six frequencies calculated by SfePy::
 
-  [11.287, 11.317, 34.432, 80.709, 80.901, 93.144]
+  [11.272, 11.322, 34.432, 80.711, 80.895, 93.149]
 
 The results of modal analysis performed in Ansys::
 
@@ -98,9 +98,16 @@ def define(n_eigs=6, approx_order=1, density=7850., young=210e9, poisson=0.3):
         #     'which': 'sm',
         #     'eps': 1e-6,
         # }),
-        'eig': ('eig.primme', {
-            'which': 'SM',
+        #'eig': ('eig.primme', {
+        #    'which': 'SM',
+        #    'tol': 1e-8,
+        #}),
+        'eig': ('eig.scipy', {
+            'method': 'eigsh',
+            'which': 'LM',
+            'sigma': 0,
             'tol': 1e-8,
+            'maxiter': 1000,
         }),
     }
 
