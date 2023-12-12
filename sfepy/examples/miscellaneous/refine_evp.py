@@ -225,7 +225,8 @@ def define(order=1, refine=0, evps='primme', n_eigs=1, eigs_only=True,
             'tol' : 1e-14,
             # 'maxiter' : 150,
 
-            # Compute the eigenvalues near tau using the shift-invert mode.
+            # Compute the eigenvalues near 0 (= the smallest eigenvalues) using
+            # the shift-invert mode.
             'which' : 'LM',
             'sigma' : 0.0,
         }),
