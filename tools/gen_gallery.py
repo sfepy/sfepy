@@ -690,6 +690,16 @@ def resview_plot(filename, filename_out, options):
 
         plotter.show(cpos=cpos, screenshot=filename_out, window_size=(800, 600))
 
+def run_resview_plot(*args):
+    """
+    A fix for the problem that calling :func:`resview_plot()` directly often
+    terminates the program.
+    """
+    from multiprocessing import Process
+
+    process = Process(target=resview_plot, args=args)
+    process.start()
+    process.join()
 
 def _omit(filename, omits, omit_dirs):
     omit = False
@@ -710,6 +720,9 @@ def _omit(filename, omits, omit_dirs):
 def ebase2fbase(ebase):
     return os.path.splitext(ebase)[0].replace(os.path.sep, '-')
 
+def _make_fig_name(fig_base, fig_filename):
+    return fig_base + '-' + os.path.basename(fig_filename)
+
 def _get_image_names(custom_options):
     for key, val in custom_options.items():
         if key.startswith('image'):
@@ -724,7 +737,8 @@ def _get_fig_filenames(ebase, images_dir):
             custom_view_options = custom_options['sfepy-view-options']
 
             for fig_filename in _get_image_names(custom_options):
-                yield os.path.join(images_dir, os.path.basename(fig_filename))
+                yield os.path.join(images_dir,
+                                   _make_fig_name(fig_base, fig_filename))
 
         else:
             custom_view_options = custom_options
@@ -756,14 +770,16 @@ def _make_sphinx_path(path, relative=False):
     return sphinx_path
 
 
-def _apply_commands(custom_options, images_dir):
+def _apply_commands(custom_options, ebase, images_dir):
     for key, val in custom_options.items():
         if key.startswith('command'):
             cmd = custom_options[key]
             subprocess.run(cmd.split()).check_returncode()
 
         if key.startswith('image'):
-            shutil.copy(val, images_dir)
+            shutil.copy(val,
+                        os.path.join(images_dir,
+                                     _make_fig_name(ebase2fbase(ebase), val)))
 
 
 def apply_view_options(views, default):
@@ -844,7 +860,7 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
         custom_options = custom.get(_ebase)
         if custom_options and 'sfepy-view-options' in custom_options:
             try:
-                _apply_commands(custom_options, images_dir)
+                _apply_commands(custom_options, ebase, images_dir)
 
                 filename = custom_options.get('result')
                 dim = custom_options.get('dim')
@@ -905,16 +921,7 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
                 disp_name = fig_filename.replace(sfepy.data_dir, '')
                 output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
-                try:
-                    resview_plot(fname, fig_filename, kwargs)
-
-                except KeyboardInterrupt:
-                    raise
-
-                except Exception as exc:
-                    output(f'with plot arguments: {kwargs}')
-                    output('***** failed! *****')
-                    output(f'with {exc}')
+                run_resview_plot(fname, fig_filename, kwargs)
 
                 output('...done')
 

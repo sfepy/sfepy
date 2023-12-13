@@ -257,7 +257,7 @@ editor. You'll notice that the output file includes separate sections:
 need to have `pyvista`_ installed. From the command line issue the following
 (assuming the correct paths)::
 
-    sfepy-view its2D.vtk -2
+    sfepy-view its2D.vtk -2 -e
 
 The sfepy-view command generates the image shown below, which shows by
 default the displacements in the model as arrows and their magnitude as
