@@ -690,6 +690,16 @@ def resview_plot(filename, filename_out, options):
 
         plotter.show(cpos=cpos, screenshot=filename_out, window_size=(800, 600))
 
+def run_resview_plot(*args):
+    """
+    A fix for the problem that calling :func:`resview_plot()` directly often
+    terminates the program.
+    """
+    from multiprocessing import Process
+
+    process = Process(target=resview_plot, args=args)
+    process.start()
+    process.join()
 
 def _omit(filename, omits, omit_dirs):
     omit = False
@@ -911,16 +921,7 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
                 disp_name = fig_filename.replace(sfepy.data_dir, '')
                 output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
-                try:
-                    resview_plot(fname, fig_filename, kwargs)
-
-                except KeyboardInterrupt:
-                    raise
-
-                except Exception as exc:
-                    output(f'with plot arguments: {kwargs}')
-                    output('***** failed! *****')
-                    output(f'with {exc}')
+                run_resview_plot(fname, fig_filename, kwargs)
 
                 output('...done')
 
