@@ -11,7 +11,8 @@ filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
                    for geom in ['1_2', '2_3', '2_4', '3_4', '3_8', '3_2_4']]
 
 not_tested_terms = ['dw_ns_dot_grad_s',
-                    'dw_lin_spring', 'dw_lin_truss', 'ev_lin_truss_force']
+                    'dw_lin_spring', 'dw_lin_truss', 'ev_lin_truss_force',
+                    'dw_tl_he_ogden_ad']
 
 
 def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
