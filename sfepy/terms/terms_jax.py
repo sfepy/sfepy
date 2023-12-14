@@ -389,3 +389,117 @@ class NeoHookeanTLADTerm(Term):
     def function(out, fun, fargs):
         out[:] = np.asarray(fun(*fargs).reshape(out.shape))
         return 0
+
+def get_ogden_strain_energy_f(mu, alpha, F):
+    J = jnp.linalg.det(F)
+    C = J**(-2.0/3.0) * F.T @ F # Isochoric C.
+    lams2, Ns = jnp.linalg.eigh(C)
+    a5 = 0.5 * alpha
+    W = (mu / alpha) * (jnp.sum(lams2**a5) - 3.0)
+    return W
+
+_get_ogden_stress_1pk = jax.grad(get_ogden_strain_energy_f, -1)
+
+def get_ogden_stress_1pk(mu, alpha, gu):
+    eye = np.eye(gu.shape[-1])
+    F = gu + eye
+    S = _get_ogden_stress_1pk(mu, alpha, F)
+    return S
+
+@jax.jit
+def ceval_ogden(mu, alpha, vbfg, ubfg, det, cu):
+    gu = cu @ ubfg.transpose((0, 2, 1)) # This does DBD.
+    stress = jax.vmap(get_ogden_stress_1pk,
+                      in_axes=[None, None, 0])(mu, alpha, gu)
+    vbfgd = vbfg * det
+    val = jnp.sum(stress @ vbfgd, axis=0)
+    return val
+
+eval_ogden = (jax.vmap(ceval_ogden,
+                              in_axes=[None, None, 0, 0, 0, 0]))
+eval_jac_ogden = (jax.vmap(jax.jacobian(ceval_ogden, -1),
+                                  in_axes=[None, None, 0, 0, 0, 0]))
+eval_mu_ogden = jax.jit(jax.vmap(jax.jacobian(ceval_ogden, 0),
+                                 in_axes=[None, None, 0, 0, 0, 0]))
+eval_alpha_ogden = jax.jit(jax.vmap(jax.jacobian(ceval_ogden, 1),
+                                    in_axes=[None, None, 0, 0, 0, 0]))
+
+class OgdenTLADTerm(Term):
+    r"""
+    Homogeneous hyperelastic Ogden model term differentiable w.r.t. the
+    material parameters, with the strain energy density
+
+    .. math::
+        W = \frac{\mu}{\alpha} \, \left(
+            \bar\lambda_1^{\alpha} + \bar\lambda_2^{\alpha}
+             + \bar\lambda_3^{\alpha} - 3 \right) \; ,
+
+    where :math:`\lambda_k, k=1, 2, 3` are the principal stretches, whose
+    squares are the principal values of the right Cauchy-Green deformation
+    tensor :math:`\mathbf{C}`. For more details see :class:`OgdenTLTerm
+    <sfepy.terms.terms_hyperelastic_tl.OgdenTLTerm>`.
+
+    WARNING: The current implementation fails to compute the tangent matrix
+    when :math:`\mathbf{C}` has multiple eigenvalues (e.g. zero deformation).
+    In that case nans are returned, as a result of dividing by zero. See [1],
+    Section 11.2.3, page 385.
+
+    [1] Borst, R. de, Crisfield, M.A., Remmers, J.J.C., Verhoosel, C.V., 2012.
+    Nonlinear Finite Element Analysis of Solids and Structures, 2nd edition.
+    ed. Wiley, Hoboken, NJ.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material_1 : :math:`\mu`
+        - material_2 : :math:`\alpha`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+    """
+    name = 'dw_tl_he_ogden_ad'
+    arg_types = ('material_mu', 'material_alpha', 'virtual', 'state')
+    arg_shapes = {'material_mu' : '1, 1', 'material_alpha' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    modes = ('weak',)
+    diff_info = {'material_mu' : 1, 'material_alpha' : 1}
+    geometries = ['3_4', '3_8']
+
+    def get_fargs(self, material_mu, material_alpha, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vgmap, _ = self.get_mapping(virtual)
+        sgmap, _ = self.get_mapping(state)
+
+        vecu = state().reshape((-1, vgmap.dim))
+        econn = state.field.get_econn(self.integration, self.region)
+        # Transpose is required to have sfepy order (DBD).
+        cu = vecu[econn].transpose((0, 2, 1))
+
+        mu = material_mu[0, 0, 0, 0]
+        alpha = material_alpha[0, 0, 0, 0]
+
+        if diff_var is None:
+            fun = eval_ogden
+
+        elif diff_var == state.name:
+            fun = eval_jac_ogden
+
+        elif diff_var == 'material_mu':
+            fun = eval_mu_ogden
+
+        elif diff_var == 'material_alpha':
+            fun = eval_alpha_ogden
+
+        else:
+            raise ValueError
+
+        fargs = [mu, alpha, vgmap.bfg, sgmap.bfg, vgmap.det, cu]
+        fargs = [jax.device_put(val) for val in fargs]
+        return fun, fargs
+
+    @staticmethod
+    def function(out, fun, fargs):
+        out[:] = np.asarray(fun(*fargs).reshape(out.shape))
+        return 0
