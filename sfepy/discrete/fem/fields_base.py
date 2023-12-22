@@ -572,7 +572,7 @@ class FEField(Field):
 
     def get_dofs_in_region(self, region, merge=True):
         """
-        Return indices of DOFs that belong to the given region and group.
+        Return indices of DOFs that belong to the given region.
         """
         node_desc = self.node_desc
 
