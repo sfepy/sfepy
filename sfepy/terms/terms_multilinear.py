@@ -230,9 +230,15 @@ class ExpressionArg(Struct):
     def get_bf(self, expr_cache):
         ag, _ = self.term.get_mapping(self.arg)
         if self.term.integration == 'facet_extra':
-            sd = self.arg.field.extra_data[f'sd_{self.term.region.name}']
-            _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
-            bf = _bf[sd.fis[:, 1], ...]
+            if 'L2_constant' in self.arg.field.family_name:
+                # It goes through non-cell-depending basis branch below, so fix
+                # the number of axes.
+                bf = ag.bf[None, ...]
+
+            else:
+                sd = self.arg.field.extra_data[f'sd_{self.term.region.name}']
+                _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
+                bf = _bf[sd.fis[:, 1], ...]
 
         else:
             bf = ag.bf
