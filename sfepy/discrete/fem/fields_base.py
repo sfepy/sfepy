@@ -1137,7 +1137,7 @@ class FEField(Field):
             conn = self.extra_data[f'pd_{region.name}']
 
         else:
-            raise NotImplementedError('connectivity type %s' % ct)
+            raise ValueError(f'unknown integration type! ({integration})')
 
         return conn
 
