@@ -44,6 +44,9 @@ class L2ConstantVolumeField(Field):
         self._setup_kind()
         self._create_interpolant()
 
+        cells = self.region.get_cells(true_cells_only=False)
+        self.econn = nm.zeros((len(cells), 1), dtype=nm.int32)
+
         self.domain = self.region.domain
 
         self.n_components = nm.prod(self.shape)
@@ -52,7 +55,6 @@ class L2ConstantVolumeField(Field):
 
         self.extra_data = {}
         self.mappings = {}
-
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d' % (self.gel.name, self.space,
@@ -85,7 +87,7 @@ class L2ConstantVolumeField(Field):
         Parameters
         ----------
         conn_type: tuple or string
-            DOF connectivity type, ignored here.
+            DOF connectivity type, ignored.
         region: sfepy.discrete.common.region.Region
             The region for which the connectivity is required.
         trace_region: None or string
@@ -98,8 +100,13 @@ class L2ConstantVolumeField(Field):
         econn: numpy.ndarray
             The extended connectivity array.
         """
-        cells = region.get_cells(true_cells_only=False)
-        conn = nm.zeros((len(cells), 1), dtype=nm.int32)
+        if region.name == self.region.name:
+            conn = self.econn
+
+        else:
+            cells = region.get_cells(true_cells_only=False)
+            conn = nm.zeros((len(cells), 1), dtype=nm.int32)
+
         return conn
 
     def get_data_shape(self, integral, integration='cell', region_name=None):
