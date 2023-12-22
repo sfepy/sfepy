@@ -147,6 +147,9 @@ class Field(Struct):
 
         approx_order = parse_approx_order(conf.approx_order)
         ao, force_bubble, discontinuous = approx_order
+        if poly_space_base == 'constant':
+            discontinuous = False
+
         region = regions[conf.region]
 
         if region.kind == 'cell':
