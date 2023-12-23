@@ -205,11 +205,13 @@ class ExpressionArg(Struct):
     def get_dofs(self, cache, expr_cache, oname):
         if self.kind != 'state': return
 
-        key = (self.name, self.term.region.name)
+        key = (self.name, self.term.region.name,
+               self.term.arg_derivatives[self.name])
         dofs = cache.get(key)
         if dofs is None:
             arg = self.arg
-            dofs_vec = self.arg().reshape((-1, arg.n_components))
+            dofs_vec = self.arg(derivative=key[-1])
+            dofs_vec = dofs_vec.reshape((-1, arg.n_components))
             # # axis 0: cells, axis 1: node, axis 2: component
             # dofs = dofs_vec[conn]
             # axis 0: cells, axis 1: component, axis 2: node
