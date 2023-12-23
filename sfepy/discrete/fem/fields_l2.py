@@ -153,6 +153,21 @@ class L2ConstantVolumeField(Field):
         """
         return nm.zeros(1, dtype=nm.int32)
 
+    def get_base(self, key, derivative, integral, iels=None,
+                 from_geometry=False, base_only=True):
+        qp_coors, qp_weights = integral.get_qp(self.gel.name)
+        ps = self.poly_space
+        bf = ps.eval_base(qp_coors)
+        if key[0] == 'b': # BQP
+            num = 6 if self.gel.n_vertex == 4 else 4
+            bf = nm.tile(bf, (num, 1, 1, 1))
+
+        if base_only:
+            return bf
+
+        else:
+            return bf, qp_weights
+
     def create_mapping(self, region, integral, integration,
                        return_mapping=True):
         domain = self.domain
