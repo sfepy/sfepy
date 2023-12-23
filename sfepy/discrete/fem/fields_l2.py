@@ -173,19 +173,30 @@ class L2ConstantVolumeField(Field):
         domain = self.domain
         coors = domain.get_mesh_coors(actual=True)
         iels = region.get_cells(true_cells_only=(region.kind == 'cell'))
-        geo_ps = self.gel.poly_space
-        qp_coors, qp_weights = integral.get_qp(self.gel.name)
-
-        ps = self.poly_space
-        bf = ps.eval_base(qp_coors)
 
         if integration == 'cell':
+            ps = self.poly_space
+            geo_ps = self.gel.poly_space
             dconn = domain.get_conn(tdim=region.tdim, cells=iels)
+            qp_coors, qp_weights = integral.get_qp(self.gel.name)
+            bf = ps.eval_base(qp_coors)
 
         elif integration in ('facet', 'facet_extra'):
+            if self.is_surface:
+                gel = self.gel
+                ps = self.poly_space
+
+            else:
+                gel = self.gel.surface_facet
+                ps = PolySpace.any_from_args('aux', gel, self.approx_order,
+                                             base='lagrange')
+
+            geo_ps = gel.poly_space
             domain.create_surface_group(region)
             sd = domain.surface_groups[region.name]
             dconn = sd.get_connectivity()
+            qp_coors, qp_weights = integral.get_qp(gel.name)
+            bf = ps.eval_base(qp_coors)
 
         mapping = FEMapping(coors, dconn, poly_space=geo_ps)
         out = mapping.get_mapping(qp_coors, qp_weights, bf, poly_space=ps,
