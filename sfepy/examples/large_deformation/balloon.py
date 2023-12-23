@@ -21,8 +21,10 @@ important - a stiff 2D membrane is embedded in the 3D space and coincides with
 the balloon surface. The volume is very soft, to simulate a fluid-filled
 cavity. A similar model could be used to model e.g. plant cells. The balloon
 surface is loaded by prescribing the inner volume change :math:`\omega(t)`.
-The fluid pressure in the cavity is a single scalar value, enforced by the
-``'integral_mean_value'`` linear combination condition.
+The fluid pressure in the cavity is a single scalar value, enforced either by
+the ``'integral_mean_value'`` linear combination condition, when ``use_lcbcs``
+argument of :func:`define()` is set to ``True`` (default), or by the
+:math:`L^2` constant approximation.
 
 Find :math:`\ul{u}(\ul{X})` and a constant :math:`p` such that:
 
@@ -74,7 +76,11 @@ coordinate frame.
 Use the following command to show a comparison of the FEM solution with the
 above analytical relation (notice the nonlinearity of the dependence)::
 
-  sfepy-run sfepy/examples/large_deformation/balloon.py -d 'plot: True'
+  sfepy-run sfepy/examples/large_deformation/balloon.py -d 'plot=True'
+
+or::
+
+  sfepy-run sfepy/examples/large_deformation/balloon.py -d 'plot=True, use_lcbcs=False'
 
 The agreement should be very good, even though the mesh is coarse.
 
@@ -153,16 +159,22 @@ def plot_radius(problem, state):
 
     from sfepy.postprocess.time_history import extract_time_history
 
-    ths, ts = extract_time_history('unit_ball.h5', 'p e 0')
+    if problem.conf.use_lcbcs:
+        ths, ts = extract_time_history('unit_ball.h5', 'p e 0')
+        p = ths['p'][0]
 
-    p = ths['p'][0]
+    else:
+        # Vertex 0 is not used in any cell...
+        ths, ts = extract_time_history('unit_ball.h5', 'p n 1')
+        p = ths['p'][1]
+
     L = 1.0 + ts.times[:p.shape[0]]
 
     L2 = 1.0 + nm.linspace(ts.times[0], ts.times[-1], 1000)
     p2 = get_balloon_pressure(L2, 1e-2, 1, 3e5, 3e4)
 
     plt.rcParams['lines.linewidth'] = 3
-    plt.rcParams['font.size'] = 16
+    plt.rcParams['font.size'] = 14
 
     plt.plot(L2, p2, 'r', label='theory')
     plt.plot(L, p, 'b*', ms=12, label='FEM')
@@ -172,13 +184,14 @@ def plot_radius(problem, state):
     plt.ylabel(r'pressure $p$')
 
     plt.legend(loc='best')
+    plt.tight_layout()
 
     fig = plt.gcf()
     fig.savefig('balloon_pressure_stretch.pdf')
 
     plt.show()
 
-def define(plot=False):
+def define(plot=False, use_lcbcs=True):
     filename_mesh = data_dir + '/meshes/3d/unit_ball.mesh'
 
     conf_dir = os.path.dirname(__file__)
@@ -203,8 +216,12 @@ def define(plot=False):
 
     fields = {
         'displacement': (nm.float64, 3, 'Omega', 1),
-        'pressure': (nm.float64, 1, 'Omega', 0),
     }
+    if use_lcbcs:
+        fields['pressure'] = (nm.float64, 1, 'Omega', 0)
+
+    else:
+        fields['pressure'] = (nm.float64, 1, 'Omega', 0, 'L2', 'constant')
 
     materials = {
         'solid' : ({
@@ -240,9 +257,11 @@ def define(plot=False):
         'fix3' : ('Equator', {'u.1' : 0.0}),
     }
 
-    lcbcs = {
-        'pressure' : ('Omega', {'p.all' : None}, None, 'integral_mean_value'),
-    }
+    if use_lcbcs:
+        lcbcs = {
+            'pressure' : ('Omega', {'p.all' : None},
+                          None, 'integral_mean_value'),
+        }
 
     equations = {
         'balance'
