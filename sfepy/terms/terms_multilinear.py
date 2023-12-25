@@ -247,7 +247,10 @@ class ExpressionArg(Struct):
 
         key = 'bf{}'.format(id(bf))
         _bf  = expr_cache.get(key)
-        if bf.shape[0] > 1: # cell-depending basis.
+
+        is_surface  ='facet' in self.term.integration
+        n_cells = self.term.region.get_n_cells(is_surface=is_surface)
+        if (bf.ndim == 4) and (bf.shape[0] == n_cells): # cell-depending basis.
             if _bf is None:
                 _bf = bf[:, :, 0]
                 expr_cache[key] = _bf
