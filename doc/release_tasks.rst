@@ -47,7 +47,7 @@ Things to check before a release
 
      $ python3 -m pip install . --user
      $ cd
-     $ python3 -c "import sfepy; sfepy.test()
+     $ sfepy-test
 
    then remove the installed files so that they do not interfere with
    the local build
@@ -142,6 +142,6 @@ Web update and file uploading
 
 * send announcement to
 
-  * sfepy@python.org, scipy-dev@python.org,
-    scipy-user@python.org, numpy-discussion@python.org,
-    python-announce-list@python.org
+  * sfepy@python.org
+  * optionally to scipy-dev@python.org, scipy-user@python.org,
+    numpy-discussion@python.org, python-announce-list@python.org
