@@ -1,5 +1,190 @@
 # created: 20.07.2007 (-1)
 
+.. _2023.3-2023.4:
+
+from 2023.3 to 2023.4
+=====================
+
+- merge pull request #1029 from rc/fix-modal-analysis-declarative-docstring
+
+  - fix docstring of modal_analysis_declarative.py example
+
+- merge pull request #1030 from rc/clean-up-poisson-nonlinear-material
+
+  - remove superfluous declarations from poisson_nonlinear_material.py example
+
+- merge pull request #1031 from rc/gen-gallery-pattern-option
+
+  - gen_gallery.py: new --pattern option - update generate_images(),
+    generate_rst_files(), main()
+
+- merge pull request #1027 from vlukes/new_structural_elements
+
+  - simplify ConnInfo, remove dof_conn_type structure
+  - merge FEField.surface_data and FEField.point_data into FEField.extra_data
+  - update arguments of FEField.setup_extra_data()
+  - allow 1_2 cells in 2D and 3D
+  - new LinearSpringTerm, LinearTrussTerm and LinearTrussInternalForceTerm
+  - new region extra opt. 'finalize': to avoid region.finalize() call
+  - add missing tdim argument in domain.get_conn() calls
+  - new 2D example: truss bridge
+  - new 3D example with solid and structural elements
+  - new meshes: 2D and 3D bridges
+  - update term tests: do not test truss and spring terms
+  - add custom views to the gallery generator
+
+- merge pull request #1032 from rc/sem
+
+  - new _get_table(), update PolySpace.any_from_args()
+  - new register_poly_space()
+  - new get_lgl_nodes(), eval_lagrange1d_basis(), SEMTensorProductPolySpace
+  - new H1SEMVolumeField, H1SEMSurfaceField
+  - test SEM basis in test_poly_spaces.py - update _gen_common_data(),
+    test_partition_of_unity(), test_continuity()
+  - new sfepy/examples/miscellaneous/refine_evp.py
+
+- merge pull request #1034 from rc/resview-fix-plot-positions
+
+  - resview.py: fix different positions of single slot plots in pv_plot()
+
+- merge pull request #1033 from vlukes/multi_tdim_problem
+
+  - update field.get_econn() argument and function calls
+  - remove Term.dof_conn_info, update ConnInfo and Term.geometry_types
+  - fix 'volume' integration to 'cell'
+  - simplify ConnInfo.get_region_name()
+  - remove FEField.get_connectivity()
+  - update ConnInfo struct: remove unused arttibutes v_tg, ps_tg
+  - update ConnInfo: dof_conn_type replaced by dof_conn_types list
+  - update regions: create a new cmesh with a lower dim. form the region
+  - rename region extra option: 'tdim' -> 'mesh_dim'
+  - update vector fields: num. of components according to region.cmesh.tdim
+  - update mappings: new coor. transformation to lower dimensions
+  - update vibro-acoustic example: 'ls.cm_pb' solver is no more needed
+  - rename variable in Equations.get_graph_conns(): cpname -> cname
+  - explicit precedense of operators in the conditions
+  - fix docstring of FEField.get_econn()
+  - update example: rearrange the code into define(), 'ls.scipy_direct' ->
+    'ls.auto_direct'
+  - fix IGField.setup_extra_data(): wrong info.dof_conn_types handling
+  - fix Variable.evaluate(): swop region/mirror region
+  - update FESurface class: make meconn, mleconn dicts for various mirror
+    regions
+  - update Field.get_econn(): get connectivity for FEPhantomSurface
+  - fix mirror region connectivity
+
+- merge pull request #1037 from vlukes/fix_broken_examples, closes #1035
+
+  - fix nonlinear homogenization example: follow changes in PR #1033
+  - fix for issue #1035: new attribute field_dim in Region class
+  - nonlinear_homogenization example: fix the previous fix
+
+- merge pull request #1038 from vlukes/fix_field_base_create_mesh
+
+  - fix FEField.create_mesh()
+
+- merge pull request #1039 from vlukes/fix_create_basis_context
+
+  - fix H1NodalMixin.create_basis_context()
+
+- merge pull request #1036 from rc/gallery-add-interactive-examples - closes
+  #371, #905, #942
+
+  - gen_gallery.py: support script/interactive examples
+
+    - commands can be defined in custom views dict
+    - new _get_image_names(), _apply_commands()
+    - update _get_fig_filenames(), generate_images(), generate_rst_files()
+
+  - gen_gallery.py: report failed interactive examples in generate_images()
+
+    - update _apply_commands() to use subprocess.run(), raise exception on
+      error
+
+  - gen_gallery.py: add custom view commands for interactive examples - update
+    omit_images
+  - fix LogPlotter.apply_commands() for matplotlib >= 3.6.0
+  - fix probe_results() in time_poisson_interactive.py example
+  - gen_yeoh_tl_up_interactive.py: new --no-show option, update docstring
+  - hyperelastic_tl_up_interactive.py: new --no-show option, update docstring
+  - add basic docstring to linear_elastic_interactive.py example
+  - clean up post_process() in linear_elastic_probes.py example
+  - update docstring of shell10x_cantilever.py example
+  - shell10x_cantilever_interactive.py: new --no-show option, update docstring
+  - live_plot.py: new --output-dir, --plot-log options, add docstring
+  - use clip transform in band_gaps_rigid.py example for nicer plots
+  - gen_gallery.py: fix acoustics/vibro_acoustic3d.py custom view
+  - gen_gallery.py: fix generate_gallery() for no images
+  - gen_gallery.py: add custom view commands for two homogenization examples
+
+    - support linear_homogenization.py, perfusion_micro.py
+    - update omit_images
+
+  - update docstring of linear_homogenization.py example
+  - update docstring of perfusion_micro.py example
+  - add basic docstring to linear_elastic_mM.py example
+  - gen_gallery.py: new --no-thumbnails option, update main()
+  - gen_gallery.py: fix generate_images() for any separator
+  - fix docs build without petsc4py, mpi4py
+  - gen_gallery.py: allow plot failures in generate_images()
+  - gen_gallery.py: allow import failures in generate_rst_files()
+  - gen_gallery.py: update custom views of 1D results
+  - gen_gallery.py: clean up custom views
+  - resview.py: ensure nonzero plot shifts in pv_plot() for all axes
+  - gen_gallery.py: fix result name for its2D_4.py example custom view
+  - gen_gallery.py: fix commands of dispersion_analysis.py example custom view
+  - remove debug code in print_camera_position()
+
+- merge pull request #1042 from vlukes/fix_integer_division
+
+  - fix ccontres.pyx: replace floating-point divisin by integer division
+
+- merge pull request #1044 from rc/print-ccore-exceptions
+
+  - print exception message in errclear()
+
+- merge pull request #1045 from vlukes/multi_cell_mesh
+
+  - fix element orientation function
+  - update Domain.create_region(): borrow vertices from another region
+  - update FEDomain.get_conn()
+  - remove DofInfo.ptr, ptr[-1] replaced by DofInfo.n_dof_total
+  - update eq. mapping to be able to share dofs between variables
+  - fix surface connectivity
+  - fix FEField.create_mapping() for surface regions
+  - new example: a beam consisting of hexa and tetra elements
+  - fix FEField.create_mapping(): connectivity for 'surface_extra' integration
+  - use fem.utils.prepare_remap()
+  - fix example docstring
+
+- merge pull request #1047 from rc/fix-probes-write-results
+
+  - fix write_results()
+  - fix Field.evaluate_at() docstring
+
+- merge pull request #1049 from flothesof/patch-1
+
+  - better eigenvalue solver for modal_analysis_declarative.py
+  - Update docstring numerical values
+
+- merge pull request #1051 from rc/fix-docs
+
+  - fix comment in define() of refine_evp.py example
+  - docs: fix command in primer
+  - gen_gallery.py: prefix custom images to prevent name clashes
+
+    - new _make_fig_name()
+    - update _get_fig_filenames(), _apply_commands(), generate_images()
+
+  - gen_gallery.py: new run_resview_plot(), update generate_images()
+
+- merge pull request #1052 from rc/jax-he-tl-terms-proof-of-concept
+
+  - new NeoHookeanTLADTerm (dw_tl_he_neohook_ad)
+  - new OgdenTLADTerm (dw_tl_he_ogden_ad) (WIP)
+  - do not test dw_tl_he_ogden_ad in test_term_call_modes() - singular matrix
+    for zero displacements
+
 .. _2023.2-2023.3:
 
 from 2023.2 to 2023.3

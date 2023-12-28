@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **29.09.2022** Version 2022.3 released (reorganized scripts, PyPI support,
+  speed-up of linear elastodynamics problems, improved homogenization-based
+  recovery of micro-scale solutions, etc.), see :ref:`release notes
+  <2022.2-2022.3>`.
+
 * **29.06.2022** Version 2022.2 released (custom testing code replaced by
   pytest, improved pyvista-based visualization script, etc.), see :ref:`release
   notes <2022.1-2022.2>`.

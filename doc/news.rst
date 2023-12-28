@@ -1,6 +1,14 @@
 News
 ====
 
+* **29.12.2023** Version 2023.4 released (new structural elements (linear
+  spring, linear truss), spectral element method (LGL quadrature and nodes with
+  Lagrange basis), initial support for meshes with elements of different
+  topological dimensions, new examples: 2D and 3D truss bridge, h-refinement
+  eigenvalue convergence, beam consisting of hexa and tetra elements, many more
+  examples included in gallery, etc.), see :ref:`release notes
+  <2023.3-2023.4>`.
+
 * **29.09.2023** Version 2023.3 released (example demonstrating nonlinear
   diffusion and volume forces terms, new sensitivity term, proof-of-concept
   JAX-based auto-differentiable terms (elasticity, mass) + elastodynamics
@@ -22,10 +30,5 @@ News
   with several material domains and scalar Helmholtz equation, adaptive time
   step control for elastodynamics solvers, central difference elastodynamics
   solver, etc.), see :ref:`release notes <2022.3-2022.4>`.
-
-* **29.09.2022** Version 2022.3 released (reorganized scripts, PyPI support,
-  speed-up of linear elastodynamics problems, improved homogenization-based
-  recovery of micro-scale solutions, etc.), see :ref:`release notes
-  <2022.2-2022.3>`.
 
 For historians: see :ref:`archived_news`.
