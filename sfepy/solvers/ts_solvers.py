@@ -506,6 +506,10 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
          'The number of time steps. Has precedence over `dt`.'),
         ('is_linear', 'bool', False, False,
          'If True, the problem is considered to be linear.'),
+        ('has_time_derivatives', 'bool', False, False,
+         """If True, the problem equations contain time derivatives of other
+            variables besides displacements. In that case the cached constant
+            matrices must be cleared on time step changes."""),
         ('var_names', 'dict', None, False,
          """The mapping of variables with keys 'u', 'du', 'ddu' and 'extra',
             and values corresponding to the names of the actual variables.
@@ -673,7 +677,9 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
                 output('dt:', ts.dt, 'new dt:', new_dt, 'status:', status,
                        verbose=self.verbose)
                 if new_dt != ts.dt:
-                    self.clear_lin_solver(clear_constant_matrices=False)
+                    self.clear_lin_solver(
+                        clear_constant_matrices=self.conf.has_time_derivatives,
+                    )
 
                 if status.result == 'accept':
                     break
