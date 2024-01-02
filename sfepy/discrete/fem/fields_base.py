@@ -615,13 +615,18 @@ class FEField(Field):
 
     def get_qp(self, key, integral):
         """
-        Get quadrature points and weights corresponding to the given key
-        and integral. The key is 'v' or 's#', where # is the number of
-        face vertices.
+        Get quadrature points and weights corresponding to the given key and
+        integral. The key is 'v', 's#' or 'b#', where # is the number of face
+        vertices. For 'b#', the quadrature must already be created by calling
+        :func:`FEField.create_bqp()`, usually through
+        :func:`FEField.create_mapping()`.
         """
         qpkey = (integral.order, key)
 
         if qpkey not in self.qp_coors:
+            if key[0] == 'b':
+                raise ValueError(f'the quadrature "{qpkey}" does not exist!')
+
             if (key[0] == 's') and not self.is_surface:
                 dim = self.gel.dim - 1
                 n_fp = self.gel.surface_facet.n_vertex
