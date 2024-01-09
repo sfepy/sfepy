@@ -1149,6 +1149,7 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/fe_surface
    src/sfepy/discrete/fem/fields_base
    src/sfepy/discrete/fem/fields_hierarchic
+   src/sfepy/discrete/fem/fields_l2
    src/sfepy/discrete/fem/fields_nodal
    src/sfepy/discrete/fem/fields_positive
    src/sfepy/discrete/fem/geometry_element
