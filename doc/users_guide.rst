@@ -397,7 +397,9 @@ The following approximation orders can be used:
 
   Optional bubble function enrichment is marked by 'B'.
 
-The implemented combinations of spaces and bases are listed here:
+The implemented combinations of spaces and bases are listed below,
+the space column corresponds to <space>, the basis column to <poly_space_base>
+and region type to the field region type.
 
 .. include:: field_table.rst
 
