@@ -368,7 +368,8 @@ Fields
 Fields correspond to FE spaces::
 
           fields = {
-              <name> : (<data_type>, <shape>, <region_name>, <approx_order>)
+              <name> : (<data_type>, <shape>, <region_name>, <approx_order>,
+              [<space>, <poly_space_base>])
           }
 
 where
@@ -380,6 +381,8 @@ where
   * <region_name> is the name of region where the field is defined
   * <approx_order> is the FE approximation order, e.g. 0, 1, 2, '1B' (1
     with bubble)
+  * <space> is the function space
+  * <poly_space_base> is the basis of the FE (usually polynomial) space
 
 **Example**: scalar P1 elements in 2D on a region Omega::
 
