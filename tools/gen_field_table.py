@@ -32,7 +32,7 @@ header = """
 
    * - space
      - basis
-     - region type
+     - region kind
      - description
 """
 
@@ -44,6 +44,8 @@ table_row = """   * - %s
 
 class_link = ':class:`{short} <{full}>`'
 
+translate_rtype = {'volume' : 'cell', 'surface' : 'facet'}
+
 def typeset_field_table(fd, field_table):
 
     fd.write('.. _field_table:\n')
@@ -52,6 +54,7 @@ def typeset_field_table(fd, field_table):
     rows = {}
     for key, cls in field_table.items():
         rtype, space, *basis = key.split('_')
+        rtype = translate_rtype[rtype]
         basis = '_'.join(basis)
         doc = cls.__doc__
         if doc is not None:
