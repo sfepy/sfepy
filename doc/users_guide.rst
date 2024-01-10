@@ -397,6 +397,10 @@ The following approximation orders can be used:
 
   Optional bubble function enrichment is marked by 'B'.
 
+The implemented combinations of spaces and bases are listed here:
+
+.. include:: field_table.rst
+
 Variables
 ^^^^^^^^^
 
