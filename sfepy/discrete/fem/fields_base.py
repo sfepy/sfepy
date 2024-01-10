@@ -29,6 +29,36 @@ from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
 
+def _find_geometry(region):
+    cmesh = region.cmesh
+    if region.kind == 'cell':
+        ct = cmesh.cell_types
+        for _gel in region.domain.geom_els.values():
+            if (ct[region.cells] == cmesh.key_to_index[_gel.name]).all():
+                gel = _gel
+                break
+        else:
+            raise ValueError(f'region {region.name} of contains multiple'
+                             ' reference geometries!')
+
+        is_surface = False
+
+    elif region.kind == 'facet':
+        for _gel in region.domain.geom_els.values():
+            gel = _gel.surface_facet
+            break
+
+        if gel is None:
+            raise ValueError('cells with no surface!')
+
+        is_surface = True
+
+    else:
+        raise ValueError('cannot find geometry element for region'
+                         f' {region.name} of kind {region.kind}, '
+                         f'"region.kind" must be "cell" or "facet"!')
+
+    return gel, is_surface
 
 def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
                    clear_all=True, extra_dofs=False):
@@ -247,9 +277,10 @@ class FEField(Field):
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
         self.domain = self.region.domain
+        self.cmesh = self.region.cmesh
 
         self._set_approx_order(approx_order)
-        self._setup_geometry()
+        self.gel, self.is_surface = _find_geometry(self.region)
         self._setup_kind()
         self._setup_shape()
 
@@ -276,40 +307,6 @@ class FEField(Field):
         else:
             self.approx_order = approx_order
             self.force_bubble = False
-
-    def _setup_geometry(self):
-        """
-        Setup the field region geometry.
-        """
-        region = self.region
-        cmesh = region.cmesh
-        if region.kind == 'cell':
-            ct = cmesh.cell_types
-            for gel in self.domain.geom_els.values():
-                if (ct[region.cells] == cmesh.key_to_index[gel.name]).all():
-                    self.gel = gel
-                    self.cmesh = cmesh
-                    break
-            else:
-                raise ValueError('region %s of field %s contains multiple'
-                                 ' reference geometries!'
-                                 % (self.region.name, self.name))
-
-            self.is_surface = False
-
-        elif region.kind == 'facet':
-            for gel in self.domain.geom_els.values():
-                self.gel = gel.surface_facet
-                break
-
-            if self.gel is None:
-                raise ValueError('cells with no surface!')
-
-            self.is_surface = True
-        else:
-            raise ValueError(f'unsuitable region {region.name} with kind '
-                             f'{region.kind} for field {self.name}, '
-                             f'"region.kind" must be "cell" or "facet"!')
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
@@ -572,7 +569,7 @@ class FEField(Field):
 
     def get_dofs_in_region(self, region, merge=True):
         """
-        Return indices of DOFs that belong to the given region and group.
+        Return indices of DOFs that belong to the given region.
         """
         node_desc = self.node_desc
 
@@ -618,13 +615,18 @@ class FEField(Field):
 
     def get_qp(self, key, integral):
         """
-        Get quadrature points and weights corresponding to the given key
-        and integral. The key is 'v' or 's#', where # is the number of
-        face vertices.
+        Get quadrature points and weights corresponding to the given key and
+        integral. The key is 'v', 's#' or 'b#', where # is the number of face
+        vertices. For 'b#', the quadrature must already be created by calling
+        :func:`FEField.create_bqp()`, usually through
+        :func:`FEField.create_mapping()`.
         """
         qpkey = (integral.order, key)
 
         if qpkey not in self.qp_coors:
+            if key[0] == 'b':
+                raise ValueError(f'the quadrature "{qpkey}" does not exist!')
+
             if (key[0] == 's') and not self.is_surface:
                 dim = self.gel.dim - 1
                 n_fp = self.gel.surface_facet.n_vertex
@@ -1137,7 +1139,7 @@ class FEField(Field):
             conn = self.extra_data[f'pd_{region.name}']
 
         else:
-            raise NotImplementedError('connectivity type %s' % ct)
+            raise ValueError(f'unknown integration type! ({integration})')
 
         return conn
 

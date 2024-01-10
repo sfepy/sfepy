@@ -2,7 +2,13 @@ r"""
 The linear elastodynamics of a piezoelectric body loaded by a given base
 motion.
 
-Find the displacements :math:`\ul{u}(t)` and potential :math:`p(t)` such that:
+The generated voltage between the bottom and top surface electrodes is recorded
+and plotted. The scalar potential on the top surface electrode is modeled using
+a constant L^2 field. The Nitsche's method is used to weakly apply the
+(unknown) potential Dirichlet boundary condition on the top surface.
+
+Find the displacements :math:`\ul{u}(t)`, the potential :math:`p(t)` and the
+constant potential on the top electrode :math:`\bar p(t)` such that:
 
 .. math::
     \int_\Omega \rho\ \ul{v} \cdot \ul{\ddot u}
@@ -13,12 +19,19 @@ Find the displacements :math:`\ul{u}(t)` and potential :math:`p(t)` such that:
 
     \int_\Omega e_{kij}\ \veps_{ij}(\ul{u}) \nabla_k q
     + \int_\Omega \kappa_{ij} \nabla_i \psi \nabla_j p
+    - \int_{\Gamma_{top}} \kappa_{ij} \nabla_j p n_i q
+    + \int_{\Gamma_{top}} \kappa_{ij} \nabla_j q n_i (p - \bar p)
+    + \int_{\Gamma_{top}} k q (p - \bar p)
     = 0
     \;, \quad \forall q \;,
 
+    \int_{\Gamma_{top}} \kappa_{ij} \nabla_j \dot{p} n_i + \bar p / R = 0 \;,
+
 where :math:`C_{ijkl}` is the matrix of elastic properties under constant
-electric field intensity, :math:`e_{kij}` the piezoelectric modulus and
-:math:`\kappa_{ij}` the permittivity under constant deformation.
+electric field intensity, :math:`e_{kij}` the piezoelectric modulus,
+:math:`\kappa_{ij}` the permittivity under constant deformation, :math:`k` a
+penalty parameter and :math:`R` the external circuit resistance (e.g. of an
+oscilloscope used to measure the voltage between the electrodes).
 
 Usage Examples
 --------------
@@ -33,15 +46,18 @@ The :func:`define()` arguments, see below, can be set using the ``-d`` option::
 
 View the resulting potential :math:`p` on a deformed mesh (2000x magnified)::
 
-  sfepy-view output/piezo-ed/user_block.h5 -f p:wu:f2000:p0 1:vw:wu:f2000:p0 --color-map=seismic
+  sfepy-view output/piezo-ed/user_block.h5 -f p:wu:f2000:p0 1:vw:wu:f2000:p0 --color-map=inferno
 """
+from functools import partial
+
 import numpy as nm
 
+from sfepy.base.base import output
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.homogenization.utils import define_box_regions
 
-def post_process(out, problem, state, extend=False):
+def post_process(out, problem, state, extend=False, pcs=None):
     """
     Calculate and output strain, stress and electric field vector for the given
     displacements and potential.
@@ -60,7 +76,31 @@ def post_process(out, problem, state, extend=False):
                                   data=stress)
     out['E'] = Struct(name='output_data', mode='cell', data=E)
 
+    top = problem.domain.regions['Top']
+    p_top = state['p'].get_state_in_region(top)
+    # = state['pc'](), but we want to test .get_state_in_region()
+    pc_top = state['pc'].get_state_in_region(top)
+
+    output('pc:', pc_top)
+    output('|p - pc|_top:', nm.linalg.norm(p_top - pc_top))
+    if pcs is not None:
+        pcs.append(pc_top[0, 0])
+
     return out
+
+def plot_voltage(problem, state, pcs=None):
+    import os.path as op
+    import matplotlib.pyplot as plt
+
+    ts = problem.get_timestepper()
+
+    fig, ax = plt.subplots()
+    ax.plot(ts.times, pcs)
+    ax.set_xlabel('$t$ [s]')
+    ax.set_ylabel(r'$\bar p$ [V]')
+
+    fig.tight_layout()
+    fig.savefig(op.join(problem.output_dir, 'voltage.pdf'))
 
 def define(
         dims=(1e-2, 1e-2, 5e-3),
@@ -143,6 +183,11 @@ def define(
 
     t1 = ct1 * L / cl
 
+    # Time history record of pc.
+    pcs = []
+    _post_process = partial(post_process, pcs=pcs)
+    _plot_voltage = partial(plot_voltage, pcs=pcs)
+
     def mesh_hook(mesh, mode):
         """
         Generate the block mesh.
@@ -170,13 +215,16 @@ def define(
     fields = {
         'displacement' : ('real', 'vector', 'Omega', order),
         'potential' : ('real', 'scalar', 'Omega', order),
+        'constant' : ('real', 'scalar', 'Top', 0, 'L2', 'constant'),
     }
 
     variables = {
         'u' : ('unknown field', 'displacement', 0),
         'v' : ('test field', 'displacement', 'u'),
-        'p' : ('unknown field', 'potential', 1),
+        'p' : ('unknown field', 'potential', 1, 1),
         'q' : ('test field', 'potential', 'p'),
+        'pc' : ('unknown field', 'constant', 2, 1),
+        'qc' : ('test field', 'constant', 'pc'),
     }
 
     materials = {
@@ -185,6 +233,8 @@ def define(
             'e' : e,
             'kappa' : kappa,
             'rho': rho,
+            'penalty': 1,
+            'iR' : 1.0 / (15e6 * dims[0] * dims[1]), # 1 / (R * top_area).
         },),
     }
 
@@ -195,15 +245,19 @@ def define(
     def get_ebcs(ts, coors, mode='u'):
         y = coors[:, 1]
         k = 2 * nm.pi / dims[1]
+        shift = nm.pi / 3
         omega = cl * k
+        time = ts.time
         if mode == 'u':
-            val = amplitude * nm.sin(ts.time * omega) * nm.sin(k * y)
+            val = (amplitude * nm.sin(time * omega) * nm.sin(k * y + shift))
 
         elif mode == 'du':
-            val = amplitude * omega * nm.cos(ts.time * omega) * nm.sin(k * y)
+            val = (amplitude * omega * nm.cos(time * omega)
+                   * nm.sin(k * y + shift))
 
         elif mode == 'ddu':
-            val = -amplitude * omega**2 * nm.sin(ts.time * omega) * nm.sin(k * y)
+            val = (-amplitude * omega**2 * nm.sin(time * omega)
+                   * nm.sin(k * y + shift))
 
         return val
 
@@ -217,11 +271,10 @@ def define(
         'Seismic' : ('Bottom', {'u.2' : 'get_u', 'du.2' : 'get_du',
                                 'ddu.2' : 'get_ddu'}),
         'Pot0' : ('Bottom', {'p.all' : 0.0}),
-        'Pot1' : ('Top', {'p.all' : 0.0}),
     }
 
     ics = {
-        'ic' : ('Omega', {'u.all' : 0.0, 'du.all' : 0.0}),
+        'ic' : ('Omega', {'u.all' : 0.0, 'du.all' : 0.0, 'p.0' : 0.0}),
     }
 
     equations = {
@@ -231,6 +284,15 @@ def define(
                = 0""",
         '2' : """dw_piezo_coupling.i.Omega(m.e, u, q)
                + dw_diffusion.i.Omega(m.kappa, q, p)
+               - de_surface_flux.i.Top(m.kappa, q, p)
+               + de_surface_flux.i.Top(m.kappa, p, q)
+               - de_surface_flux.i.Top(m.kappa, pc, q)
+               + dw_dot.i.Top(m.penalty, q, p)
+               - dw_dot.i.Top(m.penalty, q, pc)
+               = 0""",
+        '3' : """de_surface_flux.i.Top(m.kappa, qc, dp/dt)
+               + 0.5 * dw_dot.i.Top(m.iR, qc, pc)
+               + 0.5 * dw_dot.i.Top(m.iR, qc, pc[-1])
                = 0""",
     }
 
@@ -258,7 +320,9 @@ def define(
             'dt' : dt,
             'n_step' : None,
 
-            'is_linear'  : True,
+            'is_linear' : True,
+            # Without this the adaptive time-stepping cannot work.
+            'has_time_derivatives' : adaptive,
 
             'beta' : 0.25,
             'gamma' : 0.5,
@@ -290,7 +354,8 @@ def define(
 
         'output_format' : 'h5',
         'output_dir' : output_dir,
-        'post_process_hook' : 'post_process',
+        'post_process_hook' : _post_process,
+        'post_process_hook_final' : _plot_voltage,
     }
 
     return locals()

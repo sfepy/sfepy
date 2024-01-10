@@ -556,10 +556,6 @@ class ProblemConf(Struct):
             fun = None
 
         elif callable(name):
-            import inspect
-            if not (inspect.isfunction(name) or inspect.ismethod(name)):
-                msg = '`name` has to have `str` or `function` type! (got %s)'
-                raise ValueError(msg % type(name))
             fun = name
 
         else:

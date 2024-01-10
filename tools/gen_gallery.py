@@ -574,7 +574,7 @@ custom = {
             'camera_position': [-0.0125588,-0.00559266,0.0117482,
                                 0.00438669,0.00487109,0.00135715,
                                 0.334487,0.333581,0.881387],
-            'color_map': 'seismic',
+            'color_map': 'inferno',
         }
     },
     'multi_physics/thermal_electric.py': {

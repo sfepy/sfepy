@@ -205,11 +205,13 @@ class ExpressionArg(Struct):
     def get_dofs(self, cache, expr_cache, oname):
         if self.kind != 'state': return
 
-        key = (self.name, self.term.region.name)
+        key = (self.name, self.term.region.name,
+               self.term.arg_derivatives[self.name])
         dofs = cache.get(key)
         if dofs is None:
             arg = self.arg
-            dofs_vec = self.arg().reshape((-1, arg.n_components))
+            dofs_vec = self.arg(derivative=key[-1])
+            dofs_vec = dofs_vec.reshape((-1, arg.n_components))
             # # axis 0: cells, axis 1: node, axis 2: component
             # dofs = dofs_vec[conn]
             # axis 0: cells, axis 1: component, axis 2: node
@@ -230,16 +232,25 @@ class ExpressionArg(Struct):
     def get_bf(self, expr_cache):
         ag, _ = self.term.get_mapping(self.arg)
         if self.term.integration == 'facet_extra':
-            sd = self.arg.field.extra_data[f'sd_{self.term.region.name}']
-            _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
-            bf = _bf[sd.fis[:, 1], ...]
+            if 'L2_constant' in self.arg.field.family_name:
+                # It goes through non-cell-depending basis branch below, so fix
+                # the number of axes.
+                bf = ag.bf[None, ...]
+
+            else:
+                sd = self.arg.field.extra_data[f'sd_{self.term.region.name}']
+                _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
+                bf = _bf[sd.fis[:, 1], ...]
 
         else:
             bf = ag.bf
 
         key = 'bf{}'.format(id(bf))
         _bf  = expr_cache.get(key)
-        if bf.shape[0] > 1: # cell-depending basis.
+
+        is_surface  ='facet' in self.term.integration
+        n_cells = self.term.region.get_n_cells(is_surface=is_surface)
+        if (bf.ndim == 4) and (bf.shape[0] == n_cells): # cell-depending basis.
             if _bf is None:
                 _bf = bf[:, :, 0]
                 expr_cache[key] = _bf
