@@ -2,6 +2,9 @@ from sfepy.discrete.fem.fields_base import FEField, H1Mixin
 from sfepy.discrete.fem.fields_nodal import GlobalNodalLikeBasis
 
 class H1BernsteinVolumeField(H1Mixin, GlobalNodalLikeBasis, FEField):
+    """
+    Bernstein basis approximation with positive-only basis function values.
+    """
     family_name = 'volume_H1_bernstein'
 
     def create_basis_context(self):

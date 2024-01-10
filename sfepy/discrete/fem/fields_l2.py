@@ -9,6 +9,9 @@ from sfepy.discrete.fem.fields_base import _find_geometry
 from sfepy.discrete.fem.meshio import convert_complex_output
 
 class L2ConstantVolumeField(Field):
+    """
+    The L2 constant-in-a-region approximation.
+    """
     family_name = 'volume_L2_constant'
 
     def __init__(self, name, dtype, shape, region, approx_order=0):

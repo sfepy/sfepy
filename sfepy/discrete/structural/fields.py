@@ -8,7 +8,7 @@ from sfepy.discrete import PolySpace
 
 class Shell10XField(H1NodalMixin, FEField):
     """
-    The field for the shell10x element.
+    The approximation for the shell10x element.
     """
     family_name = 'volume_H1_shell10x'
 

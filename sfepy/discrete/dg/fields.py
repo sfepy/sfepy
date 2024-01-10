@@ -132,7 +132,10 @@ def get_gel(region):
 
 
 class DGField(FEField):
-    """Class for usage with DG terms, provides functionality for Discontinous
+    """
+    Discontinuous Galerkin method approximation with Legendre basis.
+
+    Class for usage with DG terms, provides functionality for Discontinous
     Galerkin method like neighbour look up, projection to discontinuous basis
     and correct DOF treatment.
     """

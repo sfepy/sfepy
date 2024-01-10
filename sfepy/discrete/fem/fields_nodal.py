@@ -398,6 +398,9 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
         return ctx
 
 class H1NodalVolumeField(H1NodalMixin, FEField):
+    """
+    Lagrange basis nodal approximation.
+    """
     family_name = 'volume_H1_lagrange'
 
     def interp_v_vals_to_n_vals(self, vec):
@@ -426,6 +429,9 @@ class H1NodalVolumeField(H1NodalMixin, FEField):
         return enod_vol_val
 
 class H1SNodalVolumeField(H1NodalVolumeField):
+    """
+    Lagrange basis nodal serendipity approximation with order <= 3.
+    """
     family_name = 'volume_H1_serendipity'
 
     def create_basis_context(self):
@@ -444,6 +450,11 @@ class H1SNodalVolumeField(H1NodalVolumeField):
         return ctx
 
 class H1SEMVolumeField(H1NodalVolumeField):
+    """
+    Spectral element method approximation.
+
+    Uses the Lagrange basis with Legendre-Gauss-Lobatto nodes and quadrature.
+    """
     family_name = 'volume_H1_sem'
 
     def create_basis_context(self):
@@ -462,6 +473,9 @@ class H1SEMVolumeField(H1NodalVolumeField):
         return ctx
 
 class H1DiscontinuousField(H1NodalMixin, FEField):
+    """
+    The C0 constant-per-cell approximation.
+    """
     family_name = 'volume_H1_lagrange_discontinuous'
 
     def _setup_global_base(self):
