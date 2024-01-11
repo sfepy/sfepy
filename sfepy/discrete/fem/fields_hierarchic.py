@@ -6,6 +6,9 @@ from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
 from sfepy.discrete.fem.fields_base import FEField, H1Mixin
 
 class H1HierarchicVolumeField(H1Mixin, FEField):
+    """
+    Hierarchical basis approximation with Lobatto polynomials.
+    """
     family_name = 'volume_H1_lobatto'
 
     def _init_econn(self):

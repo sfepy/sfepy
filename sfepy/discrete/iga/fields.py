@@ -21,7 +21,7 @@ def parse_approx_order(approx_order):
 
 class IGField(Field):
     """
-    Bezier extraction based NURBS field for isogeometric analysis.
+    Bezier extraction based NURBS approximation for isogeometric analysis.
 
     Notes
     -----
