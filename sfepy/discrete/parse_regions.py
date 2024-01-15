@@ -128,7 +128,7 @@ def create_bnf(stack):
     _set = Literal('set')
     surface = Literal('surface')
 
-    ident = Word(alphas + '_.', alphanums + '_.')
+    ident = Word(alphas + '_.-', alphanums + '_.-')
     set_name = Word(nums) | ident
 
     function = Word(alphas + '_', alphanums + '_')
