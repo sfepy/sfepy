@@ -57,14 +57,14 @@ def read_results(filename, only_names=None):
     """
     from sfepy.base.ioutils import read_array
 
-    only_names = get_default(only_names, [])
+    is_only_names = only_names is not None
 
     fd = open(filename, 'r') if isinstance(filename, basestr) else filename
 
     header = read_header(fd)
     results = {}
     for name, nc in get_data_name(fd):
-        if name not in only_names: continue
+        if is_only_names and (name not in only_names): continue
 
         result = read_array(fd, header.n_point, nc + 1, nm.float64)
         results[name] = result
