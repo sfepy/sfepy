@@ -18,6 +18,8 @@ def show_mesh_info(options):
     output(mesh.cmesh)
     output('element types:', mesh.descs)
     output('nodal BCs:', sorted(mesh.nodal_bcs.keys()))
+    output('vertex groups:', nm.unique(mesh.cmesh.vertex_groups))
+    output('cell groups:', nm.unique(mesh.cmesh.cell_groups))
 
     bbox = mesh.get_bounding_box()
     output('bounding box:\n%s'
