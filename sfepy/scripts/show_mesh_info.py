@@ -9,7 +9,7 @@ from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import numpy as nm
 
 from sfepy.base.base import output
-from sfepy.discrete.fem import Mesh, FEDomain
+from sfepy.discrete.fem import Mesh, MeshIO, FEDomain
 from sfepy.discrete.common.extmods.cmesh import graph_components
 
 def show_mesh_info(options):
@@ -18,6 +18,8 @@ def show_mesh_info(options):
     output(mesh.cmesh)
     output('element types:', mesh.descs)
     output('nodal BCs:', sorted(mesh.nodal_bcs.keys()))
+    output('vertex groups:', nm.unique(mesh.cmesh.vertex_groups))
+    output('cell groups:', nm.unique(mesh.cmesh.cell_groups))
 
     bbox = mesh.get_bounding_box()
     output('bounding box:\n%s'
@@ -28,6 +30,22 @@ def show_mesh_info(options):
            % ', '.join('%14.7e' % ii for ii in 0.5 * (bbox[0] + bbox[1])))
     output('coordinates mean: [%s]'
            % ', '.join('%14.7e' % ii for ii in mesh.coors.mean(0)))
+
+    io = MeshIO.any_from_filename(options.filename)
+    try:
+        data = io.read_data(0)
+
+    except ValueError:
+        pass
+
+    else:
+        from sfepy.linalg.utils import output_array_stats
+
+        output('data...')
+        for key, val in data.items():
+            if key in ('node_groups', 'mat_id'): continue
+            output_array_stats(val.data, f'{key} ({val.mode}):')
+        output('...done')
 
     if not options.detailed: return
 
