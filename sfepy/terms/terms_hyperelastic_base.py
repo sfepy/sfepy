@@ -61,13 +61,14 @@ class HyperElasticFamilyData(Struct):
                                             get_saved=True)
 
             vec = state(step=step, derivative=derivative)
+            econn = state.field.get_econn('cell', region)
 
             st_shape = state.get_data_shape(integral, geometry_type[0],
                                             region.name)
             data = self.init_data_struct(st_shape)
 
             fargs = tuple([getattr(data, k) for k in self.data_names])
-            fargs = fargs + (vec, vg, state.field.econn)
+            fargs = fargs + (vec, vg, econn)
             fargs = Term.translate_fargs_mapping(self.family_function,
                                                  list(fargs))
 
