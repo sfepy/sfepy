@@ -115,3 +115,5 @@
 .. _MUMPS: http://mumps-solver.org
 .. _GA21-16406S: https://www.isvavai.cz/cep?s=jednoduche-vyhledavani&ss=detail&h=GA21-16406S
 .. _GF22-00863K: https://www.isvavai.cz/cep?s=jednoduche-vyhledavani&ss=detail&n=0&h=GF22-00863K
+.. _GA23-06220S: https://www.isvavai.cz/cep?s=jednoduche-vyhledavani&ss=detail&h=GA23-06220S
+.. _GA24-12291S: https://www.isvavai.cz/cep?s=jednoduche-vyhledavani&ss=detail&h=GA24-10288S
