@@ -401,6 +401,18 @@ class StressTransform(Struct):
         .. math::
 
             \sigma_{ij} = J^{-1} F_{ik} S_{kl} F_{jl}
+
+        Parameters
+        ----------
+        stress_in : array_like
+            The second Piola-Kirchhoff stress in vector symmetric storage with
+            the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`
+
+        Returns
+        -------
+        stress_out : array
+            The Cauchy stress in vector symmetric storage with the indices
+            ordered as :math:`[11, 22, 33, 12, 13, 23]`.
         """
         stress_in = nm.asarray(stress_in, dtype=nm.float64)
 
