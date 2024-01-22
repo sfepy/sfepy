@@ -5,8 +5,7 @@ import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import assert_, Struct
-from sfepy.linalg \
-     import apply_to_sequence, dot_sequences, make_axis_rotation_matrix
+from sfepy.linalg import dot_sequences, make_axis_rotation_matrix
 
 def dim2sym(dim):
     """
@@ -358,8 +357,7 @@ class StressTransform(Struct):
         self.f2s = get_sym_indices(self.dim)
 
         if jacobian is None:
-            self.jacobian = apply_to_sequence(self.def_grad, nla.det,
-                                              2, (1, 1))
+            self.jacobian = nla.det(self.def_grad)[..., None, None]
 
         else:
             self.jacobian = nm.asarray(jacobian, dtype=nm.float64)
