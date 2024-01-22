@@ -368,6 +368,32 @@ class StressTransform(Struct):
         i1, i2 = get_non_diagonal_indices(self.dim)
         assert_(nm.allclose(stress[:,:,i1], stress[:,:,i2]))
 
+    def get_1pk_from_2pk(self, stress_in):
+        r"""
+        Get the first Piola-Kirchhoff stress given the second Piola-Kirchhoff
+        stress.
+
+        .. math::
+
+            P_{ij} = F_{ik} S_{kj}
+
+        Parameters
+        ----------
+        stress_in : array_like
+            The second Piola-Kirchhoff stress in vector symmetric storage with
+            the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`
+
+        Returns
+        -------
+        stress_out_full : array
+            The first Piola-Kirchhoff stress in matrix storage.
+        """
+        stress_in = nm.asarray(stress_in, dtype=nm.float64)
+
+        stress_in_full = stress_in[:,:,self.s2f,0]
+        stress_out_full = dot_sequences(self.def_grad, stress_in_full)
+        return stress_out_full
+
     def get_cauchy_from_2pk(self, stress_in):
         r"""
         Get the Cauchy stress given the second Piola-Kirchhoff stress.
