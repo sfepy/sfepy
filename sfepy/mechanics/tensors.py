@@ -5,8 +5,7 @@ import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import assert_, Struct
-from sfepy.linalg \
-     import apply_to_sequence, dot_sequences, make_axis_rotation_matrix
+from sfepy.linalg import dot_sequences, make_axis_rotation_matrix
 
 def dim2sym(dim):
     """
@@ -358,8 +357,7 @@ class StressTransform(Struct):
         self.f2s = get_sym_indices(self.dim)
 
         if jacobian is None:
-            self.jacobian = apply_to_sequence(self.def_grad, nla.det,
-                                              2, (1, 1))
+            self.jacobian = nla.det(self.def_grad)[..., None, None]
 
         else:
             self.jacobian = nm.asarray(jacobian, dtype=nm.float64)
@@ -368,6 +366,32 @@ class StressTransform(Struct):
         i1, i2 = get_non_diagonal_indices(self.dim)
         assert_(nm.allclose(stress[:,:,i1], stress[:,:,i2]))
 
+    def get_1pk_from_2pk(self, stress_in):
+        r"""
+        Get the first Piola-Kirchhoff stress given the second Piola-Kirchhoff
+        stress.
+
+        .. math::
+
+            P_{ij} = F_{ik} S_{kj}
+
+        Parameters
+        ----------
+        stress_in : array_like
+            The second Piola-Kirchhoff stress in vector symmetric storage with
+            the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`
+
+        Returns
+        -------
+        stress_out_full : array
+            The first Piola-Kirchhoff stress in matrix storage.
+        """
+        stress_in = nm.asarray(stress_in, dtype=nm.float64)
+
+        stress_in_full = stress_in[:,:,self.s2f,0]
+        stress_out_full = dot_sequences(self.def_grad, stress_in_full)
+        return stress_out_full
+
     def get_cauchy_from_2pk(self, stress_in):
         r"""
         Get the Cauchy stress given the second Piola-Kirchhoff stress.
@@ -375,6 +399,18 @@ class StressTransform(Struct):
         .. math::
 
             \sigma_{ij} = J^{-1} F_{ik} S_{kl} F_{jl}
+
+        Parameters
+        ----------
+        stress_in : array_like
+            The second Piola-Kirchhoff stress in vector symmetric storage with
+            the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`
+
+        Returns
+        -------
+        stress_out : array
+            The Cauchy stress in vector symmetric storage with the indices
+            ordered as :math:`[11, 22, 33, 12, 13, 23]`.
         """
         stress_in = nm.asarray(stress_in, dtype=nm.float64)
 
