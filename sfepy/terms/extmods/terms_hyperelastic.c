@@ -483,7 +483,7 @@ int32 dw_he_rtm( FMField *out,
   }
 
   if (isDiff) {
-    int32 nEP = vg->nEP;
+    int32 nEP = vg->bfGM->nCol;
 
     fmf_createAlloc( &btd, 1, nQP, nRow, sym );
     fmf_createAlloc( &btdb, 1, nQP, nRow, nRow );
