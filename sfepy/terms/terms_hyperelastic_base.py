@@ -99,6 +99,7 @@ class HyperElasticBase(Term):
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
                   'state' : 'D'}
+    integration = ('cell', 'facet_extra')
 
     @staticmethod
     def integrate(out, val_qp, vg, fmode):
