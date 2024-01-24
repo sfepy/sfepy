@@ -447,6 +447,7 @@ class BulkPressureTLTerm(HyperElasticTLBase):
     """
     name = 'dw_tl_bulk_pressure'
     arg_types = ('virtual', 'state', 'state_p')
+    arg_geometry_types = {('state_p', None) : {'facet_extra' : 'facet'}}
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D', 'state_p' : 1}
     family_data_names = ['det_f', 'sym_inv_c']
 
@@ -561,6 +562,7 @@ class VolumeTLTerm(HyperElasticTLBase):
     """
     name = 'dw_tl_volume'
     arg_types = ('virtual', 'state')
+    arg_geometry_types = {('virtual', None) : {'facet_extra' : 'facet'}}
     arg_shapes = {'virtual' : (1, None), 'state' : 'D'}
     family_data_names = ['mtx_f', 'det_f', 'sym_inv_c']
 
