@@ -1347,7 +1347,7 @@ def d_lin_elastic(np.ndarray out not None,
     array2fmfield4(_strain_v, strain_v)
     array2fmfield4(_mtx_d, mtx_d)
 
-    ret = _d_lin_elastic(_out, coef, _strain_u, _strain_v, _mtx_d, cmap.geo)
+    ret = _d_lin_elastic(_out, coef, _strain_v, _strain_u, _mtx_d, cmap.geo)
     return ret
 
 def d_sd_lin_elastic(np.ndarray out not None,
@@ -1366,7 +1366,7 @@ def d_sd_lin_elastic(np.ndarray out not None,
     array2fmfield4(_grad_w, grad_w)
     array2fmfield4(_mtx_d, mtx_d)
 
-    ret = _d_sd_lin_elastic(_out, coef, _grad_u, _grad_v, _grad_w,
+    ret = _d_sd_lin_elastic(_out, coef, _grad_v, _grad_u, _grad_w,
                             _mtx_d, cmap.geo)
     return ret
 
