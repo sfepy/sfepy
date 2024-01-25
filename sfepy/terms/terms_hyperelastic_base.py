@@ -99,6 +99,7 @@ class HyperElasticBase(Term):
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
                   'state' : 'D'}
+    integration = ('cell', 'facet_extra')
 
     @staticmethod
     def integrate(out, val_qp, vg, fmode):
@@ -226,6 +227,7 @@ class DeformationGradientTerm(Term):
     name = 'ev_def_grad'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'D'}
+    integration = ('cell', 'facet_extra')
 
     @staticmethod
     def function(out, vec, vg, econn, term_mode, fmode):
@@ -252,8 +254,10 @@ class DeformationGradientTerm(Term):
         vec = self.get_vector(parameter)
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
-
-        return vec, vg, parameter.field.econn, term_mode, fmode
+        econn = parameter.field.get_econn(
+            self.get_dof_conn_type(self.arg_names[0]), self.region
+        )
+        return vec, vg, econn, term_mode, fmode
 
     def get_eval_shape(self, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):

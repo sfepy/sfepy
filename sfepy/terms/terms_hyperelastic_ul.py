@@ -107,6 +107,7 @@ class BulkPressureULTerm(HyperElasticULBase):
 
     name = 'dw_ul_bulk_pressure'
     arg_types = ('virtual', 'state', 'state_p')
+    arg_geometry_types = {('state_p', None) : {'facet_extra' : 'facet'}}
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D', 'state_p' : 1}
     family_data_names = ['det_f', 'sym_b']
 
@@ -221,6 +222,7 @@ class VolumeULTerm(HyperElasticULBase):
     """
     name = 'dw_ul_volume'
     arg_types = ('virtual', 'state')
+    arg_geometry_types = {('virtual', None) : {'facet_extra' : 'facet'}}
     arg_shapes = {'virtual' : (1, None), 'state' : 'D'}
     family_data_names = ['mtx_f', 'det_f']
 
@@ -283,6 +285,8 @@ class CompressibilityULTerm(HyperElasticULBase):
     """
     name = 'dw_ul_compressible'
     arg_types = ('material', 'virtual', 'state', 'parameter_u')
+    arg_geometry_types = {('virtual', None) : {'facet_extra' : 'facet'},
+                          ('state', None) : {'facet_extra' : 'facet'}}
     arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'), 'state' : 1,
                   'parameter_u' : 'D'}
     family_data_names = ['mtx_f', 'det_f']

@@ -316,6 +316,7 @@ class Terms(Container):
 class Term(Struct):
     name = ''
     arg_types = ()
+    arg_geometry_types = {}
     arg_shapes = {}
     diff_info = {}
     integration = 'cell'
@@ -915,6 +916,12 @@ class Term(Struct):
                                      f'"{self.name}" term integration domain!')
             else:
                 integration = self.integration
+
+            if self.arg_geometry_types:
+                ii = self.arg_names.index(var.name)
+                agt = self.arg_geometry_types.get((self.ats[ii], self.mode))
+                if agt is not None:
+                    integration = agt.get(integration, integration)
 
             self.geometry_types[var.name] = integration, reg.tdim
 
