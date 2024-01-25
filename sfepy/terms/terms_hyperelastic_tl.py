@@ -155,7 +155,7 @@ class GenYeohTLTerm(HyperElasticTLBase):
         n_cells, n_qps, _, _ = out.shape
         for cell in range(n_cells):
             for qp in range(n_qps):
-                _inv_c = inv_c[cell, qp]
+                _inv_c = inv_c[cell, qp, :, 0]
                 _c_inv = nm.array([
                     [_inv_c[0], _inv_c[3], _inv_c[4]],
                     [_inv_c[3], _inv_c[1], _inv_c[5]],
