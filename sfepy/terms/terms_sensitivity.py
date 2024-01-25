@@ -22,11 +22,14 @@ def get_nonsym_grad_op(sgrad):
 class ESDLinearElasticTerm(ETermBase):
     r"""
     Sensitivity analysis of the linear elastic term.
+    :math:`D_{ijkl}` can be given in symmetric or non-symmetric form.
 
     :Definition:
 
     .. math::
-        \int_{\Omega} \hat{D}_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+        \int_{\Omega} \hat{D}_{ijkl}
+        {\partial v_i \over \partial x_j}
+        {\partial u_k \over \partial x_l}
 
     .. math::
         \hat{D}_{ijkl} = D_{ijkl}(\nabla \cdot \ul{\Vcal})
@@ -42,9 +45,10 @@ class ESDLinearElasticTerm(ETermBase):
     name = 'de_sd_lin_elastic'
     arg_types = (('material', 'virtual', 'state', 'parameter_mv'),
                  ('material', 'parameter_1', 'parameter_2', 'parameter_mv'))
-    arg_shapes = {'material': 'S, S', 'virtual': ('D', 'state'),
-                  'state': 'D', 'parameter_1': 'D', 'parameter_2': 'D',
-                  'parameter_mv': 'D'}
+    arg_shapes = [{'material': 'S, S',
+                  'virtual': ('D', 'state'), 'state': 'D',
+                  'parameter_1': 'D', 'parameter_2': 'D',
+                  'parameter_mv': 'D'}, {'material': 'D2, D2'}]
     modes = ('weak', 'eval')
     geometries = ['2_3', '2_4', '3_4', '3_8']
 
@@ -55,9 +59,10 @@ class ESDLinearElasticTerm(ETermBase):
         div_mv = nm.trace(grad_mv, axis1=2, axis2=3)[..., None, None]
         grad_op = get_nonsym_grad_op(grad_mv)
 
-        mat_ns = sym2nonsym(mat, [2, 3])
+        dim = grad_mv.shape[-1]
+        mat_ns = mat if mat.shape[-1] == dim**2 else sym2nonsym(mat, [2, 3])
         aux = dot_sequences(mat_ns, grad_op, mode='AB')
-        mat_sd = mat_ns * div_mv - aux - aux.transpose((0, 1, 3, 2)) 
+        mat_sd = mat_ns * div_mv - aux - aux.transpose((0, 1, 3, 2))
 
         fun = self.make_function(
             'IK,v(i.j)->I,v(k.l)->K', (mat_sd, 'material'), vvar, svar,
