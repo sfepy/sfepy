@@ -15,7 +15,7 @@ def test_compose_sparse():
                          [0, 1, 1],
                          [1, 1, 0]])
 
-    _ok = nm.alltrue(mk.toarray() == expected)
+    _ok = nm.all(mk.toarray() == expected)
     tst.report('basic: %s' % _ok)
     ok = ok and _ok
 
@@ -26,7 +26,7 @@ def test_compose_sparse():
     mk = compose_sparse([[ma, mb]], col_sizes=[2, 3])
     expected = nm.array([[2, 3, 4, 5, 6]])
 
-    _ok = nm.alltrue(mk.toarray() == expected)
+    _ok = nm.all(mk.toarray() == expected)
     tst.report('sizes: %s' % _ok)
     ok = ok and _ok
 
@@ -35,7 +35,7 @@ def test_compose_sparse():
     mk = compose_sparse([[ma, mb]], col_sizes=[i1, i2])
     expected = nm.array([[0, 2, 3, 0, 0, 0, 0, 0, 4, 5, 6]])
 
-    _ok = nm.alltrue(mk.toarray() == expected)
+    _ok = nm.all(mk.toarray() == expected)
     tst.report('slices: %s' % _ok)
     ok = ok and _ok
 
@@ -43,7 +43,7 @@ def test_compose_sparse():
     mk = compose_sparse([[0, ma, 0, mb, 0]], col_sizes=[1, 2, 5, 3, 1])
     expected = nm.array([[0, 2, 3, 0, 0, 0, 0, 0, 4, 5, 6, 0]])
 
-    _ok = nm.alltrue(mk.toarray() == expected)
+    _ok = nm.all(mk.toarray() == expected)
     tst.report('zero block sizes: %s' % _ok)
     ok = ok and _ok
 
@@ -57,7 +57,7 @@ def test_compose_sparse():
     mk = compose_sparse([[0, ma, mb, 0],
                          [0, 0, 0, mb]], col_sizes=[i0, i1, i2, i3])
 
-    _ok = nm.alltrue(mk.toarray() == expected)
+    _ok = nm.all(mk.toarray() == expected)
     tst.report('zero block slices: %s' % _ok)
     ok = ok and _ok
 
