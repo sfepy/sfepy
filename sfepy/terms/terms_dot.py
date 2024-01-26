@@ -533,7 +533,7 @@ class ScalarDotGradIScalarTerm(Term):
             vg, _ = self.get_mapping(virtual)
             vgs, _ = self.get_mapping(state)
 
-            idx = int(material)
+            idx = int(material[0, 0])
 
             return vgs.bf, vg, grad, idx, fmode
 

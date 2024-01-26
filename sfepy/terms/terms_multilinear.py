@@ -14,7 +14,7 @@ except ImportError:
     oe = None
 
 try:
-    from jax.config import config
+    from jax import config
     config.update("jax_enable_x64", True)
     import jax
     import jax.numpy as jnp
@@ -1170,7 +1170,7 @@ class ETermBase(Term):
         out_shape = get_output_shape(ebuilder.out_subscripts[0],
                                      ebuilder.subscripts[0], operands[0])
 
-        dtype = nm.find_common_type([op.dtype for op in operands[0]], [])
+        dtype = nm.result_type(*operands[0])
 
         return out_shape, dtype
 
