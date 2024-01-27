@@ -165,6 +165,8 @@ class Solver(Struct, metaclass=SolverMeta):
         ('kind', 'str', None, True,
          """The solver kind, as given by the `name` class attribute of the
             Solver subclasses."""),
+        ('report_status', 'bool', False, False,
+         'If True, the solver can report the solution status.'),
         ('verbose', 'bool', False, False,
          """If True, the solver can print more information about the
             solution."""),
