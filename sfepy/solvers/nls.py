@@ -371,13 +371,21 @@ class Newton(NonlinearSolver):
             vec_x -= conf.step_red * vec_dx
             it += 1
 
+        ls_n_iter = ls_n_iter if ls_n_iter >= 0 else -1
         if status is not None:
             status['time_stats'] = time_stats
             status['err0'] = err0
             status['err'] = err
             status['n_iter'] = it
-            status['ls_n_iter'] = ls_n_iter if ls_n_iter >= 0 else -1
+            status['ls_n_iter'] = ls_n_iter
             status['condition'] = condition
+
+        if conf.report_status:
+            output(f'cond: {condition}, iter: {it}, ls_iter: {ls_n_iter},'
+                   f' err0: {err0:.8e}, err: {err:.8e}')
+            for key in time_stats_keys:
+                output('%8s: %.8f [s]' % (key, time_stats[key]))
+            output('elapsed: %.8f [s]' % sum(time_stats.values()))
 
         if conf.log.plot is not None:
             if self.log is not None:
