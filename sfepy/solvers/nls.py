@@ -590,6 +590,9 @@ class PETScNonlinearSolver(NonlinearSolver):
                verbose=conf.verbose)
 
         converged = snes.reason >= 0
+        condition = 0 if converged else -1
+        n_iter = snes.getLinearSolveIterations()
+        ls_n_iter = snes.getLinearSolveIterations()
 
         if not converged:
             # PETSc does not update the solution if KSP have not converged.
@@ -610,9 +613,14 @@ class PETScNonlinearSolver(NonlinearSolver):
         if status is not None:
             status['err0'] = err0
             status['err'] = err
-            status['n_iter'] = snes.getIterationNumber()
-            status['ls_n_iter'] = snes.getLinearSolveIterations()
-            status['condition'] = 0 if converged else -1
+            status['n_iter'] = n_iter
+            status['ls_n_iter'] = ls_n_iter
+            status['condition'] = condition
+
+        if conf.report_status:
+            output(f'cond: {condition}, iter: {n_iter}, ls_iter: {ls_n_iter},'
+                   f' err0: {err0:.8e}, err: {err:.8e}')
+            output('elapsed: %.8f [s]' % status['time_stats'])
 
         if isinstance(vec_x0, self.petsc.Vec):
             sol = psol
