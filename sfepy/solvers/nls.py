@@ -460,6 +460,9 @@ class ScipyBroyden(NonlinearSolver):
         if status is not None:
             status['time_stats'] = timer.stop()
 
+        if conf.report_status:
+            output('elapsed: %.8f [s]' % status['time_stats'])
+
         return vec_x
 
 class PETScNonlinearSolver(NonlinearSolver):
