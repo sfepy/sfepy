@@ -8,7 +8,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.base.timing import Timer
+from sfepy.base.timing import Timer, Timers
 from sfepy.solvers.solvers import NonlinearSolver
 import six
 from six.moves import range
@@ -256,9 +256,9 @@ class Newton(NonlinearSolver):
         eps_r = get_default(ls_eps_r, 1.0)
         lin_red = conf.eps_a * conf.lin_red
 
-        timer = Timer()
-        time_stats_keys = ['residual', 'matrix', 'solve']
-        time_stats = {key : 0.0 for key in time_stats_keys}
+        timers = Timers(['residual', 'matrix', 'solve'])
+        if conf.check:
+            timers.create('check')
 
         vec_x = vec_x0.copy()
         vec_x_last = vec_x0.copy()
@@ -279,7 +279,7 @@ class Newton(NonlinearSolver):
             ls = 1.0
             vec_dx0 = vec_dx
             while 1:
-                timer.start()
+                timers.residual.start()
 
                 try:
                     vec_r = fun(vec_x)
@@ -295,7 +295,7 @@ class Newton(NonlinearSolver):
                 else:
                     ok = True
 
-                time_stats['residual'] = timer.stop()
+                timers.residual.stop()
                 if ok:
                     try:
                         err = nla.norm(vec_r)
@@ -347,19 +347,20 @@ class Newton(NonlinearSolver):
                 condition = 2
                 break
 
-            timer.start()
+            timers.matrix.start()
             if not conf.is_linear:
                 mtx_a = fun_grad(vec_x)
 
             else:
                 mtx_a = fun_grad('linear')
 
-            time_stats['matrix'] = timer.stop()
+            timers.matrix.stop()
 
             if conf.check:
-                timer.start()
+                timers.check.start()
                 wt = check_tangent_matrix(conf, vec_x, fun, fun_grad)
-                time_stats['check'] = timer.stop() - wt
+                timers.check.stop()
+                timers.check.add(-wt)
 
             if conf.lin_precision is not None:
                 if ls_eps_a is not None:
@@ -373,18 +374,18 @@ class Newton(NonlinearSolver):
             if conf.verbose:
                 output('solving linear system...')
 
-            timer.start()
+            timers.solve.start()
             vec_dx = lin_solver(vec_r, x0=vec_x,
                                 eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                                 status=ls_status)
             ls_n_iter += ls_status['n_iter']
-            time_stats['solve'] = timer.stop()
+            timers.solve.stop()
 
             if conf.verbose:
                 output('...done')
 
-            for key in time_stats_keys:
-                output('%10s: %7.2f [s]' % (key, time_stats[key]))
+            for key, val in timers.get_dts().items():
+                output('%10s: %7.2f [s]' % (key, val))
 
             vec_e = mtx_a * vec_dx - vec_r
             lerr = nla.norm(vec_e)
@@ -396,6 +397,7 @@ class Newton(NonlinearSolver):
             vec_x -= conf.step_red * vec_dx
             it += 1
 
+        time_stats = timers.get_totals()
         ls_n_iter = ls_n_iter if ls_n_iter >= 0 else -1
         if status is not None:
             status['time_stats'] = time_stats
@@ -408,9 +410,9 @@ class Newton(NonlinearSolver):
         if conf.report_status:
             output(f'cond: {condition}, iter: {it}, ls_iter: {ls_n_iter},'
                    f' err0: {err0:.8e}, err: {err:.8e}')
-            for key in time_stats_keys:
-                output('%8s: %.8f [s]' % (key, time_stats[key]))
-            output('elapsed: %.8f [s]' % sum(time_stats.values()))
+            for key, val in time_stats.items():
+                output('%8s: %.8f [s]' % (key, val))
+            output('     sum: %.8f [s]' % sum(time_stats.values()))
 
         if conf.log.plot is not None:
             if self.log is not None:
