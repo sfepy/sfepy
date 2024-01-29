@@ -32,8 +32,25 @@ def standard_ts_call(call):
         prestep_fun = get_default(prestep_fun, lambda ts, vec: None)
         poststep_fun = get_default(poststep_fun, lambda ts, vec: None)
 
+        _poststep_fun = poststep_fun
+        if status is not None:
+            nls_status = status.get('nls_status')
+            if nls_status is not None:
+                def _poststep_fun(ts, vec):
+                    time_stats = nls_status.get('time_stats')
+                    if time_stats is not None:
+                        all_stats = status.setdefault('time_stats', {})
+                        for key, val in time_stats.items():
+                            all_stats.setdefault(key, 0.0)
+                            all_stats[key] += val
+
+                        all_stats.setdefault('time', 0.0)
+                        all_stats['time'] += nls_status.get('time', 0.0)
+
+                    return poststep_fun(ts, vec)
+
         result = call(self, vec0=vec0, nls=nls, init_fun=init_fun,
-                      prestep_fun=prestep_fun, poststep_fun=poststep_fun,
+                      prestep_fun=prestep_fun, poststep_fun=_poststep_fun,
                       status=status, **kwargs)
 
         elapsed = timer.stop()
