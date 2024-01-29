@@ -33,3 +33,12 @@ class Timer(Struct):
         self.dt = self.t1 - self.t0
         self.total += self.dt
         return self.dt
+
+    def add(self, dt):
+        if self.t1 is None:
+            raise ValueError('timer "%s" was not started and stopped!'
+                             % self.name)
+
+        self.t1 += dt
+        self.dt += dt
+        self.total += dt
