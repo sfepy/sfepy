@@ -13,6 +13,30 @@ from sfepy.solvers.solvers import NonlinearSolver
 import six
 from six.moves import range
 
+def standard_nls_call(call):
+    """
+    Decorator handling argument preparation and timing for nonlinear solvers.
+    """
+
+    def _standard_nls_call(self, vec_x0, conf=None, fun=None, fun_grad=None,
+                           lin_solver=None, iter_hook=None, status=None,
+                           **kwargs):
+        timer = Timer(start=True)
+
+        status = get_default(status, self.status)
+        fun = get_default(fun, self.fun, 'function has to be specified!')
+        result = call(self, vec_x0, conf=conf, fun=fun, fun_grad=fun_grad,
+                      lin_solver=lin_solver, iter_hook=iter_hook,
+                      status=status, **kwargs)
+
+        elapsed = timer.stop()
+        if status is not None:
+            status['time'] = elapsed
+
+        return result
+
+    return _standard_nls_call
+
 def check_tangent_matrix(conf, vec_x0, fun, fun_grad):
     """
     Verify the correctness of the tangent matrix as computed by `fun_grad()` by
@@ -186,6 +210,7 @@ class Newton(NonlinearSolver):
         else:
             self.log = None
 
+    @standard_nls_call
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None):
         """
@@ -429,6 +454,7 @@ class ScipyBroyden(NonlinearSolver):
             solver = so.broyden3
         self.solver = solver
 
+    @standard_nls_call
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None):
         if conf is not None:
@@ -525,6 +551,7 @@ class PETScNonlinearSolver(NonlinearSolver):
                                  ksp_converged_reasons=ksp_converged_reasons,
                                  **kwargs)
 
+    @standard_nls_call
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None,
                  pmtx=None, prhs=None, comm=None):
