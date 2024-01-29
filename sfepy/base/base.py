@@ -508,6 +508,9 @@ class IndexedStruct(Struct):
     def __setitem__(self, key, val):
         setattr(self, key, val)
 
+    def setdefault(self, key, default=None):
+        return self.set_default(key, default=default)
+
 ##
 # 14.07.2006, c
 class Container(Struct):
