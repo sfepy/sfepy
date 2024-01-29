@@ -484,10 +484,10 @@ class ScipyBroyden(NonlinearSolver):
         vec_x = nm.asarray(vec_x)
 
         if status is not None:
-            status['time_stats'] = timer.stop()
+            status['time_stats'] = {'solver' : timer.stop()}
 
         if conf.report_status:
-            output('elapsed: %.8f [s]' % status['time_stats'])
+            output('solver: %.8f [s]' % status['time_stats']['solver'])
 
         return vec_x
 
@@ -598,7 +598,7 @@ class PETScNonlinearSolver(NonlinearSolver):
         snes.solve(prhs.duplicate(), psol)
 
         if status is not None:
-            status['time_stats'] = timer.stop()
+            status['time_stats'] = {'solver' : timer.stop()}
 
         if snes.reason in self.converged_reasons:
             reason = 'snes: %s' % self.converged_reasons[snes.reason]
@@ -647,7 +647,7 @@ class PETScNonlinearSolver(NonlinearSolver):
         if conf.report_status:
             output(f'cond: {condition}, iter: {n_iter}, ls_iter: {ls_n_iter},'
                    f' err0: {err0:.8e}, err: {err:.8e}')
-            output('elapsed: %.8f [s]' % status['time_stats'])
+            output('solver: %.8f [s]' % status['time_stats']['solver'])
 
         if isinstance(vec_x0, self.petsc.Vec):
             sol = psol
