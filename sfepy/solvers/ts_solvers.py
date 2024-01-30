@@ -321,12 +321,11 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
         """
         Solve a single time step.
         """
-        status = IndexedStruct(n_iter=0, condition=0)
         while 1:
-            vect = nls(vec, status=status)
+            vect = nls(vec, status=nls.status)
 
-            is_break = self.adapt_time_step(ts, status, self.adt, self.context,
-                                            verbose=self.verbose)
+            is_break = self.adapt_time_step(ts, nls.status, self.adt,
+                                            self.context, verbose=self.verbose)
 
             if is_break:
                 break
