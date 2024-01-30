@@ -5,8 +5,7 @@ from inspect import signature
 from functools import partial
 import numpy as nm
 
-from sfepy.base.base import (get_default, output, assert_,
-                             Struct, IndexedStruct)
+from sfepy.base.base import (get_default, output, assert_, Struct)
 from sfepy.base.timing import Timer
 from sfepy.linalg.utils import output_array_stats
 from sfepy.solvers.solvers import TimeSteppingSolver, NonlinearSolver
@@ -32,7 +31,33 @@ def standard_ts_call(call):
         prestep_fun = get_default(prestep_fun, lambda ts, vec: None)
         poststep_fun = get_default(poststep_fun, lambda ts, vec: None)
 
-        result = call(self, vec0=vec0, nls=nls, init_fun=init_fun,
+        _nls = nls
+        if status is not None:
+            nls_status = status.get('nls_status')
+            if nls_status is not None:
+
+                class _TimingNLS(type(nls)):
+                    def __call__(self, *args, **kwargs):
+                        # Call the original nls...
+                        out = super().__call__(*args, **kwargs)
+
+                        # ...and collect its time stats.
+                        time_stats = nls_status.get('time_stats')
+                        if time_stats is not None:
+                            all_stats = status.setdefault('time_stats', {})
+                            for key, val in time_stats.items():
+                                all_stats.setdefault(key, 0.0)
+                                all_stats[key] += val
+
+                            all_stats.setdefault('time', 0.0)
+                            all_stats['time'] += nls_status.get('time', 0.0)
+
+                        return out
+
+                _nls = nls.copy()
+                _nls.__class__ = _TimingNLS
+
+        result = call(self, vec0=vec0, nls=_nls, init_fun=init_fun,
                       prestep_fun=prestep_fun, poststep_fun=poststep_fun,
                       status=status, **kwargs)
 
@@ -304,12 +329,11 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
         """
         Solve a single time step.
         """
-        status = IndexedStruct(n_iter=0, condition=0)
         while 1:
-            vect = nls(vec, status=status)
+            vect = nls(vec, status=nls.status)
 
-            is_break = self.adapt_time_step(ts, status, self.adt, self.context,
-                                            verbose=self.verbose)
+            is_break = self.adapt_time_step(ts, nls.status, self.adt,
+                                            self.context, verbose=self.verbose)
 
             if is_break:
                 break

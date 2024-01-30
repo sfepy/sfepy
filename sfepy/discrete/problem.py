@@ -1521,6 +1521,12 @@ class Problem(Struct):
                       prestep_fun=prestep_fun,
                       poststep_fun=poststep_fun,
                       status=status)
+
+            time_stats = status.get('time_stats')
+            if time_stats is not None:
+                for key in time_stats.keys():
+                    output('%12s: %.8f [s]' % ('nls ' + key, time_stats[key]))
+
             output('solved in %d steps in %.2f seconds'
                    % (status['n_step'], status['time']), verbose=verbose)
 

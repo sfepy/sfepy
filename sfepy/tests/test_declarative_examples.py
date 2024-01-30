@@ -105,6 +105,11 @@ def test_examples(ex_filename, output_dir):
         ok = (conditions[1:] == 0).all()
         ok = ok and (conditions[0] == 1)
 
+    elif ex_filename == 'large_deformation/balloon.py':
+        # Special-case the steps with a time-step reduction.
+        ok = (conditions[1:5] == 1).all()
+        ok = ok and (conditions[0] == 0) and (conditions[5:] == 0).all()
+
     else:
         ok = check_conditions(conditions)
 
