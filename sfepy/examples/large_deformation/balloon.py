@@ -290,7 +290,7 @@ def define(plot=False, use_lcbcs=True):
             'check'      : 0,
             'delta'      : 1e-6,
             'is_plot'    : False,
-            'problem'    : 'nonlinear',
+            'report_status' : True,
         }),
         'ts' : ('ts.adaptive', {
             't0' : 0.0,
