@@ -52,6 +52,13 @@ def standard_ts_call(call):
                             all_stats.setdefault('time', 0.0)
                             all_stats['time'] += nls_status.get('time', 0.0)
 
+                        # ...and collect its step stats.
+                        all_stats = status.setdefault('step_stats', [])
+                        _nls_status = nls_status.copy()
+                        _nls_status.step = self.context.ts.step
+                        _nls_status.step_time = self.context.ts.time
+                        all_stats.append(_nls_status)
+
                         return out
 
                 _nls = nls.copy()
