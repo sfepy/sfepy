@@ -1528,22 +1528,23 @@ class Problem(Struct):
                 for key in time_stats.keys():
                     output('%12s: %.8f [s]' % ('nls ' + key, time_stats[key]))
 
-            step_stats = status.get('step_stats')
-            if step_stats is not None:
-                output('====== step stats ======')
-                if len(step_stats) > 1 and step_stats[0].get("step") > 0:
-                    output(f'step: {1:5} (time=0.0) - initial step')
-                for step in step_stats:
-                    msg = f'step: {step.get("step") + 1:5} '
-                    msg += f'(time={round(step.get("step_time"), 12)}): '
-                    msg += f'cond: {step.get("condition")}, '
-                    msg += f'iter: {step.get("n_iter"):3}, '
-                    msg += f'ls_iter: {step.get("ls_n_iter"):3}, '
-                    msg += f'err0: {step.get("err0"):.3e}, '
-                    msg += f'err: {step.get("err"):.3e}, '
-                    msg += f'time: {step.get("time"):.3f} [s]'
+            if tss.nls.conf.report_status:
+                step_stats = status.get('step_stats')
+                if step_stats is not None:
+                    output('====== step stats ======')
+                    if len(step_stats) > 1 and step_stats[0].get("step") > 0:
+                        output('step: 1 (time=0.0): initial step')
+                    for step in step_stats:
+                        msg = f'step: {step.get("step") + 1} '
+                        msg += f'(time={round(step.get("step_time"), 12)}): '
+                        msg += f'cond: {step.get("condition")}, '
+                        msg += f'iter: {step.get("n_iter")}, '
+                        msg += f'ls_iter: {step.get("ls_n_iter")}, '
+                        msg += f'err0: {step.get("err0"):.3e}, '
+                        msg += f'err: {step.get("err"):.3e}, '
+                        msg += f'time: {step.get("time"):.3f} [s]'
 
-                    output(msg)
+                        output(msg)
 
             output('solved in %d steps in %.2f seconds'
                    % (status['n_step'], status['time']), verbose=verbose)
