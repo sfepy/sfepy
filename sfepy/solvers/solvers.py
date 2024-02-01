@@ -167,6 +167,8 @@ class Solver(Struct, metaclass=SolverMeta):
             Solver subclasses."""),
         ('report_status', 'bool', False, False,
          'If True, the solver can report the solution status.'),
+        ('log_status', 'bool', False, False,
+         'If True, the solver can log the solution status.'),
         ('verbose', 'bool', False, False,
          """If True, the solver can print more information about the
             solution."""),
