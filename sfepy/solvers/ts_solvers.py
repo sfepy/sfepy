@@ -40,10 +40,8 @@ def standard_ts_call(call):
                     pb = self.context
                     filename_log = osp.join(pb.output_dir,
                                             pb.ofn_trunk + '_log.txt')
-                    self.nls.log_file = open(filename_log, 'wt',
-                                             encoding="utf-8")
-                else:
-                    self.nls.log_file = None
+                    status.log_file = open(filename_log, 'wt',
+                                           encoding="utf-8")
 
                 class _TimingNLS(type(nls)):
                     def __call__(self, *args, **kwargs):
@@ -71,19 +69,20 @@ def standard_ts_call(call):
                         _nls_status.step_time = self.context.ts.time
                         all_stats.append(_nls_status)
                         log_stats.update(_nls_status.to_dict())
-                        if self.log_file is not None:
+
+                        if getattr(status, 'log_file', None) is not None:
                             if 'time_stats' in log_stats:
                                 del log_stats['time_stats']
 
                             keys = list(log_stats.keys())
                             keys.sort()
 
-                            if self.log_file.tell() == 0:
-                                self.log_file.write(','.join(keys) + '\n')
+                            if status.log_file.tell() == 0:
+                                status.log_file.write(','.join(keys) + '\n')
 
                             log_vals = [f'{log_stats[key]}' for key in keys]
-                            self.log_file.write(','.join(log_vals) + '\n')
-                            self.log_file.flush()
+                            status.log_file.write(','.join(log_vals) + '\n')
+                            status.log_file.flush()
 
                         return out
 
@@ -98,9 +97,8 @@ def standard_ts_call(call):
         if status is not None:
             status['time'] = elapsed
             status['n_step'] = self.ts.n_step
-
-        if self.nls.log_file is not None:
-            self.nls.log_file.close()
+            if getattr(status, 'log_file', None) is not None:
+                status.log_file.close()
 
         return result
 
