@@ -24,18 +24,18 @@ def reference_solution(pb):
     from sfepy.discrete import Problem
 
     conf = pb.conf.copy()
-    conf.filename_mesh = data_dir + '/meshes/2d/beam_h7.mesh'
+    conf.filename_mesh = data_dir + '/meshes/3d/beam_h7.mesh'
     for k in list(conf.regions.keys()):
         if '_t' in k:
-            del(conf.regions[k])
+            del conf.regions[k]
 
     for k in list(conf.fields.keys()):
         if '_t' in k:
-            del(conf.fields[k])
+            del conf.fields[k]
 
     for k in list(conf.variables.keys()):
         if '_t' in k:
-            del(conf.variables[k])
+            del conf.variables[k]
 
     conf.equations = {
         'balance_of_forces':
@@ -77,11 +77,11 @@ def post_proces(out, pb, state, extend=False):
 
     du = nm.linalg.norm((ref_u_nd - u_nd) / nm.linalg.norm(ref_u_nd))
     print(f'Relative difference with respect to the reference solution: {du}')
-    
+
     return out
 
 
-filename_mesh = data_dir + '/meshes/2d/beam_h5t12.mesh'
+filename_mesh = data_dir + '/meshes/3d/beam_h5t12.mesh'
 
 options = {
     'post_process_hook': 'post_proces',
