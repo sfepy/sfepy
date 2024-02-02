@@ -1532,19 +1532,27 @@ class Problem(Struct):
                 step_stats = status.get('step_stats')
                 if step_stats is not None:
                     output('====== step stats ======')
+                    output.prefix, aux = '', output.prefix
+                    output('  step, time,      cond,   it, ls_it,      err0,'
+                           '       err, elapsed [s]')
                     if len(step_stats) > 1 and step_stats[0].get("step") > 0:
-                        output('step: 1 (time=0.0): initial step')
+                        s0 = IndexedStruct(step=0, step_time=0.0, condition=0,
+                                           n_iter=0, ls_n_iter=0,
+                                           err=0, err0=0, time=0)
+                        step_stats = [s0] + step_stats
+
                     for step in step_stats:
-                        msg = f'step: {step.get("step") + 1} '
-                        msg += f'(time={round(step.get("step_time"), 12)}): '
-                        msg += f'cond: {step.get("condition")}, '
-                        msg += f'iter: {step.get("n_iter")}, '
-                        msg += f'ls_iter: {step.get("ls_n_iter")}, '
-                        msg += f'err0: {step.get("err0"):.3e}, '
-                        msg += f'err: {step.get("err"):.3e}, '
-                        msg += f'time: {step.get("time"):.3f} [s]'
+                        msg = f'{step.get("step") + 1:6}, '
+                        msg += f'{step.get("step_time"):.6e}, '
+                        msg += f'{step.get("condition"):1}, '
+                        msg += f'{step.get("n_iter"):4}, '
+                        msg += f'{step.get("ls_n_iter"):5}, '
+                        msg += f'{step.get("err0"):.3e}, '
+                        msg += f'{step.get("err"):.3e}, '
+                        msg += f'{step.get("time"):.4f}'
 
                         output(msg)
+                    output.prefix, aux = aux, output.prefix
 
             output('solved in %d steps in %.2f seconds'
                    % (status['n_step'], status['time']), verbose=verbose)
