@@ -372,7 +372,7 @@ class Oseen(NonlinearSolver):
             status['condition'] = condition
             status['n_iter'] = it
             status['ls_n_iter'] = -1
-            status['time'] = nm.sum(v for v in time_stats.values())
+            status['time'] = sum(v for v in time_stats.values())
 
         if conf.log.plot is not None:
             if self.log is not None:
