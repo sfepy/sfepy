@@ -2,6 +2,8 @@
 from __future__ import absolute_import
 import hashlib
 
+from ast import literal_eval
+
 import numpy as nm
 import numpy.linalg as nla
 
@@ -124,6 +126,16 @@ def get_data_name(fd):
             nc = int(line[2])
 
             yield name, nc
+
+def parse_vector(line):
+    svec = line.split(':')[1].strip('[] ')
+    vec = nm.fromstring(svec, dtype=nm.float64, sep=' ')
+    return vec
+
+def parse_scalar(line):
+    sval = line.split(':')[1].strip('[] ')
+    val = literal_eval(sval)
+    return val
 
 class Probe(Struct):
     """
