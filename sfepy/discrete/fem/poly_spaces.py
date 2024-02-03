@@ -742,16 +742,16 @@ class LagrangeWedgePolySpace(FEPolySpace):
             if diff:
                 base2d = self.ps[0]._eval_base(coors2, True, ori,
                                                suppress_errors, eps)
-                coors1 = coors[idxs, 2][:, None]
                 base1d = self.ps[1]._eval_base(coors1, True, ori,
                                                suppress_errors, eps)
                 base_r = base2d[:, 0, None, :] * base1[:, 0, :, None]
                 base_s = base2d[:, 1, None, :] * base1[:, 0, :, None]
                 base_t = base2[:, 0, None, :] * base1d[:, 0, :, None]
 
-                base[idxs, 0] = base_r.reshape(-1, self.n_nod)
-                base[idxs, 1] = base_s.reshape(-1, self.n_nod)
-                base[idxs, 2] = base_t.reshape(-1, self.n_nod)
+                base[idxs, 0] = base_r.reshape((-1, self.n_nod))
+                base[idxs, 1] = base_s.reshape((-1, self.n_nod))
+                base[idxs, 2] = base_t.reshape((-1, self.n_nod))
+
             else:
                 base_ = base2[:, 0, None, :] * base1[:, 0, :, None]
                 base[idxs] = base_.reshape(-1, 1, self.n_nod)
