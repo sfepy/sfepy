@@ -315,6 +315,40 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
     else:
         return mesh
 
+def ensure3d(arr):
+    arr = nm.asanyarray(arr)
+    return nm.pad(arr, (arr.ndim - 1) * [(0, 0)] + [(0, 3 - arr.shape[-1])])
+
+def read_probes_as_annotations(filenames):
+    from sfepy.discrete.probes import read_results
+
+    annotations = []
+    for filename in filenames:
+        header, results = read_results(filename)
+        data = header.details
+        if header.probe_class == 'PointsProbe':
+            ann = [('points', ensure3d(data))]
+
+        elif header.probe_class == 'LineProbe':
+            data = ensure3d(data)
+            ann = [('line', data[0], data[1])]
+
+        elif header.probe_class == 'RayProbe':
+            data[:2] = ensure3d(data[:2])
+            ann = [('arrow', data[0], data[1])]
+            if data[2]:
+                ann += [('arrow', data[0], -data[1])]
+
+        elif header.probe_class == 'CircleProbe':
+            data[:2] = ensure3d(data[:2])
+            ann = [('disc', data[0], data[1], data[2])]
+
+        else:
+            raise ValueError(f'unknown probe kind! {header.probe_class}')
+
+        annotations.extend(ann)
+
+    return annotations
 
 def pv_plot(filenames, options, plotter=None, step=None,
             scalar_bar_limits=None, ret_scalar_bar_limits=False,
