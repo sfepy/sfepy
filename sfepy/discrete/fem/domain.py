@@ -45,7 +45,11 @@ class FEDomain(Domain):
 
             gel.poly_space = PolySpace.any_from_args(key, gel, 1)
             gel = gel.surface_facet
-            if gel is not None:
+            if isinstance(gel, dict):
+                for v in gel.values():
+                    key = v.get_interpolation_name()
+                    v.poly_space = PolySpace.any_from_args(key, v, 1)
+            elif gel is not None:
                 key = gel.get_interpolation_name()
                 gel.poly_space = PolySpace.any_from_args(key, gel, 1)
 

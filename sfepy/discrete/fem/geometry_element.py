@@ -190,7 +190,7 @@ geometry_data = {
                    volume = 1.0 / 2.0,
                    orientation = (0, (1, 2, 3), (0, 1, 2), (3, 4, 5)),
                    get_grid = _get_grid_3_6,
-                   surface_facet_name = '2_4'),
+                   surface_facet_name = {4: '2_4', 3: '2_3'}),
 
     '3_8' : Struct(coors = [[0.0, 0.0, 0.0],
                             [1.0, 0.0, 0.0],
@@ -443,4 +443,8 @@ class GeometryElement(Struct):
         Create a GeometryElement instance corresponding to this instance
         surface facet.
         """
-        self.surface_facet = GeometryElement(self.surface_facet_name)
+        if isinstance(self.surface_facet_name, dict):
+            self.surface_facet = {k: GeometryElement(v)
+                                  for k, v in self.surface_facet_name.items()}
+        else:
+            self.surface_facet = GeometryElement(self.surface_facet_name)
