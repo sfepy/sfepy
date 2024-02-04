@@ -151,9 +151,10 @@ class Newton(NonlinearSolver):
             tolerances."""),
         ('macheps', 'float', nm.finfo(nm.float64).eps, False,
          'The float considered to be machine "zero".'),
-        ('lin_red', 'float', 1.0, False,
+        ('lin_red', 'float or None', 1.0, False,
          """The linear system solution error should be smaller than (`eps_a` *
-            `lin_red`), otherwise a warning is printed."""),
+            `lin_red`), otherwise a warning is printed. If None, the check is
+            skipped."""),
         ('lin_precision', 'float or None', None, False,
          """If not None, the linear system solution tolerances are set in each
             nonlinear iteration relative to the current residual norm by the
@@ -254,7 +255,11 @@ class Newton(NonlinearSolver):
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
         eps_a = get_default(ls_eps_a, 1.0)
         eps_r = get_default(ls_eps_r, 1.0)
-        lin_red = conf.eps_a * conf.lin_red
+        if conf.lin_red is not None:
+            lin_red = conf.eps_a * conf.lin_red
+
+        else:
+            lin_red = None
 
         timers = Timers(['residual', 'matrix', 'solve'])
         if conf.check:
@@ -369,7 +374,8 @@ class Newton(NonlinearSolver):
                 elif ls_eps_r is not None:
                     eps_r = max(conf.lin_precision, ls_eps_r)
 
-                lin_red = max(eps_a, err * eps_r)
+                if lin_red is not None:
+                    lin_red = max(eps_a, err * eps_r)
 
             if conf.verbose:
                 output('solving linear system...')
@@ -387,12 +393,13 @@ class Newton(NonlinearSolver):
             for key, val in timers.get_dts().items():
                 output('%10s: %7.2f [s]' % (key, val))
 
-            vec_e = mtx_a * vec_dx - vec_r
-            lerr = nla.norm(vec_e)
-            if lerr > lin_red:
-                output('warning: linear system solution precision is lower')
-                output('then the value set in solver options! (err = %e < %e)'
-                       % (lerr, lin_red))
+            if lin_red is not None:
+                vec_e = mtx_a @ vec_dx - vec_r
+                lerr = nla.norm(vec_e)
+                if lerr > lin_red:
+                    output('warning: linear system solution precision is lower'
+                           ' then the value set in solver options!'
+                           ' (err = %e < %e)' % (lerr, lin_red))
 
             vec_x -= conf.step_red * vec_dx
             it += 1
