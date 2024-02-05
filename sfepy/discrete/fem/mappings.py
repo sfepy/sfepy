@@ -9,6 +9,7 @@ from sfepy.base.mem_usage import raise_if_too_large
 from sfepy.discrete.common.mappings import Mapping, PyCMapping
 from sfepy.discrete import PolySpace
 from sfepy.linalg.utils import invs_fast, dets_fast
+from sfepy.linalg import dot_sequences
 
 
 def tranform_coors_to_lower_dim(coors, to_dim):
@@ -263,17 +264,20 @@ class FEMapping(Mapping):
         """
         bf = self.get_base(qp_coors)
         if isinstance(bf, dict):
-            bf_ = nm.zeros(self.conn.shape, dtype=nm.float64)
+            sh = self.conn.shape
+            nqp = max(v.shape[0] for v in bf.values())
+            bf_ = nm.zeros((sh[0], nqp, 1, sh[1]), dtype=nm.float64)
             ft = nm.count_nonzero(nm.diff(nm.sort(self.conn)), axis=1) + 1
             for k, v in bf.items():
                 idxs = ft == k
                 if nm.any(idxs):
-                    bf_[idxs, :k] = v
-            bf = bf_
+                    bf_[idxs, :v.shape[0], :, :k] = v
 
-        qps = nm.dot(nm.atleast_2d(bf.squeeze()), self.coors[self.conn])
-        # Reorder so that qps are really element by element.
-        qps = nm.ascontiguousarray(nm.swapaxes(qps, 0, 1))
+            qps = dot_sequences(bf_[..., 0, :], self.coors[self.conn])
+        else:
+            qps = nm.dot(nm.atleast_2d(bf.squeeze()), self.coors[self.conn])
+            # Reorder so that qps are really element by element.
+            qps = nm.ascontiguousarray(nm.swapaxes(qps, 0, 1))
 
         return qps
 
