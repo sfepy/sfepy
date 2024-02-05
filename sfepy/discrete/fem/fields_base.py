@@ -629,7 +629,10 @@ class FEField(Field):
 
             if (key[0] == 's') and not self.is_surface:
                 dim = self.gel.dim - 1
-                n_fp = int(key[1:])
+                if isinstance(self.gel.surface_facet, dict):
+                    n_fp = int(key[1:])
+                else:
+                    n_fp = self.gel.surface_facet.n_vertex
                 geometry = '%d_%d' % (dim, n_fp)
 
             else:
