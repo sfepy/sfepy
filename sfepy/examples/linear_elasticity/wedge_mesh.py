@@ -11,7 +11,7 @@ Running the simulation::
 
 Viewing the results::
 
-    sfepy-view beam_* -f u:s0:wu:e:p0 u:s1:wu:e:p0 --camera-position="1.2,-0.6,0.1,0.4,0.1,-0.1,-0.2,0.1,1"
+    sfepy-view beam_h7.vtk beam_t42.vtk beam_w14.vtk -f u:s0:wu:e:p0 u:s1:wu:e:p0 u:s2:wu:e:p0 --camera-position="1.2,-0.6,0.1,0.4,0.1,-0.1,-0.2,0.1,1"
 """
 from __future__ import absolute_import
 import os.path as osp
