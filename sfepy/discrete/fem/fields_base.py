@@ -1302,8 +1302,9 @@ class FEField(Field):
                     for ikey, bkey in enumerate(bkeys):
                         idx = efc_map == bkey
                         qp0 = self.qp_coors[(integral.order, f'b{bkey}')]
-                        qp.vals[idx] = qp0.vals[idx]
-                        qp.weights[idx] = qp0.weights
+                        nqp0 = qp0.vals.shape[1]
+                        qp.vals[idx, :nqp0, :] = qp0.vals[idx]
+                        qp.weights[idx, :nqp0] = qp0.weights
                         if qp0.weights.shape[0] < qp.weights.shape[1]:
                             qp.weights[idx, qp0.weights.shape[0]:] = 0
 
