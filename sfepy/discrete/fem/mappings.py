@@ -306,8 +306,8 @@ class FEMapping(Mapping):
             Is it the boundary of a region?
         fc_bf_map: tuple
             The additional info to remap face derivatives of wedge elements:
-            - fc_bf_map[0]: id of face group (triangle or quid)
-            - fc_bf_map[1]: position of inplane deravatives (xy-axes)
+            - fc_bf_map[0]: id of face group (triangle or quad)
+            - fc_bf_map[1]: position of inplane derivatives (xy-axes)
         extra: tuple
             The extra data for surface derivatives:
             - the derivatives of the field boundary basis functions with
