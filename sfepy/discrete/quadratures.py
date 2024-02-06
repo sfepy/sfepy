@@ -55,7 +55,6 @@ import numpy as nm
 
 from sfepy.base.base import output, assert_, Struct
 from sfepy.discrete.simplex_cubature import get_simplex_cubature
-import six
 
 simplex_geometries = ['1_2', '2_3', '3_4']
 tp_geometries = ['2_4', '3_8', '3_6']
@@ -855,7 +854,7 @@ del _QP
 
 def _get_max_orders():
     max_orders = {}
-    for key, table in six.iteritems(quadrature_tables):
+    for key, table in quadrature_tables.items():
         orders = list(table.keys())
         max_orders[key] = max(orders)
 
