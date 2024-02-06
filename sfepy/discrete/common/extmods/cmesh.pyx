@@ -120,7 +120,7 @@ cdef class CMesh:
                 self.cell_types[ict:ict+n_el] = self.key_to_index[descs[ig]]
 
             else:
-                self.cell_types[ict:ict+n_el] = 5 # Higher order mesh.
+                self.cell_types[ict:ict+n_el] = 6 # Higher order mesh.
 
             ict += n_el
 
@@ -148,6 +148,7 @@ cdef class CMesh:
             '2_4' : 2,
             '3_4' : 3,
             '3_8' : 4,
+            '3_6' : 5,
         }
 
     def __dealloc__(self):

@@ -77,12 +77,13 @@ typedef struct MeshTopology {
   MeshConnectivity *conn[16];
 } MeshTopology;
 
-#define MAX_EL_TYPES 5
+#define MAX_EL_TYPES 6
 #define Bar 0
 #define Triangle 1
 #define Quadrilateral 2
 #define Tetrahedron 3
 #define Hexahedron 4
+#define Wedge 5
 
 // Facets for various reference element types.
 typedef struct LocalEntities {

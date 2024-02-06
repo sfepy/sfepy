@@ -9,6 +9,7 @@ from sfepy.base.mem_usage import raise_if_too_large
 from sfepy.discrete.common.mappings import Mapping, PyCMapping
 from sfepy.discrete import PolySpace
 from sfepy.linalg.utils import invs_fast, dets_fast
+from sfepy.linalg import dot_sequences
 
 
 def tranform_coors_to_lower_dim(coors, to_dim):
@@ -101,7 +102,11 @@ def eval_mapping_data_in_qp(coors, conn, bf_g, weights,
     """
     if ecoors is None:
         ecoors = coors[conn, :]
-    mtxRM = nm.einsum('qij,cjk->cqik', bf_g, ecoors, optimize=True)
+
+    if bf_g.ndim == 4:
+        mtxRM = nm.einsum('cqij,cjk->cqik', bf_g, ecoors, optimize=True)
+    else:
+        mtxRM = nm.einsum('qij,cjk->cqik', bf_g, ecoors, optimize=True)
 
     n_el, n_qp = mtxRM.shape[:2]
 
@@ -116,7 +121,7 @@ def eval_mapping_data_in_qp(coors, conn, bf_g, weights,
         elif dim == 2:
             c1, c2 = mtxRM[..., 0], mtxRM[..., 1]
             det0 = nm.sqrt(c1**2 + c2**2).reshape(n_el, n_qp, 1, 1)
-            det = det0 * weights[:, None, None]
+            det = det0 * weights[..., None, None]
             det0[nm.abs(det0) < eps] = 1.0
             normal[..., 0, :] = c2
             normal[..., 1, :] = -c1
@@ -128,7 +133,7 @@ def eval_mapping_data_in_qp(coors, conn, bf_g, weights,
             c2 = (j012[0] * j345[2] - j345[0] * j012[2]).T
             c3 = (j012[0] * j345[1] - j345[0] * j012[1]).T
             det0 = nm.sqrt(c1**2 + c2**2 + c3**2).reshape(n_el, n_qp, 1, 1)
-            det = det0 * weights[:, None, None]
+            det = det0 * weights[..., None, None]
             det0[nm.abs(det0) < eps] = 1.0
             normal[..., 0, 0] = c1
             normal[..., 1, 0] = -c2
@@ -158,7 +163,7 @@ def eval_mapping_data_in_qp(coors, conn, bf_g, weights,
     else:
         bfg = None
 
-    volume = nm.sum(det, axis=1).reshape(n_el, 1, 1, 1)
+    volume = nm.sum(det, axis=1).reshape((n_el, 1, 1, 1))
 
     return det, volume, bfg, normal
 
@@ -184,7 +189,13 @@ class FEMapping(Mapping):
         self.n_el, self.n_ep = conn.shape
         self.dim = self.coors.shape[1]
 
-        if poly_space is None:
+        if isinstance(gel, dict):
+            poly_space = {}
+            for k, v in gel.items():
+                poly_space[k] = PolySpace.any_from_args(None, v, order,
+                                                        base='lagrange',
+                                                        force_bubble=False)
+        elif poly_space is None:
             poly_space = PolySpace.any_from_args(None, gel, order,
                                                  base='lagrange',
                                                  force_bubble=False)
@@ -196,17 +207,41 @@ class FEMapping(Mapping):
         """
         Return reference element geometry as a GeometryElement instance.
         """
-        return self.poly_space.geometry
+        if isinstance(self.poly_space, dict):
+            return {k: v.geometry for k, v in self.poly_space.items()}
+        else:
+            return self.poly_space.geometry
 
-    def get_base(self, coors, diff=False):
+    def get_base(self, coors, diff=False, grad_axes=None):
         """
         Get basis functions or their gradient evaluated in given
         coordinates.
         """
-        bf = self.poly_space.eval_base(coors, diff=diff)
-        if self.indices is not None:
+        if isinstance(self.poly_space, dict):
+            bf = {k: v.eval_base(coors[k], diff=diff)
+                  for k, v in self.poly_space.items()}
+        else:
+            bf = self.poly_space.eval_base(coors, diff=diff)
+
+        indices = self.indices
+        if indices is not None:
             ii = max(self.dim - 1, 1)
-            bf = nm.ascontiguousarray(bf[..., :ii:, self.indices])
+            if isinstance(indices, dict):
+                # Treat elements with different facet types, e.g. wedges
+                n = max(len(v) for v in indices.values())
+                bf_ = nm.zeros((len(indices), bf[0].shape[0], ii, n),
+                               dtype=nm.float64)
+                if diff and grad_axes is not None:
+                    for k, v in indices.items():
+                        bf_[k, ..., :v.shape[0]] =\
+                            bf[k][..., grad_axes[k], :][..., v]
+                else:
+                    for k, v in indices.items():
+                        bf_[k, ..., :v.shape[0]] = bf[k][..., :ii:, v]
+
+                bf = bf_
+            else:
+                bf = nm.ascontiguousarray(bf[..., :ii:, indices])
 
         return bf
 
@@ -228,14 +263,26 @@ class FEMapping(Mapping):
             i.e. with shape (n_el, n_qp, dim).
         """
         bf = self.get_base(qp_coors)
-        qps = nm.dot(nm.atleast_2d(bf.squeeze()), self.coors[self.conn])
-        # Reorder so that qps are really element by element.
-        qps = nm.ascontiguousarray(nm.swapaxes(qps, 0, 1))
+        if isinstance(bf, dict):
+            sh = self.conn.shape
+            nqp = max(v.shape[0] for v in bf.values())
+            bf_ = nm.zeros((sh[0], nqp, 1, sh[1]), dtype=nm.float64)
+            ft = nm.count_nonzero(nm.diff(nm.sort(self.conn)), axis=1) + 1
+            for k, v in bf.items():
+                idxs = ft == k
+                if nm.any(idxs):
+                    bf_[idxs, :v.shape[0], :, :k] = v
+
+            qps = dot_sequences(bf_[..., 0, :], self.coors[self.conn])
+        else:
+            qps = nm.dot(nm.atleast_2d(bf.squeeze()), self.coors[self.conn])
+            # Reorder so that qps are really element by element.
+            qps = nm.ascontiguousarray(nm.swapaxes(qps, 0, 1))
 
         return qps
 
     def get_mapping(self, qp_coors, weights, bf=None, poly_space=None,
-                    ori=None, transform=None, is_face=False,
+                    ori=None, transform=None, is_face=False, fc_bf_map=None,
                     extra=(None, None, None)):
         """
         Get the mapping for given quadrature points, weights, and
@@ -257,6 +304,10 @@ class FEMapping(Mapping):
             The transformation matrix applied to the basis functions.
         is_face: bool
             Is it the boundary of a region?
+        fc_bf_map: tuple
+            The additional info to remap face derivatives of wedge elements:
+            - fc_bf_map[0]: id of face group (triangle or quad)
+            - fc_bf_map[1]: position of inplane derivatives (xy-axes)
         extra: tuple
             The extra data for surface derivatives:
             - the derivatives of the field boundary basis functions with
@@ -272,7 +323,12 @@ class FEMapping(Mapping):
         """
         poly_space = get_default(poly_space, self.poly_space)
 
-        bf_g = self.get_base(qp_coors, diff=True)
+        if fc_bf_map is not None:
+            bf_g = self.get_base(qp_coors, diff=True, grad_axes=fc_bf_map[1])
+            bf_g = nm.ascontiguousarray(bf_g[fc_bf_map[0]])
+        else:
+            bf_g = self.get_base(qp_coors, diff=True)
+
         if nm.allclose(bf_g, 0.0) and self.dim > 1:
             raise ValueError('zero basis function gradient!')
 

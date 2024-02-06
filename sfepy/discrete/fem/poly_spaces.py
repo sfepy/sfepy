@@ -678,6 +678,86 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
     def get_mtx_i(self):
         return self.ps1d.mtx_i
 
+
+class LagrangeWedgePolySpace(FEPolySpace):
+    """
+    """
+    name = 'lagrange_wedge'
+
+    def __init__(self, name, geometry, order, init_context=True):
+        from sfepy.discrete.fem.geometry_element import GeometryElement
+
+        PolySpace.__init__(self, name, geometry, order)
+
+        geom_1_2 = GeometryElement('1_2')
+        geom_2_3 = GeometryElement('2_3')
+
+        ps1 = LagrangeTensorProductPolySpace(f'{name}_1', geom_1_2, order,
+                                            #  init_context=False)
+                                             init_context=init_context)
+        ps2 = LagrangeSimplexPolySpace(f'{name}_2', geom_2_3, order,
+                                       init_context=init_context)
+                                    #    init_context=False)
+
+        geom_3_8 = GeometryElement('3_8')
+        ps0 = LagrangeTensorProductPolySpace(f'{name}_0', geom_3_8, order,
+                                             init_context=False)
+        geom_3_4 = GeometryElement('3_4')
+        ps0b = LagrangeSimplexPolySpace(f'{name}_0b', geom_3_4, order,
+                                        init_context=False)
+
+        n_nod = ps2.n_nod * ps1.n_nod
+        nd2 = ps2.nodes.shape[1]
+        nd = nd2 + ps1.nodes.shape[1]
+        self.nodes = nm.empty((n_nod, nd), nm.int32)
+        self.nodes[:, :nd2] = nm.tile(ps2.nodes, (ps1.n_nod, 1))
+        self.nodes[:, nd2:] = nm.repeat(ps1.nodes, ps2.n_nod, axis=0)
+        self.nts = nm.vstack([ps2.nts, ps1.nts])
+        self.nts[ps2.n_nod:, 1] += ps2.n_nod
+
+        self.node_coors = nm.empty((n_nod, 3), nm.int32)
+        self.node_coors[:, :2] = nm.tile(ps2.node_coors, (ps1.n_nod, 1))
+        self.node_coors[:, 2] = nm.repeat(ps1.node_coors, ps2.n_nod,
+                                          axis=0)[:, 0]
+
+        self.ps = [ps2, ps1]
+        self.n_nod = n_nod
+        self.eval_ctx = None
+
+    def _eval_base(self, coors, diff=False, ori=None,
+                   suppress_errors=False, eps=1e-15):
+
+        nd = self.geometry.dim if diff else 1
+        base = nm.empty((coors.shape[0], nd, self.n_nod), nm.float64)
+
+        for qp1 in nm.unique(coors[:, 2]):
+            idxs = coors[:, 2] == qp1
+            coors2 = coors[idxs, :2]
+            base2 = self.ps[0]._eval_base(coors2, False, ori,
+                                          suppress_errors, eps)
+            coors1 = coors[idxs, 2][:, None]
+            base1 = self.ps[1]._eval_base(coors1, False, ori,
+                                          suppress_errors, eps)
+
+            if diff:
+                base2d = self.ps[0]._eval_base(coors2, True, ori,
+                                               suppress_errors, eps)
+                base1d = self.ps[1]._eval_base(coors1, True, ori,
+                                               suppress_errors, eps)
+                base_r = base2d[:, 0, None, :] * base1[:, 0, :, None]
+                base_s = base2d[:, 1, None, :] * base1[:, 0, :, None]
+                base_t = base2[:, 0, None, :] * base1d[:, 0, :, None]
+
+                base[idxs, 0] = base_r.reshape((-1, self.n_nod))
+                base[idxs, 1] = base_s.reshape((-1, self.n_nod))
+                base[idxs, 2] = base_t.reshape((-1, self.n_nod))
+
+            else:
+                base_ = base2[:, 0, None, :] * base1[:, 0, :, None]
+                base[idxs] = base_.reshape(-1, 1, self.n_nod)
+
+        return base
+
 class SerendipityTensorProductPolySpace(FEPolySpace):
     """
     Serendipity polynomial space using Lagrange functions.

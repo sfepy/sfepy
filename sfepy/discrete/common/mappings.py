@@ -142,7 +142,13 @@ def get_physical_qps(region, integral, map_kind=None):
     gmap = Mapping.from_args(region, map_kind)
 
     gel = gmap.get_geometry()
-    qp_coors, _ = integral.get_qp(gel.name)
+    if isinstance(gel, dict):
+        qp_coors = {}
+        for k, v in gel.items():
+            qp, _ = integral.get_qp(v.name)
+            qp_coors[k] = qp
+    else:
+        qp_coors, _ = integral.get_qp(gel.name)
 
     qps = gmap.get_physical_qps(qp_coors)
     n_el, n_qp = qps.shape[0], qps.shape[1]

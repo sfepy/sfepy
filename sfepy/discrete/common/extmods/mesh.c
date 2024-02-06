@@ -1046,7 +1046,20 @@ int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
           gtr_dot_v3(ptr, v2, ndir, 3);
           ptr[0] /= 6.0;
         }
+      } else if (entity_vertices->num == 6) { // Wedge cells
+          for (id = 0; id < nc; id++) {
+            vv0 = VS(0, id);
+            vv1 = VS(1, id);
+            vv2 = VS(2, id);
+            vv3 = VS(3, id);
 
+            v0[id] = vv1 - vv0;
+            v1[id] = vv2 - vv0;
+            v2[id] = vv3 - vv2;
+          }
+          gtr_cross_product(ndir, v0, v1);
+          gtr_dot_v3(ptr, v2, ndir, 3);
+          ptr[0] /= 2.0;
       } else { // Hexahedral cells with trilinear interpolation.
         // See https://math.stackexchange.com/questions/1628540/what-is-the-enclosed-volume-of-an-irregular-cube-given-the-x-y-z-coordinates-of
         // Uses 0 1 3 2 4 5 7 6 ordering w.r.t. sfepy.

@@ -46,6 +46,7 @@ class PolySpace(Struct):
         (1, 2) : 'simplex',
         (2, 3) : 'simplex',
         (3, 4) : 'simplex',
+        (3, 6) : 'wedge',
         (2, 4) : 'tensor_product',
         (3, 8) : 'tensor_product',
     }

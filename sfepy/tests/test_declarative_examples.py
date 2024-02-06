@@ -49,6 +49,7 @@ examples = [
     'linear_elasticity/seismic_load.py',
     'linear_elasticity/shell10x_cantilever.py',
     'linear_elasticity/two_bodies_contact.py',
+    'linear_elasticity/wedge_mesh.py',
     'multi_physics/biot.py',
     'multi_physics/biot_npbc.py',
     'multi_physics/biot_npbc_lagrange.py',

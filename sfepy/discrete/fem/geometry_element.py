@@ -71,6 +71,21 @@ def _get_grid_3_4(n_nod):
 
     return coors
 
+def _get_grid_3_6(n_nod):
+    coefs = [1, 1, 0, -2 * n_nod]
+    nd1 = int(nm.round(nm.roots(coefs)[-1].real))
+
+    n12 = nd1 * (nd1 + 1) // 2
+    coors12 = _get_grid_2_3(n12)
+    coors3 = _get_grid_1_2(nd1)
+
+    coors = nm.empty((n12 * nd1, 3), dtype=nm.float64)
+
+    coors[:, :2] = nm.tile(coors12, (nd1, 1))
+    coors[:, 2] = nm.repeat(coors3, n12)
+
+    return coors
+
 def _get_grid_3_8(n_nod):
     n1d = int(nm.round(n_nod**(1.0 / 3.0)))
     assert_((n1d**3) == n_nod)
@@ -150,6 +165,32 @@ geometry_data = {
                    orientation = (0, (1, 2, 3), 0, 3),
                    get_grid = _get_grid_3_4,
                    surface_facet_name = '2_3'),
+
+    '3_6' : Struct(coors = [[0.0, 0.0, 0.0],
+                            [1.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0],
+                            [0.0, 0.0, 1.0],
+                            [1.0, 0.0, 1.0],
+                            [0.0, 1.0, 1.0]],
+                   conn = [0, 1, 2, 3, 4, 5],
+                   faces = [[0, 2, 1, 1],
+                            [0, 3, 5, 2],
+                            [0, 1, 4, 3],
+                            [1, 2, 5, 4],
+                            [3, 4, 5, 5]],
+                   edges = [[0, 1],
+                            [1, 2],
+                            [2, 0],
+                            [0, 3],
+                            [1, 4],
+                            [2, 5],
+                            [3, 4],
+                            [4, 5],
+                            [5, 3]],
+                   volume = 1.0 / 2.0,
+                   orientation = (0, (1, 2, 3), (0, 1, 2), (3, 4, 5)),
+                   get_grid = _get_grid_3_6,
+                   surface_facet_name = {4: '2_4', 3: '2_3'}),
 
     '3_8' : Struct(coors = [[0.0, 0.0, 0.0],
                             [1.0, 0.0, 0.0],
@@ -402,4 +443,8 @@ class GeometryElement(Struct):
         Create a GeometryElement instance corresponding to this instance
         surface facet.
         """
-        self.surface_facet = GeometryElement(self.surface_facet_name)
+        if isinstance(self.surface_facet_name, dict):
+            self.surface_facet = {k: GeometryElement(v)
+                                  for k, v in self.surface_facet_name.items()}
+        else:
+            self.surface_facet = GeometryElement(self.surface_facet_name)
