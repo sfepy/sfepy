@@ -126,7 +126,7 @@ def define():
     }
 
     integrals = {
-        'i': 1,
+        'i': 2,
     }
 
     variables = {
