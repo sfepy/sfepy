@@ -133,6 +133,9 @@ def test_quadratures():
         elif geometry == '3_4':
             iter_qp = range(1, 12)
 
+        elif geometry == '3_6':
+            iter_qp = range(4, 9)
+
         else:
             iter_qp = sorted(qps.keys())
 

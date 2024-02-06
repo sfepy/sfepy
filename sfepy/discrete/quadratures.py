@@ -57,7 +57,7 @@ from sfepy.base.base import output, assert_, Struct
 from sfepy.discrete.simplex_cubature import get_simplex_cubature
 
 simplex_geometries = ['1_2', '2_3', '3_4']
-tp_geometries = ['2_4', '3_8', '3_6']
+tp_geometries = ['2_4', '3_8']
 
 _msg1 = 'WARNING: quadrature order %s is not available for geometry %s!'
 _msg2 = 'WARNING: using %d instead!'
@@ -789,7 +789,7 @@ quadrature_tables = {
     },
 
     '3_6': {
-        3: _QP([[1.0/3.0, 1.0/3.0, 0.0, 0.5]],
+        3: _QP([[1.0/3.0, 1.0/3.0, 0.5, 0.5]],
                tp_fix=1/2),
         6: _QP([[1.0/6.0, 1.0/6.0, 0.2113248654051871, 1.0/12.0],
                 [2.0/3.0, 1.0/6.0, 0.2113248654051871, 1.0/12.0],
