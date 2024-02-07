@@ -22,7 +22,7 @@ def standard_ts_call(call):
 
     def _standard_ts_call(self, vec0=None, nls=None,
                          init_fun=None, prestep_fun=None, poststep_fun=None,
-                         status=None, **kwargs):
+                         status=None, log_nls_status=False, **kwargs):
         timer = Timer(start=True)
 
         nls = get_default(nls, self.nls,
@@ -36,7 +36,7 @@ def standard_ts_call(call):
         if status is not None:
             nls_status = status.get('nls_status')
             if nls_status is not None:
-                if self.nls.conf.log_status:
+                if log_nls_status:
                     pb = self.context
                     filename_log = osp.join(pb.output_dir,
                                             pb.ofn_trunk + '_log.txt')
