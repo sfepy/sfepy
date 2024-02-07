@@ -39,7 +39,7 @@ def standard_ts_call(call):
                 if log_nls_status:
                     pb = self.context
                     filename_log = osp.join(pb.output_dir,
-                                            pb.ofn_trunk + '_log.txt')
+                                            pb.ofn_trunk + '_log.csv')
                     status.log_file = open(filename_log, 'wt',
                                            encoding="utf-8")
 
