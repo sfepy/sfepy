@@ -21,6 +21,8 @@ options = {
     'mesh_update_variables': ['u'],
     'output_dir': 'output',
     'post_process_hook': 'stress_strain',
+    'report_nls_status': True,
+    'log_nls_status': True,
 }
 
 fields = {
