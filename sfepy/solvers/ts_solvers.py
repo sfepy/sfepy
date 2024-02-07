@@ -3,6 +3,7 @@ Time stepping solvers.
 """
 from inspect import signature
 from functools import partial
+import os.path as osp
 import numpy as nm
 
 from sfepy.base.base import (get_default, output, assert_, Struct)
@@ -21,7 +22,7 @@ def standard_ts_call(call):
 
     def _standard_ts_call(self, vec0=None, nls=None,
                          init_fun=None, prestep_fun=None, poststep_fun=None,
-                         status=None, **kwargs):
+                         status=None, log_nls_status=False, **kwargs):
         timer = Timer(start=True)
 
         nls = get_default(nls, self.nls,
@@ -35,12 +36,19 @@ def standard_ts_call(call):
         if status is not None:
             nls_status = status.get('nls_status')
             if nls_status is not None:
+                if log_nls_status:
+                    pb = self.context
+                    filename_log = osp.join(pb.output_dir,
+                                            pb.ofn_trunk + '_log.csv')
+                    status.log_file = open(filename_log, 'wt',
+                                           encoding="utf-8")
 
                 class _TimingNLS(type(nls)):
                     def __call__(self, *args, **kwargs):
                         # Call the original nls...
                         out = super().__call__(*args, **kwargs)
 
+                        log_stats = {}
                         # ...and collect its time stats.
                         time_stats = nls_status.get('time_stats')
                         if time_stats is not None:
@@ -49,8 +57,32 @@ def standard_ts_call(call):
                                 all_stats.setdefault(key, 0.0)
                                 all_stats[key] += val
 
+                            log_stats.update(time_stats)
+
                             all_stats.setdefault('time', 0.0)
                             all_stats['time'] += nls_status.get('time', 0.0)
+
+                        # ...and collect its step stats.
+                        all_stats = status.setdefault('step_stats', [])
+                        _nls_status = nls_status.copy()
+                        _nls_status.step = self.context.ts.step
+                        _nls_status.step_time = self.context.ts.time
+                        all_stats.append(_nls_status)
+                        log_stats.update(_nls_status.to_dict())
+
+                        if getattr(status, 'log_file', None) is not None:
+                            if 'time_stats' in log_stats:
+                                del log_stats['time_stats']
+
+                            keys = list(log_stats.keys())
+                            keys.sort()
+
+                            if status.log_file.tell() == 0:
+                                status.log_file.write(','.join(keys) + '\n')
+
+                            log_vals = [f'{log_stats[key]}' for key in keys]
+                            status.log_file.write(','.join(log_vals) + '\n')
+                            status.log_file.flush()
 
                         return out
 
@@ -65,6 +97,8 @@ def standard_ts_call(call):
         if status is not None:
             status['time'] = elapsed
             status['n_step'] = self.ts.n_step
+            if getattr(status, 'log_file', None) is not None:
+                status.log_file.close()
 
         return result
 

@@ -230,6 +230,8 @@ class Oseen(NonlinearSolver):
 
         err0 = -1.0
         it = 0
+        ls_n_iter = 0
+        ls_status = {}
         while 1:
             vec_x_prev_f = make_full_vec(vec_x_prev)
             variables[ns['b']].set_data(vec_x_prev_f, variables[ns['u']].indx)
@@ -301,8 +303,9 @@ class Oseen(NonlinearSolver):
                 raise RuntimeError('giving up...')
 
             timer.start()
-            vec_dx = lin_solver(vec_r, x0=vec_x, mtx=mtx_a)
+            vec_dx = lin_solver(vec_r, x0=vec_x, mtx=mtx_a, status=ls_status)
             time_stats['solve'] = timer.stop()
+            ls_n_iter += ls_status['n_iter']
 
             vec_e = mtx_a * vec_dx - vec_r
             lerr = nla.norm(vec_e)
@@ -367,6 +370,9 @@ class Oseen(NonlinearSolver):
             status['err'] = err
             status['err_ns'] = err_ns
             status['condition'] = condition
+            status['n_iter'] = it
+            status['ls_n_iter'] = -1
+            status['time'] = sum(v for v in time_stats.values())
 
         if conf.log.plot is not None:
             if self.log is not None:

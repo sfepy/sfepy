@@ -1429,7 +1429,9 @@ class Problem(Struct):
               var_data=None, update_bcs=True, update_materials=True,
               save_results=True,
               step_hook=None, post_process_hook=None,
-              post_process_hook_final=None, verbose=True):
+              post_process_hook_final=None,
+              report_nls_status=False, log_nls_status=False,
+              verbose=True):
         """
         Solve the problem equations by calling the top-level solver.
 
@@ -1472,6 +1474,10 @@ class Problem(Struct):
         post_process_hook_final : callable, optional
             The optional user-defined function that is called after the
             top-level solver returns.
+        report_nls_status: bool, optional
+            If True, print summary non-linear solver info.
+        log_nls_status: bool, optional
+            If True, log non-linear solver info into a CSV file.
 
         Returns
         -------
@@ -1488,11 +1494,18 @@ class Problem(Struct):
 
         self.equations.set_data(var_data, ignore_unknown=True)
 
+        report_nls_status = getattr(
+            self.conf.options, 'report_nls_status', report_nls_status)
+        log_nls_status = getattr(
+            self.conf.options, 'log_nls_status', log_nls_status)
+
         if self.conf.options.get('block_solve', False):
             variables = self.block_solve(state0, status=status,
                                          save_results=save_results,
                                          step_hook=step_hook,
                                          post_process_hook=post_process_hook,
+                                         report_nls_status=report_nls_status,
+                                         log_nls_status=log_nls_status,
                                          verbose=verbose)
 
         else:
@@ -1520,12 +1533,41 @@ class Problem(Struct):
                       init_fun=init_fun,
                       prestep_fun=prestep_fun,
                       poststep_fun=poststep_fun,
-                      status=status)
+                      status=status,
+                      log_nls_status=log_nls_status)
 
             time_stats = status.get('time_stats')
             if time_stats is not None:
+                output('====== time stats ======')
                 for key in time_stats.keys():
                     output('%12s: %.8f [s]' % ('nls ' + key, time_stats[key]))
+
+            if report_nls_status:
+                step_stats = status.get('step_stats')
+                if step_stats is not None:
+                    output('====== step stats ======')
+                    output.prefix, aux = '', output.prefix
+                    # output('  step, time,      cond,  nit, ls_nit,      err0,'
+                    output('  step,         time, cond,  nit, ls_nit,      err0,'
+                           '       err, elapsed [s]')  # 78 chars long
+                    if len(step_stats) > 1 and step_stats[0].get("step") > 0:
+                        s0 = IndexedStruct(step=0, step_time=0.0, condition=0,
+                                           n_iter=0, ls_n_iter=0,
+                                           err=0, err0=0, time=0)
+                        step_stats = [s0] + step_stats
+
+                    for step in step_stats:
+                        msg = f'{step.get("step") + 1:6}, '
+                        msg += f'{step.get("step_time"):.6e}, '
+                        msg += f'{step.get("condition"):4}, '
+                        msg += f'{step.get("n_iter"):4}, '
+                        msg += f'{step.get("ls_n_iter"):6}, '
+                        msg += f'{step.get("err0"):.3e}, '
+                        msg += f'{step.get("err"):.3e}, '
+                        msg += f'{step.get("time"):.4f}'
+
+                        output(msg)
+                    output.prefix, aux = aux, output.prefix
 
             output('solved in %d steps in %.2f seconds'
                    % (status['n_step'], status['time']), verbose=verbose)
@@ -1539,6 +1581,7 @@ class Problem(Struct):
 
     def block_solve(self, state0=None, status=None, save_results=True,
                     step_hook=None, post_process_hook=None,
+                    report_nls_status=False, log_nls_status=False,
                     verbose=True):
         """
         Call :func:`Problem.solve()` sequentially for the individual matrix
@@ -1592,6 +1635,8 @@ class Problem(Struct):
             subvars = subpb.solve(state0=subvars0(), status=status,
                                   save_results=False, step_hook=step_hook,
                                   post_process_hook=post_process_hook,
+                                  report_nls_status=report_nls_status,
+                                  log_nls_status=log_nls_status,
                                   verbose=verbose)
 
             variables.set_state_parts(subvars.get_state_parts())
