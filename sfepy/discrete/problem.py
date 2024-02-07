@@ -1448,7 +1448,9 @@ class Problem(Struct):
         status : dict-like, optional
             The user-supplied object to hold the solver convergence statistics.
         force_values : dict of floats or float, optional
-            If given, the supreport_nls_statusonal
+            If given, the supplied values override the values of the essential
+            boundary conditions.
+        var_data : dict, optional
             A dictionary of {variable_name : data vector} used to initialize
             parameter variables.
         update_bcs : bool, optional
