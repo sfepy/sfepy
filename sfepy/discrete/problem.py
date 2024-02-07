@@ -1429,8 +1429,9 @@ class Problem(Struct):
               var_data=None, update_bcs=True, update_materials=True,
               save_results=True,
               step_hook=None, post_process_hook=None,
-              post_process_hook_final=None, verbose=True,
-              report_nls_status=False, log_nls_status=False):
+              post_process_hook_final=None,
+              report_nls_status=False, log_nls_status=False,
+              verbose=True):
         """
         Solve the problem equations by calling the top-level solver.
 
@@ -1503,9 +1504,9 @@ class Problem(Struct):
                                          save_results=save_results,
                                          step_hook=step_hook,
                                          post_process_hook=post_process_hook,
-                                         verbose=verbose,
                                          report_nls_status=report_nls_status,
-                                         log_nls_status=log_nls_status)
+                                         log_nls_status=log_nls_status,
+                                         verbose=verbose)
 
         else:
             if state0 is not None:
@@ -1580,8 +1581,8 @@ class Problem(Struct):
 
     def block_solve(self, state0=None, status=None, save_results=True,
                     step_hook=None, post_process_hook=None,
-                    verbose=True,
-                    report_nls_status=False, log_nls_status=False):
+                    report_nls_status=False, log_nls_status=False,
+                    verbose=True):
         """
         Call :func:`Problem.solve()` sequentially for the individual matrix
         blocks of a block-triangular matrix. It is called by
@@ -1634,9 +1635,9 @@ class Problem(Struct):
             subvars = subpb.solve(state0=subvars0(), status=status,
                                   save_results=False, step_hook=step_hook,
                                   post_process_hook=post_process_hook,
-                                  verbose=verbose,
                                   report_nls_status=report_nls_status,
-                                  log_nls_status=log_nls_status)
+                                  log_nls_status=log_nls_status,
+                                  verbose=verbose)
 
             variables.set_state_parts(subvars.get_state_parts())
 
