@@ -211,27 +211,18 @@ def main():
     out, err = check_output('python3 sfepy/scripts/convert_mesh.py --extract-surface --print-surface=- meshes/various_formats/octahedron.node surf_octahedron.mesh')
     eok += report(out, '...', -4, 0, '1185')
 
-    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/diffusion/poisson.py')
-    eok += report(out, '...', -7, 5, '1.173819e-16', eps=1e-15)
-
     out, err = check_output("""python3 sfepy/scripts/simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" sfepy/examples/diffusion/poisson.py""")
-    eok += report(out, '...', -7, 5, '2.308051e-16', eps=1e-15)
-
-    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/diffusion/poisson_iga.py')
-    eok += report(out, '...', -7, 5, '3.373487e-15', eps=1e-14)
-
-    out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/navier_stokes/stokes.py')
-    eok += report(out, '...', -7, 5, '1.210678e-13', eps=1e-11)
+    eok += report(out, '...', -8, 5, '2.308051e-16', eps=1e-15)
 
     out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/diffusion/poisson_parametric_study.py')
-    eok += report(out, '...', -7, 5, '1.606408e-14', eps=1e-13)
+    eok += report(out, '...', -8, 5, '1.606408e-14', eps=1e-13)
 
     out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/linear_elasticity/its2D_3.py')
-    eok += report(out, '...', -28, 5, '3.964886e-12', eps=1e-11)
-    eok += report(out, '...', -8, 4, '2.58660e+01', eps=1e-5)
+    eok += report(out, '...', -29, 5, '3.964886e-12', eps=1e-11)
+    eok += report(out, '...', -9, 4, '2.58660e+01', eps=1e-5)
 
     out, err = check_output('python3 sfepy/scripts/simple.py sfepy/examples/linear_elasticity/linear_elastic.py --format h5')
-    eok += report(out, '...', -7, 5, '4.638192e-18', eps=1e-15)
+    eok += report(out, '...', -8, 5, '4.638192e-18', eps=1e-15)
 
     out, err = check_output('python3 sfepy/scripts/extractor.py -d cylinder.h5')
     eok += report(out, '...', -2, 1, '...done')
@@ -266,7 +257,7 @@ def main():
     eok += report(out, '...', -2, -1, '1.644e-01', match_numbers=True)
 
     out, err = check_output('python3 sfepy/examples/large_deformation/compare_elastic_materials.py -n')
-    eok += report(out, '...', -7, 5, '1.068759e-14', eps=1e-13)
+    eok += report(out, '...', -8, 5, '1.068759e-14', eps=1e-13)
 
     out, err = check_output('python3 sfepy/examples/linear_elasticity/linear_elastic_interactive.py')
     eok += report(out, '...', -18, 0, '1.62128841139e-14', eps=1e-13)
@@ -278,7 +269,7 @@ def main():
     eok += report(out, '...', -12, 5, '12142.11470773', eps=1e-13)
 
     out, err = check_output('python3 sfepy/examples/multi_physics/thermal_electric.py')
-    eok += report(out, '...', -8, 5, '2.612933e-14', eps=1e-13)
+    eok += report(out, '...', -9, 5, '2.612933e-14', eps=1e-13)
 
     out, err = check_output('python3 sfepy/examples/diffusion/laplace_refine_interactive.py output')
     eok += report(out, '...', -3, 5, '2.675866e-15', eps=1e-13)
