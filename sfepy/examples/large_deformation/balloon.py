@@ -86,7 +86,7 @@ The agreement should be very good, even though the mesh is coarse.
 
 View the results using::
 
-  sfepy-view unit_ball.h5 -f u:wu:s:19:p0 p:s19:p1
+  sfepy-view unit_ball.h5 -f u:wu:s12:p0 p:s12:p1
 
 This example uses the adaptive time-stepping solver (``'ts.adaptive'``) with
 the default adaptivity function :func:`adapt_time_step()
@@ -276,20 +276,25 @@ def define(plot=False, use_lcbcs=True):
     }
 
     solvers = {
-        'ls' : ('ls.scipy_direct', {}),
+        'ls' : ('ls.auto_direct', {
+            # This setting causes a new factorization in each Newton step
+            # without computing the digest.
+            'use_presolve' : False,
+            'use_mtx_digest' : False,
+        }),
         'newton' : ('nls.newton', {
-            'i_max'      : 6,
+            'i_max'      : 8,
             'eps_a'      : 1e-4,
             'eps_r'      : 1e-8,
             'macheps'    : 1e-16,
-            'lin_red'    : 1e-2,
+             # Do not check linear system solution accuracy in each step.
+            'lin_red'    : None,
             'ls_red'     : 0.5,
             'ls_red_warp': 0.1,
             'ls_on'      : 100.0,
             'ls_min'     : 1e-5,
             'check'      : 0,
             'delta'      : 1e-6,
-            'is_plot'    : False,
             'report_status' : True,
         }),
         'ts' : ('ts.adaptive', {
