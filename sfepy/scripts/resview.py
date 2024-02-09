@@ -824,6 +824,8 @@ helps = {
         '2d view of XY plane',
     'probes':
         'visualize probes in the given files',
+    'no_probe_labels':
+        'hide probe labels',
 }
 
 
@@ -921,12 +923,16 @@ def main():
                         default=False, help=helps['2d_view'])
     parser.add_argument('--probes', metavar='filename', nargs='+',
                         dest='probes', default=None, help=helps['probes'])
+    parser.add_argument('--no-probe-labels',
+                        action='store_false', dest='show_probe_labels',
+                        default=True, help=helps['no_probe_labels'])
 
     parser.add_argument('filenames', nargs='+')
     options = parser.parse_args()
 
     if options.probes is not None:
-        annotations = read_probes_as_annotations(options.probes)
+        annotations = read_probes_as_annotations(options.probes,
+                                                 options.show_probe_labels)
 
     else:
         annotations = None
