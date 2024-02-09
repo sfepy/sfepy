@@ -315,8 +315,53 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
     else:
         return mesh
 
+def ensure3d(arr):
+    arr = nm.asanyarray(arr)
+    return nm.pad(arr, (arr.ndim - 1) * [(0, 0)] + [(0, 3 - arr.shape[-1])])
 
-def pv_plot(filenames, options, plotter=None, step=None,
+def read_probes_as_annotations(filenames, add_label=True):
+    from sfepy.discrete.probes import read_results
+    from sfepy.linalg.geometry import get_perpendiculars
+
+    annotations = []
+    for filename in filenames:
+        header, results = read_results(filename)
+        data = header.details
+        if header.probe_class == 'PointsProbe':
+            data = ensure3d(data)
+            ann = [('points', data)]
+            tcoors = data.mean(axis=0)
+
+        elif header.probe_class == 'LineProbe':
+            data = ensure3d(data)
+            ann = [('line', data[0], data[1])]
+            tcoors = data.mean(axis=0)
+
+        elif header.probe_class == 'RayProbe':
+            data[:2] = ensure3d(data[:2])
+            ann = [('arrow', data[0], data[1])]
+            if data[2]:
+                ann += [('arrow', data[0], -data[1])]
+            tcoors = data[0]
+
+        elif header.probe_class == 'CircleProbe':
+            data[:2] = ensure3d(data[:2])
+            ann = [('disc', data[0], data[1], data[2])]
+            vec = get_perpendiculars(data[1])[0]
+            tcoors = data[0] + data[2] * vec
+
+        else:
+            raise ValueError(f'unknown probe kind! {header.probe_class}')
+
+        if add_label:
+            ann += [('text', [tcoors],
+                     [osp.splitext(osp.basename(filename))[0]])]
+
+        annotations.extend(ann)
+
+    return annotations
+
+def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar_bar_limits=None, ret_scalar_bar_limits=False,
             step_inc=None, use_cache=True):
     fstep = (step if step is not None else options.step)
@@ -600,6 +645,38 @@ def pv_plot(filenames, options, plotter=None, step=None,
                                    position_x=x_pos, position_y=y_pos,
                                    width=width, height=height,
                                    n_labels=2, mapper=mapper)
+    if annotations is not None:
+        for ann in annotations:
+            kind, data = ann[0], ann[1:]
+            if kind == 'points':
+                pdata = pv.PolyData(data[0])
+
+            elif kind == 'line':
+                pdata = pv.Line(*data)
+
+            elif kind == 'arrow':
+                # Scale arrows by bbox.
+                vec = data[1]
+                maxs = bbox_sizes.max()
+                vec *= 0.1 * maxs / nm.linalg.norm(vec)
+                pdata = pv.Arrow(data[0], vec, scale='auto')
+
+            elif kind == 'disc':
+                pdata = pv.Disc(data[0],
+                                inner=0.99 * data[2],
+                                outer=1.01 * data[2],
+                                normal=data[1], c_res=20)
+            elif kind == 'text':
+                plotter.add_point_labels(data[0], data[1],
+                                         always_visible=True)
+
+            else:
+                raise ValueError(f'unknown annotation! {kind}')
+
+            plotter.add_mesh(pdata, opacity=opacity, color='black',
+                             line_width=5, render_lines_as_tubes=True,
+                             point_size=10, render_points_as_spheres=True,
+                             show_scalar_bar=False)
 
     if options.show_labels and len(plots) > 1:
         labels, points = [], []
@@ -745,6 +822,10 @@ helps = {
         'select data in a given time step',
     '2d_view':
         '2d view of XY plane',
+    'probes':
+        'visualize probes in the given files',
+    'no_probe_labels':
+        'hide probe labels',
 }
 
 
@@ -840,9 +921,21 @@ def main():
     parser.add_argument('-2', '--2d-view',
                         action='store_true', dest='view_2d',
                         default=False, help=helps['2d_view'])
+    parser.add_argument('--probes', metavar='filename', nargs='+',
+                        dest='probes', default=None, help=helps['probes'])
+    parser.add_argument('--no-probe-labels',
+                        action='store_false', dest='show_probe_labels',
+                        default=True, help=helps['no_probe_labels'])
 
     parser.add_argument('filenames', nargs='+')
     options = parser.parse_args()
+
+    if options.probes is not None:
+        annotations = read_probes_as_annotations(options.probes,
+                                                 options.show_probe_labels)
+
+    else:
+        annotations = None
 
     pv.set_plot_theme("document")
     plotter = pv.Plotter(off_screen=options.off_screen,
@@ -858,6 +951,7 @@ def main():
             plotter.clear()
             plotter, sb_limits = pv_plot(options.filenames, options,
                                          plotter=plotter, step=step,
+                                         annotations=annotations,
                                          ret_scalar_bar_limits=True)
             if scalar_bar_limits is None:
                 scalar_bar_limits = {k: [] for k in sb_limits.keys()}
@@ -892,7 +986,8 @@ def main():
         for step in range(n_steps):
             plotter.clear()
             plotter = pv_plot(options.filenames, options, plotter=plotter,
-                              step=step, scalar_bar_limits=scalar_bar_limits)
+                              step=step, annotations=annotations,
+                              scalar_bar_limits=scalar_bar_limits)
             if options.axes_visibility:
                 plotter.add_axes(**dict(options.axes_options))
 
@@ -905,7 +1000,8 @@ def main():
         plotter.show()
         plotter.close()
     else:
-        plotter = pv_plot(options.filenames, options, plotter=plotter)
+        plotter = pv_plot(options.filenames, options, plotter=plotter,
+                          annotations=annotations)
         if options.axes_visibility:
             plotter.add_axes(**dict(options.axes_options))
 
@@ -914,6 +1010,7 @@ def main():
                                      options,
                                      step=plotter.resview_step,
                                      step_inc=-1,
+                                     annotations=annotations,
                                      plotter=plotter)
         )
         plotter.add_key_event(
@@ -921,6 +1018,7 @@ def main():
                                     options,
                                     step=plotter.resview_step,
                                     step_inc=1,
+                                    annotations=annotations,
                                     plotter=plotter)
         )
 

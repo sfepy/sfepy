@@ -2,10 +2,12 @@
 from __future__ import absolute_import
 import hashlib
 
+from ast import literal_eval
+
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import get_default, basestr, Struct
+from sfepy.base.base import assert_, basestr, Struct
 from sfepy.linalg import make_axis_rotation_matrix, norm_l2_along_axis
 import six
 
@@ -94,7 +96,9 @@ def read_header(fd):
             break
         else:
             details.append(line)
-    header.details = '\n'.join(details)
+
+    cls = globals()[header.probe_class]
+    header.details = cls.parse_report(details)
 
     return header
 
@@ -124,6 +128,16 @@ def get_data_name(fd):
             nc = int(line[2])
 
             yield name, nc
+
+def parse_vector(line):
+    svec = line.split(':')[1].strip('[] ')
+    vec = nm.fromstring(svec, dtype=nm.float64, sep=' ')
+    return vec
+
+def parse_scalar(line):
+    sval = line.split(':')[1].strip('[] ')
+    val = literal_eval(sval)
+    return val
 
 class Probe(Struct):
     """
@@ -422,6 +436,15 @@ class PointsProbe(Probe):
         out.append('-----')
         return out
 
+    @staticmethod
+    def parse_report(lines):
+        """
+        Parse report lines to get the probe parameters.
+        """
+        out = [parse_vector(line) for line in lines]
+
+        return out
+
     def refine_points(self, variable, points, cache):
         """No refinement for this probe."""
         refine_flag = nm.array([False])
@@ -477,6 +500,16 @@ class LineProbe(Probe):
         out.append('point 0: %s' % self.p0)
         out.append('point 1: %s' % self.p1)
         out.append('-----')
+        return out
+
+    @staticmethod
+    def parse_report(lines):
+        """
+        Parse report lines to get the probe parameters.
+        """
+        out = [parse_vector(line) for line in lines]
+        assert_(len(out) == 2)
+
         return out
 
     def get_points(self, refine_flag=None):
@@ -555,6 +588,16 @@ class RayProbe(Probe):
         out.append('-----')
         return out
 
+    @staticmethod
+    def parse_report(lines):
+        """
+        Parse report lines to get the probe parameters.
+        """
+        out = [parse_vector(lines[0]), parse_vector(lines[1]),
+               parse_scalar(lines[2]), lines[3]]
+
+        return out
+
     def refine_points(self, variable, points, cache):
         """No refinement for this probe."""
         refine_flag = nm.array([False])
@@ -623,6 +666,16 @@ class CircleProbe(Probe):
         out.append('normal: %s' % self.normal)
         out.append('radius: %s' % self.radius)
         out.append('-----')
+        return out
+
+    @staticmethod
+    def parse_report(lines):
+        """
+        Parse report lines to get the probe parameters.
+        """
+        out = [parse_vector(lines[0]), parse_vector(lines[1]),
+               parse_scalar(lines[2])]
+
         return out
 
     def get_points(self, refine_flag=None):
