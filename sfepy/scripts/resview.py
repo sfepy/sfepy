@@ -319,32 +319,43 @@ def ensure3d(arr):
     arr = nm.asanyarray(arr)
     return nm.pad(arr, (arr.ndim - 1) * [(0, 0)] + [(0, 3 - arr.shape[-1])])
 
-def read_probes_as_annotations(filenames):
+def read_probes_as_annotations(filenames, add_label=True):
     from sfepy.discrete.probes import read_results
+    from sfepy.linalg.geometry import get_perpendiculars
 
     annotations = []
     for filename in filenames:
         header, results = read_results(filename)
         data = header.details
         if header.probe_class == 'PointsProbe':
-            ann = [('points', ensure3d(data))]
+            data = ensure3d(data)
+            ann = [('points', data)]
+            tcoors = data.mean(axis=0)
 
         elif header.probe_class == 'LineProbe':
             data = ensure3d(data)
             ann = [('line', data[0], data[1])]
+            tcoors = data.mean(axis=0)
 
         elif header.probe_class == 'RayProbe':
             data[:2] = ensure3d(data[:2])
             ann = [('arrow', data[0], data[1])]
             if data[2]:
                 ann += [('arrow', data[0], -data[1])]
+            tcoors = data[0]
 
         elif header.probe_class == 'CircleProbe':
             data[:2] = ensure3d(data[:2])
             ann = [('disc', data[0], data[1], data[2])]
+            vec = get_perpendiculars(data[1])[0]
+            tcoors = data[0] + data[2] * vec
 
         else:
             raise ValueError(f'unknown probe kind! {header.probe_class}')
+
+        if add_label:
+            ann += [('text', [tcoors],
+                     [osp.splitext(osp.basename(filename))[0]])]
 
         annotations.extend(ann)
 
@@ -655,6 +666,10 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                                 inner=0.99 * data[2],
                                 outer=1.01 * data[2],
                                 normal=data[1], c_res=20)
+            elif kind == 'text':
+                plotter.add_point_labels(data[0], data[1],
+                                         always_visible=True)
+
             else:
                 raise ValueError(f'unknown annotation! {kind}')
 
