@@ -168,8 +168,8 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
         fname = filenames[fstep]
         key = (fname, fstep)
         if key not in cache or not use_cache:
-            cache[key] = pv.UnstructuredGrid(fname)
-        mesh = cache[key]
+            cache[key] = (float(fstep), pv.UnstructuredGrid(fname))
+        ftime, mesh = cache[key]
         cache['n_steps'] = len(filenames)
     elif ext in ['.xdmf', '.xdmf3']:
         import meshio
@@ -196,7 +196,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
             if not reader.num_steps:
                 grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
                 add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
-                cache[(fname, 0)] = grid
+                cache[(fname, 0)] = (0.0, grid)
 
             grids = {}
             time = []
@@ -218,12 +218,12 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
 
             time.sort()
             for _step, t in enumerate(time):
-                cache[(fname, _step)] = grids[t]
+                cache[(fname, _step)] = (t, grids[t])
 
             cache[(fname, None)] = cache[(fname, 0)]
             cache['n_steps'] = reader.num_steps
 
-        mesh = cache[key]
+        ftime, mesh = cache[key]
 
     elif ext in ['.h5', '.h5x']:
         # Custom sfepy format.
@@ -262,12 +262,12 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
                         val.SetName(dk)
                         grid.GetCellData().AddArray(val)
 
-                cache[(fname, ii)] = grid
+                cache[(fname, ii)] = (times[ii], grid)
 
             cache[(fname, None)] = cache[(fname, 0)]
             cache['n_steps'] = len(steps)
 
-        mesh = cache[key]
+        ftime, mesh = cache[key]
 
     else:
         fname = filenames[0]
@@ -281,10 +281,10 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
             smesh = io.read(smesh)
 
             grid = make_grid_from_mesh(smesh, add_mat_id=True)
-            cache[(fname, 0)] = grid
+            cache[(fname, 0)] = (0.0, grid)
             cache['n_steps'] = len(filenames)
 
-        mesh = cache[key]
+        ftime, mesh = cache[key]
 
     if print_info:
         arrs = {'s': [], 'v': [], 'o': []}
@@ -311,9 +311,9 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
         print('  steps:   %d' % cache['n_steps'])
 
     if ret_n_steps:
-        return mesh, cache['n_steps']
+        return ftime, mesh, cache['n_steps']
     else:
-        return mesh
+        return ftime, mesh
 
 def ensure3d(arr):
     arr = nm.asanyarray(arr)
