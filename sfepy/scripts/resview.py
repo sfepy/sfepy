@@ -168,8 +168,8 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
         fname = filenames[fstep]
         key = (fname, fstep)
         if key not in cache or not use_cache:
-            cache[key] = pv.UnstructuredGrid(fname)
-        mesh = cache[key]
+            cache[key] = ((fstep, float(fstep)), pv.UnstructuredGrid(fname))
+        ftime, mesh = cache[key]
         cache['n_steps'] = len(filenames)
     elif ext in ['.xdmf', '.xdmf3']:
         import meshio
@@ -196,7 +196,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
             if not reader.num_steps:
                 grid = pv.UnstructuredGrid(offset, cells, cell_type, points)
                 add_mat_id_to_grid(grid, mesh.cmesh.cell_groups)
-                cache[(fname, 0)] = grid
+                cache[(fname, 0)] = (0.0, grid)
 
             grids = {}
             time = []
@@ -218,56 +218,63 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
 
             time.sort()
             for _step, t in enumerate(time):
-                cache[(fname, _step)] = grids[t]
+                cache[(fname, _step)] = ((_step, t), grids[t])
 
             cache[(fname, None)] = cache[(fname, 0)]
             cache['n_steps'] = reader.num_steps
 
-        mesh = cache[key]
+        ftime, mesh = cache[key]
 
     elif ext in ['.h5', '.h5x']:
         # Custom sfepy format.
         fname = filenames[0]
-        key = (fname, step)
-        if key not in cache:
+        if 'io' not in cache:
             from sfepy.discrete.fem.meshio import MeshIO
 
             io = MeshIO.any_from_filename(fname)
 
             smesh = io.read()
-            steps, times, nts = io.read_times()
-            if not len(steps):
+
+            cache['steps'], cache['times'], _ = io.read_times()
+            if not len(cache['steps']):
                 grid0 = make_grid_from_mesh(smesh, add_mat_id=True)
-                cache[(fname, 0)] = grid0
+                cache[(fname, 0)] = ((0, 0.0), grid0)
 
             else:
                 grid0 = make_grid_from_mesh(smesh, add_mat_id=False)
 
-            for ii, _step in enumerate(steps):
-                grid = grid0.copy()
-                datas = io.read_data(_step)
-                for dk, data in datas.items():
-                    vval = data.data
-                    if 1 < len(data.dofs) < 3:
-                        vval = nm.c_[vval,
-                                     nm.zeros((len(vval), 3 - len(data.dofs)))]
+            cache['io'] = io
+            cache['grid0'] = grid0
+            cache['n_steps'] = len(cache['steps'])
 
-                    if data.mode == 'vertex':
-                        val = numpy_to_vtk(vval)
-                        val.SetName(dk)
-                        grid.GetPointData().AddArray(val)
+        if step is None:
+            step = 0
+        key = (fname, step)
+        if key not in cache:
+            io = cache['io']
+            grid = cache['grid0'].copy()
 
-                    else:
-                        val = numpy_to_vtk(vval[:, 0, :, 0])
-                        val.SetName(dk)
-                        grid.GetCellData().AddArray(val)
+            _step = cache['steps'][step]
+            datas = io.read_data(_step)
+            for dk, data in datas.items():
+                vval = data.data
+                if 1 < len(data.dofs) < 3:
+                    vval = nm.c_[vval,
+                                 nm.zeros((len(vval), 3 - len(data.dofs)))]
 
-                cache[(fname, ii)] = grid
+                if data.mode == 'vertex':
+                    val = numpy_to_vtk(vval)
+                    val.SetName(dk)
+                    grid.GetPointData().AddArray(val)
 
-            cache[(fname, None)] = cache[(fname, 0)]
-            cache['n_steps'] = len(steps)
+                else:
+                    val = numpy_to_vtk(vval[:, 0, :, 0])
+                    val.SetName(dk)
+                    grid.GetCellData().AddArray(val)
 
-        mesh = cache[key]
+            cache[(fname, step)] = ((_step, cache['times'][step]), grid)
+
+        ftime, mesh = cache[key]
 
     else:
         fname = filenames[0]
@@ -281,10 +288,10 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
             smesh = io.read(smesh)
 
             grid = make_grid_from_mesh(smesh, add_mat_id=True)
-            cache[(fname, 0)] = grid
+            cache[(fname, 0)] = ((0, 0.0), grid)
             cache['n_steps'] = len(filenames)
 
-        mesh = cache[key]
+        ftime, mesh = cache[key]
 
     if print_info:
         arrs = {'s': [], 'v': [], 'o': []}
@@ -311,9 +318,9 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False,
         print('  steps:   %d' % cache['n_steps'])
 
     if ret_n_steps:
-        return mesh, cache['n_steps']
+        return ftime, mesh, cache['n_steps']
     else:
-        return mesh
+        return ftime, mesh
 
 def ensure3d(arr):
     arr = nm.asanyarray(arr)
@@ -382,9 +389,10 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
     if step_inc is not None:
         plotter.clear()
 
-    mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True,
-                              use_cache=use_cache)
+    ftime, mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True,
+                                     use_cache=use_cache)
     steps = {fstep: mesh}
+    ftimes = {fstep: ftime}
 
     bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
     ii = nm.where(bbox_sizes > 0)[0]
@@ -467,8 +475,8 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             fstep = opts['s']
 
         if fstep not in steps:
-            steps[fstep] = read_mesh(filenames, step=fstep,
-                                     use_cache=use_cache)
+            ftimes[fstep], steps[fstep] = read_mesh(filenames, step=fstep,
+                                                    use_cache=use_cache)
 
         pipe = [steps[fstep].copy()]
         pos_bnds = pipe[0].bounds
@@ -690,6 +698,14 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
 
         plotter.add_point_labels(nm.array(points), labels)
 
+    if options.show_step_time:
+        _step, _time = ftimes[fstep]
+        step_info = f'{_step:6d}: {_time:.8e}'
+        if len(filenames) > 1:
+            step_info += ': ' + osp.splitext(osp.basename(filenames[fstep]))[0]
+
+        plotter.add_text(step_info, font='courier', font_size=10)
+
     for k, v in plots.items():
         print('plot %d: %s' % (k, '; '.join(iv[1] for iv in v)))
 
@@ -826,6 +842,8 @@ helps = {
         'visualize probes in the given files',
     'no_probe_labels':
         'hide probe labels',
+    'no_step_time':
+        'hide current step and time',
 }
 
 
@@ -926,6 +944,9 @@ def main():
     parser.add_argument('--no-probe-labels',
                         action='store_false', dest='show_probe_labels',
                         default=True, help=helps['no_probe_labels'])
+    parser.add_argument('--no-step-time',
+                        action='store_false', dest='show_step_time',
+                        default=True, help=helps['no_step_time'])
 
     parser.add_argument('filenames', nargs='+')
     options = parser.parse_args()
@@ -942,7 +963,7 @@ def main():
                          title=make_title(options.filenames))
 
     if options.anim_output_file:
-        _, n_steps = read_mesh(options.filenames, ret_n_steps=True)
+        _, _, n_steps = read_mesh(options.filenames, ret_n_steps=True)
         # dry run
         scalar_bar_limits = None
         if options.axes_visibility:
