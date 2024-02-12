@@ -382,9 +382,10 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
     if step_inc is not None:
         plotter.clear()
 
-    mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True,
-                              use_cache=use_cache)
+    ftime, mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True,
+                                     use_cache=use_cache)
     steps = {fstep: mesh}
+    ftimes = {fstep: ftime}
 
     bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
     ii = nm.where(bbox_sizes > 0)[0]
@@ -467,8 +468,8 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             fstep = opts['s']
 
         if fstep not in steps:
-            steps[fstep] = read_mesh(filenames, step=fstep,
-                                     use_cache=use_cache)
+            ftimes[fstep], steps[fstep] = read_mesh(filenames, step=fstep,
+                                                    use_cache=use_cache)
 
         pipe = [steps[fstep].copy()]
         pos_bnds = pipe[0].bounds
@@ -689,6 +690,12 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             points.append(bnds[0] + nm.array(olpos[:3]) * size * olpos[3])
 
         plotter.add_point_labels(nm.array(points), labels)
+
+    step_info = f'{fstep:6d}: {ftimes[fstep]:.8e}'
+    if len(filenames) > 1:
+        step_info += ': ' + osp.splitext(osp.basename(filenames[fstep]))[0]
+
+    plotter.add_text(step_info, font='courier', font_size=10)
 
     for k, v in plots.items():
         print('plot %d: %s' % (k, '; '.join(iv[1] for iv in v)))
@@ -942,7 +949,7 @@ def main():
                          title=make_title(options.filenames))
 
     if options.anim_output_file:
-        _, n_steps = read_mesh(options.filenames, ret_n_steps=True)
+        _, _, n_steps = read_mesh(options.filenames, ret_n_steps=True)
         # dry run
         scalar_bar_limits = None
         if options.axes_visibility:
