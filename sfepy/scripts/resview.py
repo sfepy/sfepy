@@ -698,12 +698,13 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
 
         plotter.add_point_labels(nm.array(points), labels)
 
-    _step, _time = ftimes[fstep]
-    step_info = f'{_step:6d}: {_time:.8e}'
-    if len(filenames) > 1:
-        step_info += ': ' + osp.splitext(osp.basename(filenames[fstep]))[0]
+    if options.show_step_time:
+        _step, _time = ftimes[fstep]
+        step_info = f'{_step:6d}: {_time:.8e}'
+        if len(filenames) > 1:
+            step_info += ': ' + osp.splitext(osp.basename(filenames[fstep]))[0]
 
-    plotter.add_text(step_info, font='courier', font_size=10)
+        plotter.add_text(step_info, font='courier', font_size=10)
 
     for k, v in plots.items():
         print('plot %d: %s' % (k, '; '.join(iv[1] for iv in v)))
@@ -841,6 +842,8 @@ helps = {
         'visualize probes in the given files',
     'no_probe_labels':
         'hide probe labels',
+    'no_step_time':
+        'hide current step and time',
 }
 
 
@@ -941,6 +944,9 @@ def main():
     parser.add_argument('--no-probe-labels',
                         action='store_false', dest='show_probe_labels',
                         default=True, help=helps['no_probe_labels'])
+    parser.add_argument('--no-step-time',
+                        action='store_false', dest='show_step_time',
+                        default=True, help=helps['no_step_time'])
 
     parser.add_argument('filenames', nargs='+')
     options = parser.parse_args()
