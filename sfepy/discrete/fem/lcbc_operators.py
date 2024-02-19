@@ -778,7 +778,7 @@ class NodalCombinationXOperator(LCBCOperator):
                               variables, functions=functions)
 
         if dof_names[0] != dof_names[1]:
-            msg = ('nodal combination EPBC dof list lengths do not match!'
+            msg = ('nodal combination EPBC dof lists do not match!'
                    f' ({dof_names[0]}, {dof_names[1]})')
             raise ValueError(msg)
 
