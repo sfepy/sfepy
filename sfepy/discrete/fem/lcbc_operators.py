@@ -767,3 +767,55 @@ class LCBCOperators(Container):
         mtx_lc = mtx_lc.tocsr()
 
         return mtx_lc, vec_lc, lcdi
+
+
+class NodalCombinationXOperator(LCBCOperator):
+    kind = 'nodal_combinationX'
+
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 constraints, variables, ts, functions):
+        LCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                              variables, functions=functions)
+
+        if dof_names[0] != dof_names[1]:
+            msg = ('nodal combination EPBC dof list lengths do not match!'
+                   f' ({dof_names[0]}, {dof_names[1]})')
+            raise ValueError(msg)
+
+        mvar, svar = variables[self.var_names[0]], variables[self.var_names[1]]
+        mfield, sfield = mvar.field, svar.field
+
+        mnodes = mfield.get_dofs_in_region(regions[0], merge=True)
+        snodes = sfield.get_dofs_in_region(regions[1], merge=True)
+
+        midxs, sidxs = self.dof_map_fun(mfield.get_coor(mnodes),
+                                        sfield.get_coor(snodes))
+        sidxs0, smap = nm.unique(sidxs, return_inverse=True)
+
+        self.mdofs = expand_nodes_to_equations(mnodes[midxs], dof_names[0],
+                                               self.all_dof_names[0])
+        self.sdofs = expand_nodes_to_equations(snodes[sidxs0], dof_names[1],
+                                               self.all_dof_names[1])
+
+        meq, seq = mvar.eq_map.eq[self.mdofs], svar.eq_map.eq[self.sdofs]
+        # meq, seq = meq[meq >= 0], seq[seq >= 0]
+        dpn = len(dof_names[0])
+        ncons = len(constraints)
+        smap = smap.reshape((-1, ncons))
+        n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
+
+        vals = nm.repeat(constraints, len(meq))
+        rows = nm.tile(meq, ncons)
+        aux = nm.arange(dpn)[None, :]
+        idxs = [(snds[:, None] * dpn + aux).ravel() for snds in smap.T]
+        cols = seq[nm.hstack(idxs)]
+
+        mtx = sp.coo_matrix((vals, (rows, cols)), shape=n_dofs)
+        self.mtx = mtx.tocsr()
+
+        self.ameq = meq
+        self.aseq = seq
+
+        self.n_mdof = len(nm.unique(meq))
+        self.n_sdof = len(nm.unique(seq))
+        self.n_new_dof = 0
