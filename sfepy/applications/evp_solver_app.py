@@ -138,7 +138,7 @@ class EVPSolverApp(PDESolverApp):
             out = get_default(out, {})
             variables = pb.set_default_state()
             for ii in range(eigs.shape[0]):
-                variables.set_state(vecs[:, ii])
+                variables.set_state(vecs[:, ii], force=True)
                 aux = variables.create_output()
                 aux2 = {}
                 pp(aux2, pb, variables)
