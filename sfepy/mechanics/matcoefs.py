@@ -147,7 +147,7 @@ def youngpoisson_from_stiffness(stiffness, plane='strain'):
     return young, poisson
 
 
-def stiffness_from_youngpoissonshear_ortho3(young, poisson, shear):
+def stiffness_from_yps_ortho3(young, poisson, shear):
     r"""
     Compute 3D stiffness tensor :math:`{\bm D}` of an orthotropic linear
     elastic material. Young's modulus (:math:`[E_1, E_2, E_3]`),
