@@ -146,6 +146,51 @@ def youngpoisson_from_stiffness(stiffness, plane='strain'):
 
     return young, poisson
 
+
+def stiffness_from_yps_ortho3(young, poisson, shear):
+    r"""
+    Compute 3D stiffness tensor :math:`{\bm D}` of an orthotropic linear
+    elastic material. Young's modulus (:math:`[E_1, E_2, E_3]`),
+    Poisson's ratio (:math:`[\nu_{12}, \nu_{13}, \nu_{23}]`),
+    and shear modulus (:math:`[G_{12}, G_{13}, G_{23}]`) are given.
+
+    .. math::
+        {\bm C}_{(3D)} = \begin{bmatrix}
+        1/E_1 & -\nu_{21}/E_2 & -\nu_{31}/E_3 & 0 & 0 & 0\\
+        -\nu_{12}/E_1 & 1/E_2 & -\nu_{32}/E_3 & 0 & 0 & 0\\
+        -\nu_{13}/E_1 & -\nu_{23}/E_2 & 1/E_3 & 0 & 0 & 0\\
+        0 & 0 & 0 & 1/G_{12} & 0 & 0 \\
+        0 & 0 & 0 & 0 & 1/G_{13} & 0 \\
+        0 & 0 & 0 & 0 & 0 & 1/G_{23} \end{bmatrix}
+
+    .. math::
+        {\bm D}_{(3D)} = \mathrm{inv}({\bm C}_{(3D)})
+
+    .. math::
+        \nu_{21} = \nu_{12}\frac{E_2}{E_1},\quad
+        \nu_{31} = \nu_{13}\frac{E_3}{E_1},\quad
+        \nu_{32} = \nu_{23}\frac{E_3}{E_2}
+
+    [1] R.M. Jones: Mechanics of composite materials. 1999.
+    """
+    # symmetric order [11, 22, 33, 12, 13, 23]
+    compl = nm.zeros((6, 6), dtype=nm.float64)
+
+    compl[0, 0] = 1. / young[0]
+    compl[1, 1] = 1. / young[1]
+    compl[2, 2] = 1. / young[2]
+    compl[0, 1] = compl[1, 0] = -poisson[0] / young[0]
+    compl[0, 2] = compl[2, 0] = -poisson[1] / young[0]
+    compl[1, 2] = compl[2, 1] = -poisson[2] / young[1]
+    compl[3, 3] = 1. / shear[0]
+    compl[4, 4] = 1. / shear[1]
+    compl[5, 5] = 1. / shear[2]
+
+    stiff = nm.linalg.inv(compl)
+
+    return stiff
+
+
 class ElasticConstants(Struct):
     r"""
     Conversion formulas for various groups of elastic constants. The elastic
