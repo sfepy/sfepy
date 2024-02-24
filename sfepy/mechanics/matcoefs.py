@@ -149,7 +149,7 @@ def youngpoisson_from_stiffness(stiffness, plane='strain'):
 
 def stiffness_from_youngpoissonshear_ortho3(young, poisson, shear):
     r"""
-    Compute 3D stiffness tensor :math:`{\bm D}` of a orthotropic linear
+    Compute 3D stiffness tensor :math:`{\bm D}` of an orthotropic linear
     elastic material. Young's modulus (:math:`[E_1, E_2, E_3]`),
     Poisson's ratio (:math:`[\nu_{12}, \nu_{13}, \nu_{23}]`),
     and shear modulus (:math:`[G_{12}, G_{13}, G_{23}]`) are given.
