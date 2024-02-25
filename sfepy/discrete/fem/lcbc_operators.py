@@ -653,7 +653,8 @@ class LCBCOperators(Container):
 
         Initializes the global column indices and DOF counts.
         """
-        keys = self.variables.adi.var_names
+        adi = self.variables.adi
+        keys = [k for k in adi.var_names if k not in adi.shared_dofs]
         self.n_master = {}.fromkeys(keys, 0)
         self.n_slave = {}.fromkeys(keys, 0)
         self.n_new = {}.fromkeys(keys, 0)
@@ -674,8 +675,8 @@ class LCBCOperators(Container):
 
         self.n_free = {}
         self.n_active = {}
-        n_dof = self.variables.adi.n_dof
-        for key in six.iterkeys(self.n_master):
+        n_dof = adi.n_dof
+        for key in keys:
             self.n_free[key] = n_dof[key] - self.n_master[key]
             self.n_active[key] = self.n_free[key] + self.n_new[key]
 
@@ -807,8 +808,9 @@ class LCBCOperators(Container):
             ir = nm.where(lcbc_mask)[0]
             ic = nm.empty((n_dof_free,), dtype=nm.int32)
             for var_name in adi.var_names:
-                ii = nm.arange(fdi.n_dof[var_name], dtype=nm.int32)
-                ic[fdi.indx[var_name]] = lcdi.indx[var_name].start + ii
+                if var_name not in adi.shared_dofs:
+                    ii = nm.arange(fdi.n_dof[var_name], dtype=nm.int32)
+                    ic[fdi.indx[var_name]] = lcdi.indx[var_name].start + ii
 
             mtx_lc2 = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
                                     shape=(n_dof, n_dof_active),
