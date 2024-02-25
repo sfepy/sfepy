@@ -12,8 +12,7 @@ from sfepy.discrete.common.dof_info import DofInfo, expand_nodes_to_equations
 from sfepy.discrete.fem.utils import (compute_nodal_normals,
                                       compute_nodal_edge_dirs)
 from sfepy.discrete.conditions import get_condition_value, Function
-import six
-from six.moves import range
+
 
 class LCBCOperator(Struct):
     """
@@ -379,7 +378,7 @@ class NodalLCOperator(MRLCBCOperator):
             ifixed = []
             islaves = set()
             ccs = []
-            for key, _poly in six.iteritems(sol):
+            for key, _poly in sol.items():
                 imaster = int(key.name[1:])
                 imasters.append(imaster)
 
@@ -669,7 +668,7 @@ class LCBCOperators(Container):
             ics.setdefault(op.var_names[0], []).append((ii, op.n_new_dof))
 
         self.ics = {}
-        for key, val in six.iteritems(ics):
+        for key, val in ics.items():
             iis, ics = zip(*val)
             self.ics[key] = (iis, nm.cumsum(nm.r_[0, ics]))
 
@@ -716,10 +715,10 @@ class LCBCOperators(Container):
         if len(self) == 0: return (None,) * 3
 
         n_dof = self.variables.adi.n_dof_total
-        n_constrained = nm.sum([val for val in six.itervalues(self.n_master)])
-        n_dof_free = nm.sum([val for val in six.itervalues(self.n_free)])
-        n_dof_new = nm.sum([val for val in six.itervalues(self.n_new)])
-        n_dof_active = nm.sum([val for val in six.itervalues(self.n_active)])
+        n_constrained = nm.sum([val for val in self.n_master.values()])
+        n_dof_free = nm.sum([val for val in self.n_free.values()])
+        n_dof_new = nm.sum([val for val in self.n_new.values()])
+        n_dof_active = nm.sum([val for val in self.n_active.values()])
 
         output('dofs: total %d, free %d, constrained %d, new %d'\
                % (n_dof, n_dof_free, n_constrained, n_dof_new))
