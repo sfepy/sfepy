@@ -2,7 +2,6 @@
 Operators for enforcing linear combination boundary conditions in nodal FEM
 setting.
 """
-from __future__ import absolute_import
 import numpy as nm
 import scipy.sparse as sp
 
