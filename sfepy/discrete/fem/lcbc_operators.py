@@ -545,8 +545,16 @@ class NodalCombinationXOperator(LCBCOperator):
         mnodes = mfield.get_dofs_in_region(regions[0], merge=True)
         snodes = sfield.get_dofs_in_region(regions[1], merge=True)
 
-        midxs, sidxs = self.dof_map_fun(mfield.get_coor(mnodes),
-                                        sfield.get_coor(snodes))
+        if constraints is None:
+            midxs, sidxs, constraints = \
+                self.dof_map_fun(mfield.get_coor(mnodes),
+                                 sfield.get_coor(snodes))
+        else:
+            midxs, sidxs = self.dof_map_fun(mfield.get_coor(mnodes),
+                                            sfield.get_coor(snodes))
+            constraints = nm.tile(constraints, (len(midxs), 1))
+
+
         sidxs0, smap = nm.unique(sidxs, return_inverse=True)
 
         self.mdofs = expand_nodes_to_equations(mnodes[midxs], dof_names[0],
@@ -557,11 +565,11 @@ class NodalCombinationXOperator(LCBCOperator):
         meq, seq = mvar.eq_map.eq[self.mdofs], svar.eq_map.eq[self.sdofs]
         # meq, seq = meq[meq >= 0], seq[seq >= 0]
         dpn = len(dof_names[0])
-        ncons = len(constraints)
+        ncons = constraints.shape[1]
         smap = smap.reshape((-1, ncons))
         n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
 
-        vals = nm.repeat(constraints, len(meq))
+        vals = nm.repeat(constraints, dpn, axis=0).ravel()
         rows = nm.tile(meq, ncons)
         aux = nm.arange(dpn)[None, :]
         idxs = [(snds[:, None] * dpn + aux).ravel() for snds in smap.T]
