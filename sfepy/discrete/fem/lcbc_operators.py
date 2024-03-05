@@ -567,7 +567,6 @@ class MultiNodeLCOperator(LCBCOperator):
                                             sfield.get_coor(snodes))
             constraints = nm.tile(constraints, (len(midxs), 1))
 
-
         sidxs0, smap = nm.unique(sidxs, return_inverse=True)
 
         self.mdofs = expand_nodes_to_equations(mnodes[midxs], dof_names[0],
@@ -582,7 +581,7 @@ class MultiNodeLCOperator(LCBCOperator):
         smap = smap.reshape((-1, ncons))
         n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
 
-        vals = nm.repeat(constraints, dpn, axis=0).ravel()
+        vals = nm.repeat(constraints, dpn, axis=0).T.ravel()
         rows = nm.tile(meq, ncons)
         aux = nm.arange(dpn)[None, :]
         idxs = [(snds[:, None] * dpn + aux).ravel() for snds in smap.T]
