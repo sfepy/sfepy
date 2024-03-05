@@ -526,8 +526,21 @@ class MatchDOFsOperator(ShiftedPeriodicOperator):
                                          ts, functions=functions)
 
 
-class NodalCombinationXOperator(LCBCOperator):
-    kind = 'nodal_combinationX'
+class MultiNodeLCOperator(LCBCOperator):
+    r"""
+    Transformation matrix operator that define the DOFs in one (depenedent) node
+    as a linear combination of the DOFs in some other (independent) nodes.
+
+    The linear combination is given by:
+
+    .. math::
+        \bar u_i \sum_{j=1}^n c^{j} u_i^j\;,
+
+    for all :math:`i` in a given set of DOFs. :math:`j = 1, \dots, n` are
+    the linear constraint indices and :math:`c^j` are given weights of
+    the independent nodes.
+    """
+    kind = 'multi_node_combination'
 
     def __init__(self, name, regions, dof_names, dof_map_fun,
                  constraints, variables, ts, functions):
@@ -535,7 +548,7 @@ class NodalCombinationXOperator(LCBCOperator):
                               variables, functions=functions)
 
         if dof_names[0] != dof_names[1]:
-            msg = ('nodal combination EPBC dof lists do not match!'
+            msg = ('multi node combination EPBC dof lists do not match!'
                    f' ({dof_names[0]}, {dof_names[1]})')
             raise ValueError(msg)
 
