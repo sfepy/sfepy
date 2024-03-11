@@ -75,6 +75,11 @@ def check_lcs(out, pb, state, extend=None):
     result = {True: 'passed', False: 'failed'}[ok]
     output(f'multi node linear condition test {result}!')
 
+    # tests_lcbcs hook:
+    nls_status = pb.get_solver().status.nls_status
+    if hasattr(nls_status, 'conditions'):
+        nls_status.conditions.append(int(not ok))
+
     return out
 
 

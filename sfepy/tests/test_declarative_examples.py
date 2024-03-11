@@ -44,6 +44,7 @@ examples = [
     'linear_elasticity/linear_elastic_up.py',
     'linear_elasticity/linear_viscoelastic.py',
     'linear_elasticity/material_nonlinearity.py',
+    'linear_elasticity/multi_node_lcbcs.py',
     'linear_elasticity/nodal_lcbcs.py',
     'linear_elasticity/prestress_fibres.py',
     'linear_elasticity/seismic_load.py',
