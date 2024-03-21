@@ -528,13 +528,13 @@ class MatchDOFsOperator(ShiftedPeriodicOperator):
 
 class MultiNodeLCOperator(LCBCOperator):
     r"""
-    Transformation matrix operator that define the DOFs in one (depenedent) node
-    as a linear combination of the DOFs in some other (independent) nodes.
+    Transformation matrix operator that defines the DOFs at one (dependent) node
+    as a linear combination of the DOFs at some other (independent) nodes.
 
     The linear combination is given by:
 
     .. math::
-        \bar u_i \sum_{j=1}^n c^{j} u_i^j\;,
+        u_i \sum_{j=1}^n c^{j} u_i^j\;,
 
     for all :math:`i` in a given set of DOFs. :math:`j = 1, \dots, n` are
     the linear constraint indices and :math:`c^j` are given weights of
