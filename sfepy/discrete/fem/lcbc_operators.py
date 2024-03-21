@@ -2,7 +2,6 @@
 Operators for enforcing linear combination boundary conditions in nodal FEM
 setting.
 """
-from __future__ import absolute_import
 import numpy as nm
 import scipy.sparse as sp
 
@@ -12,8 +11,7 @@ from sfepy.discrete.common.dof_info import DofInfo, expand_nodes_to_equations
 from sfepy.discrete.fem.utils import (compute_nodal_normals,
                                       compute_nodal_edge_dirs)
 from sfepy.discrete.conditions import get_condition_value, Function
-import six
-from six.moves import range
+
 
 class LCBCOperator(Struct):
     """
@@ -379,7 +377,7 @@ class NodalLCOperator(MRLCBCOperator):
             ifixed = []
             islaves = set()
             ccs = []
-            for key, _poly in six.iteritems(sol):
+            for key, _poly in sol.items():
                 imaster = int(key.name[1:])
                 imasters.append(imaster)
 
@@ -528,6 +526,78 @@ class MatchDOFsOperator(ShiftedPeriodicOperator):
                                          ts, functions=functions)
 
 
+class MultiNodeLCOperator(LCBCOperator):
+    r"""
+    Transformation matrix operator that defines the DOFs at one (dependent) node
+    as a linear combination of the DOFs at some other (independent) nodes.
+
+    The linear combination is given by:
+
+    .. math::
+        \bar u_i = \sum_{j=1}^n c^{j} u_i^j\;,
+
+    for all :math:`i` in a given set of DOFs. :math:`j = 1, \dots, n` are
+    the linear constraint indices and :math:`c^j` are given weights of
+    the independent nodes.
+    """
+    kind = 'multi_node_combination'
+
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 constraints, variables, ts, functions):
+        LCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                              variables, functions=functions)
+
+        if dof_names[0] != dof_names[1]:
+            msg = ('multi node combination EPBC dof lists do not match!'
+                   f' ({dof_names[0]}, {dof_names[1]})')
+            raise ValueError(msg)
+
+        mvar, svar = variables[self.var_names[0]], variables[self.var_names[1]]
+        mfield, sfield = mvar.field, svar.field
+
+        mnodes = mfield.get_dofs_in_region(regions[0], merge=True)
+        snodes = sfield.get_dofs_in_region(regions[1], merge=True)
+
+        if constraints is None:
+            midxs, sidxs, constraints = \
+                self.dof_map_fun(mfield.get_coor(mnodes),
+                                 sfield.get_coor(snodes))
+        else:
+            midxs, sidxs = self.dof_map_fun(mfield.get_coor(mnodes),
+                                            sfield.get_coor(snodes))
+            constraints = nm.tile(constraints, (len(midxs), 1))
+
+        sidxs0, smap = nm.unique(sidxs, return_inverse=True)
+
+        self.mdofs = expand_nodes_to_equations(mnodes[midxs], dof_names[0],
+                                               self.all_dof_names[0])
+        self.sdofs = expand_nodes_to_equations(snodes[sidxs0], dof_names[1],
+                                               self.all_dof_names[1])
+
+        meq, seq = mvar.eq_map.eq[self.mdofs], svar.eq_map.eq[self.sdofs]
+        # meq, seq = meq[meq >= 0], seq[seq >= 0]
+        dpn = len(dof_names[0])
+        ncons = constraints.shape[1]
+        smap = smap.reshape((-1, ncons))
+        n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
+
+        vals = nm.repeat(constraints, dpn, axis=0).T.ravel()
+        rows = nm.tile(meq, ncons)
+        aux = nm.arange(dpn)[None, :]
+        idxs = [(snds[:, None] * dpn + aux).ravel() for snds in smap.T]
+        cols = seq[nm.hstack(idxs)]
+
+        mtx = sp.coo_matrix((vals, (rows, cols)), shape=n_dofs)
+        self.mtx = mtx.tocsr()
+
+        self.ameq = meq
+        self.aseq = seq
+
+        self.n_mdof = len(nm.unique(meq))
+        self.n_sdof = len(nm.unique(seq))
+        self.n_new_dof = 0
+
+
 class LCBCOperators(Container):
     """
     Container holding instances of LCBCOperator subclasses for a single
@@ -601,7 +671,8 @@ class LCBCOperators(Container):
 
         Initializes the global column indices and DOF counts.
         """
-        keys = self.variables.adi.var_names
+        adi = self.variables.adi
+        keys = [k for k in adi.var_names if k not in adi.shared_dofs]
         self.n_master = {}.fromkeys(keys, 0)
         self.n_slave = {}.fromkeys(keys, 0)
         self.n_new = {}.fromkeys(keys, 0)
@@ -616,14 +687,14 @@ class LCBCOperators(Container):
             ics.setdefault(op.var_names[0], []).append((ii, op.n_new_dof))
 
         self.ics = {}
-        for key, val in six.iteritems(ics):
+        for key, val in ics.items():
             iis, ics = zip(*val)
             self.ics[key] = (iis, nm.cumsum(nm.r_[0, ics]))
 
         self.n_free = {}
         self.n_active = {}
-        n_dof = self.variables.adi.n_dof
-        for key in six.iterkeys(self.n_master):
+        n_dof = adi.n_dof
+        for key in keys:
             self.n_free[key] = n_dof[key] - self.n_master[key]
             self.n_active[key] = self.n_free[key] + self.n_new[key]
 
@@ -663,10 +734,10 @@ class LCBCOperators(Container):
         if len(self) == 0: return (None,) * 3
 
         n_dof = self.variables.adi.n_dof_total
-        n_constrained = nm.sum([val for val in six.itervalues(self.n_master)])
-        n_dof_free = nm.sum([val for val in six.itervalues(self.n_free)])
-        n_dof_new = nm.sum([val for val in six.itervalues(self.n_new)])
-        n_dof_active = nm.sum([val for val in six.itervalues(self.n_active)])
+        n_constrained = nm.sum([val for val in self.n_master.values()])
+        n_dof_free = nm.sum([val for val in self.n_free.values()])
+        n_dof_new = nm.sum([val for val in self.n_new.values()])
+        n_dof_active = nm.sum([val for val in self.n_active.values()])
 
         output('dofs: total %d, free %d, constrained %d, new %d'\
                % (n_dof, n_dof_free, n_constrained, n_dof_new))
@@ -755,8 +826,9 @@ class LCBCOperators(Container):
             ir = nm.where(lcbc_mask)[0]
             ic = nm.empty((n_dof_free,), dtype=nm.int32)
             for var_name in adi.var_names:
-                ii = nm.arange(fdi.n_dof[var_name], dtype=nm.int32)
-                ic[fdi.indx[var_name]] = lcdi.indx[var_name].start + ii
+                if var_name not in adi.shared_dofs:
+                    ii = nm.arange(fdi.n_dof[var_name], dtype=nm.int32)
+                    ic[fdi.indx[var_name]] = lcdi.indx[var_name].start + ii
 
             mtx_lc2 = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
                                     shape=(n_dof, n_dof_active),
