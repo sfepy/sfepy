@@ -534,7 +534,7 @@ class MultiNodeLCOperator(LCBCOperator):
     The linear combination is given by:
 
     .. math::
-        u_i \sum_{j=1}^n c^{j} u_i^j\;,
+        \bar u_i = \sum_{j=1}^n c^{j} u_i^j\;,
 
     for all :math:`i` in a given set of DOFs. :math:`j = 1, \dots, n` are
     the linear constraint indices and :math:`c^j` are given weights of
