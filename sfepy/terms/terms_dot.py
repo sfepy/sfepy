@@ -447,7 +447,6 @@ class VectorDotScalarTerm(Term):
 
             else:
                 qp_var, geo, fmode = vvar, vgs, 2
-                bfve, bfsc = bfsc, bfve
 
             if diff_var is None:
                 val_qp = self.get(qp_var, 'val')
