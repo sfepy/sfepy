@@ -487,6 +487,15 @@ custom = {
                                 -0.0245554,-0.129086,0.991329],
         },
     },
+    'linear_elasticity/multi_node_lcbcs.py': {
+        '': {
+            'fields': ['u:wu:e'],
+            'force_view_3d': True,
+            'camera_position': [0.175,0.125,0.735014,
+                                0.175,0.125,0,
+                                0,1,0],
+        },
+    },
     'linear_elasticity/seismic_load.py': {
         '': {
             'fields': ['cauchy_stress:wu:f10:p0', '1:vw:p0'],
@@ -532,6 +541,18 @@ custom = {
             'camera_position': [-5.912, -6.64883, 1.80888,
                                 5.05199, 2.28013, -1.49468,
                                 0, 0, 1],
+        },
+    },
+    'linear_elasticity/wedge_mesh.py': {
+        'command': 'sfepy-run sfepy/examples/linear_elasticity/wedge_mesh.py',
+        'result': 'beam_w14.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['u:wu:e:o0.5'],
+                'camera_position': [0.927482,-0.574865,0.307926,
+                                    0.372897,0.120369,-0.0347131,
+                                    -0.326236,0.19556,0.924838],
+            }
         },
     },
     'miscellaneous/live_plot.py': {
@@ -843,7 +864,8 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
                           camera=[225, 75, 1],
                           camera_position=None,
                           view_2d=False,
-                          force_view_3d=False)
+                          force_view_3d=False,
+                          show_step_time=False)
 
     ensure_path(images_dir + os.path.sep)
 
