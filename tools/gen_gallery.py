@@ -843,7 +843,8 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
                           camera=[225, 75, 1],
                           camera_position=None,
                           view_2d=False,
-                          force_view_3d=False)
+                          force_view_3d=False,
+                          show_step_time=False)
 
     ensure_path(images_dir + os.path.sep)
 
