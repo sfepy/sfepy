@@ -534,6 +534,18 @@ custom = {
                                 0, 0, 1],
         },
     },
+    'linear_elasticity/wedge_mesh.py': {
+        'command': 'sfepy-run sfepy/examples/linear_elasticity/wedge_mesh.py',
+        'result': 'beam_w14.vtk',
+        'sfepy-view-options': {
+            '': {
+                'fields': ['u:wu:e:o0.5'],
+                'camera_position': [0.927482,-0.574865,0.307926,
+                                    0.372897,0.120369,-0.0347131,
+                                    -0.326236,0.19556,0.924838],
+            }
+        },
+    },
     'miscellaneous/live_plot.py': {
         'command_0': 'python3 sfepy/examples/miscellaneous/live_plot.py -o output',
         'command_1': 'python3 sfepy/scripts/plot_logs.py output/live_plot.txt -o output/live_plot.png -n',
