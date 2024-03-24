@@ -487,6 +487,15 @@ custom = {
                                 -0.0245554,-0.129086,0.991329],
         },
     },
+    'linear_elasticity/multi_node_lcbcs.py': {
+        '': {
+            'fields': ['u:wu:e'],
+            'force_view_3d': True,
+            'camera_position': [0.175,0.125,0.735014,
+                                0.175,0.125,0,
+                                0,1,0],
+        },
+    },
     'linear_elasticity/seismic_load.py': {
         '': {
             'fields': ['cauchy_stress:wu:f10:p0', '1:vw:p0'],
