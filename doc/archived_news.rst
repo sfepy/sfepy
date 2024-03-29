@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **29.12.2022** Version 2022.4 released (new examples: transient heat equation
+  with several material domains and scalar Helmholtz equation, adaptive time
+  step control for elastodynamics solvers, central difference elastodynamics
+  solver, etc.), see :ref:`release notes <2022.3-2022.4>`.
+
 * **29.09.2022** Version 2022.3 released (reorganized scripts, PyPI support,
   speed-up of linear elastodynamics problems, improved homogenization-based
   recovery of micro-scale solutions, etc.), see :ref:`release notes

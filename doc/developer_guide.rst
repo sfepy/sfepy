@@ -1434,6 +1434,7 @@ Tools
    :maxdepth: 2
 
    src/tools/build_helpers
+   src/tools/gen_field_table
    src/tools/gen_gallery
    src/tools/gen_legendre_simplex_base
    src/tools/gen_lobatto1d_c
