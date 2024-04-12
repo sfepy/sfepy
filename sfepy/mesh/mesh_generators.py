@@ -127,7 +127,7 @@ def gen_block_mesh(dims, shape, centre, mat_id=0, name='block',
 
 def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                       is_open=False, open_angle=0.0, non_uniform=False,
-                      name='cylinder', verbose=True):
+                      make_2d=False, name='cylinder', verbose=True):
     """
     Generate a cylindrical mesh along an axis. Its cross-section can be
     ellipsoidal.
@@ -136,7 +136,8 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     ----------
     dims : array of 5 floats
         Dimensions of the cylinder: inner surface semi-axes a1, b1, outer
-        surface semi-axes a2, b2, length.
+        surface semi-axes a2, b2, length. The length can be zero, resulting in
+        a planar annular topology.
     shape : array of 3 ints
         Shape (counts of nodes in radial, circumferential and longitudinal
         directions) of the cylinder mesh.
@@ -154,6 +155,8 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
         If True, space the mesh nodes in radial direction so that the element
         volumes are (approximately) the same, making thus the elements towards
         the outer surface thinner.
+    make_2d : boolean
+        If True, generate an annular mesh in the x-y plane. Sets length to 0.
     name : string
         Mesh name.
     verbose : bool
@@ -169,6 +172,16 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
 
     a1, b1, a2, b2, length = dims
     nr, nfi, nl = shape
+
+    is_2d_topo = False
+    if make_2d:
+        length = 0.0
+        is_2d_topo = True
+
+    if length == 0.0:
+        nl = 1
+        is_2d_topo = True
+
     origin = centre - nm.array([0.5 * length, 0.0, 0.0])
 
     dfi = 2.0 * (nm.pi - open_angle) / nfi
@@ -204,7 +217,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
         ras = nm.linspace(a1, a2, nr)
         rbs = nm.linspace(b1, b2, nr)
 
-    # This is 3D only...
+    # This is always 3D.
     output('generating %d vertices...' % n_nod, verbose=verbose)
     ii = 0
     for ix in range(nr):
@@ -222,32 +235,57 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     assert_(ii == n_nod)
     output('...done', verbose=verbose)
 
-    n_el = (nr - 1) * nfi * (nl - 1)
-    conn = nm.zeros((n_el, 8), dtype=nm.int32)
+    if not is_2d_topo:
+        n_el = (nr - 1) * nfi * (nl - 1)
+
+    else:
+        n_el = (nr - 1) * nfi
 
     output('generating %d cells...' % n_el, verbose=verbose)
-    ii = 0
-    for (ix, iy, iz) in cycle([nr-1, nnfi, nl-1]):
-        if iy < (nnfi - 1):
-            conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
-                          grid[ix+1,iy+1,iz  ], grid[ix  ,iy+1,iz  ],
-                          grid[ix  ,iy  ,iz+1], grid[ix+1,iy  ,iz+1],
-                          grid[ix+1,iy+1,iz+1], grid[ix  ,iy+1,iz+1]]
-            ii += 1
-        elif not is_open:
-            conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
-                          grid[ix+1,0,iz  ], grid[ix  ,0,iz  ],
-                          grid[ix  ,iy  ,iz+1], grid[ix+1,iy  ,iz+1],
-                          grid[ix+1,0,iz+1], grid[ix  ,0,iz+1]]
-            ii += 1
+    if not is_2d_topo:
+        n_el = (nr - 1) * nfi * (nl - 1)
+        conn = nm.zeros((n_el, 8), dtype=nm.int32)
+        ii = 0
+        for (ix, iy, iz) in cycle([nr-1, nnfi, nl-1]):
+            if iy < (nnfi - 1):
+                conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
+                              grid[ix+1,iy+1,iz  ], grid[ix  ,iy+1,iz  ],
+                              grid[ix  ,iy  ,iz+1], grid[ix+1,iy  ,iz+1],
+                              grid[ix+1,iy+1,iz+1], grid[ix  ,iy+1,iz+1]]
+                ii += 1
+            elif not is_open:
+                conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
+                              grid[ix+1,0,iz  ], grid[ix  ,0,iz  ],
+                              grid[ix  ,iy  ,iz+1], grid[ix+1,iy  ,iz+1],
+                              grid[ix+1,0,iz+1], grid[ix  ,0,iz+1]]
+                ii += 1
+
+        desc = '3_8'
+
+    else:
+        n_el = (nr - 1) * nfi
+        conn = nm.zeros((n_el, 4), dtype=nm.int32)
+        ii = 0
+        for (ix, iy) in cycle([nr-1, nnfi]):
+            if iy < (nnfi - 1):
+                conn[ii,:] = [grid[ix  ,iy  ,0], grid[ix+1,iy  ,0],
+                              grid[ix+1,iy+1,0], grid[ix  ,iy+1,0]]
+                ii += 1
+            elif not is_open:
+                conn[ii,:] = [grid[ix  ,iy  ,0], grid[ix+1,iy,0],
+                              grid[ix+1,0,0]   , grid[ix     ,0 ,0]]
+                ii += 1
+
+        desc = '2_4'
 
     mat_id = nm.zeros((n_el,), dtype = nm.int32)
-    desc = '3_8'
 
     assert_(n_nod == (conn.max() + 1))
     output('...done', verbose=verbose)
 
-    if axis == 'z':
+    if make_2d:
+        coors = coors[:,[1,2]]
+    elif axis == 'z':
         coors = coors[:,[1,2,0]]
     elif axis == 'y':
         coors = coors[:,[2,0,1]]
