@@ -20,8 +20,10 @@ helps = {
     'axis' :
     'axis of the cylinder, one of x, y, z [default: %(default)s]',
     'dims' :
-    'dimensions of the cylinder: inner surface semi-axes a1, b1, outer'\
-    ' surface semi-axes a2, b2, length [default: %(default)s]',
+    'dimensions of the cylinder: inner surface semi-axes a1, b1, outer'
+    ' surface semi-axes a2, b2, length. If the length is 0, a planar annular'
+    ' mesh topology is generated embedded in 3D space or, with --2d option,'
+    ' in 2D space, forcing all z coordinates to be zero [default: %(default)s]',
     'shape' :
     'shape (counts of nodes in radial, circumferential and longitudinal'\
     ' directions) of the cylinder mesh [default: %(default)s]',
@@ -37,6 +39,9 @@ helps = {
     'space the mesh nodes in radial direction so that the element'\
     ' volumes are (approximately) the same, making thus the elements towards'\
     ' the outer surface thinner',
+    '2d' :
+    'set axis to z, length and all z coordinates to zero and generate'
+    ' an annular mesh in 2D space',
 }
 
 def gen_cylinder(options):
@@ -59,6 +64,7 @@ def gen_cylinder(options):
                              is_open=options.is_open,
                              open_angle=options.open_angle,
                              non_uniform=options.non_uniform,
+                             make_2d=options.is_2d,
                              name=options.output_filename)
 
     io = MeshIO.any_from_filename(options.output_filename,
@@ -98,6 +104,9 @@ def add_args(parser):
     parser.add_argument("--non-uniform",
                         action = "store_true", dest = "non_uniform",
                         default = False, help = helps['non_uniform'])
+    parser.add_argument("-2", "--2d",
+                        action = "store_true", dest = "is_2d",
+                        default = False, help = helps['2d'])
 
 def main():
     parser = ArgumentParser(description=__doc__)
