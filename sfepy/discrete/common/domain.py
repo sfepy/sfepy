@@ -262,13 +262,17 @@ class Domain(Struct):
             print('parsing failed:', select)
             raise
 
+        eopts = extra_options
+
         tdim = self.shape.tdim if parent is None else self.regions[parent].tdim
+        if eopts is not None:
+            tdim = eopts.get('cell_tdim', tdim)
+
         region = visit_stack(stack, region_op,
                              region_leaf(self, self.regions, select,
                                          functions, tdim))
 
         finalize = True
-        eopts = extra_options
         if eopts is not None:
             if 'mesh_dim' in eopts:
                 region = self.create_extra_tdim_region(region, functions,
