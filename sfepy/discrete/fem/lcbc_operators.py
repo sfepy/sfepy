@@ -141,6 +141,87 @@ class RigidOperator(MRLCBCOperator):
         self.n_new_dof = n_rigid_dof
         self.mtx = self.mtx[indx]
 
+class Rigid2Operator(LCBCOperator):
+    r"""
+    Transformation matrix operator for rigid body multi-point constraint LCBCs.
+
+    For each dependent node :math:`i` in the first region, its DOFs
+    :math:`u^i_j` are given by the displacement :math:`\bar{u}_j` and rotation
+    :math:`r_j` in the single independent node in the second region:
+
+    .. math::
+        u^i_j = \bar{u}_j + S_{ij} r_j
+
+    where the spin matrix :math:`S_{ij}` is computed using the coordinates
+    relative to the independent node, i.e. :math:`\ul{x} - \bar{\ul{x}}`.
+
+    A simplified version for fields without the rotation DOFs is also
+    supported.
+    """
+    kind = 'rigid2'
+
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 variables, ts=None, functions=None):
+        LCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                              variables, functions=functions)
+
+        mvar, svar = variables[self.var_names[0]], variables[self.var_names[1]]
+        is_rotation = mvar.n_components < svar.n_components
+        dim = mvar.dim
+        if is_rotation and dim not in (2, 3):
+            raise ValueError('Space dimension must be 2 or 3! (is %d)' % dim)
+
+        mfield, sfield = mvar.field, svar.field
+        mnodes = mfield.get_dofs_in_region(regions[0], merge=True)
+        snodes = sfield.get_dofs_in_region(regions[1], merge=True)
+        if len(snodes) != 1:
+            raise ValueError('Number of independent nodes must be 1! (is %d)'
+                             % len(snodes))
+
+        self.mdofs = expand_nodes_to_equations(mnodes, dof_names[0],
+                                               self.all_dof_names[0])
+        self.sdofs = expand_nodes_to_equations(snodes, dof_names[1],
+                                               self.all_dof_names[1])
+
+        meq, seq = mvar.eq_map.eq[self.mdofs], svar.eq_map.eq[self.sdofs]
+
+        assert_(nm.all(meq >= 0))
+        assert_(nm.all(seq >= 0))
+
+        mcoors = mfield.get_coor(mnodes)
+        scoors = sfield.get_coor(snodes)
+
+        coors = mcoors - scoors
+        n_nod = coors.shape[0]
+
+        mtx_e = nm.tile(nm.eye(dim, dtype=nm.float64), (n_nod, 1))
+        if is_rotation:
+            if dim == 2:
+                mtx_r = nm.empty((dim * n_nod, 1), dtype=nm.float64)
+                mtx_r[0::dim,0] = -coors[:,1]
+                mtx_r[1::dim,0] = coors[:,0]
+
+            elif dim == 3:
+                mtx_r = nm.zeros((dim * n_nod, dim), dtype=nm.float64)
+                mtx_r[0::dim,1] = coors[:,2]
+                mtx_r[0::dim,2] = -coors[:,1]
+                mtx_r[1::dim,0] = -coors[:,2]
+                mtx_r[1::dim,2] = coors[:,0]
+                mtx_r[2::dim,0] = coors[:,1]
+                mtx_r[2::dim,1] = -coors[:,0]
+
+            self.mtx = nm.hstack((mtx_e, mtx_r))
+
+        else:
+            self.mtx = mtx_e
+
+        self.ameq = meq
+        self.aseq = seq
+
+        self.n_mdof = len(meq)
+        self.n_sdof = len(seq)
+        self.n_new_dof = 0
+
 def _save_vectors(filename, vectors, region, mesh, data_name):
     """
     Save vectors defined in region nodes as vector data in mesh vertices.
