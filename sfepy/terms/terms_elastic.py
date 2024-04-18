@@ -963,11 +963,13 @@ class LinearTrussTerm(Term):
         return 0
 
     @staticmethod
-    def get_mtx_t_and_length(coors):
+    def get_mtx_t_and_length(coors, dx=None):
         from sfepy.linalg import norm_l2_along_axis as norm
 
         dim = coors.shape[-1]
-        dx = coors[:, 1, :] - coors[:, 0, :]
+        if dx is None:
+            dx = coors[:, 1, :] - coors[:, 0, :]
+
         mtx_t = nm.zeros((coors.shape[0], dim, dim), dtype=nm.float64)
         length = norm(dx)[:, None]
         v1 = dx / length
@@ -1077,3 +1079,87 @@ class LinearTrussInternalForceTerm(Term):
         n_el, _, _, _, _ = self.get_data_shape(parameter)
 
         return (n_el, 1, 1, 1), parameter.dtype
+
+
+class LinearDSpringTerm(LinearTrussTerm):
+    r"""
+    Linear spring element with the stiffness transformed into
+    the element direction.
+
+    :Definition:
+
+    .. math::
+        f^{(i)}_k = -f^{(j)}_k = K_{kl} (u^{(j)}_l - u^{(i)}_l)\\
+        \quad \forall \mbox{ elements } T_K^{i,j}\\
+        \mbox{ in a region connecting nodes } i, j
+
+    :Arguments:
+        - opt_material : :math:`\ul{d}`
+        - material : :math:`\ul{k}`
+        - virtual: :math:`\ul{v}`
+        - state: :math:`\ul{u}`
+
+    Stiffness matrix
+    :math:`\ul{K} = \ul{T(\ul{d})}^T \ul{K(\ul{k})} \ul{T(\ul{d})}`
+    is defined by 6 components
+    :math:`\ul{k} = [k_{u1}, k_{u2}, k_{u3}, k_{r1}, k_{r2}, k_{r3}]` in 3D
+    and by 3 components :math:`\ul{k} = [k_{u1}, k_{u2}, k_{r1}]`,
+    where :math:`k_{ui}` is the stiffness for the displacement DOF
+    and :math:`r_{ui}` is for the rotational DOF. Note that the components of
+    :math:`\ul{k}` are in local coordinated system specified by a given
+    direction :math:`\ul{d}` or by the vector
+    :math:`\ul{d} = \ul{x}^{(j)} - \ul{x}^{(i)}` for non-coincidental end nodes.
+    """
+    name = 'dw_lin_dspring'
+    arg_types = ('opt_material', 'material', 'virtual', 'state')
+    arg_shapes = [{'opt_material': 'S, 1', 'material': 'D, D',
+                   'virtual': ('D', 'state'), 'state': 'D'},
+                  {'opt_material': None}]
+
+    @staticmethod
+    def function(out, mat, vec, mtx_t, diff_var):
+        dim = mtx_t.shape[-1]
+        if diff_var is None:
+            du = vec[:, 1::2] - vec[:, 0::2]
+
+            dx = nm.matmul(mtx_t.transpose((0, 2, 1)), du[..., None])[:, 0, :]
+            Fe = nm.zeros((2 * dim,), dtype=nm.float64)
+            for k in range(dim):
+                Fe[2*k] = -mat[k]
+                Fe[2*k + 1] = mat[k]
+
+            out[...] = (Fe * dx)[:, None, :, None]
+
+            if mtx_t is not None:
+                membranes.transform_asm_vectors(out, mtx_t)
+
+        else:
+            Ke = nm.zeros((2 * dim, 2 * dim), dtype=nm.float64)
+            for k in range(dim):
+                Ke[2*k, 2*k] = Ke[2*k + 1, 2*k + 1] = mat[k]
+                Ke[2*k + 1, 2*k] = Ke[2*k, 2*k + 1] = -mat[k]
+
+            out[...] = Ke
+
+            if mtx_t is not None:
+                membranes.transform_asm_matrices(out, mtx_t)
+
+        return 0
+
+    def get_fargs(self, dvec, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import create_adof_conn
+
+        econn = virtual.field.get_econn('cell', self.region)
+        coors = virtual.field.get_coor()[econn]
+
+        mtx_t, _ = self.get_mtx_t_and_length(coors, dvec)
+
+        if diff_var is None:
+            _, _, _, _, n_c = self.get_data_shape(virtual)
+            adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
+                                   econn, n_c, 0)
+
+            return mat, state()[adc], mtx_t, diff_var
+        else:
+            return mat, None, mtx_t, diff_var
