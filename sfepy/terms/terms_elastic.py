@@ -1106,7 +1106,7 @@ class LinearDSpringTerm(LinearTrussTerm):
     and by 3 components :math:`\ul{k} = [k_{u1}, k_{u2}, k_{r1}]`,
     where :math:`k_{ui}` is the stiffness for the displacement DOF
     and :math:`r_{ui}` is for the rotational DOF. Note that the components of
-    :math:`\ul{k}` are in local coordinated system specified by a given
+    :math:`\ul{k}` are in the local coordinated system specified by a given
     direction :math:`\ul{d}` or by the vector
     :math:`\ul{d} = \ul{x}^{(j)} - \ul{x}^{(i)}` for non-coincidental end nodes.
     """
@@ -1120,24 +1120,24 @@ class LinearDSpringTerm(LinearTrussTerm):
     def function(out, mat, vec, mtx_t, diff_var):
         nel, _, dim = mtx_t.shape
         ndof = mat.shape[2]
+        ntr = {2: 4, 3: 12}[dim]
 
         ke = nm.zeros((nel, 2 * ndof, 2 * ndof), dtype=nm.float64)
         for k in range(ndof):
             ke[:, 2*k, 2*k] = ke[:, 2*k + 1, 2*k + 1] = mat[:, 0, k, 0]
             ke[:, 2*k + 1, 2*k] = ke[:, 2*k, 2*k + 1] = -mat[:, 0, k, 0]
 
-        # from sfepy.base.base import debug; debug()
         if diff_var is None:
             trans_vec = membranes.transform_asm_vectors
             vec_loc = vec.copy()[..., None]
-            trans_vec(vec_loc[:, None, ...], mtx_t.transpose((0, 2, 1)))
+            trans_vec(vec_loc[:, None, :ntr ,:], mtx_t.transpose((0, 2, 1)))
             fe = dot_sequences(ke, vec_loc)
             out[...] = fe[:, None, ...]
-            trans_vec(out, mtx_t)
+            trans_vec(out[:, :, :ntr ,:], mtx_t)
 
         else:
             out[...] = ke
-            membranes.transform_asm_matrices(out, mtx_t)
+            membranes.transform_asm_matrices(out[..., :ntr, :ntr], mtx_t)
 
         return 0
 
