@@ -1114,8 +1114,6 @@ class LinearDSpringTerm(LinearTrussTerm):
     arg_types = ('opt_material', 'material', 'virtual', 'state')
     arg_shapes = [{'opt_material': 'D, 1', 'material': 'D, 1',
                    'virtual': ('D', 'state'), 'state': 'D'},
-                  {'material': 'S, 1', 'virtual': ('S', 'state'),
-                   'state': 'S'},
                   {'opt_material': None}]
 
     @staticmethod
@@ -1128,6 +1126,7 @@ class LinearDSpringTerm(LinearTrussTerm):
             ke[:, 2*k, 2*k] = ke[:, 2*k + 1, 2*k + 1] = mat[:, 0, k, 0]
             ke[:, 2*k + 1, 2*k] = ke[:, 2*k, 2*k + 1] = -mat[:, 0, k, 0]
 
+        # from sfepy.base.base import debug; debug()
         if diff_var is None:
             trans_vec = membranes.transform_asm_vectors
             vec_loc = vec.copy()[..., None]
@@ -1159,3 +1158,11 @@ class LinearDSpringTerm(LinearTrussTerm):
             return mat, state()[adc], mtx_t, diff_var
         else:
             return mat, None, mtx_t, diff_var
+
+
+class LinearDRotSpringTerm(LinearDSpringTerm):
+    name = 'dw_lin_dspring_rot'
+    arg_types = ('opt_material', 'material', 'virtual', 'state')
+    arg_shapes = [{'opt_material': 'D, 1', 'material': 'S, 1',
+                   'virtual': ('S', 'state'), 'state': 'S'},
+                  {'opt_material': None}]
