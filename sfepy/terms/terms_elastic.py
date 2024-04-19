@@ -994,7 +994,7 @@ class LinearTrussTerm(Term):
             mtx_t[:, :, 1] = v2
             mtx_t[:, :, 2] = v3
         else:
-            raise ValueError(f'unsupported element dimension {dim}!')
+            raise ValueError(f'unsupported space dimension {dim}!')
 
         return mtx_t, length
 
