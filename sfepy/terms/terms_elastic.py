@@ -1106,7 +1106,7 @@ class LinearDSpringTerm(LinearTrussTerm):
     and by 3 components :math:`\ul{k} = [k_{u1}, k_{u2}, k_{r1}]`,
     where :math:`k_{ui}` is the stiffness for the displacement DOF
     and :math:`r_{ui}` is for the rotational DOF. Note that the components of
-    :math:`\ul{k}` are in the local coordinated system specified by a given
+    :math:`\ul{k}` are in the local coordinates system specified by a given
     direction :math:`\ul{d}` or by the vector
     :math:`\ul{d} = \ul{x}^{(j)} - \ul{x}^{(i)}` for non-coincidental end nodes.
     """
@@ -1147,6 +1147,9 @@ class LinearDSpringTerm(LinearTrussTerm):
 
         econn = virtual.field.get_econn('cell', self.region)
         coors = virtual.field.get_coor()[econn]
+
+        if dvec is not None:
+            dvec = dvec[:, 0, :, 0]
 
         mtx_t, _ = self.get_mtx_t_and_length(coors, dvec)
 
