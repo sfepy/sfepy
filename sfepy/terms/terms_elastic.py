@@ -1112,37 +1112,33 @@ class LinearDSpringTerm(LinearTrussTerm):
     """
     name = 'dw_lin_dspring'
     arg_types = ('opt_material', 'material', 'virtual', 'state')
-    arg_shapes = [{'opt_material': 'S, 1', 'material': 'D, D',
+    arg_shapes = [{'opt_material': 'D, 1', 'material': 'D, 1',
                    'virtual': ('D', 'state'), 'state': 'D'},
+                  {'material': 'S, 1', 'virtual': ('S', 'state'),
+                   'state': 'S'},
                   {'opt_material': None}]
 
     @staticmethod
     def function(out, mat, vec, mtx_t, diff_var):
-        dim = mtx_t.shape[-1]
+        nel, _, dim = mtx_t.shape
+        ndof = mat.shape[2]
+
+        ke = nm.zeros((nel, 2 * ndof, 2 * ndof), dtype=nm.float64)
+        for k in range(ndof):
+            ke[:, 2*k, 2*k] = ke[:, 2*k + 1, 2*k + 1] = mat[:, 0, k, 0]
+            ke[:, 2*k + 1, 2*k] = ke[:, 2*k, 2*k + 1] = -mat[:, 0, k, 0]
+
         if diff_var is None:
-            du = vec[:, 1::2] - vec[:, 0::2]
-
-            dx = nm.matmul(mtx_t.transpose((0, 2, 1)), du[..., None])[:, 0, :]
-            Fe = nm.zeros((2 * dim,), dtype=nm.float64)
-            for k in range(dim):
-                Fe[2*k] = -mat[k]
-                Fe[2*k + 1] = mat[k]
-
-            out[...] = (Fe * dx)[:, None, :, None]
-
-            if mtx_t is not None:
-                membranes.transform_asm_vectors(out, mtx_t)
+            trans_vec = membranes.transform_asm_vectors
+            vec_loc = vec.copy()[..., None]
+            trans_vec(vec_loc[:, None, ...], mtx_t.transpose((0, 2, 1)))
+            fe = dot_sequences(ke, vec_loc)
+            out[...] = fe[:, None, ...]
+            trans_vec(out, mtx_t)
 
         else:
-            Ke = nm.zeros((2 * dim, 2 * dim), dtype=nm.float64)
-            for k in range(dim):
-                Ke[2*k, 2*k] = Ke[2*k + 1, 2*k + 1] = mat[k]
-                Ke[2*k + 1, 2*k] = Ke[2*k, 2*k + 1] = -mat[k]
-
-            out[...] = Ke
-
-            if mtx_t is not None:
-                membranes.transform_asm_matrices(out, mtx_t)
+            out[...] = ke
+            membranes.transform_asm_matrices(out, mtx_t)
 
         return 0
 
