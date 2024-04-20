@@ -210,11 +210,17 @@ class Rigid2Operator(LCBCOperator):
                 mtx_r[2::dim,0] = coors[:,1]
                 mtx_r[2::dim,1] = -coors[:,0]
 
-            self.mtx = nm.hstack((mtx_e, mtx_r))
+            mtx = nm.hstack((mtx_e, mtx_r))
 
         else:
-            self.mtx = mtx_e
+            mtx = mtx_e
 
+        rows = nm.repeat(meq, len(seq))
+        cols = nm.tile(seq, len(meq))
+        n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
+        mtx = sp.coo_matrix((mtx.ravel(), (rows, cols)), shape=n_dofs)
+
+        self.mtx = mtx.tocsr()
         self.ameq = meq
         self.aseq = seq
 
