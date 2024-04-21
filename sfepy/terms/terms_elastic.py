@@ -1050,7 +1050,9 @@ class LinearTrussInternalForceTerm(Term):
     @staticmethod
     def function(out, mat, vec, mtx_t):
         dim = mtx_t.shape[-1]
-        if dim == 2:
+        if dim == 1:
+            du = vec[:, [1]] - vec[:, [0]]
+        elif dim == 2:
             du = vec[:, [1, 3]] - vec[:, [0, 2]]
         elif dim == 3:
             du = vec[:, [1, 3, 5]] - vec[:, [0, 2, 4]]
