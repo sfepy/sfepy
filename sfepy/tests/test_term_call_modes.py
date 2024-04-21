@@ -8,7 +8,9 @@ from sfepy import data_dir
 import sfepy.base.testing as tst
 
 filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
-                   for geom in ['1_2', '2_3', '2_4', '3_4', '3_8', '3_2_4']]
+                   for geom in ['1_2', '2_1_2', '3_1_2',
+                                '2_3', '2_4',
+                                '3_4', '3_8', '3_2_4']]
 
 not_tested_terms = ['dw_ns_dot_grad_s',
                     'dw_tl_he_ogden_ad']
