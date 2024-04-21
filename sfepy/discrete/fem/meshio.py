@@ -345,33 +345,41 @@ class MeshioLibIO(MeshIO):
                 file_format = _filetypes_from_path(pathlib.Path(filename))[-1]
 
         self.file_format = file_format
+        # If True, ignore axes with all-equal coordinates.
+        self.squeeze = self.file_format in ('vtk', 'vtu')
 
     def read_bounding_box(self, ret_dim=False):
         m = meshiolib.read(self.filename, file_format=self.file_format)
+        dim = self._get_dimension(m.points, squeeze=self.squeeze)
 
-        bbox = nm.vstack([nm.amin(m.points, 0), nm.amax(m.points, 0)])
+        points = m.points[:, :dim]
+        bbox = nm.vstack([nm.amin(points, 0), nm.amax(points, 0)])
 
         if ret_dim:
-            return bbox, m.points.shape[1]
+            return bbox, dim
         else:
             return bbox
 
     @staticmethod
-    def _get_dimension(points):
-        dim = nm.sum(nm.max(points, axis=0)
-                     - nm.min(points, axis=0) > 1e-15)
+    def _get_dimension(points, squeeze=True):
+        if squeeze: # Ignore axes with all-equal coordinates.
+            dim = nm.sum(nm.max(points, axis=0)
+                         - nm.min(points, axis=0) > 1e-15)
+
+        else:
+            dim = points.shape[1]
+
         return dim
 
     def read_dimension(self):
         m = meshiolib.read(self.filename, file_format=self.file_format)
-        dim = self._get_dimension(m.points)
+        dim = self._get_dimension(m.points, squeeze=self.squeeze)
 
         return dim
 
     def read(self, mesh, omit_facets=False, **kwargs):
         m = meshiolib.read(self.filename, file_format=self.file_format)
-        dim = self._get_dimension(m.points)
-
+        dim = self._get_dimension(m.points, squeeze=self.squeeze)
         ngkey = None
         for k in m.point_data.keys():
             if k == 'node_groups' or k.endswith(':ref'):
@@ -545,7 +553,7 @@ class MeshioLibIO(MeshIO):
 
         filename = get_default(filename, self.filename)
         m = meshiolib.read(filename, file_format=self.file_format)
-        dim = self._get_dimension(m.points)
+        dim = self._get_dimension(m.points, squeeze=self.squeeze)
 
         def _fix_shape(data):
             if data.ndim == 2:
