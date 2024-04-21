@@ -877,7 +877,7 @@ class LinearSpringTerm(Term):
         dim = out.shape[-2] // 2
         if diff_var is None:
             aux = nm.array([-1, 1])
-            for k in nm.arange(dim) * dim:
+            for k in nm.arange(dim) * 2:
                 du = (vec[:, k] - vec[:, k + 1])[:, None]
                 out[:, 0, k:(k + 2), 0] = aux * du
 
@@ -887,7 +887,7 @@ class LinearSpringTerm(Term):
             eye = nm.eye(2 * dim, 2 * dim, dtype=nm.float64)
             eye.shape = (1, 1) + eye.shape
             out[...] = - stiffness * eye
-            for k in nm.arange(dim) * dim:
+            for k in nm.arange(dim) * 2:
                 out[..., k, k + 1] = out[..., k + 1, k] = 1
 
         return 0
