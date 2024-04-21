@@ -975,8 +975,9 @@ class LinearTrussTerm(Term):
         v1 = dx / length
         mtx_t[:, :, 0] = v1
 
-        if dim == 2:
-            v2 = nm.zeros_like(v1)
+        if dim == 1:
+            pass
+        elif dim == 2:
             mtx_t[:, 0, 1] = -v1[:, 1]
             mtx_t[:, 1, 1] = v1[:, 0]
         elif dim == 3:
@@ -1120,8 +1121,7 @@ class LinearDSpringTerm(LinearTrussTerm):
     def function(out, mat, vec, mtx_t, diff_var):
         nel, _, dim = mtx_t.shape
         ndof = mat.shape[2]
-        ntr = {2: 4, 3: 12}[dim]
-
+        ntr = {1: 1, 2: 4, 3: 12}[dim]
         ke = nm.zeros((nel, 2 * ndof, 2 * ndof), dtype=nm.float64)
         for k in range(ndof):
             ke[:, 2*k, 2*k] = ke[:, 2*k + 1, 2*k + 1] = mat[:, 0, k, 0]
@@ -1136,7 +1136,7 @@ class LinearDSpringTerm(LinearTrussTerm):
             trans_vec(out[:, :, :ntr ,:], mtx_t)
 
         else:
-            out[...] = ke
+            out[...] = ke[:, None, ...]
             membranes.transform_asm_matrices(out[..., :ntr, :ntr], mtx_t)
 
         return 0
