@@ -224,8 +224,8 @@ class Rigid2Operator(LCBCOperator):
         self.ameq = meq
         self.aseq = seq
 
-        self.n_mdof = len(meq)
-        self.n_sdof = len(seq)
+        self.n_mdof = len(nm.unique(meq))
+        self.n_sdof = len(nm.unique(seq))
         self.n_new_dof = 0
 
 def _save_vectors(filename, vectors, region, mesh, data_name):
