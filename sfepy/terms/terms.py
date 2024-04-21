@@ -320,6 +320,7 @@ class Term(Struct):
     arg_shapes = {}
     diff_info = {}
     integration = 'cell'
+    integration_order = None # None = any
     geometries = ['1_2', '2_3', '2_4', '3_4', '3_8']
 
     @staticmethod
@@ -422,6 +423,13 @@ class Term(Struct):
         """
         Set the term integral.
         """
+        if self.integration_order is not None:
+            if integral.order != self.integration_order:
+                raise ValueError(
+                    f'integral order for "{self.name}" term must be'
+                    f' {self.integration_order}! (is {integral.order}'
+                    f' of integral "{integral.name}")'
+                )
         self.integral = integral
         if self.integral is not None:
             self.integral_name = self.integral.name
