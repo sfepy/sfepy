@@ -871,6 +871,8 @@ class LinearSpringTerm(Term):
     name = 'dw_lin_spring'
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material': '1, 1', 'virtual': ('D', 'state'), 'state': 'D'}
+    integration_order = 0
+    geometries = ['1_2', '2_1_2', '3_1_2']
 
     @staticmethod
     def function(out, stiffness, vec, diff_var):
@@ -932,6 +934,8 @@ class LinearTrussTerm(Term):
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material': '1, 1', 'virtual': ('D', 'state'),
                   'state': 'D'}
+    integration_order = 0
+    geometries = ['1_2', '2_1_2', '3_1_2']
 
     @staticmethod
     def function(out, mat, vec, mtx_t, length, diff_var):
@@ -1046,6 +1050,8 @@ class LinearTrussInternalForceTerm(Term):
     name = 'ev_lin_truss_force'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material': '1, 1', 'parameter': 'D'}
+    integration_order = 0
+    geometries = ['1_2', '2_1_2', '3_1_2']
 
     @staticmethod
     def function(out, mat, vec, mtx_t):
@@ -1120,6 +1126,8 @@ class LinearDSpringTerm(LinearTrussTerm):
     arg_shapes = [{'opt_material': 'D, 1', 'material': 'D, 1',
                    'virtual': ('D', 'state'), 'state': 'D'},
                   {'opt_material': None}]
+    integration_order = 0
+    geometries = ['1_2', '2_1_2', '3_1_2']
 
     @staticmethod
     def function(out, mat, vec, mtx_t, diff_var):
