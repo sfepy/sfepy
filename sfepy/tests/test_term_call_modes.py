@@ -11,7 +11,6 @@ filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
                    for geom in ['1_2', '2_3', '2_4', '3_4', '3_8', '3_2_4']]
 
 not_tested_terms = ['dw_ns_dot_grad_s',
-                    'dw_lin_spring', 'dw_lin_truss', 'ev_lin_truss_force',
                     'dw_tl_he_ogden_ad']
 
 
@@ -187,12 +186,13 @@ def data():
 
         domains.append(domain)
 
+    integral0 = Integral('i0', order=0)
     integral = Integral('i', order=3)
     qp_coors, qp_weights = integral.get_qp('3_8')
     custom_integral = Integral('i', coors=qp_coors, weights=qp_weights,
                                order='custom')
 
-    return Struct(domains=domains, integral=integral,
+    return Struct(domains=domains, integral0=integral0, integral=integral,
                   custom_integral=custom_integral)
 
 def _test_single_term(data, term_cls, domain, rname):
@@ -207,11 +207,14 @@ def _test_single_term(data, term_cls, domain, rname):
     if not isinstance(arg_shapes_list, list):
         arg_shapes_list = [arg_shapes_list]
 
-    if term_cls.integration != 'custom':
-        integral = data.integral
+    if term_cls.integration == 'custom':
+        integral = data.custom_integral
+
+    elif term_cls.integration_order == 0:
+        integral = data.integral0
 
     else:
-        integral = data.custom_integral
+        integral = data.integral
 
     poly_space_base = getattr(term_cls, 'poly_space_base', 'lagrange')
 
