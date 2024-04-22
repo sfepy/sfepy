@@ -12,7 +12,7 @@ Running the simulation::
 
 Viewing the results::
 
-    sfepy-view beam_h7.vtk beam_t42.vtk beam_w14.vtk -f u:s0:wu:e:p0 u:s1:wu:e:p0 u:s2:wu:e:p0 --camera-position="1.2,-0.6,0.1,0.4,0.1,-0.1,-0.2,0.1,1"
+    sfepy-view output/beam_h7.vtk output/beam_t42.vtk output/beam_w14.vtk -f u:s0:wu:e:p0 u:s1:wu:e:p0 u:s2:wu:e:p0 --camera-position="1.2,-0.6,0.1,0.4,0.1,-0.1,-0.2,0.1,1"
 """
 import os.path as osp
 import numpy as nm
@@ -41,9 +41,9 @@ def mesh_hook(mesh, mode):
         return mesh
 
 
-def test_meshes(pb):
+def test_meshes(pb0):
     out = []
-    conf = pb.conf.copy()
+    conf = pb0.conf.copy()
     ok = True
 
     for mesh_group in meshes:
@@ -58,6 +58,7 @@ def test_meshes(pb):
                 conf.filename_mesh = osp.join(data_dir, 'meshes', '3d', mesh)
 
             pb = Problem.from_conf(conf)
+            pb.set_output_dir(pb0.output_dir)
 
             yield pb, out
 
