@@ -430,11 +430,11 @@ def test_active_only(output_dir):
     conf.options.active_only = False
     pb = Problem.from_conf(conf)
     pb.tsc_conf = None
-    variables_f = pb.solve()
+    variables_f = pb.solve(save_results=False)
 
     conf.options.active_only = True
     pb = Problem.from_conf(conf)
     pb.tsc_conf = None
-    variables_t = pb.solve()
+    variables_t = pb.solve(save_results=False)
 
     assert nm.allclose(variables_f(), variables_t(), atol=1e-7, rtol=0)
