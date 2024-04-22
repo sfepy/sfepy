@@ -44,6 +44,7 @@ def reference_solution(pb):
     }
 
     rpb = Problem.from_conf(conf)
+    rpb.set_output_dir(pb.output_dir)
 
     return rpb.solve().get_state_parts()['u']
 
