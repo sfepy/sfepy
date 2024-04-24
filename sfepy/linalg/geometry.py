@@ -437,10 +437,16 @@ def get_coors_in_tube(coors, centre, axis, radius_in, radius_out, length,
 
     return out
 
-def get_coors_in_ball(coors, centre, radius, inside=True):
+def get_coors_in_ball(coors, centre, radius, radius2=None, inside=True):
     """
     Return indices of coordinates inside or outside a ball given by
-    centre and radius.
+    centre and radius::
+
+      inside radius radius2 condition
+      True   r      None          |x - c| <= r
+      True   r      r2      r2 <= |x - c| <= r
+      False  r      None    |x - c| >= r
+      False  r      r2      |x - c| >= r | |x - c| <= r2
 
     Notes
     -----
@@ -451,11 +457,19 @@ def get_coors_in_ball(coors, centre, radius, inside=True):
     centre = nm.asarray(centre)
 
     vec = coors - centre[None, :]
+    nvec = norm(vec)
+    if radius2 is None:
+        if inside:
+            out = nm.where(nvec <= radius)[0]
 
-    if inside:
-        out = nm.where(norm(vec) <= radius)[0]
+        else:
+            out = nm.where(nvec >= radius)[0]
 
     else:
-        out = nm.where(norm(vec) >= radius)[0]
+        if inside:
+            out = nm.where((nvec <= radius) & (nvec >= radius2))[0]
+
+        else:
+            out = nm.where((nvec >= radius) & (nvec <= radius2))[0]
 
     return out
