@@ -16,7 +16,7 @@ import fnmatch
 import logging as log
 from setuptools import Command
 from skbuild.command.clean import clean
-from pkg_resources import parse_version
+from packaging import version
 
 from install_data import install_data
 
@@ -173,12 +173,12 @@ cmdclass = {
 
 def have_good_cython():
     try:
-        from Cython.Compiler.Version import version
+        from Cython.Compiler.Version import version as cversion
     except ImportError:
         return False
-    return parse_version(version) >= parse_version(CYTHON_MIN_VERSION)
+    return version.parse(cversion) >= version.parse(CYTHON_MIN_VERSION)
 
-def package_check(pkg_name, version=None, optional=False, checker=parse_version,
+def package_check(pkg_name, version=None, optional=False, checker=version.parse,
                   version_getter=None, messages=None, show_only=False):
     """
     Check if package `pkg_name` is present, and in correct version.
@@ -196,7 +196,7 @@ def package_check(pkg_name, version=None, optional=False, checker=parse_version,
        otherwise warn
     checker : callable, optional
        If given, the callable with which to return a comparable thing from a
-       version string. The default is ``pkg_resources.parse_version``.
+       version string. The default is ``packaging.version.parse()``.
     version_getter : callable, optional:
        If given, the callable that takes `pkg_name` as argument, and returns
        the package version string - as in::
