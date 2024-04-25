@@ -15,6 +15,7 @@ from sfepy.base.ioutils import remove_files
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import output_mesh_formats
 from sfepy.discrete.fem.mesh import fix_double_nodes
+from sfepy.discrete.fem.utils import prepare_translate
 import sfepy.mesh.mesh_tools as mt
 from sfepy.mesh.mesh_generators import gen_tiled_mesh
 
@@ -37,6 +38,9 @@ helps = {
     'save-per-mat': 'extract cells by material id and save them into'
     ' separate mesh files with a name based on filename_out and the id'
     ' numbers (preserves original mesh vertices)',
+    'remap-vertex-groups' : 'remap vertex groups to a contiguous range from 0',
+    'remap-cell-groups' : 'remap cell groups (materials) to a contiguous'
+    ' range from 0',
     'tile' : """
       scale a periodic input mesh (a rectangle or box) by a scale factor
       (--scale with a single integer value) and generate a new mesh by
@@ -123,6 +127,12 @@ def main():
                         default=None, help=helps['cell-dim'])
     parser.add_argument('--save-per-mat', action='store_true',
                         dest='save_per_mat', help=helps['save-per-mat'])
+    parser.add_argument('--remap-vertex-groups', action='store_true',
+                        dest='remap_vertex_groups',
+                        help=helps['remap-vertex-groups'])
+    parser.add_argument('--remap-cell-groups', action='store_true',
+                        dest='remap_cell_groups',
+                        help=helps['remap-cell-groups'])
     parser.add_argument('--tile', metavar='nx,ny[,nz]', dest='tile',
                         default=None, help=helps['tile'])
     parser.add_argument('--extract-edges', action='store_true',
@@ -210,6 +220,16 @@ def main():
         data = list(mesh._get_io_data())
         data[0] = nm.pad(data[0], [(0, 0), (0, 3 - data[0].shape[1])])
         mesh = Mesh.from_data(mesh.name, *data)
+
+    if options.remap_vertex_groups:
+        vgs = nm.unique(mesh.cmesh.vertex_groups)
+        remap = prepare_translate(vgs, nm.arange(len(vgs)))
+        mesh.cmesh.vertex_groups[:] = remap[mesh.cmesh.vertex_groups]
+
+    if options.remap_cell_groups:
+        cgs = nm.unique(mesh.cmesh.cell_groups)
+        remap = prepare_translate(cgs, nm.arange(len(cgs)))
+        mesh.cmesh.cell_groups[:] = remap[mesh.cmesh.cell_groups]
 
     if scale is not None:
         if len(scale) == 1:
