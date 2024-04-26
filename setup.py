@@ -66,7 +66,7 @@ def _scikit_umfpack_version(pkg_name):
             return scikits.umfpack.__version__
 
         except AttributeError:
-            return '<0.3.1'
+            return '0.0.0'
 
     except:
         return None
