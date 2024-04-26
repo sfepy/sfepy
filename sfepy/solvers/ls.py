@@ -360,7 +360,7 @@ class ScipyIterative(LinearSolver):
                 solver_kwargs.update({'callback_type' : 'legacy'})
 
         try:
-            sol, info = self.solver(mtx, rhs, x0=x0, atol=eps_a, tol=eps_r,
+            sol, info = self.solver(mtx, rhs, x0=x0, atol=eps_a, rtol=eps_r,
                                     maxiter=i_max, callback=iter_callback,
                                     **solver_kwargs)
         except TypeError:
