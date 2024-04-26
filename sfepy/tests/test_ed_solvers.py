@@ -312,7 +312,7 @@ def test_ed_solvers(problem, output_dir):
     # plt.show()
 
     all_iths = nm.array(
-        [[simpson(val, ths[:, 0]) for val in ths.T[1:]] for ths in all_ths]
+        [[simpson(val, x=ths[:, 0]) for val in ths.T[1:]] for ths in all_ths]
     )
 
     tst.report('status, solver: time integral of (u, v, a, e_u, e_t, e_u-e_t)')
