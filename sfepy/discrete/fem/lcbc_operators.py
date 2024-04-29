@@ -154,6 +154,8 @@ class Rigid2Operator(LCBCOperator):
 
     where the spin matrix :math:`S_{ij}` is computed using the coordinates
     relative to the independent node, i.e. :math:`\ul{x} - \bar{\ul{x}}`.
+    Functionally it corresponds to the RBE2 multi-point constraint in
+    MSC/Nastran.
 
     A simplified version for fields without the rotation DOFs is also
     supported.
