@@ -230,6 +230,115 @@ class Rigid2Operator(LCBCOperator):
         self.n_sdof = len(nm.unique(seq))
         self.n_new_dof = 0
 
+class AverageForceOperator(LCBCOperator):
+    r"""
+    Transformation matrix operator for average force multi-point constraint
+    LCBCs.
+
+    Unlike in other operators, the `regions` and `dof_names` couples are
+    ordered as (independent nodes/DOFs, dependent nodes/DOFs), to allow a
+    simple interchange with the ``rigid2`` LCBC in a problem description.
+    Functionally it corresponds to the RBE3 multi-point constraint in
+    MSC/Nastran.
+
+    A simplified version for fields without the rotation DOFs is also
+    supported.
+    """
+    kind = 'average_force'
+
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 variables, ts=None, functions=None):
+        from sfepy.mechanics.tensors import dim2sym
+
+        regions = regions[::-1]
+        dof_names = dof_names[::-1]
+        LCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                              variables, functions=functions)
+
+        mvar, svar = variables[self.var_names[0]], variables[self.var_names[1]]
+        is_rotation = svar.n_components < mvar.n_components
+        dim = svar.dim
+        sym = dim2sym(dim)
+        if is_rotation and dim not in (2, 3):
+            raise ValueError('Space dimension must be 2 or 3! (is %d)' % dim)
+
+        mfield, sfield = mvar.field, svar.field
+        mnodes = mfield.get_dofs_in_region(regions[0], merge=True)
+        snodes = sfield.get_dofs_in_region(regions[1], merge=True)
+        if len(mnodes) != 1:
+            raise ValueError('Number of dependent nodes must be 1! (is %d)'
+                             % len(mnodes))
+
+        self.mdofs = expand_nodes_to_equations(mnodes, dof_names[0],
+                                               self.all_dof_names[0])
+        self.sdofs = expand_nodes_to_equations(snodes, dof_names[1],
+                                               self.all_dof_names[1])
+
+        meq, seq = mvar.eq_map.eq[self.mdofs], svar.eq_map.eq[self.sdofs]
+
+        assert_(nm.all(meq >= 0))
+        assert_(nm.all(seq >= 0))
+
+        mcoors = mfield.get_coor(mnodes)
+        scoors = sfield.get_coor(snodes)
+        coors = scoors - mcoors
+        lengths = nm.linalg.norm(coors, axis=1)
+        n_nod = scoors.shape[0]
+
+        length = nm.mean(lengths)
+        if length == 0.0:
+            length = 1.0
+
+        if dof_map_fun is None:
+            dof_map_fun = lambda a, b: nm.ones((n_nod, sym),
+                                               dtype=nm.float64)
+        sweights = dof_map_fun(mcoors, scoors)
+        sweights[:, dim:] *= length**2
+
+        if is_rotation:
+            mtx_r = nm.empty((n_nod, dim, sym - dim), dtype=nm.float64)
+            if dim == 2:
+                mtx_r[:, 0, 0] = -coors[:, 1]
+                mtx_r[:, 1, 0] = coors[:, 0]
+
+            elif dim == 3:
+                mtx_r[:, 0, 1] = coors[:, 2]
+                mtx_r[:, 0, 2] = -coors[:, 1]
+                mtx_r[:, 1, 0] = -coors[:, 2]
+                mtx_r[:, 1, 2] = coors[:, 0]
+                mtx_r[:, 2, 0] = coors[:, 1]
+                mtx_r[:, 2, 1] = -coors[:, 0]
+
+            mtx_s = nm.zeros((n_nod, sym, sym), dtype=nm.float64)
+            mtx_s[...] = nm.eye(sym, dtype=nm.float64)
+            mtx_s[:, :dim, dim:] = mtx_r
+
+            mtx_ws = (mtx_s * sweights[..., None])
+            mtx_ix = mtx_s.reshape((-1, sym)).T @ mtx_ws.reshape((-1, sym))
+
+            mtx_x = nm.linalg.inv(mtx_ix)
+
+            mtx_g = mtx_ws @ mtx_x
+
+            mtx = mtx_g[:, :dim, :].reshape((-1, sym)).T
+
+        else:
+            mtx = nm.tile(nm.eye(dim, dtype=nm.float64) * 1.0 / n_nod,
+                          (1, n_nod))
+
+        rows = nm.repeat(meq, len(seq))
+        cols = nm.tile(seq, len(meq))
+        n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
+        mtx = sp.coo_matrix((mtx.ravel(), (rows, cols)), shape=n_dofs)
+
+        self.mtx = mtx.tocsr()
+        self.ameq = meq
+        self.aseq = seq
+
+        self.n_mdof = len(nm.unique(meq))
+        self.n_sdof = len(nm.unique(seq))
+        self.n_new_dof = 0
+
 def _save_vectors(filename, vectors, region, mesh, data_name):
     """
     Save vectors defined in region nodes as vector data in mesh vertices.
