@@ -871,24 +871,26 @@ class LinearSpringTerm(Term):
     name = 'dw_lin_spring'
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material': '1, 1', 'virtual': ('D', 'state'), 'state': 'D'}
+    integration_order = 0
+    geometries = ['1_2', '2_1_2', '3_1_2']
 
     @staticmethod
     def function(out, stiffness, vec, diff_var):
         dim = out.shape[-2] // 2
         if diff_var is None:
             aux = nm.array([-1, 1])
-            for k in nm.arange(dim) * dim:
+            for k in nm.arange(dim) * 2:
                 du = (vec[:, k] - vec[:, k + 1])[:, None]
                 out[:, 0, k:(k + 2), 0] = aux * du
+
+            out *= stiffness
 
         else:
             eye = nm.eye(2 * dim, 2 * dim, dtype=nm.float64)
             eye.shape = (1, 1) + eye.shape
             out[...] = - stiffness * eye
-            for k in nm.arange(dim) * dim:
+            for k in nm.arange(dim) * 2:
                 out[..., k, k + 1] = out[..., k + 1, k] = 1
-
-            out *= stiffness
 
         return 0
 
@@ -932,12 +934,16 @@ class LinearTrussTerm(Term):
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material': '1, 1', 'virtual': ('D', 'state'),
                   'state': 'D'}
+    integration_order = 0
+    geometries = ['1_2', '2_1_2', '3_1_2']
 
     @staticmethod
     def function(out, mat, vec, mtx_t, length, diff_var):
         dim = mtx_t.shape[-1]
         if diff_var is None:
-            if dim == 2:
+            if dim == 1:
+                du = vec[:, [1]] - vec[:, [0]]
+            elif dim == 2:
                 du = vec[:, [1, 3]] - vec[:, [0, 2]]
             elif dim == 3:
                 du = vec[:, [1, 3, 5]] - vec[:, [0, 2, 4]]
@@ -963,18 +969,21 @@ class LinearTrussTerm(Term):
         return 0
 
     @staticmethod
-    def get_mtx_t_and_length(coors):
+    def get_mtx_t_and_length(coors, dx=None):
         from sfepy.linalg import norm_l2_along_axis as norm
 
         dim = coors.shape[-1]
-        dx = coors[:, 1, :] - coors[:, 0, :]
+        if dx is None:
+            dx = coors[:, 1, :] - coors[:, 0, :]
+
         mtx_t = nm.zeros((coors.shape[0], dim, dim), dtype=nm.float64)
         length = norm(dx)[:, None]
         v1 = dx / length
         mtx_t[:, :, 0] = v1
 
-        if dim == 2:
-            v2 = nm.zeros_like(v1)
+        if dim == 1:
+            pass
+        elif dim == 2:
             mtx_t[:, 0, 1] = -v1[:, 1]
             mtx_t[:, 1, 1] = v1[:, 0]
         elif dim == 3:
@@ -992,7 +1001,7 @@ class LinearTrussTerm(Term):
             mtx_t[:, :, 1] = v2
             mtx_t[:, :, 2] = v3
         else:
-            raise ValueError(f'unsupported element dimension {dim}!')
+            raise ValueError(f'unsupported space dimension {dim}!')
 
         return mtx_t, length
 
@@ -1041,11 +1050,15 @@ class LinearTrussInternalForceTerm(Term):
     name = 'ev_lin_truss_force'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material': '1, 1', 'parameter': 'D'}
+    integration_order = 0
+    geometries = ['1_2', '2_1_2', '3_1_2']
 
     @staticmethod
     def function(out, mat, vec, mtx_t):
         dim = mtx_t.shape[-1]
-        if dim == 2:
+        if dim == 1:
+            du = vec[:, [1]] - vec[:, [0]]
+        elif dim == 2:
             du = vec[:, [1, 3]] - vec[:, [0, 2]]
         elif dim == 3:
             du = vec[:, [1, 3, 5]] - vec[:, [0, 2, 4]]
@@ -1077,3 +1090,94 @@ class LinearTrussInternalForceTerm(Term):
         n_el, _, _, _, _ = self.get_data_shape(parameter)
 
         return (n_el, 1, 1, 1), parameter.dtype
+
+
+class LinearDSpringTerm(LinearTrussTerm):
+    r"""
+    Linear spring element with the stiffness transformed into
+    the element direction.
+
+    :Definition:
+
+    .. math::
+        f^{(i)}_k = -f^{(j)}_k = K_{kl} (u^{(j)}_l - u^{(i)}_l)\\
+        \quad \forall \mbox{ elements } T_K^{i,j}\\
+        \mbox{ in a region connecting nodes } i, j
+
+    :Arguments:
+        - opt_material : :math:`\ul{d}`
+        - material : :math:`\ul{k}`
+        - virtual: :math:`\ul{v}`
+        - state: :math:`\ul{u}`
+
+    Stiffness matrix
+    :math:`\ul{K} = \ul{T(\ul{d})}^T \ul{K(\ul{k})} \ul{T(\ul{d})}`
+    is defined by 6 components
+    :math:`\ul{k} = [k_{u1}, k_{u2}, k_{u3}, k_{r1}, k_{r2}, k_{r3}]` in 3D
+    and by 3 components :math:`\ul{k} = [k_{u1}, k_{u2}, k_{r1}]`,
+    where :math:`k_{ui}` is the stiffness for the displacement DOF
+    and :math:`r_{ui}` is for the rotational DOF. Note that the components of
+    :math:`\ul{k}` are in the local coordinates system specified by a given
+    direction :math:`\ul{d}` or by the vector
+    :math:`\ul{d} = \ul{x}^{(j)} - \ul{x}^{(i)}` for non-coincidental end nodes.
+    """
+    name = 'dw_lin_dspring'
+    arg_types = ('opt_material', 'material', 'virtual', 'state')
+    arg_shapes = [{'opt_material': 'D, 1', 'material': 'D, 1',
+                   'virtual': ('D', 'state'), 'state': 'D'},
+                  {'opt_material': None}]
+    integration_order = 0
+    geometries = ['1_2', '2_1_2', '3_1_2']
+
+    @staticmethod
+    def function(out, mat, vec, mtx_t, diff_var):
+        nel, _, dim = mtx_t.shape
+        ndof = mat.shape[2]
+        ntr = {1: 1, 2: 4, 3: 12}[dim]
+        ke = nm.zeros((nel, 2 * ndof, 2 * ndof), dtype=nm.float64)
+        for k in range(ndof):
+            ke[:, 2*k, 2*k] = ke[:, 2*k + 1, 2*k + 1] = mat[:, 0, k, 0]
+            ke[:, 2*k + 1, 2*k] = ke[:, 2*k, 2*k + 1] = -mat[:, 0, k, 0]
+
+        if diff_var is None:
+            trans_vec = membranes.transform_asm_vectors
+            vec_loc = vec.copy()[..., None]
+            trans_vec(vec_loc[:, None, :ntr ,:], mtx_t.transpose((0, 2, 1)))
+            fe = dot_sequences(ke, vec_loc)
+            out[...] = fe[:, None, ...]
+            trans_vec(out[:, :, :ntr ,:], mtx_t)
+
+        else:
+            out[...] = ke[:, None, ...]
+            membranes.transform_asm_matrices(out[..., :ntr, :ntr], mtx_t)
+
+        return 0
+
+    def get_fargs(self, dvec, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import create_adof_conn
+
+        econn = virtual.field.get_econn('cell', self.region)
+        coors = virtual.field.get_coor()[econn]
+
+        if dvec is not None:
+            dvec = dvec[:, 0, :, 0]
+
+        mtx_t, _ = self.get_mtx_t_and_length(coors, dvec)
+
+        if diff_var is None:
+            _, _, _, _, n_c = self.get_data_shape(virtual)
+            adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
+                                   econn, n_c, 0)
+
+            return mat, state()[adc], mtx_t, diff_var
+        else:
+            return mat, None, mtx_t, diff_var
+
+
+class LinearDRotSpringTerm(LinearDSpringTerm):
+    name = 'dw_lin_dspring_rot'
+    arg_types = ('opt_material', 'material', 'virtual', 'state')
+    arg_shapes = [{'opt_material': 'D, 1', 'material': 'S, 1',
+                   'virtual': ('S', 'state'), 'state': 'S'},
+                  {'opt_material': None}]

@@ -496,6 +496,15 @@ custom = {
                                 0,1,0],
         },
     },
+    'linear_elasticity/multi_point_constraints.py': {
+        '': {
+            'fields': ['u:wu:f1:p0', '1:vw:p0', 'u:gu:p0'],
+            'force_view_3d': True,
+            'camera_position': [0.0565,0.0434999,19.8951,
+                                0.0565,0.0434999,0,
+                                0,1,0],
+        },
+    },
     'linear_elasticity/seismic_load.py': {
         '': {
             'fields': ['cauchy_stress:wu:f10:p0', '1:vw:p0'],

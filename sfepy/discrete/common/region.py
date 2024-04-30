@@ -509,28 +509,28 @@ class Region(Struct):
 
     def eval_op_vertices(self, other, op):
         parse_def = _join(self.parse_def, '%sv' % op, other.parse_def)
-        tmp = self.light_copy('op', parse_def)
+        tmp = self.light_copy('op', parse_def, tdim=self.tdim)
         tmp.vertices = self.__op_to_fun[op](self.vertices, other.vertices)
 
         return tmp
 
     def eval_op_edges(self, other, op):
         parse_def = _join(self.parse_def, '%se' % op, other.parse_def)
-        tmp = self.light_copy('op', parse_def)
+        tmp = self.light_copy('op', parse_def, tdim=self.tdim)
         tmp.edges = self.__op_to_fun[op](self.edges, other.edges)
 
         return tmp
 
     def eval_op_faces(self, other, op):
         parse_def = _join(self.parse_def, '%sf' % op, other.parse_def)
-        tmp = self.light_copy('op', parse_def)
+        tmp = self.light_copy('op', parse_def, tdim=self.tdim)
         tmp.faces = self.__op_to_fun[op](self.faces, other.faces)
 
         return tmp
 
     def eval_op_facets(self, other, op):
         parse_def = _join(self.parse_def, '%ss' % op, other.parse_def)
-        tmp = self.light_copy('op', parse_def)
+        tmp = self.light_copy('op', parse_def, tdim=self.tdim)
         tmp.facets = self.__op_to_fun[op](self.facets, other.facets)
 
         return tmp
