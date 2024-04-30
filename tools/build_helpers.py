@@ -13,7 +13,7 @@ import os
 import shutil
 import glob
 import fnmatch
-import logging as log
+import logging
 from setuptools import Command
 from skbuild.command.clean import clean
 from packaging import version
@@ -23,6 +23,8 @@ from install_data import install_data
 import sfepy.version as INFO
 
 CYTHON_MIN_VERSION = INFO.CYTHON_MIN_VERSION
+
+log = logging.getLogger(__name__)
 
 class NoOptionsDocs(Command):
     user_options = [('None', None, 'this command has no options'),]
