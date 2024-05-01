@@ -14,7 +14,7 @@ from setuptools import find_packages
 
 import sys
 sys.path.append('./tools')
-from build_helpers import INFO, cmdclass, log, package_check
+from build_helpers import INFO, cmdclass, logging, log, package_check
 
 from sfepy import config, version
 
@@ -246,7 +246,10 @@ if __name__ == '__main__':
 
     from sfepy import Config
     site_config = Config()
-    log.info('\nUsing Python {}.'.format(site_config.python_version()))
 
-    log.info('\nRequired and optional packages found:\n')
+    logging.basicConfig(level=logging.INFO, force=True)
+
+    log.info('Using Python {}.'.format(site_config.python_version()))
+
+    log.info('Required and optional packages found:')
     check_versions(show_only=True)
