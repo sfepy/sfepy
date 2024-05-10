@@ -988,11 +988,11 @@ class LinearTrussTerm(Term):
             mtx_t[:, 1, 1] = v1[:, 0]
         elif dim == 3:
             v2 = nm.zeros_like(v1)
-            for k in range(dim):
+            for k in [0, 2, 1]:
                 v2_ = nm.zeros((1, dim), dtype=nm.float64)
                 v2_[0, k] = 1.
                 dot = nm.abs(nm.sum(v2_ * v1, axis=1))
-                v2[(1 - dot) > 1e-12] = v2_
+                v2[(1. - dot) > 1e-12] = v2_
 
             v3 = nm.cross(v1, v2)
             v2 = nm.cross(v3, v1)
@@ -1133,7 +1133,7 @@ class LinearDSpringTerm(LinearTrussTerm):
     def function(out, mat, vec, mtx_t, diff_var):
         nel, _, dim = mtx_t.shape
         ndof = mat.shape[2]
-        ntr = {1: 1, 2: 4, 3: 12}[dim]
+        ntr = 2 * dim
         ke = nm.zeros((nel, 2 * ndof, 2 * ndof), dtype=nm.float64)
         for k in range(ndof):
             ke[:, 2*k, 2*k] = ke[:, 2*k + 1, 2*k + 1] = mat[:, 0, k, 0]
