@@ -1843,3 +1843,47 @@ class SurfaceFluxOperatorTerm(ETermBase):
             'i,ij,0,0.j',
             normals, mat, var1, var2, diff_var=diff_var,
         )
+
+class SurfacePiezoFluxOperatorTerm(ETermBase):
+    r"""
+    Surface piezoelectric flux operator term.
+
+    Corresponds to the electric flux due to mechanically induces electrical
+    displacement.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} q g_{kij} e_{ij}(\ul{u}) n_k \mbox{ , }
+        \int_{\Gamma} p g_{kij} e_{ij}(\ul{v}) n_k
+
+    :Arguments 1:
+        - material            : :math:`g_{kij}`
+        - virtual/parameter_1 : :math:`q`
+        - state/parameter_2   : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material : :math:`g_{kij}`
+        - state    : :math:`p`
+        - virtual  : :math:`\ul{v}`
+    """
+    name = 'de_surface_piezo_flux'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'material' : 'D, S',
+                   'virtual/grad_state' : (1, None),
+                   'state/grad_state' : 'D',
+                   'virtual/grad_virtual' : ('D', None),
+                   'state/grad_virtual' : 1,
+                   'parameter_1': 'D', 'parameter_2': 1}]
+    integration = 'facet_extra'
+    modes = ('grad_state', 'grad_virtual', 'eval')
+
+    def get_function(self, mat, var1, var2, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        normals = self.get_normals(var2)
+        return self.make_function(
+            'i,iJ,0,s(a:b)->J',
+            normals, mat, var1, var2, diff_var=diff_var,
+        )
