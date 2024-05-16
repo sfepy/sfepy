@@ -1887,3 +1887,33 @@ class SurfacePiezoFluxOperatorTerm(ETermBase):
             'i,iJ,0,s(a:b)->J',
             normals, mat, var1, var2, diff_var=diff_var,
         )
+
+class SurfacePiezoFluxTerm(ETermBase):
+    r"""
+    Surface piezoelectric flux term.
+
+    Corresponds to the electric flux due to mechanically induces electrical
+    displacement.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} g_{kij} e_{ij}(\ul{u}) n_k
+
+    :Arguments 1:
+        - material  : :math:`g_{kij}`
+        - parameter : :math:`\ul{u}`
+    """
+    name = 'ev_surface_piezo_flux'
+    arg_types = ('material', 'parameter')
+    arg_shapes = {'material' : 'D, S', 'parameter': 'D'}
+    integration = 'facet_extra'
+    modes = ('eval',)
+
+    def get_function(self, mat, var1, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        normals = self.get_normals(var1)
+        return self.make_function(
+            'i,iJ,s(a:b)->J',
+            normals, mat, var1, diff_var=diff_var,
+        )
