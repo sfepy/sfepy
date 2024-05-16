@@ -1876,7 +1876,7 @@ class SurfacePiezoFluxOperatorTerm(ETermBase):
                    'state/grad_state' : 'D',
                    'virtual/grad_virtual' : ('D', None),
                    'state/grad_virtual' : 1,
-                   'parameter_1': 'D', 'parameter_2': 1}]
+                   'parameter_1': 1, 'parameter_2': 'D'}]
     integration = 'facet_extra'
     modes = ('grad_state', 'grad_virtual', 'eval')
 
