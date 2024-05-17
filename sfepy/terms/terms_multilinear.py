@@ -1848,7 +1848,7 @@ class SurfacePiezoFluxOperatorTerm(ETermBase):
     r"""
     Surface piezoelectric flux operator term.
 
-    Corresponds to the electric flux due to mechanically induces electrical
+    Corresponds to the electric flux due to mechanically induced electrical
     displacement.
 
     :Definition:
@@ -1892,7 +1892,7 @@ class SurfacePiezoFluxTerm(ETermBase):
     r"""
     Surface piezoelectric flux term.
 
-    Corresponds to the electric flux due to mechanically induces electrical
+    Corresponds to the electric flux due to mechanically induced electrical
     displacement.
 
     :Definition:
