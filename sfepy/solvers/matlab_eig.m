@@ -7,7 +7,7 @@ function [vals, vecs] = matlab_eig(mtx_filename, eigs_filename)
         disp(data.eigs_options)
     end
 
-    if isequal(data.method, 'eig') & isequal(data.n_eigs, 'None')
+    if and(isequal(data.method, 'eig'), isequal(data.n_eigs, 'None'))
         if data.verbose
             disp('using eig()')
         end
@@ -58,4 +58,4 @@ function [vals, vecs] = matlab_eig(mtx_filename, eigs_filename)
         end
     end
 
-    save(eigs_filename, 'vals', 'vecs');
+    save(eigs_filename, 'vals', 'vecs', '-v6');
