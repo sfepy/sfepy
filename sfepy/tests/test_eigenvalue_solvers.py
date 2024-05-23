@@ -89,6 +89,11 @@ solvers = {
         'tol' : 1e-10,
         'which' : 'sa',
     }),
+    'evp7' : ('eig.octave', {
+        'maxit' : 100,
+        'tol' : 1e-10,
+        'which' : 'sm',
+    }),
 }
 
 eigs_expected = [nm.array([0.04904454, 0.12170685, 0.12170685,
