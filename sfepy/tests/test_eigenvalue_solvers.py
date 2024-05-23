@@ -100,7 +100,7 @@ eigs_expected = [nm.array([0.04904454, 0.12170685, 0.12170685,
                            0.19257998, 0.24082108]),
                  []]
 
-can_fail = ['eig.slepc', 'eig.matlab', 'eig.primme']
+can_fail = ['eig.slepc', 'eig.matlab', 'eig.octave', 'eig.primme']
 can_miss = ['evp0'] # Depending on scipy version, evp0 can miss an
                     # eigenvalue.
 
