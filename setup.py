@@ -128,7 +128,7 @@ def check_versions(show_only=False):
                   show_only=show_only)
     package_check('primme', INFO.PRIMME_MIN_VERSION, optional=True,
                   version_getter=_primme_version, show_only=show_only)
-    package_check('oct2py', INFO.OCT2PY_IN_VERSION, optional=True,
+    package_check('oct2py', INFO.OCT2PY_MIN_VERSION, optional=True,
                   version_getter=_primme_version, show_only=show_only)
 
 
