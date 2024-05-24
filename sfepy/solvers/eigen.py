@@ -469,6 +469,7 @@ class OctaveEigenvalueSolver(MatlabEigenvalueSolver):
 
         self.oe.addpath(os.path.dirname(__file__))
         self.oe.matlab_eig(mtx_filename, eigs_filename)
+        self.oe.exit()
 
         evp = sio.loadmat(eigs_filename)
         evals = evp['vals']
