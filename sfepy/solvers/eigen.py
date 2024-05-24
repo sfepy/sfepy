@@ -402,6 +402,17 @@ class MatlabEigenvalueSolver(EigenvalueSolver):
         EigenvalueSolver.__init__(self, conf, me=me, context=context,
                                   **kwargs)
 
+    def solver_call(self, mtx_filename, eigs_filename, which=None):
+        import os
+        import scipy.io as sio
+
+        eng = self.me.start_matlab()
+        eng.cd(os.path.dirname(__file__))
+        eng.matlab_eig(mtx_filename, eigs_filename)
+        eng.quit()
+
+        return sio.loadmat(eigs_filename)
+
     @standard_call
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
                  status=None, conf=None, comm=None, context=None):
@@ -429,18 +440,63 @@ class MatlabEigenvalueSolver(EigenvalueSolver):
             'eigs_options' : solver_kwargs,
         })
 
-        eng = self.me.start_matlab()
-        eng.cd(os.path.dirname(__file__))
-        eng.matlab_eig(mtx_filename, eigs_filename)
-        eng.quit()
-
-        evp = sio.loadmat(eigs_filename)
+        evp = self.solver_call(mtx_filename, eigs_filename, conf.which)
 
         shutil.rmtree(dirname)
 
         out = evp['vals'][:, 0]
         if eigenvectors:
             out =  (out, evp['vecs'])
+
+        return out
+
+
+class OctaveEigenvalueSolver(MatlabEigenvalueSolver):
+    """
+    Octave eigenvalue problem solver.
+    """
+    name = 'eig.octave'
+
+    def __init__(self, conf, comm=None, context=None, **kwargs):
+        from oct2py import octave as oe
+
+        EigenvalueSolver.__init__(self, conf, oe=oe, context=context,
+                                  **kwargs)
+
+    def solver_call(self, mtx_filename, eigs_filename, which):
+        import os
+        import scipy.io as sio
+
+        self.oe.addpath(os.path.dirname(__file__))
+        self.oe.matlab_eig(mtx_filename, eigs_filename)
+
+        evp = sio.loadmat(eigs_filename)
+        evals = evp['vals']
+
+        which = which.lower()
+        sort_funs = {
+            'lm': (nm.abs, -1),
+            'sm': (nm.abs, 1),
+            'la': (nm.real, -1),
+            'sa': (nm.real, 1),
+            'lr': (nm.real, -1),
+            'sr': (nm.real, 1),
+            'li': (nm.imag, -1),
+            'si': (nm.imag, 1),
+            'be': (nm.real, 1),
+        }
+
+        sfun, order = sort_funs[which]
+        idxs = nm.argsort(sfun(evals), axis=0)
+        idxs = idxs.ravel()[::order]
+        if which == 'be':
+            idxs = nm.hstack([idxs[::-1], idxs])
+            k2 = len(idxs) // 2
+            idxs = idxs[k2:(k2 + len(idxs))]
+
+        out = {'vals': evals[idxs, :]}
+        if 'vecs' in evp:
+            out['vecs'] = evp['vecs'][:, idxs]
 
         return out
 
