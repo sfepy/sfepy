@@ -129,7 +129,7 @@ def check_versions(show_only=False):
     package_check('primme', INFO.PRIMME_MIN_VERSION, optional=True,
                   version_getter=_primme_version, show_only=show_only)
     package_check('oct2py', INFO.OCT2PY_MIN_VERSION, optional=True,
-                  version_getter=_primme_version, show_only=show_only)
+                  show_only=show_only)
 
 
 def data_dir_walk(dir_name: str, prefix: str) -> list:
