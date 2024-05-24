@@ -486,10 +486,10 @@ class OctaveEigenvalueSolver(MatlabEigenvalueSolver):
             'be': (nm.real, 1),
         }
 
-        sfun, order = sort_funs[which.lower()]
+        sfun, order = sort_funs[which]
         idxs = nm.argsort(sfun(evals), axis=0)
         idxs = idxs.ravel()[::order]
-        if which.lower() == 'be':
+        if which == 'be':
             idxs = nm.hstack([idxs[::-1], idxs])
             k2 = len(idxs) // 2
             idxs = idxs[k2:(k2 + len(idxs))]
