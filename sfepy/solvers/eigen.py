@@ -76,6 +76,9 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
             see :func:`scipy.sparse.linalg.eigs()`
             or :func:`scipy.sparse.linalg.eigsh()`. For dense problmes,
             only 'LM' and 'SM' can be used"""),
+        ('linear_solver', "{'cholesky', 'splu'}", None, False,
+         """The method used to construct a inverse linear operator. If None, the
+            eigenvalue solver will solve the linear system internally."""),
         ('*', '*', None, False,
          'Additional parameters supported by the method.'),
     ]
@@ -106,8 +109,29 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
 
         else:
             eig = self.ssla.eigs if conf.method == 'eigs' else self.ssla.eigsh
-            out = eig(mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
-                      return_eigenvectors=eigenvectors, **kwargs)
+            if conf.linear_solver is not None:
+                import scipy.sparse as sparse
+
+                fake_mtx_a = sparse.csc_matrix(mtx_a.shape)
+                if conf.linear_solver == 'splu':
+                    inv_mtx_a = self.ssla.splu(mtx_a.tocsc())
+                    matvec = inv_mtx_a.solve
+                elif conf.linear_solver == 'cholesky':
+                    try:
+                        from sksparse.cholmod import cholesky
+                    except Exception as inst:
+                        raise ValueError(str(inst))
+
+                    inv_mtx_a = cholesky(mtx_a.tocsc())
+                    matvec = inv_mtx_a.__call__
+
+                inv_op_a = self.ssla.LinearOperator(mtx_a.shape, matvec=matvec)
+                out = eig(fake_mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
+                          OPinv=inv_op_a,
+                          return_eigenvectors=eigenvectors, **kwargs)
+            else:
+                out = eig(mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
+                          return_eigenvectors=eigenvectors, **kwargs)
 
         if eigenvectors:
             eigs = out[0]
