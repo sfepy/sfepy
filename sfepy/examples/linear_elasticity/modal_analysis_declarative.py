@@ -107,10 +107,10 @@ def define(n_eigs=6, approx_order=1, density=7850., young=210e9, poisson=0.3):
             'which': 'LM',
             'sigma': 0,
             'tol': 1e-8,
-            'linear_solver': 'splu',
+            'linear_solver': ('ls.mumps', {}),
             # 'cholesky' solver is usually faster, but
-            # scikit-sparse package is reuired
-            # 'linear_solver': 'cholesky',
+            # scikit-sparse package is required
+            # 'linear_solver': ('cholesky', {}),
             'maxiter': 1000,
         }),
     }
