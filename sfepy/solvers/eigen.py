@@ -76,8 +76,9 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
             see :func:`scipy.sparse.linalg.eigs()`
             or :func:`scipy.sparse.linalg.eigsh()`. For dense problmes,
             only 'LM' and 'SM' can be used"""),
-        ('linear_solver', "{'cholesky', 'splu'}", None, False,
-         """The method used to construct a inverse linear operator. If None, the
+        ('linear_solver', "({'ls.cholesky', 'ls.mumps', ...}, ls_conf)",
+         None, False,
+         """The method used to construct an inverse linear operator. If None, the
             eigenvalue solver will solve the linear system internally."""),
         ('*', '*', None, False,
          'Additional parameters supported by the method.'),
@@ -125,8 +126,9 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
                         ls_solvers[k] = v
 
                 fake_mtx_a = sps.csc_matrix(mtx_a.shape)
-                ls_conf = Struct(use_presolve=True)
-                ls = ls_solvers[conf.linear_solver](ls_conf)
+                solver_name, solver_conf = conf.linear_solver
+                ls_conf = Struct(use_presolve=True, **solver_conf)
+                ls = ls_solvers[solver_name](ls_conf)
                 ls.mtx = mtx_a
                 ls.presolve(mtx_a)
                 matvec = ls.__call__
