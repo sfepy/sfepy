@@ -76,6 +76,10 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
             see :func:`scipy.sparse.linalg.eigs()`
             or :func:`scipy.sparse.linalg.eigsh()`. For dense problmes,
             only 'LM' and 'SM' can be used"""),
+        ('linear_solver', "({'ls.cholesky', 'ls.mumps', ...}, ls_conf)",
+         None, False,
+         """The method used to construct an inverse linear operator. If None, the
+            eigenvalue solver will solve the linear system internally."""),
         ('*', '*', None, False,
          'Additional parameters supported by the method.'),
     ]
@@ -106,8 +110,36 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
 
         else:
             eig = self.ssla.eigs if conf.method == 'eigs' else self.ssla.eigsh
-            out = eig(mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
-                      return_eigenvectors=eigenvectors, **kwargs)
+            if conf.linear_solver is not None:
+                import sfepy.solvers.ls as ls
+                from sfepy.solvers import solver_table
+                import scipy.sparse as sps
+                from sfepy.base.base import Struct
+
+                ls_solvers = {}
+                for k, v in solver_table.items():
+                    if not k.startswith('ls'):
+                        continue
+
+                    aux = [par[0] == 'use_presolve' for par in v._parameters]
+                    if nm.any(aux):
+                        ls_solvers[k] = v
+
+                fake_mtx_a = sps.csc_matrix(mtx_a.shape)
+                solver_name, solver_conf = conf.linear_solver
+                ls_conf = Struct(use_presolve=True, **solver_conf)
+                ls = ls_solvers[solver_name](ls_conf)
+                ls.mtx = mtx_a
+                ls.presolve(mtx_a)
+                matvec = ls.__call__
+
+                inv_op_a = self.ssla.LinearOperator(mtx_a.shape, matvec=matvec)
+                out = eig(fake_mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
+                          OPinv=inv_op_a,
+                          return_eigenvectors=eigenvectors, **kwargs)
+            else:
+                out = eig(mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
+                          return_eigenvectors=eigenvectors, **kwargs)
 
         if eigenvectors:
             eigs = out[0]

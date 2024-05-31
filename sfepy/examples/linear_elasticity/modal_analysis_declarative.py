@@ -107,6 +107,11 @@ def define(n_eigs=6, approx_order=1, density=7850., young=210e9, poisson=0.3):
             'which': 'LM',
             'sigma': 0,
             'tol': 1e-8,
+            'linear_solver': ('ls.scipy_superlu', {}),
+            # 'linear_solver': ('ls.cholesky', {}),
+            # 'linear_solver': ('ls.mumps', {}),
+            # 'ls.cholesky' and 'ls.mumps' linear solvers are much faster,
+            # but scikit-sparse package and MUMPS library are required
             'maxiter': 1000,
         }),
     }
