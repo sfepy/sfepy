@@ -1145,6 +1145,9 @@ class Term(Struct):
                 elif sh == 'S':
                     return sym
 
+                elif sh == 'SD':
+                    return sym * dim
+
                 elif sh == 'N': # General number.
                     return nm.inf
 
