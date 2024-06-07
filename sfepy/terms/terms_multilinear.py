@@ -1283,6 +1283,10 @@ class EDotTerm(ETermBase):
                   {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
                    'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
                   {'opt_material' : 'D, D'},
+                  {'opt_material' : None},
+                  {'opt_material' : '1, 1', 'virtual' : ('N', 'state'),
+                   'state' : 'N', 'parameter_1' : 'N', 'parameter_2' : 'N'},
+                  {'opt_material' : 'N, N'},
                   {'opt_material' : None}]
     modes = ('weak', 'eval')
     integration = ('cell', 'facet')
