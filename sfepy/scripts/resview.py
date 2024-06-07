@@ -395,6 +395,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
     ftimes = {fstep: ftime}
 
     bbox_sizes = nm.diff(nm.reshape(mesh.bounds, (-1, 2)), axis=1)
+    dim = len(bbox_sizes)
     ii = nm.where(bbox_sizes > 0)[0]
     tdim = len(ii)
     if tdim == 0:
@@ -433,7 +434,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             fval = steps[fstep][field]
             bnds = steps[fstep].bounds
             mesh_size = (nm.array(bnds[1::2]) - nm.array(bnds[::2])).max()
-            is_vector_field = len(fval.shape) > 1
+            is_vector_field = (len(fval.shape) == 2) and (fval.shape[1] == dim)
             is_point_field = fval.shape[0] == steps[fstep].n_points
             if is_vector_field and is_point_field:
                 scale = mesh_size * 0.15 / nm.linalg.norm(fval, axis=1).max()
@@ -547,7 +548,9 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
 
         scalar = field
         scalar_label = scalar
-        is_vector_field = field is not None and len(pipe[-1][field].shape) > 1
+        is_vector_field = ((field is not None)
+                           and (len(pipe[-1][field].shape) > 1)
+                           and (pipe[-1][field].shape[1] == dim))
         is_point_field = (field is not None and
                           pipe[-1][field].shape[0] == pipe[-1].n_points)
         if is_vector_field:
