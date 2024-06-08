@@ -476,21 +476,23 @@ class ExpressionBuilder(Struct):
         append_all(self.subscripts, 'cq{}'.format(rein))
         append_all(self.operand_names, arg.name + '.arg')
 
-    def build(self, texpr, *args, diff_var=None):
+    def build(self, texpr, *args, mode=None, diff_var=None):
         eins, modifiers = parse_term_expression(texpr)
 
         # Virtual variable must be the first variable.
         # Numpy arrays cannot be compared -> use a loop.
         for iv, arg in enumerate(args):
             if arg.kind == 'virtual':
-                self.add_constant(arg.name, 'det')
+                if mode != 'qp':
+                    self.add_constant(arg.name, 'det')
                 self.add_virtual_arg(arg, iv, eins[iv], modifiers[iv])
                 break
         else:
             iv = -1
             for ip, arg in enumerate(args):
                 if arg.kind == 'state':
-                    self.add_constant(arg.name, 'det')
+                    if mode != 'qp':
+                        self.add_constant(arg.name, 'det')
                     break
             else:
                 raise ValueError('no FieldVariable in arguments!')
@@ -516,6 +518,10 @@ class ExpressionBuilder(Struct):
                 # Lexicographic ordering of output indices, i.e.
                 # (n_comp, dim) or (dim, n_comp) <=> i.j or j.i
                 self.out_subscripts[ia] += ''.join(sorted(ifree))
+
+            if mode == 'qp':
+                self.out_subscripts[ia] = (self.out_subscripts[ia]
+                                           .replace('c', 'cq'))
 
     @staticmethod
     def join_subscripts(subscripts, out_subscripts):
@@ -723,7 +729,14 @@ class ETermBase(Term):
             out1 = nm.sum(out, 0).squeeze()
             return out1, status
 
-        else:
+        elif mode == 'el_avg':
+            # det is always the first operand.
+            det = fargs[3][0][0]
+            vol = nm.sum(det, axis=1, keepdims=True)
+            out /= vol
+            return out, status
+
+        else: # Works also for el_eval, qp modes.
             return out, status
 
     def eval_real(self, shape, fargs, mode='eval', term_mode=None,
@@ -793,7 +806,7 @@ class ETermBase(Term):
     def clear_cache(self):
         self.expr_cache = {}
 
-    def build_expression(self, texpr, *eargs, diff_var=None):
+    def build_expression(self, texpr, *eargs, mode=None, diff_var=None):
         timer = Timer('')
         timer.start()
 
@@ -806,13 +819,13 @@ class ETermBase(Term):
             n_add = 1
 
         ebuilder = ExpressionBuilder(n_add, self.expr_cache)
-        ebuilder.build(texpr, *eargs, diff_var=diff_var)
+        ebuilder.build(texpr, *eargs, mode=mode, diff_var=diff_var)
         if self.verbosity:
             output('build expression: {} s'.format(timer.stop()))
 
         return ebuilder
 
-    def make_function(self, texpr, *args, diff_var=None):
+    def make_function(self, texpr, *args, mode=None, diff_var=None):
         timer = Timer('')
         timer.start()
 
@@ -851,6 +864,7 @@ class ETermBase(Term):
 
         if einfo.ebuilder is None:
             einfo.ebuilder = self.build_expression(texpr, *einfo.eargs,
+                                                   mode=mode,
                                                    diff_var=diff_var)
 
         n_add = einfo.ebuilder.n_add
