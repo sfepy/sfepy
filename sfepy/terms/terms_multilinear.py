@@ -128,6 +128,10 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
                 ag, _ = arg.term.get_mapping(arg.arg)
                 op = ag.det[..., 0, 0]
 
+            elif val_name == 'ivol':
+                ag, _ = arg.term.get_mapping(arg.arg)
+                op = 1.0 / ag.volume[:, 0, 0, 0]
+
             elif val_name == 'I':
                 op = ebuilder.make_eye(arg.n_components)
 
@@ -498,6 +502,8 @@ class ExpressionBuilder(Struct):
                 if arg.kind == 'state':
                     if mode != 'qp':
                         self.add_qp_scalar(arg.name, 'det')
+                        if mode == 'el_avg':
+                            self.add_cell_scalar(arg.name, 'ivol')
                     break
             else:
                 raise ValueError('no FieldVariable in arguments!')
@@ -734,14 +740,7 @@ class ETermBase(Term):
             out1 = nm.sum(out, 0).squeeze()
             return out1, status
 
-        elif mode == 'el_avg':
-            # det is always the first operand.
-            det = fargs[3][0][0]
-            vol = nm.sum(det, axis=1, keepdims=True)
-            out /= vol
-            return out, status
-
-        else: # Works also for el_eval, qp modes.
+        else:
             return out, status
 
     def eval_real(self, shape, fargs, mode='eval', term_mode=None,
