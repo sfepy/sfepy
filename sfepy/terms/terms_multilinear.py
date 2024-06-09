@@ -325,6 +325,11 @@ class ExpressionBuilder(Struct):
 
         return pvg
 
+    def add_cell_scalar(self, name, cname):
+        append_all(self.subscripts, 'c')
+        append_all(self.operand_names, '.'.join((name, cname)))
+        append_all(self.components, [])
+
     def add_qp_scalar(self, name, cname):
         append_all(self.subscripts, 'cq')
         append_all(self.operand_names, '.'.join((name, cname)))
