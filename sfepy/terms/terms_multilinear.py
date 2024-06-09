@@ -325,7 +325,7 @@ class ExpressionBuilder(Struct):
 
         return pvg
 
-    def add_constant(self, name, cname):
+    def add_qp_scalar(self, name, cname):
         append_all(self.subscripts, 'cq')
         append_all(self.operand_names, '.'.join((name, cname)))
         append_all(self.components, [])
@@ -484,7 +484,7 @@ class ExpressionBuilder(Struct):
         for iv, arg in enumerate(args):
             if arg.kind == 'virtual':
                 if mode != 'qp':
-                    self.add_constant(arg.name, 'det')
+                    self.add_qp_scalar(arg.name, 'det')
                 self.add_virtual_arg(arg, iv, eins[iv], modifiers[iv])
                 break
         else:
@@ -492,7 +492,7 @@ class ExpressionBuilder(Struct):
             for ip, arg in enumerate(args):
                 if arg.kind == 'state':
                     if mode != 'qp':
-                        self.add_constant(arg.name, 'det')
+                        self.add_qp_scalar(arg.name, 'det')
                     break
             else:
                 raise ValueError('no FieldVariable in arguments!')
