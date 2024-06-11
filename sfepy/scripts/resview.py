@@ -996,6 +996,11 @@ def main():
             from sfepy.base.ioutils import edit_filename
             fig_name = edit_filename(anim_filename, suffix='{step:05d}')
 
+        elif anim_filename.endswith('.gif'):
+            from sfepy.base.ioutils import edit_filename
+            fig_name = None
+            plotter.open_gif(anim_filename)
+
         else:
             fig_name = None
             plotter.open_movie(anim_filename, options.framerate)
