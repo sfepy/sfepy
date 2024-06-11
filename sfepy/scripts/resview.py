@@ -961,6 +961,11 @@ def main():
     else:
         annotations = None
 
+    anim_filename = options.anim_output_file
+    if anim_filename:
+        if anim_filename.endswith('.png') or anim_filename.endswith('.mp4'):
+            options.off_screen = True
+
     pv.set_plot_theme("document")
     plotter = pv.Plotter(off_screen=options.off_screen,
                          title=make_title(options.filenames))
@@ -991,10 +996,10 @@ def main():
         elif options.view_2d:
             plotter.view_xy()
 
-        anim_filename = options.anim_output_file
         if anim_filename.endswith('.png'):
             from sfepy.base.ioutils import edit_filename
             fig_name = edit_filename(anim_filename, suffix='{step:05d}')
+            plotter.show(auto_close=False)
 
         elif anim_filename.endswith('.gif'):
             from sfepy.base.ioutils import edit_filename
@@ -1004,6 +1009,7 @@ def main():
         else:
             fig_name = None
             plotter.open_movie(anim_filename, options.framerate)
+            plotter.show(auto_close=False)
 
         for k in scalar_bar_limits.keys():
             lims = scalar_bar_limits[k]
@@ -1026,7 +1032,6 @@ def main():
             else:
                 plotter.screenshot(fig_name.format(step=step), return_img=False)
 
-        plotter.show()
         plotter.close()
     else:
         plotter = pv_plot(options.filenames, options, plotter=plotter,
