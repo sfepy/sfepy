@@ -104,3 +104,39 @@ class MixedFlexoCouplingTerm(ETermBase):
         )
 
         return fun
+
+class MixedFlexoTerm(ETermBase):
+    r"""
+    Mixed formulation displacement gradient consistency term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} v_{i,j} a_{ij} \\
+        \int_{\Omega} u_{i,j} \delta a_{ij}
+
+    :Arguments 1:
+        - virtual/parameter_v: :math:`\ul{v}`
+        - state/parameter_t: :math:`\ull{a}`
+
+    :Arguments 2:
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`\ull{\delta a}`
+    """
+    name = 'de_m_flexo'
+    arg_types = (('virtual', 'state'),
+                 ('state', 'virtual'),
+                 ('parameter_1', 'parameter_2'))
+    arg_shapes = [{'virtual/du-a' : ('D', None), 'state/du-a' : 'D2',
+                   'virtual/da-u' : ('D2', None), 'state/da-u' : 'D',
+                   'parameter_v' : 'D', 'parameter_t' : 'D2'},
+                  {'opt_material' : None}]
+    modes = ('du-a', 'da-u', 'eval')
+
+    def get_function(self, vvar, tvar, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        fun = self.make_function(
+            'v(i.j)->I,I', vvar, tvar, diff_var=diff_var,
+        )
+
+        return fun
