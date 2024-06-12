@@ -3,18 +3,34 @@ Flexoelectricity related terms.
 """
 import numpy as nm
 
+from sfepy.mechanics.tensors import dim2sym
 from sfepy.terms.terms_multilinear import ETermBase
 
-def make_grad2strain():
-    g2s = nm.array([
-        [1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 1, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 1, 0],
-    ], dtype=nm.float64)
-    g2s = g2s.reshape((1, 1, 6, 9))
+def make_grad2strain(dim):
+    if dim == 3:
+        g2s = nm.array([
+            [1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 1, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 1, 0],
+        ], dtype=nm.float64)
+        g2s = g2s.reshape((1, 1, 6, 9))
+
+    elif dim == 2:
+        g2s = nm.array([
+            [1, 0, 0, 0],
+            [0, 0, 0, 1],
+            [0, 1, 1, 0],
+        ], dtype=nm.float64)
+        g2s = g2s.reshape((1, 1, 3, 4))
+
+    elif dim == 1:
+        g2s = nm.array([
+            [1],
+        ], dtype=nm.float64)
+        g2s = g2s.reshape((1, 1, 1, 1))
 
     return g2s
 
