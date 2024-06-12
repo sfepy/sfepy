@@ -62,9 +62,11 @@ class MixedStrainGradElasticTerm(ETermBase):
 
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
-        aux = make_grad2strain()
+        dim = self.region.dim
+        sym = dim2sym(dim)
+        aux = make_grad2strain(dim)
         n_qp = mat.shape[1]
-        mat = mat.reshape((-1, n_qp, 3, 6, 3, 6))
+        mat = mat.reshape((-1, n_qp, dim, sym, dim, sym))
 
         if term_mode is None:
             return self.make_function(
@@ -110,9 +112,11 @@ class MixedFlexoCouplingTerm(ETermBase):
 
     def get_function(self, mat, tvar, svar, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
-        aux = make_grad2strain()
+        dim = self.region.dim
+        sym = dim2sym(dim)
+        aux = make_grad2strain(dim)
         n_qp = mat.shape[1]
-        mat = mat.reshape((-1, n_qp, 3, 3, 6))
+        mat = mat.reshape((-1, n_qp, dim, dim, sym))
 
         fun = self.make_function(
             'jkI,Ii,i.k,0.j',
