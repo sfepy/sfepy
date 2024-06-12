@@ -146,7 +146,7 @@ class MixedFlexoTerm(ETermBase):
     name = 'de_m_flexo'
     arg_types = (('virtual', 'state'),
                  ('state', 'virtual'),
-                 ('parameter_1', 'parameter_2'))
+                 ('parameter_v', 'parameter_t'))
     arg_shapes = [{'virtual/du-a' : ('D', None), 'state/du-a' : 'D2',
                    'virtual/da-u' : ('D2', None), 'state/da-u' : 'D',
                    'parameter_v' : 'D', 'parameter_t' : 'D2'},
