@@ -519,7 +519,7 @@ How to Regenerate Documentation
 
 The following steps summarize how to regenerate this documentation.
 
-#. Install `sphinx`_ and `numpydoc`_. Do not forget to set the path to numpydoc
+#. Install `sphinx`_, `numpydoc`_, `sphinx-rtd-theme`_ and `IPython`_. Do not forget to set the path to numpydoc
    in site_cfg.py if it is not installed in a standard location for Python
    packages on your platform. A recent :math:`\mbox{\LaTeX}` distribution is
    required, too, for example `TeX Live`_. Depending on your OS/platform, it
