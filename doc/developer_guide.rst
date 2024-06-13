@@ -1329,6 +1329,7 @@ sfepy.terms package
    src/sfepy/terms/terms_elastic
    src/sfepy/terms/terms_electric
    src/sfepy/terms/terms_fibres
+   src/sfepy/terms/terms_flexo
    src/sfepy/terms/terms_hyperelastic_base
    src/sfepy/terms/terms_hyperelastic_tl
    src/sfepy/terms/terms_hyperelastic_ul
