@@ -80,6 +80,18 @@ class MixedStrainGradElasticTerm(ETermBase):
                 'Ii,i', (aux, 'aux1'), state, mode=mode, diff_var=None,
             )
 
+        elif term_mode == 'grad_strain':
+            return self.make_function(
+                'Jj,j.l', (aux, 'aux2'), state, mode=mode, diff_var=None,
+            )
+
+        elif term_mode == 'double_stress':
+            return self.make_function(
+                'kIlJ,Ii,Jj,j.l',
+                (mat, 'mat'), (aux, 'aux1'), (aux, 'aux2'), state,
+                mode=mode, diff_var=None,
+            )
+
 class MixedFlexoCouplingTerm(ETermBase):
     r"""
     Flexoelectric coupling term, mixed formulation.
