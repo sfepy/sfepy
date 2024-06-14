@@ -136,6 +136,12 @@ class MixedFlexoCouplingTerm(ETermBase):
                 (mat, 'mat'), (aux, 'aux'), tvar, svar, diff_var=diff_var,
             )
 
+        elif term_mode == 'electric_displacement':
+            fun = self.make_function(
+                'jkI,Ii,i.k',
+                (mat, 'mat'), (aux, 'aux'), tvar, diff_var=diff_var,
+            )
+
         elif term_mode == 'double_stress':
             fun = self.make_function(
                 'jkI,Ii,0.j',
