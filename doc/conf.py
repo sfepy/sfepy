@@ -43,10 +43,16 @@ if numpydoc_path is not None:
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
-              'sphinx.ext.doctest', 'sphinx.ext.imgmath',
-              'sphinx.ext.viewcode', 'numpydoc',
-              'gen_field_table', 'gen_term_table', 'gen_solver_table',
+extensions = ['sphinx.ext.autosummary',
+              'sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
+              'sphinx.ext.imgmath',
+              'sphinx.ext.viewcode',
+              'sphinxcontrib.jquery',
+              'numpydoc',
+              'gen_field_table',
+              'gen_term_table',
+              'gen_solver_table',
               'IPython.sphinxext.ipython_console_highlighting',
               'IPython.sphinxext.ipython_directive',
 ]
