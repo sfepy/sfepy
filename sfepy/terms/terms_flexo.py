@@ -130,10 +130,17 @@ class MixedFlexoCouplingTerm(ETermBase):
         n_qp = mat.shape[1]
         mat = mat.reshape((-1, n_qp, dim, dim, sym))
 
-        fun = self.make_function(
-            'jkI,Ii,i.k,0.j',
-            (mat, 'mat'), (aux, 'aux'), tvar, svar, diff_var=diff_var,
-        )
+        if term_mode is None:
+            fun = self.make_function(
+                'jkI,Ii,i.k,0.j',
+                (mat, 'mat'), (aux, 'aux'), tvar, svar, diff_var=diff_var,
+            )
+
+        elif term_mode == 'double_stress':
+            fun = self.make_function(
+                'jkI,Ii,0.j',
+                (mat, 'mat'), (aux, 'aux'), svar, diff_var=diff_var,
+            )
 
         return fun
 
