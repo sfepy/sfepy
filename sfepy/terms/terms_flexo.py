@@ -133,19 +133,22 @@ class MixedFlexoCouplingTerm(ETermBase):
         if term_mode is None:
             fun = self.make_function(
                 'jkI,Ii,i.k,0.j',
-                (mat, 'mat'), (aux, 'aux'), tvar, svar, diff_var=diff_var,
+                (mat, 'mat'), (aux, 'aux'), tvar, svar,
+                mode=mode, diff_var=diff_var,
             )
 
         elif term_mode == 'electric_displacement':
             fun = self.make_function(
                 'jkI,Ii,i.k',
-                (mat, 'mat'), (aux, 'aux'), tvar, diff_var=diff_var,
+                (mat, 'mat'), (aux, 'aux'), tvar,
+                mode=mode, diff_var=diff_var,
             )
 
         elif term_mode == 'double_stress':
             fun = self.make_function(
                 'jkI,Ii,0.j',
-                (mat, 'mat'), (aux, 'aux'), svar, diff_var=diff_var,
+                (mat, 'mat'), (aux, 'aux'), svar,
+                mode=mode, diff_var=diff_var,
             )
 
         return fun
@@ -181,7 +184,7 @@ class MixedFlexoTerm(ETermBase):
     def get_function(self, vvar, tvar, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         fun = self.make_function(
-            'v(i.j)->I,I', vvar, tvar, diff_var=diff_var,
+            'v(i.j)->I,I', vvar, tvar, mode=mode, diff_var=diff_var,
         )
 
         return fun
