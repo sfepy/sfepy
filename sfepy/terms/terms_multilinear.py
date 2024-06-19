@@ -1227,12 +1227,12 @@ class EIntegrateOperatorTerm(ETermBase):
                      diff_var=None, **kwargs):
         if mat is None:
             fun = self.make_function(
-                '0', virtual, diff_var=diff_var,
+                '0', virtual, mode=mode, diff_var=diff_var,
             )
 
         else:
             fun = self.make_function(
-                '00,0', mat, virtual, diff_var=diff_var,
+                '00,0', mat, virtual, mode=mode, diff_var=diff_var,
             )
 
         return fun
@@ -1265,12 +1265,12 @@ class ELaplaceTerm(ETermBase):
                      diff_var=None, **kwargs):
         if mat is None:
             fun = self.make_function(
-                '0.j,0.j', virtual, state, diff_var=diff_var,
+                '0.j,0.j', virtual, state, mode=mode, diff_var=diff_var,
             )
 
         else:
             fun = self.make_function(
-                '00,0.j,0.j', mat, virtual, state, diff_var=diff_var,
+                '00,0.j,0.j', mat, virtual, state, mode=mode, diff_var=diff_var,
             )
 
         return fun
@@ -1313,18 +1313,18 @@ class EDotTerm(ETermBase):
                      diff_var=None, **kwargs):
         if mat is None:
             fun = self.make_function(
-                'i,i', virtual, state, diff_var=diff_var,
+                'i,i', virtual, state, mode=mode, diff_var=diff_var,
             )
 
         else:
             if mat.shape[-1] > 1:
                 fun = self.make_function(
-                    'ij,i,j', mat, virtual, state, diff_var=diff_var,
+                    'ij,i,j', mat, virtual, state, mode=mode, diff_var=diff_var,
                 )
 
             else:
                 fun = self.make_function(
-                    '00,i,i', mat, virtual, state, diff_var=diff_var,
+                    '00,i,i', mat, virtual, state, mode=mode, diff_var=diff_var,
                 )
 
         return fun
@@ -1367,7 +1367,7 @@ class EScalarDotMGradScalarTerm(ETermBase):
     def get_function(self, mat, var1, var2, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         return self.make_function(
-            'i0,0,0.i', mat, var1, var2, diff_var=diff_var,
+            'i0,0,0.i', mat, var1, var2, mode=mode, diff_var=diff_var,
         )
 
 class ENonPenetrationPenaltyTerm(ETermBase):
@@ -1395,7 +1395,7 @@ class ENonPenetrationPenaltyTerm(ETermBase):
         normals = self.get_normals(state)
         return self.make_function(
             '00,i,i,j,j',
-            mat, virtual, normals, state, normals, diff_var=diff_var,
+            mat, virtual, normals, state, normals, mode=mode, diff_var=diff_var,
         )
 
 class EDivGradTerm(ETermBase):
@@ -1425,12 +1425,12 @@ class EDivGradTerm(ETermBase):
                      diff_var=None, **kwargs):
         if mat is None:
             fun = self.make_function(
-                'i.j,i.j', virtual, state, diff_var=diff_var,
+                'i.j,i.j', virtual, state, mode=mode, diff_var=diff_var,
             )
 
         else:
             fun = self.make_function(
-                '00,i.j,i.j', mat, virtual, state, diff_var=diff_var,
+                '00,i.j,i.j', mat, virtual, state, mode=mode, diff_var=diff_var,
             )
 
         return fun
@@ -1458,7 +1458,7 @@ class EConvectTerm(ETermBase):
     def get_function(self, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         return self.make_function(
-            'i,i.j,j', virtual, state, state, diff_var=diff_var,
+            'i,i.j,j', virtual, state, state, mode=mode, diff_var=diff_var,
         )
 
 class ELinearConvectTerm(ETermBase):
@@ -1485,7 +1485,7 @@ class ELinearConvectTerm(ETermBase):
     def get_function(self, virtual, parameter, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         return self.make_function(
-            'i,i.j,j', virtual, state, parameter, diff_var=diff_var,
+            'i,i.j,j', virtual, state, parameter, mode=mode, diff_var=diff_var,
         )
 
 class EDivTerm(ETermBase):
@@ -1514,12 +1514,12 @@ class EDivTerm(ETermBase):
                      diff_var=None, **kwargs):
         if mat is None:
             fun = self.make_function(
-                'i.i', virtual, diff_var=diff_var,
+                'i.i', virtual, mode=mode, diff_var=diff_var,
             )
 
         else:
             fun = self.make_function(
-                '00,i.i', mat, virtual, diff_var=diff_var,
+                '00,i.i', mat, virtual, mode=mode, diff_var=diff_var,
             )
 
         return fun
@@ -1551,7 +1551,7 @@ class EGradTerm(ETermBase):
                      diff_var=None, **kwargs):
         if mat is None:
             fun = self.make_function(
-                'i.j', virtual, diff_var=diff_var,
+                'i.j', virtual, mode=mode, diff_var=diff_var,
             )
 
         else:
@@ -1564,7 +1564,7 @@ class EGradTerm(ETermBase):
                 raise ValueError(f'wrong matrial shape! ({mat.shape[-2:]})')
 
             fun = self.make_function(
-                expr, mat, virtual, diff_var=diff_var,
+                expr, mat, virtual, mode=mode, diff_var=diff_var,
             )
 
         return fun
@@ -1608,12 +1608,12 @@ class EStokesTerm(ETermBase):
                      diff_var=None, **kwargs):
         if coef is None:
             fun = self.make_function(
-                'i.i,0', vvar, svar, diff_var=diff_var,
+                'i.i,0', vvar, svar, mode=mode, diff_var=diff_var,
             )
 
         else:
             fun = self.make_function(
-                '00,i.i,0', coef, vvar, svar, diff_var=diff_var,
+                '00,i.i,0', coef, vvar, svar, mode=mode, diff_var=diff_var,
             )
 
         return fun
@@ -1645,7 +1645,8 @@ class ELinearElasticTerm(ETermBase):
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         return self.make_function(
-            'IK,s(i:j)->I,s(k:l)->K', mat, virtual, state, diff_var=diff_var,
+            'IK,s(i:j)->I,s(k:l)->K', mat, virtual, state,
+            mode=mode, diff_var=diff_var,
         )
 
 class ECauchyStressTerm(ETermBase):
@@ -1672,7 +1673,7 @@ class ECauchyStressTerm(ETermBase):
     def get_function(self, mat, parameter, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         return self.make_function(
-            'IK,s(k:l)->K', mat, parameter, diff_var=diff_var,
+            'IK,s(k:l)->K', mat, parameter, mode=mode, diff_var=diff_var,
         )
 
 
@@ -1703,7 +1704,8 @@ class ENonSymElasticTerm(ETermBase):
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         fun = self.make_function(
-            'IK,v(i.j)->I,v(k.l)->K', mat, virtual, state, diff_var=diff_var,
+            'IK,v(i.j)->I,v(k.l)->K', mat, virtual, state,
+            mode=mode, diff_var=diff_var,
         )
 
         return fun
@@ -1751,7 +1753,7 @@ class EDiffusionTerm(ETermBase):
                      mode=None, term_mode=None, diff_var=None, **kwargs):
 
         fun = self.make_function(
-            'ij,0.i,0.j', mat, vvar, svar, diff_var=diff_var
+            'ij,0.i,0.j', mat, vvar, svar, mode=mode, diff_var=diff_var
         )
 
         return fun
@@ -1820,7 +1822,8 @@ class ELinearTractionTerm(ETermBase):
                 force = dot_sequences(aux, nv, 'AB')
 
         fun = self.make_function(
-            'i,i', (force[..., 0], 'opt_material'), vvar, diff_var=diff_var,
+            'i,i', (force[..., 0], 'opt_material'), vvar,
+            mode=mode, diff_var=diff_var,
         )
 
         return fun
@@ -1863,7 +1866,7 @@ class SurfaceFluxOperatorTerm(ETermBase):
         normals = self.get_normals(var2)
         return self.make_function(
             'i,ij,0,0.j',
-            normals, mat, var1, var2, diff_var=diff_var,
+            normals, mat, var1, var2, mode=mode, diff_var=diff_var,
         )
 
 class SurfacePiezoFluxOperatorTerm(ETermBase):
@@ -1907,7 +1910,7 @@ class SurfacePiezoFluxOperatorTerm(ETermBase):
         normals = self.get_normals(var2)
         return self.make_function(
             'i,iJ,0,s(a:b)->J',
-            normals, mat, var1, var2, diff_var=diff_var,
+            normals, mat, var1, var2, mode=mode, diff_var=diff_var,
         )
 
 class SurfacePiezoFluxTerm(ETermBase):
@@ -1937,5 +1940,5 @@ class SurfacePiezoFluxTerm(ETermBase):
         normals = self.get_normals(var1)
         return self.make_function(
             'i,iJ,s(a:b)->J',
-            normals, mat, var1, diff_var=diff_var,
+            normals, mat, var1, mode=mode, diff_var=diff_var,
         )

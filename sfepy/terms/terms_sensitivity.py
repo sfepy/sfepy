@@ -66,7 +66,7 @@ class ESDLinearElasticTerm(ETermBase):
 
         fun = self.make_function(
             'IK,v(i.j)->I,v(k.l)->K', (mat_sd, 'material'), vvar, svar,
-            diff_var=diff_var,
+            mode=mode, diff_var=diff_var,
         )
 
         return fun
@@ -124,7 +124,8 @@ class ESDPiezoCouplingTerm(ETermBase):
         expr = 'Ik,0.k,v(i.j)->I' if mode == 'div' else 'kI,v(i.j)->I,0.k'
 
         fun = self.make_function(
-            expr, (mat_sd, 'material'), vvar, svar, diff_var=diff_var
+            expr, (mat_sd, 'material'), vvar, svar,
+            mode=mode, diff_var=diff_var,
         )
 
         return fun
@@ -167,7 +168,8 @@ class ESDDiffusionTerm(ETermBase):
         mat_sd = mat * div_mv - aux - aux.transpose((0, 1, 3, 2))
 
         fun = self.make_function(
-            'ij,0.i,0.j', (mat_sd, 'material'), vvar, svar, diff_var=diff_var
+            'ij,0.i,0.j', (mat_sd, 'material'), vvar, svar,
+            mode=mode, diff_var=diff_var,
         )
 
         return fun
@@ -221,7 +223,8 @@ class ESDStokesTerm(ETermBase):
         mat_sd = (nm.eye(dim) * div_mv - grad_mv) * mul
 
         fun = self.make_function(
-            self.texpr, (mat_sd, 'material'), vvar, svar, diff_var=diff_var
+            self.texpr, (mat_sd, 'material'), vvar, svar,
+            mode=mode, diff_var=diff_var
         )
 
         return fun
@@ -273,7 +276,7 @@ class ESDDivGradTerm(ETermBase):
 
         fun = self.make_function(
             'IK,v(i.j)->I,v(k.l)->K', (mat_sd, 'material'), vvar, svar,
-            diff_var=diff_var,
+            mode=mode, diff_var=diff_var,
         )
 
         return fun
@@ -322,12 +325,14 @@ class ESDDotTerm(ETermBase):
 
         if mat_sd.shape[-1] > 1:
             fun = self.make_function(
-                'ij,i,j', (mat_sd, 'material'), vvar, svar, diff_var=diff_var,
+                'ij,i,j', (mat_sd, 'material'), vvar, svar,
+                mode=mode, diff_var=diff_var,
             )
 
         else:
             fun = self.make_function(
-                '00,i,i', (mat_sd, 'material'), vvar, svar, diff_var=diff_var,
+                '00,i,i', (mat_sd, 'material'), vvar, svar,
+                mode=mode, diff_var=diff_var,
             )
 
         return fun
@@ -392,7 +397,7 @@ class ESDLinearTractionTerm(ETermBase):
         mat_sd = dot_sequences(aux, sg.normal, 'AB')[..., 0]
 
         fun = self.make_function(
-            'i,i', (mat_sd, 'opt_material'), vvar, diff_var=diff_var,
+            'i,i', (mat_sd, 'opt_material'), vvar, mode=mode, diff_var=diff_var,
         )
 
         return fun
