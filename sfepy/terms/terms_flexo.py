@@ -32,6 +32,9 @@ def make_grad2strain(dim):
         ], dtype=nm.float64)
         g2s = g2s.reshape((1, 1, 1, 1))
 
+    else:
+        raise ValueError(f'space dimension must be 1, 2, or 3! (is {dim})')
+
     return g2s
 
 class MixedStrainGradElasticTerm(ETermBase):
