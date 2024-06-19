@@ -39,6 +39,9 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
             elif sh == 'S':
                 return sym
 
+            elif sh == 'SD':
+                return sym * dim
+
             elif sh == 'N': # General number ;)
                 return 1
 
