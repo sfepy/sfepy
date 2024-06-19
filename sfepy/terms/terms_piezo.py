@@ -131,7 +131,7 @@ class SDPiezoCouplingTerm(ETermBase):
 
         return self.make_function(
             'kij,i.j,0.k', (sa_mat_f, 'material'), par_u, par_p,
-            diff_var=diff_var
+            mode=mode, diff_var=diff_var,
         )
 
 class PiezoStressTerm(Term):

@@ -53,12 +53,12 @@ class MassTerm(ETermBase):
             and ((lumping == 'none') or (beta == 0.0))):
             # Consistent mass matrix.
             fun = self.make_function(
-                '00,i,i', rho, virtual, state, diff_var=diff_var,
+                '00,i,i', rho, virtual, state, mode=mode, diff_var=diff_var,
             )
             return fun
 
         _fun = self.make_function(
-            '00,i,i', rho, virtual, state, diff_var=state.name,
+            '00,i,i', rho, virtual, state, mode=mode, diff_var=state.name,
         )
         self.einfos[None] = self.einfos[state.name]
 
