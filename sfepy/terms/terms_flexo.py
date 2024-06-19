@@ -95,6 +95,10 @@ class MixedStrainGradElasticTerm(ETermBase):
                 mode=mode, diff_var=None,
             )
 
+        else:
+            raise ValueError('unsupported term mode in %s! (%s)'
+                             % (self.name, term_mode))
+
 class MixedFlexoCouplingTerm(ETermBase):
     r"""
     Flexoelectric coupling term, mixed formulation.
@@ -153,6 +157,10 @@ class MixedFlexoCouplingTerm(ETermBase):
                 (mat, 'mat'), (aux, 'aux'), svar,
                 mode=mode, diff_var=diff_var,
             )
+
+        else:
+            raise ValueError('unsupported term mode in %s! (%s)'
+                             % (self.name, term_mode))
 
         return fun
 
