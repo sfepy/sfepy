@@ -4,7 +4,7 @@ from libc.stdio cimport FILE, stdout
 cimport numpy as np
 import numpy as np
 
-from types cimport int32, uint32, float64
+from sfepy.discrete.common.extmods.types cimport int32, uint32, float64
 
 cdef extern from "fmfield.h":
     ctypedef struct FMField:

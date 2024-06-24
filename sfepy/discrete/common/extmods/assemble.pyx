@@ -7,7 +7,7 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-from types cimport int32, float64, complex128
+from sfepy.discrete.common.extmods.types cimport int32, float64, complex128
 
 @cython.boundscheck(False)
 def assemble_vector(np.ndarray[float64, mode='c', ndim=1] vec not None,

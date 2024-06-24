@@ -4,9 +4,9 @@ Low level reference mapping functionality.
 """
 cimport cython
 
-from _fmfield cimport (FMField, array2fmfield4)
+from sfepy.discrete.common.extmods._fmfield cimport (FMField, array2fmfield4)
 
-from types cimport int32, float64
+from sfepy.discrete.common.extmods.types cimport int32, float64
 
 cdef extern from 'refmaps.h':
 

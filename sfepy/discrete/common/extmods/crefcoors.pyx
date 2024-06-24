@@ -4,12 +4,12 @@ cimport cython
 cimport numpy as np
 import numpy as np
 
-cimport _fmfield as _f
-from _fmfield cimport FMField
+cimport sfepy.discrete.common.extmods._fmfield as _f
+from sfepy.discrete.common.extmods._fmfield cimport FMField
 
-cimport cmesh as cm
+cimport sfepy.discrete.common.extmods.cmesh as cm
 
-from types cimport int32, float64, complex128
+from sfepy.discrete.common.extmods.types cimport int32, float64, complex128
 
 cdef extern from 'common.h':
     void *pyalloc(size_t size)
