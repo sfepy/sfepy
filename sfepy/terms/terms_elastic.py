@@ -155,7 +155,7 @@ class SDLinearElasticTerm(Term):
                   'parameter_w' : 'D', 'parameter_u' : 'D',
                   'parameter_mv' : 'D'}
     geometries = ['2_3', '2_4', '3_4', '3_8']
-    function = terms.d_sd_lin_elastic
+    function = staticmethod(terms.d_sd_lin_elastic)
 
     def get_fargs(self, mat, par_w, par_u, par_mv,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
