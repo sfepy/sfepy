@@ -1,4 +1,5 @@
 # -*- Mode: Python -*-
+# cython: language_level=3
 cimport cython
 
 cimport numpy as np
