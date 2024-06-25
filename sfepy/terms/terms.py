@@ -1307,9 +1307,11 @@ class Term(Struct):
 
     @staticmethod
     def translate_fargs_mapping(function, fargs, force=False):
-        key = 'builtin_function_or_method'
+        key0 = 'builtin_function_or_method' # cython < 3
+        key1 = 'cython_function_or_method' # cython >= 3
         fs = [k.__class__.__name__ for k in fargs]
-        if key in function.__class__.__name__ or key in fs or force:
+        is_tr = lambda key: (key in function.__class__.__name__ or key in fs)
+        if is_tr(key0) or is_tr(key1) or force:
             for ii, k in enumerate(fs):
                 if k == 'PyCMapping':
                     fargs[ii] = fargs[ii].cmap

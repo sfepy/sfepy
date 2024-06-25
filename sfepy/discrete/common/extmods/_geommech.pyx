@@ -1,11 +1,12 @@
 # -*- Mode: Python -*-
+# cython: language_level=3
 """
 Low level functions.
 """
 cimport cython
 
 cimport sfepy.discrete.common.extmods._geommech as gmch
-from types cimport int32
+from sfepy.discrete.common.extmods.types cimport int32
 
 from sfepy.discrete.common.extmods._fmfield cimport (
     FMField, FMF_SetCell, array2fmfield4,

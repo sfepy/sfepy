@@ -1,4 +1,5 @@
 # -*- Mode: Python -*-
+# cython: language_level=3
 """
 C Mesh data structures and functions.
 """
@@ -6,7 +7,8 @@ cimport numpy as np
 
 from libc.stdio cimport FILE, stdout
 
-from types cimport uint32, int32, float64, complex128
+from sfepy.discrete.common.extmods.types cimport (uint32, int32, float64,
+                                                  complex128)
 
 cdef extern from 'string.h':
     void *memcpy(void *dest, void *src, size_t n)

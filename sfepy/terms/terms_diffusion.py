@@ -389,7 +389,7 @@ class SurfaceFluxOperatorTerm(Term):
                    'state' : 1},
                   {'opt_material' : None}]
     integration = 'facet_extra'
-    function = terms.dw_surface_flux
+    function = staticmethod(terms.dw_surface_flux)
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -430,7 +430,7 @@ class ConvectVGradSTerm(Term):
     name = 'dw_convect_v_grad_s'
     arg_types = ('virtual', 'state_v', 'state_s')
     arg_shapes = [{'virtual' : (1, 'state_s'), 'state_v' : 'D', 'state_s' : 1}]
-    function = terms.dw_convect_v_grad_s
+    function = staticmethod(terms.dw_convect_v_grad_s)
 
     def get_fargs(self, virtual, state_v, state_s,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
