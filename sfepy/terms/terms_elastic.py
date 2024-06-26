@@ -1120,12 +1120,15 @@ class LinearDSpringTerm(LinearTrussTerm):
     :math:`\ul{k}` are in the local coordinates system specified by a given
     direction :math:`\ul{d}` or by the vector
     :math:`\ul{d} = \ul{x}^{(j)} - \ul{x}^{(i)}` for non-coincidental end nodes.
+    The stiffness parameter :math:`\ul{K}` can also be defined as a 6x6 matrix
+    in 3D or a 3x3 matrix in 2D.
     """
     name = 'dw_lin_dspring'
     arg_types = ('opt_material', 'material', 'virtual', 'state')
     arg_shapes = [{'opt_material': 'D, 1', 'material': 'D, 1',
                    'virtual': ('D', 'state'), 'state': 'D'},
-                  {'opt_material': None}]
+                  {'material': 'D, D'}, {'opt_material': None}]
+
     integration_order = 0
     geometries = ['1_2', '2_1_2', '3_1_2']
 
@@ -1136,8 +1139,9 @@ class LinearDSpringTerm(LinearTrussTerm):
         ntr = 2 * dim
         ke = nm.zeros((nel, 2 * ndof, 2 * ndof), dtype=nm.float64)
         for k in range(ndof):
-            ke[:, 2*k, 2*k] = ke[:, 2*k + 1, 2*k + 1] = mat[:, 0, k, 0]
-            ke[:, 2*k + 1, 2*k] = ke[:, 2*k, 2*k + 1] = -mat[:, 0, k, 0]
+            for j in range(ndof):
+                ke[:, 2*k, 2*j] = ke[:, 2*k + 1, 2*j + 1] = mat[:, 0, k, j,]
+                ke[:, 2*k + 1, 2*j] = ke[:, 2*k, 2*j + 1] = -mat[:, 0, k, j]
 
         if diff_var is None:
             trans_vec = membranes.transform_asm_vectors
@@ -1165,6 +1169,13 @@ class LinearDSpringTerm(LinearTrussTerm):
 
         mtx_t, _ = self.get_mtx_t_and_length(coors, dvec)
 
+        if mat.shape[-1] == 1:
+            n = mat.shape[-2]
+            mat_ = nm.zeros(mat.shape[:-1] + (mat.shape[-2],), dtype=mat.dtype)
+            ii = nm.arange(n)
+            mat_[..., ii, ii] = mat[..., 0]
+            mat = mat_
+
         if diff_var is None:
             _, _, _, _, n_c = self.get_data_shape(virtual)
             adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
@@ -1180,4 +1191,4 @@ class LinearDRotSpringTerm(LinearDSpringTerm):
     arg_types = ('opt_material', 'material', 'virtual', 'state')
     arg_shapes = [{'opt_material': 'D, 1', 'material': 'S, 1',
                    'virtual': ('S', 'state'), 'state': 'S'},
-                  {'opt_material': None}]
+                  {'material': 'S, S'}, {'opt_material': None}]
