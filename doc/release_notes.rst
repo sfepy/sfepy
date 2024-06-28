@@ -1,5 +1,214 @@
 # created: 20.07.2007 (-1)
 
+.. _2024.1-2024.2:
+
+from 2024.1 to 2024.2
+=====================
+
+- merge pull request #1095 from rc/cylindergen-annular-meshes
+
+  - generalize gen_cylinder_mesh() for 2D annular meshes
+  - cylindergen.py: new --2d option, update gen_cylinder(), add_args()
+
+- merge pull request #1097 from rc/obey-output-dir
+
+  - do not save results in test_active_only()
+  - obey output_dir in reference_solution() of mixed_mesh.py example
+  - obey output_dir in test_meshes() of wedge_mesh.py example
+
+- merge pull request #1098 from rc/convert-mesh-remap-groups
+
+  - convert_mesh.py: new --remap-vertex-groups, --remap-cell-groups
+    options - update main()
+
+- merge pull request #1099 from rc/update-github-ci
+
+  - CI: update config for current github
+
+    - update Python versions, use only pytest, fix macOS install
+    - do not fail fast
+
+  - replace pkg_resources.parse_version() with packaging.version.parse()
+  - update default in _scikit_umfpack_version()
+  - fix deprecation warning in ScipyIterative.__call__()
+  - fix deprecation warning in test_ed_solvers()
+
+- merge pull request #1096 from rc/multi-point-constraints
+
+  - new cell_tdim extra region option, update Domain.create_region()
+  - fix LinearSpringTerm.function()
+  - new Rigid2Operator
+  - new LinearDSpringTerm
+  - update LinearDSpringTerm
+  - new LinearDRotSpringTerm: displacements + rotations
+  - new sfepy/examples/linear_elasticity/multi_point_constraints.py example
+  - fix transformation of rotational DOFs
+  - fix direction vector shape in LinearDSpringTerm.get_fargs()
+  - fix error message in LinearTrussTerm.get_mtx_t_and_length()
+  - fix operator matrix
+  - fix DOF counts in Rigid2Operator
+  - new Term.integration_order class attribute, update .set_integral()
+  - update LinearSpringTerm.function() for 1D - update
+    LinearTrussTerm.get_mtx_t_and_length()
+  - update LinearTrussTerm.function() for 1D
+  - update LinearTrussInternalForceTerm.function() for 1D
+  - fix LinearSpringTerm.function() for 1D, 3D
+  - set .integration_order of linear 1D bar-like terms to 0, specify
+    .geometries - update LinearSpringTerm, LinearTrussTerm,
+    LinearTrussInternalForceTerm, LinearDSpringTerm
+  - test linear 1D bar-like terms in test_term_call_modes() - update
+    not_tested_terms, data(), _test_single_term()
+  - new 2_1_2_2.mesh, 3_1_2_2.mesh meshes for test_term_call_modes()
+  - new MeshioLibIO.squeeze attribute, do not squeeze non-VTK meshes
+
+    - update .__init__(), ._get_dimension()
+    - update .read_bounding_box(), .read_dimension(), .read(), .read_data()
+
+  - new radius2 argument of get_coors_in_ball()
+  - preserve tdim in Region operators - update .eval_op_vertices(),
+    .eval_op_edges(), .eval_op_faces(), .eval_op_facets()
+  - update docstring of Rigid2Operator
+  - new AverageForceOperator
+  - add average_force LCBCs to multi_point_constraints.py example
+  - update docstring of multi_point_constraints.py example
+  - gen_gallery.py: add custom view for multi_point_constraints.py example
+  - new _create_spin_matrix() - update {RigidOperator, Rigid2Operator,
+    AverageForceOperator}.__init__()
+
+- merge pull request #1100 from rc/fix-printing-package-versions
+
+  - fix printing package versions in setup.py by setting logging level
+
+- merge pull request #1101 from vlukes/update-spring-terms update
+  get_mtx_t_and_length()
+
+  - update get_mtx_t_and_length()
+
+- merge pull request #1103 from rc/piezo-flux-terms
+
+  - new SurfacePiezoFluxOperatorTerm (de_surface_piezo_flux) - new
+    .get_function()
+  - new SurfacePiezoFluxTerm (ev_surface_piezo_flux) - new .get_function()
+  - fix SurfacePiezoFluxOperatorTerm.arg_shapes
+  - fix typos in docstrings
+
+- merge pull request #1105 from vlukes/octave-evp-solver
+
+  - new octave eigenvalue solver
+  - add eig.octave solver to tests
+  - set minimal version for oct2py (octave) package
+  - eig.octave solver can fail
+  - fix oct2py min. version
+  - remove duplicated which.lower()
+  - fix oct2py version check
+
+- merge pull request #1106 from vlukes/octave-evp-solver quit octave session
+  after all
+
+  - quit octave session after all
+
+- merge pull request #1107 from vlukes/scipy-eigsh-set-linear-solver
+
+  - scipy.eigsh: set linear solver
+  - update declarative example
+  - set linear solver to 'splu'
+  - use any direct linear solver
+  - setup configuration of linear solver
+  - new cholesky solver
+  - update example
+  - update declarative example
+
+- merge pull request #1108 from rc/new-term-arg-shapes
+
+  - update EDotTerm.arg_shapes to allow any field dimension
+  - support SD shape in _parse_scalar_shape() of Term.check_shapes()
+
+- merge pull request #1111 from rc/multilinear-eval-modes
+
+  - support el_eval, el_avg, qp modes in ETermBase, ExpressionBuilder.build() -
+    update ETermBase._eval(), .build_expression(), .make_function()
+  - rename ExpressionBuilder.add_constant() -> .add_qp_scalar() - update
+    .build()
+  - new ExpressionBuilder.add_cell_scalar()
+  - implement el_avg mode using ExpressionBuilder.add_cell_scalar()
+
+    - update get_einsum_ops(), ExpressionBuilder.build()
+    - revert ETermBase._eval()
+
+- merge pull request #1109 from rc/resview-fix-vector-field-check
+
+  - fix is_vector_field in pv_plot()
+
+- merge pull request #1112 from rc/resview-fix-animations
+
+  - resview.py: support gif animations in main()
+  - resview.py: fix mp4 and png animation modes in main()
+
+- merge pull request #1115 from flothesof/fix_website_search, closes #1114
+
+  - try to fix search problem
+  - fix line break
+
+- merge pull request #1113 from rc/flexoelectric-mixed-terms
+
+  - new MixedStrainGradElasticTerm (de_m_sg_elastic), make_grad2strain() - new
+    sfepy/terms/terms_flexo.py
+  - new MixedFlexoCouplingTerm (de_m_flexo_coupling)
+  - new MixedFlexoTerm (de_m_flexo)
+  - update make_grad2strain() for 1D, 2D
+  - update MixedStrainGradElasticTerm, MixedFlexoCouplingTerm for 1D, 2D -
+    update .get_function()
+  - fix parameter names in MixedFlexoTerm.arg_types
+  - update make_term_args() for SD argument shape
+  - docs: sync module index of developer guide with current sources
+  - implement grad_strain, double_stress term modes in
+    MixedStrainGradElasticTerm - update .get_function()
+  - implement double_stress term mode in MixedFlexoCouplingTerm.get_function()
+  - implement electric_displacement term mode in MixedFlexoCouplingTerm -
+    update .get_function()
+  - add missing mode arguments in .make_function() calls
+
+    - update MixedFlexoCouplingTerm.get_function()
+    - update MixedFlexoTerm.get_function()
+
+  - handle unsupported dim values in make_grad2strain()
+  - handle unsupported term_mode values in .get_function()
+
+    - update MixedStrainGradElasticTerm,get_function()
+    - update MixedFlexoCouplingTerm.get_function()
+
+- merge branch pull request #1116 from rc/pin-numpy-1x
+
+  - pin numpy<2 in pyproject.toml
+  - CI: pin numpy<2 in build_and_test_matrix.yml
+
+- merge pull request #1117 from rc/multilinear-terms-obey-mode
+
+  - obey mode in .make_function() calls in .get_function() of ETermBase
+    subclasses
+
+- merge pull request #1119 from rc/more-meshio-formats
+
+  - add more meshio formats to supported formats lists
+
+- merge pull request #1120 from rc/support-cython-3
+
+  - update cimport statements for Cython 3.0
+  - update Term.translate_fargs_mapping() for Cython 3.0
+  - fix term function types for Cython 3.0 - fix SurfaceFluxOperatorTerm,
+    ConvectVGradSTerm, SDLinearElasticTerm
+  - drop Cython's upper limit in pyproject.toml
+  - set language_level to 3 in all .pyx, .pxd files
+
+- merge pull request #1122 from vlukes/update-dw_lin_dspring-term
+
+  - allow for a general stiffness matrix
+
+- merge pull request #1124 from rc/fix-package-versions
+
+  - require cmake in pyproject.toml
+  - require numpy<2 in setup.py
+
 .. _2023.4-2024.1:
 
 from 2023.4 to 2024.1
