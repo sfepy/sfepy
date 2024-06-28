@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **29.03.2023** Version 2023.1 released (support meshes with cells of
+  different topological dimensions, unified treatment of volume and surface
+  integrals, updated elastodynamics solvers, reciprocal mass matrix algorithm,
+  seismic load and piezo-elastodynamics examples, use GitHub Actions for CI,
+  etc.), see :ref:`release notes <2022.4-2023.1>`.
+
 * **29.12.2022** Version 2022.4 released (new examples: transient heat equation
   with several material domains and scalar Helmholtz equation, adaptive time
   step control for elastodynamics solvers, central difference elastodynamics
