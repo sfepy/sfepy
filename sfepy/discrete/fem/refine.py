@@ -17,7 +17,7 @@ def refine_1_2(mesh_in):
         raise ValueError("1D Mesh for refinement must have sorted coors array")
 
     cmesh = mesh_in.cmesh
-    c_centres = cmesh.get_centroids(cmesh.dim)
+    c_centres = cmesh.get_centroids(cmesh.tdim)
     new_coors = nm.zeros((2*mesh_in.n_nod - 1, 1))
     new_coors[0::2] = mesh_in.coors
     new_coors[1::2] = c_centres
@@ -40,14 +40,14 @@ def refine_2_3(mesh_in):
     cmesh = mesh_in.cmesh
 
     # Unique edge centres.
-    e_centres = cmesh.get_centroids(cmesh.dim - 1)
+    e_centres = cmesh.get_centroids(cmesh.tdim - 1)
 
     # New coordinates after the original ones.
     coors = nm.r_[mesh_in.coors, e_centres]
 
     o1 = mesh_in.n_nod
 
-    cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
+    cc = cmesh.get_conn(cmesh.tdim, cmesh.tdim - 1)
 
     conn = mesh_in.get_conn('2_3')
     n_el = conn.shape[0]
@@ -77,10 +77,10 @@ def refine_2_4(mesh_in):
     cmesh = mesh_in.cmesh
 
     # Unique edge centres.
-    e_centres = cmesh.get_centroids(cmesh.dim - 1)
+    e_centres = cmesh.get_centroids(cmesh.tdim - 1)
 
     # Unique element centres.
-    centres = cmesh.get_centroids(cmesh.dim)
+    centres = cmesh.get_centroids(cmesh.tdim)
 
     # New coordinates after the original ones.
     coors = nm.r_[mesh_in.coors, e_centres, centres]
@@ -88,7 +88,7 @@ def refine_2_4(mesh_in):
     o1 = mesh_in.n_nod
     o2 = o1 + e_centres.shape[0]
 
-    cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
+    cc = cmesh.get_conn(cmesh.tdim, cmesh.tdim - 1)
 
     conn = mesh_in.get_conn('2_4')
     n_el = conn.shape[0]
@@ -134,14 +134,14 @@ def refine_3_4(mesh_in):
     cmesh = mesh_in.cmesh
 
     # Unique edge centres.
-    e_centres = cmesh.get_centroids(cmesh.dim - 2)
+    e_centres = cmesh.get_centroids(cmesh.tdim - 2)
 
     # New coordinates after the original ones.
     coors = nm.r_[mesh_in.coors, e_centres]
 
     o1 = mesh_in.n_nod
 
-    cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 2)
+    cc = cmesh.get_conn(cmesh.tdim, cmesh.tdim - 2)
 
     conn = mesh_in.get_conn('3_4')
     n_el = conn.shape[0]
@@ -175,13 +175,13 @@ def refine_3_8(mesh_in):
     cmesh = mesh_in.cmesh
 
     # Unique edge centres.
-    e_centres = cmesh.get_centroids(cmesh.dim - 2)
+    e_centres = cmesh.get_centroids(cmesh.tdim - 2)
 
     # Unique face centres.
-    f_centres = cmesh.get_centroids(cmesh.dim - 1)
+    f_centres = cmesh.get_centroids(cmesh.tdim - 1)
 
     # Unique element centres.
-    centres = cmesh.get_centroids(cmesh.dim)
+    centres = cmesh.get_centroids(cmesh.tdim)
 
     # New coordinates after the original ones.
     coors = nm.r_[mesh_in.coors, e_centres, f_centres, centres]
@@ -190,8 +190,8 @@ def refine_3_8(mesh_in):
     o2 = o1 + e_centres.shape[0]
     o3 = o2 + f_centres.shape[0]
 
-    ecc = cmesh.get_conn(cmesh.dim, cmesh.dim - 2)
-    fcc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
+    ecc = cmesh.get_conn(cmesh.tdim, cmesh.tdim - 2)
+    fcc = cmesh.get_conn(cmesh.tdim, cmesh.tdim - 1)
 
     conn = mesh_in.get_conn('3_8')
     n_el = conn.shape[0]
