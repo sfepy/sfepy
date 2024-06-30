@@ -15,9 +15,6 @@ where
     D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
     \lambda \ \delta_{ij} \delta_{kl} \;,
 
-    \lambda = E \nu / ((1 + \nu)(1 - 2\nu)), \\ \mu = E / 2(1 + \nu)
-    \;,
-
     K_{kl} = K_{kl}(\ul{d}, \ul{k}) \;,
 
 :math:`u_c^{(j)}` are the DOFs - two displacements and one rotation in 2D -
