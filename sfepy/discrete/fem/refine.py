@@ -124,10 +124,10 @@ def refine_3_4(mesh_in):
 
     References:
 
-    - Juergen Bey: Simplicial grid refinement: on Freudenthal s algorithm and 
-      the optimal number of congruence classes, Numer.Math. 85 (2000), 
+    - Juergen Bey: Simplicial grid refinement: on Freudenthal s algorithm and
+      the optimal number of congruence classes, Numer.Math. 85 (2000),
       no. 1, 1--29, or
-    - Juergen Bey: Tetrahedral grid refinement, Computing 55 (1995), 
+    - Juergen Bey: Tetrahedral grid refinement, Computing 55 (1995),
       no. 4, 355--378, or
       http://citeseer.ist.psu.edu/bey95tetrahedral.html
     """
