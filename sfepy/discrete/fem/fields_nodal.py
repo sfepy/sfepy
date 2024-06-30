@@ -315,7 +315,7 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
         integral = Integral('i', coors=coors, weights=nm.ones_like(coors[:, 0]))
 
         rcfield.clear_qp_base()
-        bf = rcfield.get_base('v', False, integral)
+        bf = rcfield.eval_basis('v', False, integral)
 
         if gel.name == '2_4':
             fsubs = subs

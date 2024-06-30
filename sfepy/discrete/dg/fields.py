@@ -1091,7 +1091,7 @@ class DGField(FEField):
 
             geo_ps = self.gel.poly_space
             ps = self.poly_space
-            bf = self.get_base('v', 0, integral, iels=iels)
+            bf = self.eval_basis('v', 0, integral, iels=iels)
 
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
             mapping = FEMapping(coors, conn, poly_space=geo_ps)

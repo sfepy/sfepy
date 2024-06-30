@@ -694,7 +694,7 @@ class FEField(Field):
         """
         Set local element basis transformation.
 
-        The basis transformation is applied in :func:`FEField.get_base()` and
+        The basis transformation is applied in :func:`FEField.eval_basis()` and
         :func:`FEField.create_mapping()`.
 
         Parameters
@@ -721,8 +721,8 @@ class FEField(Field):
 
         return vec.ravel()
 
-    def get_base(self, key, derivative, integral, iels=None,
-                 from_geometry=False, base_only=True):
+    def eval_basis(self, key, derivative, integral, iels=None,
+                   from_geometry=False, base_only=True):
         qp = self.get_qp(key, integral)
 
         if from_geometry:
@@ -1075,7 +1075,7 @@ class FEField(Field):
         """
         integral = Integral('i', order=self.approx_order)
 
-        bf = self.get_base('v', False, integral)
+        bf = self.eval_basis('v', False, integral)
         bf = bf[:, 0, :].copy()
 
         data_qp = nm.dot(bf, dofs[self.econn])
@@ -1242,7 +1242,7 @@ class FEField(Field):
 
         if region.kind == 'cell':
             qp = self.get_qp('v', integral)
-            bf = self.get_base('v', 0, integral, iels=iels)
+            bf = self.eval_basis('v', 0, integral, iels=iels)
 
             dconn = domain.get_conn(tdim=region.tdim, cells=iels)
             mapping = FEMapping(coors, dconn, poly_space=geo_ps)
@@ -1349,7 +1349,7 @@ class FEField(Field):
                     if integration == 'facet_extra':
                         se_bf_bg = geo_ps.eval_base(qp.vals, diff=True)
                         se_bf_bg = se_bf_bg[sd.fis[:, 1]]
-                        se_ebf_bg = self.get_base(esd.bkey, 1, integral)
+                        se_ebf_bg = self.eval_basis(esd.bkey, 1, integral)
                         se_ebf_bg = se_ebf_bg[sd.fis[:, 1]]
                         remap = prepare_remap(cells, cells.max() + 1)
                         se_conn = dconn[remap[sd.fis[:, 0]], :]

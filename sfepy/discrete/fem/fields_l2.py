@@ -156,8 +156,8 @@ class L2ConstantVolumeField(Field):
         """
         return nm.zeros(1, dtype=nm.int32)
 
-    def get_base(self, key, derivative, integral, iels=None,
-                 from_geometry=False, base_only=True):
+    def eval_basis(self, key, derivative, integral, iels=None,
+                   from_geometry=False, base_only=True):
         qp_coors, qp_weights = integral.get_qp(self.gel.name)
         ps = self.poly_space
         bf = ps.eval_base(qp_coors)

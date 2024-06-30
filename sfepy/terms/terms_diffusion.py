@@ -396,7 +396,7 @@ class SurfaceFluxOperatorTerm(Term):
         sg, _ = self.get_mapping(state)
         sd = state.field.extra_data[f'sd_{self.region.name}']
         self.get_mapping(virtual) # Creates BQP for the basis.
-        bf = virtual.field.get_base(sd.bkey, 0, self.integral)
+        bf = virtual.field.eval_basis(sd.bkey, 0, self.integral)
 
         if mat is None:
             _, n_qp, dim, _, _ = self.get_data_shape(state)

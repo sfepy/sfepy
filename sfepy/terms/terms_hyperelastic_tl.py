@@ -793,7 +793,7 @@ class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(virtual)
         sd = virtual.field.extra_data[f'sd_{self.region.name}']
-        bf = virtual.field.get_base(sd.bkey, 0, self.integral)
+        bf = virtual.field.eval_basis(sd.bkey, 0, self.integral)
 
         name = state.name
         fd = self.get_family_data(state, self.region, self.integral,
@@ -842,7 +842,7 @@ class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(parameter)
         sd = parameter.field.extra_data[f'sd_{self.region.name}']
-        bf = parameter.field.get_base(sd.bkey, 0, self.integral)
+        bf = parameter.field.eval_basis(sd.bkey, 0, self.integral)
 
         name = parameter.name
         fd = self.get_family_data(parameter, self.region, self.integral,

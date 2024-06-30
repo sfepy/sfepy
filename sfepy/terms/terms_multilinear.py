@@ -244,7 +244,7 @@ class ExpressionArg(Struct):
 
             else:
                 sd = self.arg.field.extra_data[f'sd_{self.term.region.name}']
-                _bf = self.arg.field.get_base(sd.bkey, 0, self.term.integral)
+                _bf = self.arg.field.eval_basis(sd.bkey, 0, self.term.integral)
                 bf = _bf[sd.fis[:, 1], ...]
                 cell_dependent = True
 
