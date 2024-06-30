@@ -212,10 +212,9 @@ class FEMapping(Mapping):
         else:
             return self.poly_space.geometry
 
-    def get_base(self, coors, diff=False, grad_axes=None):
+    def eval_basis(self, coors, diff=False, grad_axes=None):
         """
-        Get basis functions or their gradient evaluated in given
-        coordinates.
+        Evaluate basis functions or their gradients in given coordinates.
         """
         if isinstance(self.poly_space, dict):
             bf = {k: v.eval_base(coors[k], diff=diff)
@@ -262,7 +261,7 @@ class FEMapping(Mapping):
             The physical quadrature points ordered element by element,
             i.e. with shape (n_el, n_qp, dim).
         """
-        bf = self.get_base(qp_coors)
+        bf = self.eval_basis(qp_coors)
         if isinstance(bf, dict):
             sh = self.conn.shape
             nqp = max(v.shape[0] for v in bf.values())
@@ -324,10 +323,10 @@ class FEMapping(Mapping):
         poly_space = get_default(poly_space, self.poly_space)
 
         if fc_bf_map is not None:
-            bf_g = self.get_base(qp_coors, diff=True, grad_axes=fc_bf_map[1])
+            bf_g = self.eval_basis(qp_coors, diff=True, grad_axes=fc_bf_map[1])
             bf_g = nm.ascontiguousarray(bf_g[fc_bf_map[0]])
         else:
-            bf_g = self.get_base(qp_coors, diff=True)
+            bf_g = self.eval_basis(qp_coors, diff=True)
 
         if nm.allclose(bf_g, 0.0) and self.dim > 1:
             raise ValueError('zero basis function gradient!')
