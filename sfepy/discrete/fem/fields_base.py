@@ -94,7 +94,7 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
 
     ##
     # Evaluate geometry interpolation base functions in (extra) nodes.
-    bf = geom_poly_space.eval_base(qp_coors)
+    bf = geom_poly_space.eval_basis(qp_coors)
     bf = bf[:, 0, :].copy()
 
     ##
@@ -736,8 +736,8 @@ class FEField(Field):
 
         if bf_key not in self.bf:
             ori = self.ori
-            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative, ori=ori,
-                                           transform=self.basis_transform)
+            self.bf[bf_key] = ps.eval_basis(qp.vals, diff=derivative, ori=ori,
+                                            transform=self.basis_transform)
 
         bf = self.bf[bf_key]
         if iels is not None and bf.ndim == 4:
@@ -758,7 +758,7 @@ class FEField(Field):
             qp = self.get_qp(sd.face_type, integral)
 
             ps_s = self.gel.surface_facet.poly_space
-            bf_s = ps_s.eval_base(qp.vals)
+            bf_s = ps_s.eval_basis(qp.vals)
 
             coors, faces = gel.coors, gel.get_surface_entities()
 
@@ -775,7 +775,7 @@ class FEField(Field):
             qp = self.get_qp(face_type, integral)
 
             ps_s = self.gel.surface_facet[bkey].poly_space
-            bf_s = ps_s.eval_base(qp.vals)
+            bf_s = ps_s.eval_basis(qp.vals)
 
             coors, faces = gel.coors, gel.get_surface_entities()
 
@@ -1321,7 +1321,7 @@ class FEField(Field):
 
                         fc_map[fc_map == -bkey] = ikey
 
-                    abf = ps.eval_base(qp.vals, transform=transform)
+                    abf = ps.eval_basis(qp.vals, transform=transform)
                     bf = nm.zeros((nfc, nqp, 1, max(bkeys)), dtype=nm.float64)
                     for ifc, efc in enumerate(self.efaces):
                         bkey = efc_map[ifc]
@@ -1338,7 +1338,7 @@ class FEField(Field):
                     self.create_bqp(region.name, integral)
                     qp = self.qp_coors[(integral.order, esd.bkey)]
 
-                    abf = ps.eval_base(qp.vals[0], transform=transform)
+                    abf = ps.eval_basis(qp.vals[0], transform=transform)
                     bf = abf[..., self.efaces[0]]
 
                     indx = self.gel.get_surface_entities()[0]
@@ -1347,7 +1347,7 @@ class FEField(Field):
                     mapping.set_basis_indices(indx)
 
                     if integration == 'facet_extra':
-                        se_bf_bg = geo_ps.eval_base(qp.vals, diff=True)
+                        se_bf_bg = geo_ps.eval_basis(qp.vals, diff=True)
                         se_bf_bg = se_bf_bg[sd.fis[:, 1]]
                         se_ebf_bg = self.eval_basis(esd.bkey, 1, integral)
                         se_ebf_bg = se_ebf_bg[sd.fis[:, 1]]
@@ -1362,7 +1362,7 @@ class FEField(Field):
             else:
                 # Do not use BQP for surface fields.
                 qp = self.get_qp(sd.face_type, integral)
-                bf = ps.eval_base(qp.vals, transform=transform)
+                bf = ps.eval_basis(qp.vals, transform=transform)
 
                 out = mapping.get_mapping(qp.vals, qp.weights, bf,
                                           is_face=True)

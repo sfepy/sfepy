@@ -222,7 +222,7 @@ def test_partition_of_unity(gels):
 
             ps = PolySpace.any_from_args('ps', gels[geom], order,
                                          base=poly_space_base)
-            vals = ps.eval_base(coors)
+            vals = ps.eval_basis(coors)
             _ok = nm.allclose(vals.sum(axis=-1), 1, atol=1e-14, rtol=0.0)
             tst.report('partition of unity:', _ok)
             ok = ok and _ok
@@ -241,12 +241,12 @@ def test_continuity(gels):
          edofs, fdofs) in _gen_common_data(orders, gels):
 
         if poly_space_base in ('lagrange', 'serendipity', 'bernstein', 'sem'):
-            rbf = ps.eval_base(rrc)
-            cbf = ps.eval_base(crc)
+            rbf = ps.eval_basis(rrc)
+            cbf = ps.eval_basis(crc)
 
         else:
-            rbf = ps.eval_base(rrc, ori=field.ori[:1])
-            cbf = ps.eval_base(crc, ori=field.ori[1:])
+            rbf = ps.eval_basis(rrc, ori=field.ori[:1])
+            cbf = ps.eval_basis(crc, ori=field.ori[1:])
 
         dofs = nm.r_[edofs, fdofs]
 
@@ -381,14 +381,14 @@ def test_hessians(gels):
             cc = coors.copy()
 
             cc[:, ir] -= eps
-            aux0 = ps.eval_base(cc, diff=1)
+            aux0 = ps.eval_basis(cc, diff=1)
 
             cc[:, ir] += 2 * eps
-            aux1 = ps.eval_base(cc, diff=1)
+            aux1 = ps.eval_basis(cc, diff=1)
 
             h1[:, :, ir, :] = 0.5 * (aux1 - aux0) / eps
 
-        h2 = ps.eval_base(coors, diff=2)
+        h2 = ps.eval_basis(coors, diff=2)
 
         _ok = nm.allclose(h1, h2, rtol=0, atol=50*eps)
         tst.report('hessians: error: %.2e ok: %s'

@@ -272,10 +272,10 @@ class LagrangePolySpace(FEPolySpace):
 
         return ctx
 
-    def _eval_base(self, coors, diff=0, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def _eval_basis(self, coors, diff=0, ori=None,
+                    suppress_errors=False, eps=1e-15):
         """
-        See :func:`PolySpace.eval_base()`.
+        See :func:`PolySpace.eval_basis()`.
         """
         if diff == 2:
             base = self._eval_hessian(coors)
@@ -592,12 +592,12 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
 
         return nodes, nts, node_coors
 
-    def _eval_base_debug(self, coors, diff=False, ori=None,
-                         suppress_errors=False, eps=1e-15):
-        """Python version of eval_base()."""
+    def _eval_basis_debug(self, coors, diff=False, ori=None,
+                          suppress_errors=False, eps=1e-15):
+        """Python version of eval_basis()."""
         dim = self.geometry.dim
 
-        ev = self.ps1d.eval_base
+        ev = self.ps1d.eval_basis
 
         if diff:
             base = nm.ones((coors.shape[0], dim, self.n_nod), dtype=nm.float64)
@@ -637,7 +637,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
         """
         Evaluate the second derivatives of the basis.
         """
-        evh = self.ps1d.eval_base
+        evh = self.ps1d.eval_basis
 
         dim = self.geometry.dim
         bfgg = nm.zeros((coors.shape[0], dim, dim, self.n_nod),
@@ -724,8 +724,8 @@ class LagrangeWedgePolySpace(FEPolySpace):
         self.n_nod = n_nod
         self.eval_ctx = None
 
-    def _eval_base(self, coors, diff=False, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def _eval_basis(self, coors, diff=False, ori=None,
+                    suppress_errors=False, eps=1e-15):
 
         nd = self.geometry.dim if diff else 1
         base = nm.empty((coors.shape[0], nd, self.n_nod), nm.float64)
@@ -733,17 +733,17 @@ class LagrangeWedgePolySpace(FEPolySpace):
         for qp1 in nm.unique(coors[:, 2]):
             idxs = coors[:, 2] == qp1
             coors2 = coors[idxs, :2]
-            base2 = self.ps[0]._eval_base(coors2, False, ori,
-                                          suppress_errors, eps)
+            base2 = self.ps[0]._eval_basis(coors2, False, ori,
+                                           suppress_errors, eps)
             coors1 = coors[idxs, 2][:, None]
-            base1 = self.ps[1]._eval_base(coors1, False, ori,
-                                          suppress_errors, eps)
+            base1 = self.ps[1]._eval_basis(coors1, False, ori,
+                                           suppress_errors, eps)
 
             if diff:
-                base2d = self.ps[0]._eval_base(coors2, True, ori,
-                                               suppress_errors, eps)
-                base1d = self.ps[1]._eval_base(coors1, True, ori,
-                                               suppress_errors, eps)
+                base2d = self.ps[0]._eval_basis(coors2, True, ori,
+                                                suppress_errors, eps)
+                base1d = self.ps[1]._eval_basis(coors1, True, ori,
+                                                suppress_errors, eps)
                 base_r = base2d[:, 0, None, :] * base1[:, 0, :, None]
                 base_s = base2d[:, 1, None, :] * base1[:, 0, :, None]
                 base_t = base2[:, 0, None, :] * base1d[:, 0, :, None]
@@ -866,10 +866,10 @@ class SerendipityTensorProductPolySpace(FEPolySpace):
 
         return nodes, nts, nm.ascontiguousarray(node_coors)
 
-    def _eval_base(self, coors, diff=0, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def _eval_basis(self, coors, diff=0, ori=None,
+                    suppress_errors=False, eps=1e-15):
         """
-        See :func:`PolySpace.eval_base()`.
+        See :func:`PolySpace.eval_basis()`.
         """
         dim = self.geometry.dim
         if diff:
@@ -1043,10 +1043,10 @@ class LobattoTensorProductPolySpace(FEPolySpace):
 
         return anodes
 
-    def _eval_base(self, coors, diff=False, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def _eval_basis(self, coors, diff=False, ori=None,
+                    suppress_errors=False, eps=1e-15):
         """
-        See PolySpace.eval_base().
+        See PolySpace.eval_basis().
         """
         from .extmods.lobatto_bases import eval_lobatto_tensor_product as ev
         c_min, c_max = self.bbox[:, 0]
@@ -1120,10 +1120,10 @@ class BernsteinSimplexPolySpace(FEPolySpace):
         bcoors[:, 1:] = coors
         return bcoors
 
-    def _eval_base(self, coors, diff=False, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def _eval_basis(self, coors, diff=False, ori=None,
+                    suppress_errors=False, eps=1e-15):
         """
-        See PolySpace.eval_base().
+        See PolySpace.eval_basis().
         """
         from scipy.special import factorial
 
@@ -1198,10 +1198,10 @@ class BernsteinTensorProductPolySpace(FEPolySpace):
 
         return nodes, nts, node_coors
 
-    def _eval_base(self, coors, diff=False, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def _eval_basis(self, coors, diff=False, ori=None,
+                    suppress_errors=False, eps=1e-15):
         """
-        See PolySpace.eval_base().
+        See PolySpace.eval_basis().
         """
         from sfepy.discrete.iga.extmods.igac import eval_bernstein_basis as ev
 
@@ -1316,10 +1316,10 @@ class SEMTensorProductPolySpace(FEPolySpace):
 
         return nodes, nts, node_coors, node_weights, node_coors1d, weights1d
 
-    def _eval_base(self, coors, diff=0, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def _eval_basis(self, coors, diff=0, ori=None,
+                    suppress_errors=False, eps=1e-15):
         """
-        See :func:`PolySpace.eval_base()`.
+        See :func:`PolySpace.eval_basis()`.
         """
         dim = self.geometry.dim
         bdim = dim if diff else 1

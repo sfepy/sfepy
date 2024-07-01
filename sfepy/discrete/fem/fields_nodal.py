@@ -418,7 +418,7 @@ class H1NodalVolumeField(H1NodalMixin, FEField):
 
             coors = self.poly_space.node_coors
 
-            bf = self.gel.poly_space.eval_base(coors)
+            bf = self.gel.poly_space.eval_basis(coors)
             bf = bf[:,0,:].copy()
 
             conn = self.econn[:, :self.gel.n_vertex]

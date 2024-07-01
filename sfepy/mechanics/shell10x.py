@@ -190,8 +190,8 @@ def get_mapping_data(ebs, rops, ps, coors_loc, qp_coors, qp_weights,
     n_el = coors_loc.shape[0]
     n_qp = qp_weights.shape[0]
 
-    bfu = ps.eval_base(qp_coors[:, :2].copy())
-    bfgu = ps.eval_base(qp_coors[:, :2].copy(), diff=True)
+    bfu = ps.eval_basis(qp_coors[:, :2].copy())
+    bfgu = ps.eval_basis(qp_coors[:, :2].copy(), diff=True)
 
     nh = ebs[..., -1, :]
 

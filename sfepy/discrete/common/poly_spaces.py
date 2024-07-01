@@ -92,11 +92,11 @@ class PolySpace(Struct):
 
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
-    def eval_base(self, coors, diff=0, ori=None, force_axis=False,
-                  transform=None, suppress_errors=False, eps=1e-15):
+    def eval_basis(self, coors, diff=0, ori=None, force_axis=False,
+                   transform=None, suppress_errors=False, eps=1e-15):
         """
         Evaluate the basis or its first or second derivatives in points given
-        by coordinates. The real work is done in _eval_base() implemented in
+        by coordinates. The real work is done in _eval_basis() implemented in
         subclasses.
 
         Note that the second derivative code is a work-in-progress and only
@@ -148,9 +148,9 @@ class PolySpace(Struct):
                              % (self.geometry.dim, coors.shape[-1]))
 
         if (coors.ndim == 2):
-            base = self._eval_base(coors, diff=diff, ori=ori,
-                                   suppress_errors=suppress_errors,
-                                   eps=eps)
+            base = self._eval_basis(coors, diff=diff, ori=ori,
+                                    suppress_errors=suppress_errors,
+                                    eps=eps)
 
             if (base.ndim == 3) and force_axis:
                 base = base[None, ...]
@@ -168,9 +168,9 @@ class PolySpace(Struct):
                              bdim, self.n_nod), dtype=nm.float64)
 
             for ii, _coors in enumerate(coors):
-                base[ii] = self._eval_base(_coors, diff=diff, ori=ori,
-                                           suppress_errors=suppress_errors,
-                                           eps=eps)
+                base[ii] = self._eval_basis(_coors, diff=diff, ori=ori,
+                                            suppress_errors=suppress_errors,
+                                            eps=eps)
 
         if transform is not None:
             base = transform_basis(transform, base)

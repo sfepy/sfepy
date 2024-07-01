@@ -217,10 +217,10 @@ class FEMapping(Mapping):
         Evaluate basis functions or their gradients in given coordinates.
         """
         if isinstance(self.poly_space, dict):
-            bf = {k: v.eval_base(coors[k], diff=diff)
+            bf = {k: v.eval_basis(coors[k], diff=diff)
                   for k, v in self.poly_space.items()}
         else:
-            bf = self.poly_space.eval_base(coors, diff=diff)
+            bf = self.poly_space.eval_basis(coors, diff=diff)
 
         indices = self.indices
         if indices is not None:
@@ -332,8 +332,8 @@ class FEMapping(Mapping):
             raise ValueError('zero basis function gradient!')
 
         if not is_face:
-            ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
-                                         force_axis=True, transform=transform)
+            ebf_g = poly_space.eval_basis(qp_coors, diff=True, ori=ori,
+                                          force_axis=True, transform=transform)
             size = ebf_g.nbytes * self.n_el
             site_config = Config()
             raise_if_too_large(size, site_config.refmap_memory_factor())

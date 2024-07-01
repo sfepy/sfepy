@@ -236,7 +236,7 @@ def test_base_functions_values(gels):
         dim = ps.geometry.dim
         coors = nm.r_[ps.geometry.coors, [[0.2] * dim]]
 
-        bf = ps.eval_base(coors, diff=diff)
+        bf = ps.eval_basis(coors, diff=diff)
         _ok = nm.allclose(val, bf, rtol=0.0, atol=1e-14)
 
         if not diff:
@@ -263,7 +263,7 @@ def test_base_functions_delta(gels):
             ps = PolySpace.any_from_args('aux', gel, order,
                                          base='lagrange',
                                          force_bubble=False)
-            bf = ps.eval_base(ps.node_coors)
+            bf = ps.eval_basis(ps.node_coors)
             _ok = nm.allclose(nm.eye(ps.n_nod),
                               bf.squeeze(),
                               rtol=0.0, atol=(order + 1) * 1e-14)

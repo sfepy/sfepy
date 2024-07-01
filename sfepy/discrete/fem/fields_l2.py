@@ -160,7 +160,7 @@ class L2ConstantVolumeField(Field):
                    from_geometry=False, base_only=True):
         qp_coors, qp_weights = integral.get_qp(self.gel.name)
         ps = self.poly_space
-        bf = ps.eval_base(qp_coors)
+        bf = ps.eval_basis(qp_coors)
         if key[0] == 'b': # BQP
             num = 6 if self.gel.n_vertex == 4 else 4
             bf = nm.tile(bf, (num, 1, 1, 1))
@@ -182,7 +182,7 @@ class L2ConstantVolumeField(Field):
             geo_ps = self.gel.poly_space
             dconn = domain.get_conn(tdim=region.tdim, cells=iels)
             qp_coors, qp_weights = integral.get_qp(self.gel.name)
-            bf = ps.eval_base(qp_coors)
+            bf = ps.eval_basis(qp_coors)
 
         elif integration in ('facet', 'facet_extra'):
             if self.is_surface:
@@ -199,7 +199,7 @@ class L2ConstantVolumeField(Field):
             sd = domain.surface_groups[region.name]
             dconn = sd.get_connectivity()
             qp_coors, qp_weights = integral.get_qp(gel.name)
-            bf = ps.eval_base(qp_coors)
+            bf = ps.eval_basis(qp_coors)
 
         mapping = FEMapping(coors, dconn, poly_space=geo_ps)
         out = mapping.get_mapping(qp_coors, qp_weights, bf, poly_space=ps,

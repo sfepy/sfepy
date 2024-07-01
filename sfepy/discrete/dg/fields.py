@@ -458,8 +458,8 @@ class DGField(FEField):
 
             for i in range(self.n_el_facets):
                 facet_bf[..., i, :, :] = \
-                    ps.eval_base(qps[..., i, :], diff=diff,
-                                 transform=self.basis_transform)
+                    ps.eval_basis(qps[..., i, :], diff=diff,
+                                  transform=self.basis_transform)
             self.facet_bf[diff] = facet_bf
 
         if base_only:
@@ -1186,8 +1186,8 @@ class DGField(FEField):
             qp, weights = self.integral.get_qp(self.gel.name)
             coors = self.mapping.get_physical_qps(qp)
 
-            base_vals_qp = self.poly_space.eval_base(qp)[:, 0, :]
-            # this drops redundant axis that is returned by eval_base due to
+            base_vals_qp = self.poly_space.eval_basis(qp)[:, 0, :]
+            # this drops redundant axis that is returned by eval_basis due to
             # consistency with derivatives
 
             # left hand, so far only orthogonal basis
@@ -1269,7 +1269,7 @@ class DGField(FEField):
             bcoors = coors[bc2bfi[:, 1], ::-1, bc2bfi[:, 0], :]
 
             # get facet basis vals
-            base_vals_qp = self.poly_space.eval_base(qp)[:, 0, 0, :]
+            base_vals_qp = self.poly_space.eval_basis(qp)[:, 0, 0, :]
 
             # solve for boundary cell DOFs
             bc_val = fun(bcoors)
@@ -1383,7 +1383,7 @@ class DGField(FEField):
         if ref_nodes is None:
             # poly_space could provide special nodes
             ref_nodes = self.get_qp('v', self.integral).vals
-        base_vals_node = self.poly_space.eval_base(ref_nodes)[:, 0, :]
+        base_vals_node = self.poly_space.eval_basis(ref_nodes)[:, 0, :]
         dofs = self.unravel_sol(dofs[:, 0])
 
         nodal_vals = nm.sum(dofs * base_vals_node.T, axis=1)

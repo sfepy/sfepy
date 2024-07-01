@@ -182,17 +182,17 @@ def main():
 
             def eval_dofs(iels, rx):
                 if options.derivative == 0:
-                    bf = ps.eval_base(rx).squeeze()
+                    bf = ps.eval_basis(rx).squeeze()
                     rvals = bf[None, :, ip:ip+1]
 
                 else:
-                    bfg = ps.eval_base(rx, diff=True)
+                    bfg = ps.eval_basis(rx, diff=True)
                     rvals = bfg[None, ..., ip]
 
                 return rvals
 
             def eval_coors(iels, rx):
-                bf = gps.eval_base(rx).squeeze()
+                bf = gps.eval_basis(rx).squeeze()
                 coors = nm.dot(bf, gel.coors)[None, ...]
                 return coors
 
