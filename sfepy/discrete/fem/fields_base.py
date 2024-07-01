@@ -93,7 +93,7 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
         qp_coors = poly_space.node_coors
 
     ##
-    # Evaluate geometry interpolation base functions in (extra) nodes.
+    # Evaluate geometry interpolation basis functions in (extra) nodes.
     bf = geom_poly_space.eval_basis(qp_coors)
     bf = bf[:, 0, :].copy()
 
@@ -239,10 +239,10 @@ class FEField(Field):
 
     Field shape information:
 
-    - ``shape`` - the shape of the base functions in a point
+    - ``shape`` - the shape of the basis functions in a point
     - ``n_components`` - the number of DOFs per FE node
     - ``val_shape`` - the shape of field value (the product of DOFs and
-      base functions) in a point
+      basis functions) in a point
     """
 
     def __init__(self, name, dtype, shape, region, approx_order=1):
@@ -258,7 +258,7 @@ class FEField(Field):
         shape : int/tuple/str
             The field shape: 1 or (1,) or 'scalar', space dimension (2, or (2,)
             or 3 or (3,)) or 'vector', or a tuple. The field shape determines
-            the shape of the FE base functions and is related to the number of
+            the shape of the FE basis functions and is related to the number of
             components of variables and to the DOF per node count, depending
             on the field kind.
         region : Region
@@ -287,10 +287,10 @@ class FEField(Field):
         self.extra_data = {}
         self.ori = None
         self._create_interpolant()
-        self._setup_global_base()
+        self._setup_global_basis()
         self.setup_coors()
         self.clear_mappings(clear_all=True)
-        self.clear_qp_base()
+        self.clear_qp_basis()
         self.basis_transform = None
         self.econn0 = None
         self.unused_dofs = None
@@ -344,9 +344,9 @@ class FEField(Field):
         """
         return self.force_bubble or (self.approx_order > 1)
 
-    def _setup_global_base(self):
+    def _setup_global_basis(self):
         """
-        Setup global DOF/base functions, their indices and connectivity of the
+        Setup global DOF/basis functions, their indices and connectivity of the
         field. Called methods implemented in subclasses.
         """
         self._setup_facet_orientations()
@@ -606,9 +606,9 @@ class FEField(Field):
 
         return dofs
 
-    def clear_qp_base(self):
+    def clear_qp_basis(self):
         """
-        Remove cached quadrature points and base functions.
+        Remove cached quadrature points and basis functions.
         """
         self.qp_coors = {}
         self.bf = {}
@@ -722,7 +722,7 @@ class FEField(Field):
         return vec.ravel()
 
     def eval_basis(self, key, derivative, integral, iels=None,
-                   from_geometry=False, base_only=True):
+                   from_geometry=False, basis_only=True):
         qp = self.get_qp(key, integral)
 
         if from_geometry:
@@ -743,7 +743,7 @@ class FEField(Field):
         if iels is not None and bf.ndim == 4:
             bf = bf[iels]
 
-        if base_only:
+        if basis_only:
             return bf
 
         else:
@@ -1220,9 +1220,9 @@ class FEField(Field):
         """
         Create a new reference mapping.
 
-        Compute jacobians, element volumes and base function derivatives
+        Compute jacobians, element volumes and basis function derivatives
         for Volume-type geometries (volume mappings), and jacobians,
-        normals and base function derivatives for Surface-type
+        normals and basis function derivatives for Surface-type
         geometries (surface mappings).
 
         Notes
