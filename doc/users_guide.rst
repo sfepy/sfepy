@@ -369,7 +369,7 @@ Fields correspond to FE spaces::
 
           fields = {
               <name> : (<data_type>, <shape>, <region_name>, <approx_order>,
-              [<space>, <poly_space_base>])
+              [<space>, <poly_space_basis>])
           }
 
 where
@@ -382,7 +382,7 @@ where
   * <approx_order> is the FE approximation order, e.g. 0, 1, 2, '1B' (1
     with bubble)
   * <space> is the function space
-  * <poly_space_base> is the basis of the FE (usually polynomial) space
+  * <poly_space_basis> is the basis of the FE (usually polynomial) space
 
 **Example**: scalar P1 elements in 2D on a region Omega::
 
@@ -398,7 +398,7 @@ The following approximation orders can be used:
   Optional bubble function enrichment is marked by 'B'.
 
 The implemented combinations of spaces and bases are listed below,
-the space column corresponds to <space>, the basis column to <poly_space_base>
+the space column corresponds to <space>, the basis column to <poly_space_basis>
 and region type to the field region type.
 
 .. include:: field_table.rst

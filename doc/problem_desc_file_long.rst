@@ -53,11 +53,11 @@ Fields, long syntax::
             'region' : <region_name>,
             'approx_order' : <approx_order>,
             ['space' : <space>,]
-            ['poly_space_base' : <poly_space_base>,]
+            ['poly_space_basis' : <poly_space_basis>,]
         }
 
 see :ref:`User's Guide-Fields` for meaning of <data_type>, <shape>,
-<region_name>, <approx_order>, <space> and <>poly_space_base>.
+<region_name>, <approx_order>, <space> and <>poly_space_basis>.
 
 **Example**: scalar P1 elements in 2D on a region Omega::
 

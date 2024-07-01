@@ -14,7 +14,7 @@ class Shell10XField(H1NodalMixin, FEField):
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d' % (self.gel.name, self.space,
-                                  self.poly_space_base, self.approx_order)
+                                self.poly_space_basis, self.approx_order)
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
                                      base='lagrange', force_bubble=False)
         self.poly_space = ps

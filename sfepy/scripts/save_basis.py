@@ -73,7 +73,7 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
     omega = domain.create_region('Omega', 'all')
     field = Field.from_args('f', nm.float64, shape=1, region=omega,
                             approx_order=options.max_order,
-                            poly_space_base=options.basis)
+                            poly_space_basis=options.basis)
     var = FieldVariable('u', 'unknown', field)
 
     if options.plot_dofs:

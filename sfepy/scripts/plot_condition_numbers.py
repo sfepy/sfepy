@@ -87,7 +87,7 @@ def main():
 
         field = Field.from_args('fu', nm.float64, n_c, omega,
                                 approx_order=order,
-                                space='H1', poly_space_base=options.basis)
+                                space='H1', poly_space_basis=options.basis)
 
         quad_order = 2 * field.approx_order
         output('quadrature order:', quad_order)

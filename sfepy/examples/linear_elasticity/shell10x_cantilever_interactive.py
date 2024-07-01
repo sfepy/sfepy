@@ -137,7 +137,7 @@ def solve_problem(shape, dims, young, poisson, force, transform=None):
     gamma2 = domain.regions['Gamma2']
 
     field = Field.from_args('fu', nm.float64, 6, omega, approx_order=1,
-                            poly_space_base='shell10x')
+                            poly_space_basis='shell10x')
     u = FieldVariable('u', 'unknown', field)
     v = FieldVariable('v', 'test', field, primary_var_name='u')
 

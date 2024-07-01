@@ -93,13 +93,13 @@ def _gen_common_data(orders, gels):
                                      'lobatto', 'sem']])]
              + [ii for ii in combine([['2_3', '3_4'],
                                       ['lagrange', 'bernstein']])])
-    for geom, poly_space_base in bases:
+    for geom, poly_space_basis in bases:
         order = orders[geom]
-        if (geom == '3_8') and (poly_space_base == 'serendipity'):
+        if (geom == '3_8') and (poly_space_basis == 'serendipity'):
             order = 2
 
         tst.report('geometry: %s, base: %s, order: %d'
-                   % (geom, poly_space_base, order))
+                   % (geom, poly_space_basis, order))
 
         integral = Integral('i', order=order)
 
@@ -151,7 +151,7 @@ def _gen_common_data(orders, gels):
             region = domain.create_region('Facet', rsels[geom], 'facet')
             field = Field.from_args('f', nm.float64, shape=1,
                                     region=omega, approx_order=order,
-                                    poly_space_base=poly_space_base)
+                                    poly_space_basis=poly_space_basis)
             fis = region.get_facet_indices()
             conn = mesh.cmesh.get_conn_as_graph(region.dim,
                                                 region.dim - 1)
@@ -177,7 +177,7 @@ def _gen_common_data(orders, gels):
                                                  cache=cache)
             assert_((rstatus == 0).all() and (cstatus == 0).all())
 
-            yield (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
+            yield (geom, poly_space_basis, qp_weights, mesh, im, ir, ic,
                    field, ps, rrc, rcells[0], crc, ccells[0],
                    vec, edofs, fdofs)
 
@@ -207,21 +207,21 @@ def test_partition_of_unity(gels):
                                  ['lagrange', 'bernstein']])]
     )
 
-    for geom, poly_space_base in bases:
+    for geom, poly_space_basis in bases:
         max_order = orders[geom]
         for order in range(max_order + 1):
-            if (poly_space_base == 'serendipity') and not (0 < order < 4):
+            if (poly_space_basis == 'serendipity') and not (0 < order < 4):
                 continue
-            if (poly_space_base == 'sem') and not (0 < order):
+            if (poly_space_basis == 'sem') and not (0 < order):
                 continue
             tst.report('geometry: %s, base: %s, order: %d'
-                       % (geom, poly_space_base, order))
+                       % (geom, poly_space_basis, order))
 
             integral = Integral('i', order=2 * order)
             coors, _ = integral.get_qp(geom)
 
             ps = PolySpace.any_from_args('ps', gels[geom], order,
-                                         base=poly_space_base)
+                                         base=poly_space_basis)
             vals = ps.eval_basis(coors)
             _ok = nm.allclose(vals.sum(axis=-1), 1, atol=1e-14, rtol=0.0)
             tst.report('partition of unity:', _ok)
@@ -236,11 +236,11 @@ def test_continuity(gels):
 
     bads = []
     bad_families = set()
-    for (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
+    for (geom, poly_space_basis, qp_weights, mesh, im, ir, ic,
          field, ps, rrc, rcell, crc, ccell, vec,
          edofs, fdofs) in _gen_common_data(orders, gels):
 
-        if poly_space_base in ('lagrange', 'serendipity', 'bernstein', 'sem'):
+        if poly_space_basis in ('lagrange', 'serendipity', 'bernstein', 'sem'):
             rbf = ps.eval_basis(rrc)
             cbf = ps.eval_basis(crc)
 
@@ -264,8 +264,8 @@ def test_continuity(gels):
             _ok = nm.allclose(rvals, cvals, atol=1e-14, rtol=0.0)
             res[1, ii] = _ok
             if not _ok:
-                bads.append([geom, poly_space_base, im, ir, ic, ip])
-                bad_families.add((geom, poly_space_base))
+                bads.append([geom, poly_space_basis, im, ir, ic, ip])
+                bad_families.add((geom, poly_space_basis))
 
             ok = ok and _ok
 
@@ -288,7 +288,7 @@ def test_gradients(gels):
 
     bads = []
     bad_families = set()
-    for (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
+    for (geom, poly_space_basis, qp_weights, mesh, im, ir, ic,
          field, ps, rrc, rcell, crc, ccell, vec,
          edofs, fdofs) in _gen_common_data(orders, gels):
         gel = gels[geom]
@@ -336,8 +336,8 @@ def test_gradients(gels):
 
             res[1, ii] = _ok
             if not _ok:
-                bads.append([geom, poly_space_base, im, ir, ic, ip])
-                bad_families.add((geom, poly_space_base))
+                bads.append([geom, poly_space_basis, im, ir, ic, ip])
+                bad_families.add((geom, poly_space_basis))
 
             ok = ok and _ok
 
@@ -364,15 +364,15 @@ def test_hessians(gels):
     bases = ([ii for ii in combine([['2_3', '2_4', '3_4', '3_8'],
                                     ['lagrange']])])
 
-    for geom, poly_space_base in bases:
-        tst.report('geometry: %s, base: %s' % (geom, poly_space_base))
+    for geom, poly_space_basis in bases:
+        tst.report('geometry: %s, base: %s' % (geom, poly_space_basis))
         order = orders[geom]
 
         integral = Integral('i', order=order)
         coors, _ = integral.get_qp(geom)
 
         ps = PolySpace.any_from_args('ps', gels[geom], order,
-                                     base=poly_space_base)
+                                     base=poly_space_basis)
 
         dim = coors.shape[1]
         h1 = nm.zeros((coors.shape[0], dim, dim, ps.n_nod), nm.float64)

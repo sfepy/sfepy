@@ -143,7 +143,7 @@ class DGField(FEField):
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-                 poly_space_base="legendre", approx_order=1, integral=None):
+                 poly_space_basis="legendre", approx_order=1, integral=None):
         """
         Creates DGField, with Legendre polyspace and default integral
         corresponding to 2 * approx_order.
@@ -163,7 +163,7 @@ class DGField(FEField):
         space : string
             default "H1"
 
-        poly_space_base : PolySpace
+        poly_space_basis : PolySpace
             optionally force polyspace
 
         approx_order : 0 for FVM, default 1
@@ -191,7 +191,7 @@ class DGField(FEField):
 
         # approximation space
         self.space = space
-        self.poly_space_base = poly_space_base
+        self.poly_space_basis = poly_space_basis
         self.force_bubble = False
         self._create_interpolant()
 
@@ -229,7 +229,7 @@ class DGField(FEField):
     def _create_interpolant(self):
         name = self.gel.name + '_DG_legendre'
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base=self.poly_space_base,
+                                     base=self.poly_space_basis,
                                      force_bubble=False)
         self.poly_space = ps
         # 'legendre_simplex' is created for '1_2'.
