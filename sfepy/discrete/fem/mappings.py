@@ -193,11 +193,11 @@ class FEMapping(Mapping):
             poly_space = {}
             for k, v in gel.items():
                 poly_space[k] = PolySpace.any_from_args(None, v, order,
-                                                        base='lagrange',
+                                                        basis='lagrange',
                                                         force_bubble=False)
         elif poly_space is None:
             poly_space = PolySpace.any_from_args(None, gel, order,
-                                                 base='lagrange',
+                                                 basis='lagrange',
                                                  force_bubble=False)
 
         self.poly_space = poly_space

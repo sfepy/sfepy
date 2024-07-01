@@ -278,13 +278,13 @@ class LagrangePolySpace(FEPolySpace):
         See :func:`PolySpace.eval_basis()`.
         """
         if diff == 2:
-            base = self._eval_hessian(coors)
+            basis = self._eval_hessian(coors)
 
         else:
-            base = self.eval_ctx.evaluate(coors, diff=diff,
-                                          eps=eps,
-                                          check_errors=not suppress_errors)
-        return base
+            basis = self.eval_ctx.evaluate(coors, diff=diff,
+                                           eps=eps,
+                                           check_errors=not suppress_errors)
+        return basis
 
 class LagrangeSimplexPolySpace(LagrangePolySpace):
     """Lagrange polynomial space on a simplex domain."""
@@ -600,7 +600,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
         ev = self.ps1d.eval_basis
 
         if diff:
-            base = nm.ones((coors.shape[0], dim, self.n_nod), dtype=nm.float64)
+            basis = nm.ones((coors.shape[0], dim, self.n_nod), dtype=nm.float64)
 
             for ii in range(dim):
                 self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
@@ -608,30 +608,30 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
 
                 for iv in range(dim):
                     if ii == iv:
-                        base[:,iv:iv+1,:] *= ev(coors[:,ii:ii+1].copy(),
-                                                diff=True,
-                                                suppress_errors=suppress_errors,
-                                                eps=eps)
+                        basis[:,iv:iv+1,:] *= ev(coors[:,ii:ii+1].copy(),
+                                                 diff=True,
+                                                 suppress_errors=suppress_errors,
+                                                 eps=eps)
 
                     else:
-                        base[:,iv:iv+1,:] *= ev(coors[:,ii:ii+1].copy(),
-                                                diff=False,
-                                                suppress_errors=suppress_errors,
-                                                eps=eps)
+                        basis[:,iv:iv+1,:] *= ev(coors[:,ii:ii+1].copy(),
+                                                 diff=False,
+                                                 suppress_errors=suppress_errors,
+                                                 eps=eps)
 
         else:
-            base = nm.ones((coors.shape[0], 1, self.n_nod), dtype=nm.float64)
+            basis = nm.ones((coors.shape[0], 1, self.n_nod), dtype=nm.float64)
 
             for ii in range(dim):
                 self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
                 self.ps1d.n_nod = self.n_nod
 
-                base *= ev(coors[:,ii:ii+1].copy(),
-                           diff=diff,
-                           suppress_errors=suppress_errors,
-                           eps=eps)
+                basis *= ev(coors[:,ii:ii+1].copy(),
+                            diff=diff,
+                            suppress_errors=suppress_errors,
+                            eps=eps)
 
-        return base
+        return basis
 
     def _eval_hessian(self, coors):
         """
@@ -728,35 +728,35 @@ class LagrangeWedgePolySpace(FEPolySpace):
                     suppress_errors=False, eps=1e-15):
 
         nd = self.geometry.dim if diff else 1
-        base = nm.empty((coors.shape[0], nd, self.n_nod), nm.float64)
+        basis = nm.empty((coors.shape[0], nd, self.n_nod), nm.float64)
 
         for qp1 in nm.unique(coors[:, 2]):
             idxs = coors[:, 2] == qp1
             coors2 = coors[idxs, :2]
-            base2 = self.ps[0]._eval_basis(coors2, False, ori,
-                                           suppress_errors, eps)
+            basis2 = self.ps[0]._eval_basis(coors2, False, ori,
+                                            suppress_errors, eps)
             coors1 = coors[idxs, 2][:, None]
-            base1 = self.ps[1]._eval_basis(coors1, False, ori,
-                                           suppress_errors, eps)
+            basis1 = self.ps[1]._eval_basis(coors1, False, ori,
+                                            suppress_errors, eps)
 
             if diff:
-                base2d = self.ps[0]._eval_basis(coors2, True, ori,
-                                                suppress_errors, eps)
-                base1d = self.ps[1]._eval_basis(coors1, True, ori,
-                                                suppress_errors, eps)
-                base_r = base2d[:, 0, None, :] * base1[:, 0, :, None]
-                base_s = base2d[:, 1, None, :] * base1[:, 0, :, None]
-                base_t = base2[:, 0, None, :] * base1d[:, 0, :, None]
+                basis2d = self.ps[0]._eval_basis(coors2, True, ori,
+                                                 suppress_errors, eps)
+                basis1d = self.ps[1]._eval_basis(coors1, True, ori,
+                                                 suppress_errors, eps)
+                basis_r = basis2d[:, 0, None, :] * basis1[:, 0, :, None]
+                basis_s = basis2d[:, 1, None, :] * basis1[:, 0, :, None]
+                basis_t = basis2[:, 0, None, :] * basis1d[:, 0, :, None]
 
-                base[idxs, 0] = base_r.reshape((-1, self.n_nod))
-                base[idxs, 1] = base_s.reshape((-1, self.n_nod))
-                base[idxs, 2] = base_t.reshape((-1, self.n_nod))
+                basis[idxs, 0] = basis_r.reshape((-1, self.n_nod))
+                basis[idxs, 1] = basis_s.reshape((-1, self.n_nod))
+                basis[idxs, 2] = basis_t.reshape((-1, self.n_nod))
 
             else:
-                base_ = base2[:, 0, None, :] * base1[:, 0, :, None]
-                base[idxs] = base_.reshape(-1, 1, self.n_nod)
+                basis_ = basis2[:, 0, None, :] * basis1[:, 0, :, None]
+                basis[idxs] = basis_.reshape(-1, 1, self.n_nod)
 
-        return base
+        return basis
 
 class SerendipityTensorProductPolySpace(FEPolySpace):
     """
@@ -878,21 +878,21 @@ class SerendipityTensorProductPolySpace(FEPolySpace):
         else:
             bdim = 1
 
-        base = nm.empty((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+        basis = nm.empty((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
 
         if diff == 0:
             for ib, bf in enumerate(self._bfs):
-                base[:, 0, ib] = bf(*coors.T)
+                basis[:, 0, ib] = bf(*coors.T)
 
         elif diff == 1:
             for ib, bfg in enumerate(self._bfgs):
                 for ig in range(dim):
-                    base[:, ig, ib] = bfg[ig](*coors.T)
+                    basis[:, ig, ib] = bfg[ig](*coors.T)
 
         else:
             raise NotImplementedError
 
-        return base
+        return basis
 
 class LobattoTensorProductPolySpace(FEPolySpace):
     """
@@ -1051,16 +1051,16 @@ class LobattoTensorProductPolySpace(FEPolySpace):
         from .extmods.lobatto_bases import eval_lobatto_tensor_product as ev
         c_min, c_max = self.bbox[:, 0]
 
-        base = ev(coors, self.nodes, c_min, c_max, self.order, diff)
+        basis = ev(coors, self.nodes, c_min, c_max, self.order, diff)
 
         if ori is not None:
-            ebase = nm.tile(base, (ori.shape[0], 1, 1, 1))
+            ebasis = nm.tile(basis, (ori.shape[0], 1, 1, 1))
 
             if self.edge_indx.shape[0]:
                 # Orient edge functions.
                 ie, ii = nm.where(ori[:, self.edge_indx] == 1)
                 ii = self.edge_indx[ii]
-                ebase[ie, :, :, ii] *= -1.0
+                ebasis[ie, :, :, ii] *= -1.0
 
             if self.face_indx.shape[0]:
                 # Orient face functions.
@@ -1069,25 +1069,25 @@ class LobattoTensorProductPolySpace(FEPolySpace):
                 # ... normal axis order
                 ie, ii = nm.where((fori == 1) | (fori == 2))
                 ii = self.face_indx[ii]
-                ebase[ie, :, :, ii] *= -1.0
+                ebasis[ie, :, :, ii] *= -1.0
 
                 # ... swapped axis order
-                sbase = ev(coors, self.sfnodes, c_min, c_max, self.order, diff)
-                sbase = insert_strided_axis(sbase, 0, ori.shape[0])
+                sbasis = ev(coors, self.sfnodes, c_min, c_max, self.order, diff)
+                sbasis = insert_strided_axis(sbasis, 0, ori.shape[0])
 
                 # ...overwrite with swapped axes basis.
                 ie, ii = nm.where(fori >= 4)
                 ii2 = self.face_indx[ii]
-                ebase[ie, :, :, ii2] = sbase[ie, :, :, ii]
+                ebasis[ie, :, :, ii2] = sbasis[ie, :, :, ii]
 
                 # ...deal with orientation.
                 ie, ii = nm.where((fori == 5) | (fori == 6))
                 ii = self.face_indx[ii]
-                ebase[ie, :, :, ii] *= -1.0
+                ebasis[ie, :, :, ii] *= -1.0
 
-            base = ebase
+            basis = ebasis
 
-        return base
+        return basis
 
 class BernsteinSimplexPolySpace(FEPolySpace):
     """
@@ -1138,9 +1138,9 @@ class BernsteinSimplexPolySpace(FEPolySpace):
         else:
             bdim = 1
 
-        base = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+        basis = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
         if dim == 0:
-            return base
+            return basis
 
         bcoors = self._get_barycentric(coors)
 
@@ -1150,7 +1150,7 @@ class BernsteinSimplexPolySpace(FEPolySpace):
             for ii, node in enumerate(self.nodes):
                 coef = of / nm.prod(fs[node])
                 val = coef * nm.prod(nm.power(bcoors, node), axis=1)
-                base[:, 0, ii] = val
+                basis[:, 0, ii] = val
 
         else:
             for ii, node in enumerate(self.nodes):
@@ -1171,9 +1171,9 @@ class BernsteinSimplexPolySpace(FEPolySpace):
 
                         dval += val
 
-                    base[:, ider, ii] = dval
+                    basis[:, ider, ii] = dval
 
-        return base
+        return basis
 
 class BernsteinTensorProductPolySpace(FEPolySpace):
     """
@@ -1212,7 +1212,7 @@ class BernsteinTensorProductPolySpace(FEPolySpace):
         else:
             bdim = 1
 
-        base = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+        basis = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
         degree = self.order
         n_efuns_max = degree + 1
 
@@ -1224,18 +1224,18 @@ class BernsteinTensorProductPolySpace(FEPolySpace):
 
             if not diff:
                 for ii, ni in enumerate(self.nodes.T):
-                    base[iq, 0, :] *= B[ii, ni]
+                    basis[iq, 0, :] *= B[ii, ni]
 
             else:
                 for ii, ni in enumerate(self.nodes.T):
                     for iv in range(bdim):
                         if ii == iv:
-                            base[iq, iv, :] *= dB_dxi[ii, ni]
+                            basis[iq, iv, :] *= dB_dxi[ii, ni]
 
                         else:
-                            base[iq, iv, :] *= B[ii, ni]
+                            basis[iq, iv, :] *= B[ii, ni]
 
-        return base
+        return basis
 
 def get_lgl_nodes(p):
     """

@@ -16,7 +16,7 @@ class Shell10XField(H1NodalMixin, FEField):
         name = '%s_%s_%s_%d' % (self.gel.name, self.space,
                                 self.poly_space_basis, self.approx_order)
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base='lagrange', force_bubble=False)
+                                     basis='lagrange', force_bubble=False)
         self.poly_space = ps
 
     def create_mapping(self, region, integral, integration,

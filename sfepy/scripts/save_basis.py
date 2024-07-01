@@ -171,9 +171,9 @@ def main():
 
         gel = GeometryElement(options.geometry)
         gps = PolySpace.any_from_args(None, gel, 1,
-                                      base=options.basis)
+                                      basis=options.basis)
         ps = PolySpace.any_from_args(None, gel, options.max_order,
-                                     base=options.basis)
+                                     basis=options.basis)
 
         n_digit, _format = get_print_info(ps.n_nod, fill='0')
         name_template = os.path.join(output_dir, 'bf_%s.vtk' % _format)

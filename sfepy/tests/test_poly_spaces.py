@@ -221,7 +221,7 @@ def test_partition_of_unity(gels):
             coors, _ = integral.get_qp(geom)
 
             ps = PolySpace.any_from_args('ps', gels[geom], order,
-                                         base=poly_space_basis)
+                                         basis=poly_space_basis)
             vals = ps.eval_basis(coors)
             _ok = nm.allclose(vals.sum(axis=-1), 1, atol=1e-14, rtol=0.0)
             tst.report('partition of unity:', _ok)
@@ -372,7 +372,7 @@ def test_hessians(gels):
         coors, _ = integral.get_qp(geom)
 
         ps = PolySpace.any_from_args('ps', gels[geom], order,
-                                     base=poly_space_basis)
+                                     basis=poly_space_basis)
 
         dim = coors.shape[1]
         h1 = nm.zeros((coors.shape[0], dim, dim, ps.n_nod), nm.float64)

@@ -313,7 +313,7 @@ class FEField(Field):
                                   self.poly_space_basis, self.approx_order,
                                   'B' * self.force_bubble)
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base=self.poly_space_basis,
+                                     basis=self.poly_space_basis,
                                      force_bubble=self.force_bubble)
         self.poly_space = ps
 

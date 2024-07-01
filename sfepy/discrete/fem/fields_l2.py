@@ -63,7 +63,7 @@ class L2ConstantVolumeField(Field):
         name = '%s_%s_%s_%d' % (self.gel.name, self.space,
                                 self.poly_space_basis, self.approx_order)
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base='lagrange')
+                                     basis='lagrange')
         self.poly_space = ps
 
     def setup_extra_data(self, info):
@@ -192,7 +192,7 @@ class L2ConstantVolumeField(Field):
             else:
                 gel = self.gel.surface_facet
                 ps = PolySpace.any_from_args('aux', gel, self.approx_order,
-                                             base='lagrange')
+                                             basis='lagrange')
 
             geo_ps = gel.poly_space
             domain.create_surface_group(region)

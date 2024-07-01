@@ -229,7 +229,7 @@ class DGField(FEField):
     def _create_interpolant(self):
         name = self.gel.name + '_DG_legendre'
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base=self.poly_space_basis,
+                                     basis=self.poly_space_basis,
                                      force_bubble=False)
         self.poly_space = ps
         # 'legendre_simplex' is created for '1_2'.

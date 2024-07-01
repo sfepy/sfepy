@@ -52,21 +52,21 @@ class PolySpace(Struct):
     }
 
     @staticmethod
-    def any_from_args(name, geometry, order, base='lagrange',
+    def any_from_args(name, geometry, order, basis='lagrange',
                       force_bubble=False):
         """
         Construct a particular polynomial space classes according to the
         arguments passed in.
         """
         if name is None:
-            name = PolySpace.suggest_name(geometry, order, base, force_bubble)
+            name = PolySpace.suggest_name(geometry, order, basis, force_bubble)
 
         table = _get_table()
 
-        key = '%s_%s' % (base, PolySpace.keys[(geometry.dim,
-                                               geometry.n_vertex)])
+        key = '%s_%s' % (basis, PolySpace.keys[(geometry.dim,
+                                                geometry.n_vertex)])
         if (geometry.name == '1_2') and (key not in table):
-            key = '%s_%s' % (base, 'tensor_product')
+            key = '%s_%s' % (basis, 'tensor_product')
 
         if force_bubble:
             key += '_bubble'
@@ -74,7 +74,7 @@ class PolySpace(Struct):
         return table[key](name, geometry, order)
 
     @staticmethod
-    def suggest_name(geometry, order, base='lagrange',
+    def suggest_name(geometry, order, basis='lagrange',
                      force_bubble=False):
         """
         Suggest the polynomial space name given its constructor parameters.
@@ -122,10 +122,10 @@ class PolySpace(Struct):
 
         Returns
         -------
-        base : array
-            The basis (shape (n_coor, 1, n_base)) or its first derivative
-            (shape (n_coor, dim, n_base)) or its second derivative (shape
-            (n_coor, dim, dim, n_base)) evaluated in the given points. An
+        basis : array
+            The basis (shape (n_coor, 1, n_basis)) or its first derivative
+            (shape (n_coor, dim, n_basis)) or its second derivative (shape
+            (n_coor, dim, dim, n_basis)) evaluated in the given points. An
             additional axis is pre-pended of length n_cell, if `ori` is given,
             or of length 1, if `force_axis` is True.
 
@@ -133,7 +133,7 @@ class PolySpace(Struct):
         -----
         If coors.ndim == 3, several point sets are assumed, with equal number
         of points in each of them. This is the case, for example, of the
-        values of the volume base functions on the element facets. The indexing
+        values of the volume basis functions on the element facets. The indexing
         (of bf_b(g)) is then (ifa,iqp,:,n_ep), so that the facet can be set in
         C using FMF_SetCell.
         """
@@ -148,15 +148,15 @@ class PolySpace(Struct):
                              % (self.geometry.dim, coors.shape[-1]))
 
         if (coors.ndim == 2):
-            base = self._eval_basis(coors, diff=diff, ori=ori,
-                                    suppress_errors=suppress_errors,
-                                    eps=eps)
+            basis = self._eval_basis(coors, diff=diff, ori=ori,
+                                     suppress_errors=suppress_errors,
+                                     eps=eps)
 
-            if (base.ndim == 3) and force_axis:
-                base = base[None, ...]
+            if (basis.ndim == 3) and force_axis:
+                basis = basis[None, ...]
 
-            if not base.flags['C_CONTIGUOUS']:
-                base = nm.ascontiguousarray(base)
+            if not basis.flags['C_CONTIGUOUS']:
+                basis = nm.ascontiguousarray(basis)
 
         else: # Several point sets.
             if diff:
@@ -164,15 +164,15 @@ class PolySpace(Struct):
             else:
                 bdim = 1
 
-            base = nm.empty((coors.shape[0], coors.shape[1],
-                             bdim, self.n_nod), dtype=nm.float64)
+            basis = nm.empty((coors.shape[0], coors.shape[1],
+                              bdim, self.n_nod), dtype=nm.float64)
 
             for ii, _coors in enumerate(coors):
-                base[ii] = self._eval_basis(_coors, diff=diff, ori=ori,
-                                            suppress_errors=suppress_errors,
-                                            eps=eps)
+                basis[ii] = self._eval_basis(_coors, diff=diff, ori=ori,
+                                             suppress_errors=suppress_errors,
+                                             eps=eps)
 
         if transform is not None:
-            base = transform_basis(transform, base)
+            basis = transform_basis(transform, basis)
 
-        return base
+        return basis
