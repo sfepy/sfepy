@@ -24,41 +24,20 @@ Usage examples::
 
   sfepy-run sfepy/examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
 
-  sfepy-view two_bodies.mesh.vtk -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
+  sfepy-view two_bodies.vtk -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
 
   python3 sfepy/scripts/plot_logs.py log.txt
 
-  sfepy-view two_bodies.mesh_ebc_nodes.vtk -2
-  sfepy-view two_bodies.mesh_regions.vtk -2
+  sfepy-view two_bodies_ebc_nodes.vtk -2
+  sfepy-view two_bodies_regions.vtk -2
 """
+import os.path as op
+from functools import partial
+
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.meshio import UserMeshIO
 
 import numpy as nm
-
-dim = 2
-
-if dim == 2:
-    dims0 = [1.0, 0.5]
-    shape0 = [4, 4]
-    centre0 = [0, -0.25]
-
-    dims1 = [1.0, 0.5]
-    shape1 = [3, 3]
-    centre1 = [0, 0.25]
-
-    shift1 = [0.0, -0.1]
-
-else:
-    dims0 = [1.0, 1.0, 0.5]
-    shape0 = [2, 2, 2]
-    centre0 = [0, 0, -0.25]
-
-    dims1 = [1.0, 1.0, 0.5]
-    shape1 = [2, 2, 2]
-    centre1 = [0, 0, 0.25]
-
-    shift1 = [0.0, 0.0, -0.1]
 
 def get_bbox(dims, centre, eps=0.0):
     dims = nm.asarray(dims)
@@ -87,107 +66,157 @@ def gen_two_bodies(dims0, shape0, centre0, dims1, shape1, centre1, shift1):
     mat_id = nm.zeros(conn.shape[0], dtype=nm.int32)
     mat_id[m0.n_el:] = 1
 
-    name = 'two_bodies.mesh'
+    name = 'two_bodies'
 
     mesh = Mesh.from_data(name, coors, ngroups, [conn], [mat_id], m0.descs)
 
     return mesh
 
-def mesh_hook(mesh, mode):
-    if mode == 'read':
-        return gen_two_bodies(dims0, shape0, centre0,
-                              dims1, shape1, centre1, shift1)
+def define(
+        dims0=(1.0, 0.5),
+        shape0=(4, 4),
+        centre0=(0, -0.25),
 
-    elif mode == 'write':
-        pass
+        dims1=(1.0, 0.5),
+        shape1=(3, 3),
+        centre1=(0, 0.25),
 
-def post_process(out, pb, state, extend=False):
-    from sfepy.base.base import Struct
-    from sfepy.discrete.fem import extend_cell_data
+        shift10=(0.0, 1e-4),
+        shift11=(0.0, -0.1),
 
-    ev = pb.evaluate
-    gap = ev('dw_contact.i.Contact(contact.epss, v, u)',
-             mode='el_avg', term_mode='gap')
-    gap = extend_cell_data(gap, pb.domain, 'Contact', val=0.0, is_surface=True)
-    out['gap'] = Struct(name='output_data',
-                        mode='cell', data=gap, dofs=None)
+        n_step=5,
+        contact='builtin',
+        output_dir='.',
+):
+    dim = len(dims0)
+    inodir = partial(op.join, output_dir)
 
-    return out
+    shift11 = nm.array(shift11)
 
-filename_mesh = UserMeshIO(mesh_hook)
+    def mesh_hook(mesh, mode):
+        if mode == 'read':
+            return gen_two_bodies(dims0, shape0, centre0,
+                                  dims1, shape1, centre1, shift10)
 
-options = {
-    'nls' : 'newton',
-    'ls' : 'ls',
-    'post_process_hook' : 'post_process',
-}
+        elif mode == 'write':
+            pass
 
-fields = {
-    'displacement': ('real', dim, 'Omega', 1),
-}
+    def post_process(out, pb, state, extend=False):
+        from sfepy.base.base import Struct
+        from sfepy.discrete.fem import extend_cell_data
 
-materials = {
-    'solid' : ({'D': stiffness_from_youngpoisson(dim,
-                                                 young=1.0, poisson=0.3)},),
-    'contact' : ({'.epss' : 1e1},),
-}
+        ev = pb.evaluate
+        gap = ev('dw_contact.i.Contact(contact.epss, v, u)',
+                 mode='el_avg', term_mode='gap')
+        gap = extend_cell_data(gap, pb.domain, 'Contact', val=0.0,
+                               is_surface=True)
+        out['gap'] = Struct(name='output_data',
+                            mode='cell', data=gap, dofs=None)
 
-variables = {
-    'u' : ('unknown field', 'displacement', 0),
-    'v' : ('test field', 'displacement', 'u'),
-}
+        return out
 
-bbox0 = get_bbox(dims0, centre0, eps=1e-5)
-bbox1 = get_bbox(dims1, nm.asarray(centre1) + nm.asarray(shift1), eps=1e-5)
+    filename_mesh = UserMeshIO(mesh_hook)
 
-if dim == 2:
-    regions = {
-        'Omega' : 'all',
-        'Omega0' : 'cells of group 0',
-        'Omega1' : 'cells of group 1',
-        'Bottom' : ('vertices in (y < %f)' % bbox0[0, 1], 'facet'),
-        'Top' : ('vertices in (y > %f)' % bbox1[1, 1], 'facet'),
-        'Contact0' : ('(vertices in (y > %f) *v r.Omega0)' % bbox0[1, 1],
-                      'facet'),
-        'Contact1' : ('(vertices in (y < %f) *v r.Omega1)' % bbox1[0, 1],
-                      'facet'),
-        'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
+    options = {
+        'nls' : 'newton',
+        'ls' : 'ls',
+        'output_dir' : output_dir,
+        'output_format' : 'h5',
+        'post_process_hook' : 'post_process',
     }
 
-else:
-    regions = {
-        'Omega' : 'all',
-        'Omega0' : 'cells of group 0',
-        'Omega1' : 'cells of group 1',
-        'Bottom' : ('vertices in (z < %f)' % bbox0[0, 2], 'facet'),
-        'Top' : ('vertices in (z > %f)' % bbox1[1, 2], 'facet'),
-        'Contact0' : ('(vertices in (z > %f) *v r.Omega0)' % bbox0[1, 2],
-                      'facet'),
-        'Contact1' : ('(vertices in (z < %f) *v r.Omega1)' % bbox1[0, 2],
-                      'facet'),
-        'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
+    bbox0 = get_bbox(dims0, centre0, eps=1e-5)
+    bbox1 = get_bbox(dims1, nm.asarray(centre1) + nm.asarray(shift10), eps=1e-5)
+
+    if dim == 2:
+        regions = {
+            'Omega' : 'all',
+            'Omega0' : 'cells of group 0',
+            'Omega1' : 'cells of group 1',
+            'Bottom' : ('vertices in (y < %f)' % bbox0[0, 1], 'facet'),
+            'Top' : ('vertices in (y > %f)' % bbox1[1, 1], 'facet'),
+            'Contact0' : ('(vertices in (y > %f) *v r.Omega0)' % bbox0[1, 1],
+                          'facet'),
+            'Contact1' : ('(vertices in (y < %f) *v r.Omega1)' % bbox1[0, 1],
+                          'facet'),
+            'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
+        }
+
+    else:
+        regions = {
+            'Omega' : 'all',
+            'Omega0' : 'cells of group 0',
+            'Omega1' : 'cells of group 1',
+            'Bottom' : ('vertices in (z < %f)' % bbox0[0, 2], 'facet'),
+            'Top' : ('vertices in (z > %f)' % bbox1[1, 2], 'facet'),
+            'Contact0' : ('(vertices in (z > %f) *v r.Omega0)' % bbox0[1, 2],
+                          'facet'),
+            'Contact1' : ('(vertices in (z < %f) *v r.Omega1)' % bbox1[0, 2],
+                          'facet'),
+            'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
+        }
+
+    fields = {
+        'displacement': ('real', dim, 'Omega', 1),
     }
 
-ebcs = {
-    'fixb' : ('Bottom', {'u.all' : 0.0}),
-    'fixt' : ('Top', {'u.all' : 0.0}),
-}
+    variables = {
+        'u' : ('unknown field', 'displacement', 0),
+        'v' : ('test field', 'displacement', 'u'),
+    }
 
-integrals = {
-    'i' : 10,
-}
+    ebcs = {
+        'fixb' : ('Bottom', {'u.all' : 0.0}),
+        'fixt' : ('Top', {'u.all' : 'move_top'}),
+    }
 
-equations = {
-    'elasticity' :
-    """dw_lin_elastic.2.Omega(solid.D, v, u)
-     + dw_contact.i.Contact(contact.epss, v, u)
-     = 0""",
-}
+    def move_top(ts, coors, bc, problem, **kwargs):
+        val = nm.empty_like(coors)
+        val[:] = ts.nt * shift11
+        return val
 
-solvers = {
-    'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton', {
-            'i_max' : 5,
+    functions = {
+        'move_top' : (move_top,),
+    }
+
+    materials = {
+        'solid' : ({
+            'D' : stiffness_from_youngpoisson(dim, young=1.0, poisson=0.3),
+        },),
+        'contact' : ({
+            '.dhat' : 1e-2,
+            '.epss' : 1e+1,
+        },),
+    }
+
+    integrals = {
+        'i' : 10,
+    }
+
+    if contact == 'builtin':
+        equations = {
+            'elasticity' :
+            """
+               dw_lin_elastic.2.Omega(solid.D, v, u)
+             + dw_contact.i.Contact(contact.epss, v, u)
+             = 0
+            """,
+        }
+
+    else:
+        equations = {
+            'elasticity' :
+            """
+               dw_lin_elastic.2.Omega(solid.D, v, u)
+             + dw_contact_ipc.i.Contact(contact.dhat, v, u)
+             = 0
+            """,
+        }
+
+    solvers = {
+        'ls' : ('ls.scipy_direct', {}),
+        'newton' : ('nls.newton', {
+            'i_max' : 15,
             'eps_a' : 1e-6,
             'eps_r' : 1.0,
             'macheps' : 1e-16,
@@ -195,10 +224,20 @@ solvers = {
             'lin_red' : 1e-2,
             'ls_red' : 0.1,
             'ls_red_warp' : 0.001,
-            'ls_on' : 100.1,
+            'ls_on' : 1.0,
             'ls_min' : 1e-5,
             'check' : 0,
             'delta' : 1e-8,
-            # 'log' : {'text' : 'log.txt', 'plot' : None},
-    })
-}
+            'log' : {'text' : inodir('log.txt'), 'plot' : None},
+        }),
+        'ts' : ('ts.simple', {
+            't0'     : 0.0,
+            't1'     : 1.0,
+            'dt'     : None,
+            'n_step' : n_step, # has precedence over dt!
+            'quasistatic' : True,
+            'verbose' : 1,
+        }),
+    }
+
+    return locals()
