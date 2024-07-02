@@ -73,7 +73,7 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
     omega = domain.create_region('Omega', 'all')
     field = Field.from_args('f', nm.float64, shape=1, region=omega,
                             approx_order=options.max_order,
-                            poly_space_base=options.basis)
+                            poly_space_basis=options.basis)
     var = FieldVariable('u', 'unknown', field)
 
     if options.plot_dofs:
@@ -171,9 +171,9 @@ def main():
 
         gel = GeometryElement(options.geometry)
         gps = PolySpace.any_from_args(None, gel, 1,
-                                      base=options.basis)
+                                      basis=options.basis)
         ps = PolySpace.any_from_args(None, gel, options.max_order,
-                                     base=options.basis)
+                                     basis=options.basis)
 
         n_digit, _format = get_print_info(ps.n_nod, fill='0')
         name_template = os.path.join(output_dir, 'bf_%s.vtk' % _format)
@@ -182,17 +182,17 @@ def main():
 
             def eval_dofs(iels, rx):
                 if options.derivative == 0:
-                    bf = ps.eval_base(rx).squeeze()
+                    bf = ps.eval_basis(rx).squeeze()
                     rvals = bf[None, :, ip:ip+1]
 
                 else:
-                    bfg = ps.eval_base(rx, diff=True)
+                    bfg = ps.eval_basis(rx, diff=True)
                     rvals = bfg[None, ..., ip]
 
                 return rvals
 
             def eval_coors(iels, rx):
-                bf = gps.eval_base(rx).squeeze()
+                bf = gps.eval_basis(rx).squeeze()
                 coors = nm.dot(bf, gel.coors)[None, ...]
                 return coors
 

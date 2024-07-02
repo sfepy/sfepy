@@ -36,7 +36,7 @@ class DGTerm(Term):
     Abstract base class for DG terms, provides alternative call_function and
     eval_real methods to accommodate returning iels and vals.
     """
-    poly_space_base = "legendre"
+    poly_space_basis = "legendre"
     def call_function(self, out, fargs):
         try:
             out, status = self.function(out, *fargs)
@@ -181,7 +181,7 @@ class AdvectionDGFluxTerm(DGTerm):
             active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] >= 0)
             active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
 
-            in_fc_b, out_fc_b, whs = field.get_both_facet_base_vals(state, region)
+            in_fc_b, out_fc_b, whs = field.get_both_facet_basis_vals(state, region)
 
             # TODO broadcast advelo to facets
             #  - maybe somehow get values of advelo at them?
@@ -220,11 +220,11 @@ class AdvectionDGFluxTerm(DGTerm):
             # get maximal wave speeds at facets
             C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
 
-            facet_base_vals = field.get_facet_base(base_only=True)
+            facet_basis_vals = field.get_facet_basis(basis_only=True)
             in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state,
                                                                          region)
-            # get sane facet base shape
-            fc_b = facet_base_vals[:, 0, :, 0, :].T
+            # get sane facet basis shape
+            fc_b = facet_basis_vals[:, 0, :, 0, :].T
             # (n_el_nod, n_el_facet, n_qp)
 
             fc_v_avg = (in_fc_v + out_fc_v)/2.
@@ -350,42 +350,42 @@ class DiffusionDGFluxTerm(DGTerm):
         active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] >= 0)
         active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
 
-        inner_facet_base, outer_facet_base, whs = \
-            field.get_both_facet_base_vals(state, region, derivative=False)
+        inner_facet_basis, outer_facet_basis, whs = \
+            field.get_both_facet_basis_vals(state, region, derivative=False)
 
-        inner_facet_base_d, outer_facet_base_d, _ = \
-            field.get_both_facet_base_vals(state, region, derivative=True)
+        inner_facet_basis_d, outer_facet_basis_d, _ = \
+            field.get_both_facet_basis_vals(state, region, derivative=True)
 
         if self.mode == 'avg_state':
             # content of diagonal
             inner_vals = nm.einsum("nkl, nbfkq, nfk, ndfq, nfq->ndb",
                                    D,
-                                   inner_facet_base_d / 2,  # state
+                                   inner_facet_basis_d / 2,  # state
                                    fc_n,
-                                   inner_facet_base,  # test
+                                   inner_facet_basis,  # test
                                    whs)
             outer_vals = nm.einsum(
                 "ikl, ibkq, ik, idq, iq->idb",
                 D[active_cells],
-                outer_facet_base_d[active_cells, :, active_facets] / 2,  # state
+                outer_facet_basis_d[active_cells, :, active_facets] / 2,  # state
                 fc_n[active_cells, active_facets],
-                inner_facet_base[active_cells, :, active_facets],  # test
+                inner_facet_basis[active_cells, :, active_facets],  # test
                 whs[active_cells, active_facets])
 
         elif self.mode == 'avg_virtual':
             # content of diagonal
             inner_vals = nm.einsum("nkl, ndfkq, nfk, nbfq, nfq->ndb",
                                    D,
-                                   inner_facet_base_d / 2,  # test
+                                   inner_facet_basis_d / 2,  # test
                                    fc_n,
-                                   inner_facet_base,  # state
+                                   inner_facet_basis,  # state
                                    whs)
 
             outer_vals = nm.einsum("ikl, idkq, ik, ibq, iq->idb",
                    D[active_cells],
-                   inner_facet_base_d[active_cells, :, active_facets] / 2,  # test
+                   inner_facet_basis_d[active_cells, :, active_facets] / 2,  # test
                    fc_n[active_cells, active_facets],
-                   - outer_facet_base[active_cells, :, active_facets],  # state
+                   - outer_facet_basis[active_cells, :, active_facets],  # state
                    whs[active_cells, active_facets])
 
         iels = self._get_nbrhd_dof_indexes(active_cells, active_nrbhs, field)
@@ -400,11 +400,11 @@ class DiffusionDGFluxTerm(DGTerm):
     def _function_residual(self, out, state, diff_var, field, region, D):
         fc_n = field.get_cell_normals_per_facet(region)
 
-        # get base values
-        inner_facet_base, outer_facet_base, _ = \
-            field.get_both_facet_base_vals(state, region, derivative=False)
-        inner_facet_base_d, outer_facet_base_d, _ = \
-            field.get_both_facet_base_vals(state, region, derivative=True)
+        # get basis values
+        inner_facet_basis, outer_facet_basis, _ = \
+            field.get_both_facet_basis_vals(state, region, derivative=False)
+        inner_facet_basis_d, outer_facet_basis_d, _ = \
+            field.get_both_facet_basis_vals(state, region, derivative=True)
 
         # get state values
         inner_facet_state_d, outer_facet_state_d, _ = \
@@ -417,19 +417,19 @@ class DiffusionDGFluxTerm(DGTerm):
                                     D, inner_facet_state_d) +
                           nm.einsum("ikl,ifkq                ->ifkq",
                                     D,   outer_facet_state_d)) / 2.
-            # outer_facet_base is in DG zero - hence the jump is inner value
-            jmpBase = inner_facet_base
+            # outer_facet_basis is in DG zero - hence the jump is inner value
+            jmpBasis = inner_facet_basis
 
             cell_fluxes = nm.einsum("ifkq ,     ifk,  idfq,    ifq -> id",
-                             avgDdState, fc_n, jmpBase, weights)
+                             avgDdState, fc_n, jmpBasis, weights)
 
         elif self.mode == 'avg_virtual':
-            avgDdbase = (nm.einsum("ikl,idfkq->idfkq",
-                                   D, inner_facet_base_d)) / 2.
+            avgDdbasis = (nm.einsum("ikl,idfkq->idfkq",
+                                   D, inner_facet_basis_d)) / 2.
 
             jmpState = inner_facet_state - outer_facet_state
             cell_fluxes = nm.einsum("idfkq, ifk, ifq , ifq -> id",
-                             avgDdbase, fc_n, jmpState, weights)
+                             avgDdbasis, fc_n, jmpState, weights)
 
         out[:] = 0.0
         n_el_nod = field.n_el_nod
@@ -491,8 +491,8 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
 
         approx_order = field.approx_order
 
-        inner_facet_base, outer_facet_base, whs = \
-            field.get_both_facet_base_vals(state, region, derivative=False)
+        inner_facet_basis, outer_facet_basis, whs = \
+            field.get_both_facet_basis_vals(state, region, derivative=False)
         facet_vols = nm.sum(whs, axis=-1)
 
         # nu characterizes diffusion tensor, so far we use diagonal average
@@ -508,14 +508,14 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
 
             inner = nm.einsum("nf, ndfq, nbfq, nfq -> ndb",
                                sigma,
-                               inner_facet_base,  # test
-                               inner_facet_base,  # state
+                               inner_facet_basis,  # test
+                               inner_facet_basis,  # state
                                whs)
 
             outer = nm.einsum("i, idq, ibq, iq -> idb",
                                sigma[active_cells, active_facets],
-                               inner_facet_base[active_cells, :, active_facets],  # test
-                               - outer_facet_base[active_cells, :, active_facets],  # state
+                               inner_facet_basis[active_cells, :, active_facets],  # test
+                               - outer_facet_basis[active_cells, :, active_facets],  # state
                                whs[active_cells, active_facets])
 
             vals = nm.vstack((inner, outer))
@@ -530,16 +530,16 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
                 field.get_both_facet_state_vals(state, region,
                                                 derivative=False
                                                 )
-            inner_facet_base, outer_facet_base, _ = \
-                field.get_both_facet_base_vals(state, region,
+            inner_facet_basis, outer_facet_basis, _ = \
+                field.get_both_facet_basis_vals(state, region,
                                                derivative=False
                                                )
             jmp_state = inner_facet_state - outer_facet_state
-            jmp_base = inner_facet_base  # - outer_facet_base
+            jmp_basis = inner_facet_basis  # - outer_facet_basis
 
-            n_el_nod = nm.shape(inner_facet_base)[1]
+            n_el_nod = nm.shape(inner_facet_basis)[1]
             cell_penalty = nm.einsum("nf,nfq,ndfq,nfq->nd",
-                                     sigma, jmp_state, jmp_base, whs)
+                                     sigma, jmp_state, jmp_basis, whs)
 
             out[:] = 0.0
             for i in range(n_el_nod):
@@ -647,10 +647,10 @@ class NonlinearHyperbolicDGFluxTerm(DGTerm):
             return None
 
         fc_n = field.get_cell_normals_per_facet(region)
-        facet_base_vals = field.get_facet_base(base_only=True)
+        facet_basis_vals = field.get_facet_basis(basis_only=True)
         in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
 
-        fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
+        fc_b = facet_basis_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
 
         n_el_nod = field.n_el_nod
 

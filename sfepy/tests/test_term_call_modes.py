@@ -17,7 +17,7 @@ not_tested_terms = ['dw_ns_dot_grad_s',
 
 
 def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
-                   material_value=None, poly_space_base=None):
+                   material_value=None, poly_space_basis=None):
     from sfepy.base.base import basestr
     from sfepy.discrete import FieldVariable, Material, Variables, Materials
     from sfepy.discrete.fem import Field
@@ -83,7 +83,7 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
             shape = _parse_scalar_shape(sh[0] if isinstance(sh, tuple) else sh)
             field = Field.from_args('f%d' % ii, nm.float64, shape, omega,
                                     approx_order=1,
-                                    poly_space_base=poly_space_base)
+                                    poly_space_basis=poly_space_basis)
 
             if arg_kind == 'virtual_variable':
                 if sh[1] is not None:
@@ -221,7 +221,7 @@ def _test_single_term(data, term_cls, domain, rname):
     else:
         integral = data.integral
 
-    poly_space_base = getattr(term_cls, 'poly_space_base', 'lagrange')
+    poly_space_basis = getattr(term_cls, 'poly_space_basis', 'lagrange')
 
     prev_shapes = {}
     for _arg_shapes in arg_shapes_list:
@@ -252,7 +252,7 @@ def _test_single_term(data, term_cls, domain, rname):
                 material_value = 1.0
             aux = make_term_args(arg_shapes, arg_kinds, ats, mode, domain,
                                  material_value=material_value,
-                                 poly_space_base=poly_space_base)
+                                 poly_space_basis=poly_space_basis)
             args, str_args, materials, variables = aux
 
             tst.report('args:', str_args)

@@ -22,7 +22,7 @@ def get_eval_dofs(dofs, dof_conn, ps, ori=None):
         else:
             eori = None
 
-        bf = ps.eval_base(rx, ori=eori, force_axis=True)[...,0,:]
+        bf = ps.eval_basis(rx, ori=eori, force_axis=True)[...,0,:]
         rvals = dot_sequences(bf, edofs)
 
         return rvals
@@ -38,7 +38,7 @@ def get_eval_coors(coors, conn, ps):
         ecoors = coors[conn[iels]]
         aux = ecoors.transpose((0, 2, 1))
 
-        bf = ps.eval_base(rx).squeeze()
+        bf = ps.eval_basis(rx).squeeze()
         phys_coors = nm.dot(aux, bf.T).transpose((0, 2, 1))
         return phys_coors
 

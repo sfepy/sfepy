@@ -71,7 +71,6 @@ def get_n_el_nod(order, dim, extended=False):
 
     .. math::
         N_p =  \frac{(n + 1) \cdot (n + 2) \cdot ... \cdot (n + d)}{d!}
-    
 
     where `n` is the order and `d` the dimension.
     When extended is True
@@ -127,8 +126,8 @@ class LegendrePolySpace(PolySpace):
         self.coefM = None
         self.expoM = None
 
-    def _eval_base(self, coors, diff=0, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def _eval_basis(self, coors, diff=0, ori=None,
+                    suppress_errors=False, eps=1e-15):
         """Calls _combine_polyvals or _combine_polyvals_diff to build
         multidimensional basis implemented in subclasses to get basis for
         different geometries expects coors to be in shape
@@ -193,7 +192,7 @@ class LegendrePolySpace(PolySpace):
         is written as a linear  combination of d basis functions
         :math:`f_i, i=0, ..., n-1` (the coefficients being stored
         in list-of-values).
-        
+
         Defining
 
         .. math ::
@@ -206,7 +205,7 @@ class LegendrePolySpace(PolySpace):
         coordinates in the element's parameter space), then val-coef-matrix
         denotes the n x n matrix F and val-exp-matrix denotes the n x 3 matrix P
         where n is number of basis functions as calculated by ``get_n_el_nod``.
-        
+
         Expects matrices to be saved in atributes coefM and expoM!
 
         .. [1] Remacle, J.-F., Chevaugeon, N., Marchandise, E., & Geuzaine, C.
@@ -228,7 +227,8 @@ class LegendrePolySpace(PolySpace):
 
     @abstractmethod
     def _combine_polyvals(self, coors, polyvals, idx):
-        """Combines Legendre or Jacobi polynomials to get muldidimensional
+        """
+        Combines Legendre or Jacobi polynomials to get muldidimensional
         basis values according to element topolgy
 
         Parameters
@@ -236,9 +236,10 @@ class LegendrePolySpace(PolySpace):
         coors : array_like
             coordinates of evaluation points
         polyvals : array_like
-            values of legendre polynomials precomputed in _eval_base
+            values of legendre polynomials precomputed in _eval_basis
         idx : tuple
-            function index, for tensor-product correspond to orders of polynomials in variables
+            function index, for tensor-product correspond to orders of
+            polynomials in variables
 
         Returns
         -------
@@ -255,7 +256,7 @@ class LegendrePolySpace(PolySpace):
         coors : array_like
             coordinates of evaluation points
         polyvals : array_like
-            values of legendre polynomials precomputed in _eval_base
+            values of legendre polynomials precomputed in _eval_basis
         der : int
             derivative variable
         idx : tuple
@@ -371,7 +372,7 @@ class LegendrePolySpace(PolySpace):
             Parameters
             ----------
             x :
-                
+
 
             Returns
             -------
@@ -400,7 +401,7 @@ class LegendrePolySpace(PolySpace):
         coors : array_like
         beta : float
         alpha : float
-            
+
 
         Returns
         -------

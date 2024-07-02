@@ -215,9 +215,9 @@ def gels():
 
     return gels
 
-def test_base_functions_values(gels):
+def test_basis_functions_values(gels):
     """
-    Compare base function values and their gradients with correct
+    Compare basis function values and their gradients with correct
     data. Also test that sum of values over all element nodes gives one.
     """
     from sfepy.base.base import ordered_iteritems
@@ -231,12 +231,12 @@ def test_base_functions_values(gels):
         force_bubble = key[6:7] == 'B'
 
         ps = PolySpace.any_from_args('aux', gel, order,
-                                     base='lagrange',
+                                     basis='lagrange',
                                      force_bubble=force_bubble)
         dim = ps.geometry.dim
         coors = nm.r_[ps.geometry.coors, [[0.2] * dim]]
 
-        bf = ps.eval_base(coors, diff=diff)
+        bf = ps.eval_basis(coors, diff=diff)
         _ok = nm.allclose(val, bf, rtol=0.0, atol=1e-14)
 
         if not diff:
@@ -249,9 +249,9 @@ def test_base_functions_values(gels):
 
     assert ok
 
-def test_base_functions_delta(gels):
+def test_basis_functions_delta(gels):
     r"""
-    Test :math:`\delta` property of base functions evaluated in the
+    Test :math:`\delta` property of basis functions evaluated in the
     reference element nodes.
     """
     from sfepy.base.base import ordered_iteritems
@@ -261,9 +261,9 @@ def test_base_functions_delta(gels):
     for key, gel in ordered_iteritems(gels):
         for order in range(11):
             ps = PolySpace.any_from_args('aux', gel, order,
-                                         base='lagrange',
+                                         basis='lagrange',
                                          force_bubble=False)
-            bf = ps.eval_base(ps.node_coors)
+            bf = ps.eval_basis(ps.node_coors)
             _ok = nm.allclose(nm.eye(ps.n_nod),
                               bf.squeeze(),
                               rtol=0.0, atol=(order + 1) * 1e-14)

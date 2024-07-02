@@ -61,9 +61,9 @@ class L2ConstantVolumeField(Field):
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d' % (self.gel.name, self.space,
-                                self.poly_space_base, self.approx_order)
+                                self.poly_space_basis, self.approx_order)
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base='lagrange')
+                                     basis='lagrange')
         self.poly_space = ps
 
     def setup_extra_data(self, info):
@@ -156,11 +156,11 @@ class L2ConstantVolumeField(Field):
         """
         return nm.zeros(1, dtype=nm.int32)
 
-    def get_base(self, key, derivative, integral, iels=None,
-                 from_geometry=False, base_only=True):
+    def eval_basis(self, key, derivative, integral, iels=None,
+                   from_geometry=False, base_only=True):
         qp_coors, qp_weights = integral.get_qp(self.gel.name)
         ps = self.poly_space
-        bf = ps.eval_base(qp_coors)
+        bf = ps.eval_basis(qp_coors)
         if key[0] == 'b': # BQP
             num = 6 if self.gel.n_vertex == 4 else 4
             bf = nm.tile(bf, (num, 1, 1, 1))
@@ -182,7 +182,7 @@ class L2ConstantVolumeField(Field):
             geo_ps = self.gel.poly_space
             dconn = domain.get_conn(tdim=region.tdim, cells=iels)
             qp_coors, qp_weights = integral.get_qp(self.gel.name)
-            bf = ps.eval_base(qp_coors)
+            bf = ps.eval_basis(qp_coors)
 
         elif integration in ('facet', 'facet_extra'):
             if self.is_surface:
@@ -192,14 +192,14 @@ class L2ConstantVolumeField(Field):
             else:
                 gel = self.gel.surface_facet
                 ps = PolySpace.any_from_args('aux', gel, self.approx_order,
-                                             base='lagrange')
+                                             basis='lagrange')
 
             geo_ps = gel.poly_space
             domain.create_surface_group(region)
             sd = domain.surface_groups[region.name]
             dconn = sd.get_connectivity()
             qp_coors, qp_weights = integral.get_qp(gel.name)
-            bf = ps.eval_base(qp_coors)
+            bf = ps.eval_basis(qp_coors)
 
         mapping = FEMapping(coors, dconn, poly_space=geo_ps)
         out = mapping.get_mapping(qp_coors, qp_weights, bf, poly_space=ps,

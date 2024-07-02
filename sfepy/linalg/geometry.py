@@ -212,7 +212,7 @@ def flag_points_in_polygon2d(polygon, coors):
                              ~flag[aux], flag[aux])
     return flag
 
-def inverse_element_mapping(coors, e_coors, eval_base, ref_coors,
+def inverse_element_mapping(coors, e_coors, eval_basis, ref_coors,
                             suppress_errors=False):
     """
     Given spatial element coordinates, find the inverse mapping for
@@ -237,14 +237,14 @@ def inverse_element_mapping(coors, e_coors, eval_base, ref_coors,
 
     else: # Tensor-product and other.
         def residual(xi):
-            bf = eval_base(xi[nm.newaxis,:].copy(),
-                           suppress_errors=suppress_errors).squeeze()
+            bf = eval_basis(xi[nm.newaxis,:].copy(),
+                            suppress_errors=suppress_errors).squeeze()
             res = coors - nm.dot(bf, e_coors)
             return res.squeeze()
 
         def matrix(xi):
-            bfg = eval_base(xi[nm.newaxis,:].copy(), diff=True,
-                            suppress_errors=suppress_errors).squeeze()
+            bfg = eval_basis(xi[nm.newaxis,:].copy(), diff=True,
+                             suppress_errors=suppress_errors).squeeze()
             mtx = - nm.dot(bfg, e_coors)
             return mtx
 

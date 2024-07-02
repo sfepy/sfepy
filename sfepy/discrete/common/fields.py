@@ -87,7 +87,7 @@ class Field(Struct):
 
     @staticmethod
     def from_args(name, dtype, shape, region, approx_order=1,
-                  space='H1', poly_space_base='lagrange'):
+                  space='H1', poly_space_basis='lagrange'):
         """
         Create a Field subclass instance corresponding to a given space.
 
@@ -109,7 +109,7 @@ class Field(Struct):
             The FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
         space : str
             The function space name.
-        poly_space_base : str
+        poly_space_basis : str
             The name of polynomial space base.
 
         Notes
@@ -118,7 +118,7 @@ class Field(Struct):
         """
         conf = Struct(name=name, dtype=dtype, shape=shape, region=region.name,
                       approx_order=approx_order, space=space,
-                      poly_space_base=poly_space_base)
+                      poly_space_basis=poly_space_basis)
         return Field.from_conf(conf, {region.name : region})
 
     @staticmethod
@@ -141,13 +141,17 @@ class Field(Struct):
         table = Field._all
 
         space = conf.get('space', 'H1')
-        poly_space_base = conf.get('poly_space_base', 'lagrange')
+        if 'poly_space_base' in conf.to_dict(): # For backward compatibility.
+            poly_space_basis = conf.get('poly_space_base')
 
-        key = space + '_' + poly_space_base
+        else:
+            poly_space_basis = conf.get('poly_space_basis', 'lagrange')
+
+        key = space + '_' + poly_space_basis
 
         approx_order = parse_approx_order(conf.approx_order)
         ao, force_bubble, discontinuous = approx_order
-        if poly_space_base == 'constant':
+        if poly_space_basis == 'constant':
             discontinuous = False
 
         region = regions[conf.region]
@@ -180,7 +184,7 @@ class Field(Struct):
                         'An abstract Field method called!')
         aux = name.split('_')
         self.space = aux[1]
-        self.poly_space_base = aux[2]
+        self.poly_space_basis = aux[2]
 
     def clear_mappings(self, clear_all=False):
         """

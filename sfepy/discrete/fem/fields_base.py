@@ -93,8 +93,8 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
         qp_coors = poly_space.node_coors
 
     ##
-    # Evaluate geometry interpolation base functions in (extra) nodes.
-    bf = geom_poly_space.eval_base(qp_coors)
+    # Evaluate geometry interpolation basis functions in (extra) nodes.
+    bf = geom_poly_space.eval_basis(qp_coors)
     bf = bf[:, 0, :].copy()
 
     ##
@@ -239,10 +239,10 @@ class FEField(Field):
 
     Field shape information:
 
-    - ``shape`` - the shape of the base functions in a point
+    - ``shape`` - the shape of the basis functions in a point
     - ``n_components`` - the number of DOFs per FE node
     - ``val_shape`` - the shape of field value (the product of DOFs and
-      base functions) in a point
+      basis functions) in a point
     """
 
     def __init__(self, name, dtype, shape, region, approx_order=1):
@@ -258,7 +258,7 @@ class FEField(Field):
         shape : int/tuple/str
             The field shape: 1 or (1,) or 'scalar', space dimension (2, or (2,)
             or 3 or (3,)) or 'vector', or a tuple. The field shape determines
-            the shape of the FE base functions and is related to the number of
+            the shape of the FE basis functions and is related to the number of
             components of variables and to the DOF per node count, depending
             on the field kind.
         region : Region
@@ -287,10 +287,10 @@ class FEField(Field):
         self.extra_data = {}
         self.ori = None
         self._create_interpolant()
-        self._setup_global_base()
+        self._setup_global_basis()
         self.setup_coors()
         self.clear_mappings(clear_all=True)
-        self.clear_qp_base()
+        self.clear_qp_basis()
         self.basis_transform = None
         self.econn0 = None
         self.unused_dofs = None
@@ -310,10 +310,10 @@ class FEField(Field):
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
-                                  self.poly_space_base, self.approx_order,
+                                  self.poly_space_basis, self.approx_order,
                                   'B' * self.force_bubble)
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base=self.poly_space_base,
+                                     basis=self.poly_space_basis,
                                      force_bubble=self.force_bubble)
         self.poly_space = ps
 
@@ -344,9 +344,9 @@ class FEField(Field):
         """
         return self.force_bubble or (self.approx_order > 1)
 
-    def _setup_global_base(self):
+    def _setup_global_basis(self):
         """
-        Setup global DOF/base functions, their indices and connectivity of the
+        Setup global DOF/basis functions, their indices and connectivity of the
         field. Called methods implemented in subclasses.
         """
         self._setup_facet_orientations()
@@ -606,9 +606,9 @@ class FEField(Field):
 
         return dofs
 
-    def clear_qp_base(self):
+    def clear_qp_basis(self):
         """
-        Remove cached quadrature points and base functions.
+        Remove cached quadrature points and basis functions.
         """
         self.qp_coors = {}
         self.bf = {}
@@ -694,7 +694,7 @@ class FEField(Field):
         """
         Set local element basis transformation.
 
-        The basis transformation is applied in :func:`FEField.get_base()` and
+        The basis transformation is applied in :func:`FEField.eval_basis()` and
         :func:`FEField.create_mapping()`.
 
         Parameters
@@ -721,8 +721,8 @@ class FEField(Field):
 
         return vec.ravel()
 
-    def get_base(self, key, derivative, integral, iels=None,
-                 from_geometry=False, base_only=True):
+    def eval_basis(self, key, derivative, integral, iels=None,
+                   from_geometry=False, basis_only=True):
         qp = self.get_qp(key, integral)
 
         if from_geometry:
@@ -736,14 +736,14 @@ class FEField(Field):
 
         if bf_key not in self.bf:
             ori = self.ori
-            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative, ori=ori,
-                                           transform=self.basis_transform)
+            self.bf[bf_key] = ps.eval_basis(qp.vals, diff=derivative, ori=ori,
+                                            transform=self.basis_transform)
 
         bf = self.bf[bf_key]
         if iels is not None and bf.ndim == 4:
             bf = bf[iels]
 
-        if base_only:
+        if basis_only:
             return bf
 
         else:
@@ -758,7 +758,7 @@ class FEField(Field):
             qp = self.get_qp(sd.face_type, integral)
 
             ps_s = self.gel.surface_facet.poly_space
-            bf_s = ps_s.eval_base(qp.vals)
+            bf_s = ps_s.eval_basis(qp.vals)
 
             coors, faces = gel.coors, gel.get_surface_entities()
 
@@ -775,7 +775,7 @@ class FEField(Field):
             qp = self.get_qp(face_type, integral)
 
             ps_s = self.gel.surface_facet[bkey].poly_space
-            bf_s = ps_s.eval_base(qp.vals)
+            bf_s = ps_s.eval_basis(qp.vals)
 
             coors, faces = gel.coors, gel.get_surface_entities()
 
@@ -1075,7 +1075,7 @@ class FEField(Field):
         """
         integral = Integral('i', order=self.approx_order)
 
-        bf = self.get_base('v', False, integral)
+        bf = self.eval_basis('v', False, integral)
         bf = bf[:, 0, :].copy()
 
         data_qp = nm.dot(bf, dofs[self.econn])
@@ -1220,9 +1220,9 @@ class FEField(Field):
         """
         Create a new reference mapping.
 
-        Compute jacobians, element volumes and base function derivatives
+        Compute jacobians, element volumes and basis function derivatives
         for Volume-type geometries (volume mappings), and jacobians,
-        normals and base function derivatives for Surface-type
+        normals and basis function derivatives for Surface-type
         geometries (surface mappings).
 
         Notes
@@ -1242,7 +1242,7 @@ class FEField(Field):
 
         if region.kind == 'cell':
             qp = self.get_qp('v', integral)
-            bf = self.get_base('v', 0, integral, iels=iels)
+            bf = self.eval_basis('v', 0, integral, iels=iels)
 
             dconn = domain.get_conn(tdim=region.tdim, cells=iels)
             mapping = FEMapping(coors, dconn, poly_space=geo_ps)
@@ -1321,7 +1321,7 @@ class FEField(Field):
 
                         fc_map[fc_map == -bkey] = ikey
 
-                    abf = ps.eval_base(qp.vals, transform=transform)
+                    abf = ps.eval_basis(qp.vals, transform=transform)
                     bf = nm.zeros((nfc, nqp, 1, max(bkeys)), dtype=nm.float64)
                     for ifc, efc in enumerate(self.efaces):
                         bkey = efc_map[ifc]
@@ -1338,7 +1338,7 @@ class FEField(Field):
                     self.create_bqp(region.name, integral)
                     qp = self.qp_coors[(integral.order, esd.bkey)]
 
-                    abf = ps.eval_base(qp.vals[0], transform=transform)
+                    abf = ps.eval_basis(qp.vals[0], transform=transform)
                     bf = abf[..., self.efaces[0]]
 
                     indx = self.gel.get_surface_entities()[0]
@@ -1347,9 +1347,9 @@ class FEField(Field):
                     mapping.set_basis_indices(indx)
 
                     if integration == 'facet_extra':
-                        se_bf_bg = geo_ps.eval_base(qp.vals, diff=True)
+                        se_bf_bg = geo_ps.eval_basis(qp.vals, diff=True)
                         se_bf_bg = se_bf_bg[sd.fis[:, 1]]
-                        se_ebf_bg = self.get_base(esd.bkey, 1, integral)
+                        se_ebf_bg = self.eval_basis(esd.bkey, 1, integral)
                         se_ebf_bg = se_ebf_bg[sd.fis[:, 1]]
                         remap = prepare_remap(cells, cells.max() + 1)
                         se_conn = dconn[remap[sd.fis[:, 0]], :]
@@ -1362,7 +1362,7 @@ class FEField(Field):
             else:
                 # Do not use BQP for surface fields.
                 qp = self.get_qp(sd.face_type, integral)
-                bf = ps.eval_base(qp.vals, transform=transform)
+                bf = ps.eval_basis(qp.vals, transform=transform)
 
                 out = mapping.get_mapping(qp.vals, qp.weights, bf,
                                           is_face=True)

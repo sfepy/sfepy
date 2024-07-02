@@ -163,7 +163,7 @@ def describe_geometry(field, region, integral):
 
     qp = integral.get_qp(gel.name)
     ps = PolySpace.any_from_args(None, gel, field.approx_order)
-    membrane_geo = vm.get_mapping(qp[0], qp[1], ps.eval_base(qp[0]),
+    membrane_geo = vm.get_mapping(qp[0], qp[1], ps.eval_basis(qp[0]),
                                   poly_space=ps)
 
     return mtx_t, membrane_geo

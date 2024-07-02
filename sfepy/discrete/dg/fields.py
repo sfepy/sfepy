@@ -143,7 +143,7 @@ class DGField(FEField):
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-                 poly_space_base="legendre", approx_order=1, integral=None):
+                 poly_space_basis="legendre", approx_order=1, integral=None):
         """
         Creates DGField, with Legendre polyspace and default integral
         corresponding to 2 * approx_order.
@@ -163,7 +163,7 @@ class DGField(FEField):
         space : string
             default "H1"
 
-        poly_space_base : PolySpace
+        poly_space_basis : PolySpace
             optionally force polyspace
 
         approx_order : 0 for FVM, default 1
@@ -191,7 +191,7 @@ class DGField(FEField):
 
         # approximation space
         self.space = space
-        self.poly_space_base = poly_space_base
+        self.poly_space_basis = poly_space_basis
         self.force_bubble = False
         self._create_interpolant()
 
@@ -203,8 +203,8 @@ class DGField(FEField):
         self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
 
         # integral
-        self.clear_qp_base()
-        self.clear_facet_qp_base()
+        self.clear_qp_basis()
+        self.clear_facet_qp_basis()
         if integral is None:
             self.integral = Integral("dg_fi", order = 2 * self.approx_order)
         else:
@@ -229,7 +229,7 @@ class DGField(FEField):
     def _create_interpolant(self):
         name = self.gel.name + '_DG_legendre'
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
-                                     base=self.poly_space_base,
+                                     basis=self.poly_space_basis,
                                      force_bubble=False)
         self.poly_space = ps
         # 'legendre_simplex' is created for '1_2'.
@@ -330,8 +330,8 @@ class DGField(FEField):
                                  len(nm.unique(cells)))[:, None]
         return coors
 
-    def clear_facet_qp_base(self):
-        """Clears facet_qp_base cache"""
+    def clear_facet_qp_basis(self):
+        """Clears facet_qp_basis cache"""
         self.facet_bf = {}
         self.facet_qp = None
         self.facet_whs = None
@@ -417,9 +417,9 @@ class DGField(FEField):
 
         return facet_qps, weights
 
-    def get_facet_base(self, derivative=False, base_only=False):
+    def get_facet_basis(self, derivative=False, basis_only=False):
         """
-        Returns values of base in facets quadrature points, data shape is a bit
+        Returns values of basis in facets quadrature points, data shape is a bit
         crazy right now:
             (number of qps, 1, n_el_facets, 1, n_el_nod)
         end for derivatine:
@@ -428,7 +428,7 @@ class DGField(FEField):
         Parameters
         ----------
         derivative: truthy or integer
-        base_only: do not return weights
+        basis_only: do not return weights
 
         Returns
         -------
@@ -458,11 +458,11 @@ class DGField(FEField):
 
             for i in range(self.n_el_facets):
                 facet_bf[..., i, :, :] = \
-                    ps.eval_base(qps[..., i, :], diff=diff,
-                                 transform=self.basis_transform)
+                    ps.eval_basis(qps[..., i, :], diff=diff,
+                                  transform=self.basis_transform)
             self.facet_bf[diff] = facet_bf
 
-        if base_only:
+        if basis_only:
             return facet_bf
         else:
             return facet_bf, whs
@@ -710,8 +710,8 @@ class DGField(FEField):
             diff = 0
         unreduce_nod = int(not reduce_nod)
 
-        inner_base_vals, outer_base_vals, whs = \
-            self.get_both_facet_base_vals(state, region, derivative=derivative)
+        inner_basis_vals, outer_basis_vals, whs = \
+            self.get_both_facet_basis_vals(state, region, derivative=derivative)
         dofs = self.unravel_sol(state.data[0])
 
         n_qp = whs.shape[-1]
@@ -723,10 +723,10 @@ class DGField(FEField):
         inner_facet_vals = nm.zeros(outputs_shape)
         if unreduce_nod:
             inner_facet_vals[:] = nm.einsum('id...,idf...->ifd...',
-                                            dofs, inner_base_vals)
+                                            dofs, inner_basis_vals)
         else:
             inner_facet_vals[:] = nm.einsum('id...,id...->i...',
-                                            dofs, inner_base_vals)
+                                            dofs, inner_basis_vals)
 
         per_facet_neighbours = self.get_facet_neighbor_idx(region, state.eq_map)
 
@@ -736,12 +736,12 @@ class DGField(FEField):
                 outer_facet_vals[:, facet_n, :] = \
                     nm.einsum('id...,id...->id...',
                               dofs[per_facet_neighbours[:, facet_n, 0]],
-                              outer_base_vals[:, :, facet_n])
+                              outer_basis_vals[:, :, facet_n])
             else:
                 outer_facet_vals[:, facet_n, :] = \
                     nm.einsum('id...,id...->i...',
                               dofs[per_facet_neighbours[:, facet_n, 0]],
-                              outer_base_vals[:, :, facet_n])
+                              outer_basis_vals[:, :, facet_n])
 
         boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
         outer_facet_vals[boundary_cells[:, 0], boundary_cells[:, 1]] = 0.0
@@ -754,16 +754,16 @@ class DGField(FEField):
                     "outerfacets")
                 outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = \
                     nm.einsum("id,id...->id...",
-                              ebc_vals, inner_base_vals[0, :, ebc[:, 1]])
+                              ebc_vals, inner_basis_vals[0, :, ebc[:, 1]])
             else:
                 #  fix flipping qp order to accomodate for
                 #  opposite facet orientation of neighbours
                 outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = ebc_vals[:, ::-1]
 
-        # flip outer_facet_vals moved to get_both_facet_base_vals
+        # flip outer_facet_vals moved to get_both_facet_basis_vals
         return inner_facet_vals, outer_facet_vals, whs
 
-    def get_both_facet_base_vals(self, state, region, derivative=None):
+    def get_both_facet_basis_vals(self, state, region, derivative=None):
         """Returns values of the basis function in quadrature points on facets
         broadcasted to all cells inner to the element as well as outer ones
         along with weights for the qps broadcasted and transformed to elements.
@@ -781,8 +781,8 @@ class DGField(FEField):
 
         Returns
         -------
-        outer_facet_base_vals:
-        inner_facet_base_vals:
+        outer_facet_basis_vals:
+        inner_facet_basis_vals:
                  shape (n_cell, n_el_nod, n_el_facet, n_qp) or
                        (n_cell, n_el_nod, n_el_facet, dim, n_qp)
                  when derivative is True or 1
@@ -793,38 +793,38 @@ class DGField(FEField):
         else:
             diff = 0
 
-        facet_bf, whs = self.get_facet_base(derivative=derivative)
+        facet_bf, whs = self.get_facet_basis(derivative=derivative)
         n_qp = nm.shape(whs)[1]
         facet_vols = self.get_facet_vols(region)
         whs = facet_vols * whs[None, :, :, 0]
 
-        base_shape = (self.n_cell, self.n_el_nod, self.n_el_facets) + \
-                     (self.dim,) * diff + \
-                     (n_qp,)
-        inner_facet_base_vals = nm.zeros(base_shape)
-        outer_facet_base_vals = nm.zeros(base_shape)
+        basis_shape = (self.n_cell, self.n_el_nod, self.n_el_facets) + \
+                      (self.dim,) * diff + \
+                      (n_qp,)
+        inner_facet_basis_vals = nm.zeros(basis_shape)
+        outer_facet_basis_vals = nm.zeros(basis_shape)
 
         if derivative:
-            inner_facet_base_vals[:] = facet_bf[0, :, 0, :, :, :]\
+            inner_facet_basis_vals[:] = facet_bf[0, :, 0, :, :, :]\
                                                             .swapaxes(-2, -3).T
         else:
-            inner_facet_base_vals[:] = facet_bf[:, 0, :, 0, :].T
+            inner_facet_basis_vals[:] = facet_bf[:, 0, :, 0, :].T
 
         per_facet_neighbours = self.get_facet_neighbor_idx(region, state.eq_map)
 
         # numpy prepends shape resulting from multiple
         # indexing before remaining shape
         if derivative:
-            outer_facet_base_vals[:] = \
-                inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]]\
+            outer_facet_basis_vals[:] = \
+                inner_facet_basis_vals[0, :, per_facet_neighbours[:, :, 1]]\
                     .swapaxes(-3, -4)
         else:
-            outer_facet_base_vals[:] = \
-                inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]]\
+            outer_facet_basis_vals[:] = \
+                inner_facet_basis_vals[0, :, per_facet_neighbours[:, :, 1]]\
                     .swapaxes(-2, -3)
 
         # fix to flip facet QPs for right integration order
-        return inner_facet_base_vals, outer_facet_base_vals[..., ::-1], whs
+        return inner_facet_basis_vals, outer_facet_basis_vals[..., ::-1], whs
 
     def clear_normals_cache(self, region=None):
         """Clears normals cache for given region or all regions.
@@ -1091,7 +1091,7 @@ class DGField(FEField):
 
             geo_ps = self.gel.poly_space
             ps = self.poly_space
-            bf = self.get_base('v', 0, integral, iels=iels)
+            bf = self.eval_basis('v', 0, integral, iels=iels)
 
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
             mapping = FEMapping(coors, conn, poly_space=geo_ps)
@@ -1186,17 +1186,17 @@ class DGField(FEField):
             qp, weights = self.integral.get_qp(self.gel.name)
             coors = self.mapping.get_physical_qps(qp)
 
-            base_vals_qp = self.poly_space.eval_base(qp)[:, 0, :]
-            # this drops redundant axis that is returned by eval_base due to
+            basis_vals_qp = self.poly_space.eval_basis(qp)[:, 0, :]
+            # this drops redundant axis that is returned by eval_basis due to
             # consistency with derivatives
 
             # left hand, so far only orthogonal basis
-            # for legendre base this can be calculated exactly
+            # for legendre basis this can be calculated exactly
             # in 1D it is: 1 / (2 * nm.arange(self.n_el_nod) + 1)
-            lhs_diag = nm.einsum("q,q...->...", weights, base_vals_qp ** 2)
+            lhs_diag = nm.einsum("q,q...->...", weights, basis_vals_qp ** 2)
 
             rhs_vec = nm.einsum("q,q...,iq...->i...",
-                                weights, base_vals_qp, fun(coors))
+                                weights, basis_vals_qp, fun(coors))
 
             vals = (rhs_vec / lhs_diag)
 
@@ -1269,16 +1269,17 @@ class DGField(FEField):
             bcoors = coors[bc2bfi[:, 1], ::-1, bc2bfi[:, 0], :]
 
             # get facet basis vals
-            base_vals_qp = self.poly_space.eval_base(qp)[:, 0, 0, :]
+            basis_vals_qp = self.poly_space.eval_basis(qp)[:, 0, 0, :]
 
             # solve for boundary cell DOFs
             bc_val = fun(bcoors)
             # this returns singular matrix - projection on the boundary should
             # be into facet dim space
-            #lhs = nm.einsum("q,qd,qc->dc", weights, base_vals_qp, base_vals_qp)
+            #lhs = nm.einsum("q,qd,qc->dc", weights, basis_vals_qp,
+            #                basis_vals_qp)
             # inv_lhs = nm.linalg.inv(lhs)
             # rhs_vec = nm.einsum("q,q...,iq...->i...",
-            #                       weights, base_vals_qp, bc_val)
+            #                       weights, basis_vals_qp, bc_val)
 
         return nods, vals
 
@@ -1383,10 +1384,10 @@ class DGField(FEField):
         if ref_nodes is None:
             # poly_space could provide special nodes
             ref_nodes = self.get_qp('v', self.integral).vals
-        base_vals_node = self.poly_space.eval_base(ref_nodes)[:, 0, :]
+        basis_vals_node = self.poly_space.eval_basis(ref_nodes)[:, 0, :]
         dofs = self.unravel_sol(dofs[:, 0])
 
-        nodal_vals = nm.sum(dofs * base_vals_node.T, axis=1)
+        nodal_vals = nm.sum(dofs * basis_vals_node.T, axis=1)
         nodes = self.mapping.get_physical_qps(ref_nodes)
 
         # import matplotlib.pyplot as plt

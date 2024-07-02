@@ -314,8 +314,8 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
         coors = fcoors[rffield.econn[0]]
         integral = Integral('i', coors=coors, weights=nm.ones_like(coors[:, 0]))
 
-        rcfield.clear_qp_base()
-        bf = rcfield.get_base('v', False, integral)
+        rcfield.clear_qp_basis()
+        bf = rcfield.eval_basis('v', False, integral)
 
         if gel.name == '2_4':
             fsubs = subs
@@ -406,7 +406,7 @@ class H1NodalVolumeField(H1NodalMixin, FEField):
     def interp_v_vals_to_n_vals(self, vec):
         """
         Interpolate a function defined by vertex DOF values using the FE
-        geometry base (P1 or Q1) into the extra nodes, i.e. define the
+        geometry basis (P1 or Q1) into the extra nodes, i.e. define the
         extra DOF values.
         """
         if not self.node_desc.has_extra_nodes():
@@ -418,7 +418,7 @@ class H1NodalVolumeField(H1NodalMixin, FEField):
 
             coors = self.poly_space.node_coors
 
-            bf = self.gel.poly_space.eval_base(coors)
+            bf = self.gel.poly_space.eval_basis(coors)
             bf = bf[:,0,:].copy()
 
             conn = self.econn[:, :self.gel.n_vertex]
@@ -478,9 +478,9 @@ class H1DiscontinuousField(H1NodalMixin, FEField):
     """
     family_name = 'volume_H1_lagrange_discontinuous'
 
-    def _setup_global_base(self):
+    def _setup_global_basis(self):
         """
-        Setup global DOF/base function indices and connectivity of the field.
+        Setup global DOF/basis function indices and connectivity of the field.
         """
         self._setup_facet_orientations()
 
@@ -546,7 +546,7 @@ class H1NodalSurfaceField(H1NodalMixin, FEField):
     def interp_v_vals_to_n_vals(self, vec):
         """
         Interpolate a function defined by vertex DOF values using the FE
-        surface geometry base (P1 or Q1) into the extra nodes, i.e. define the
+        surface geometry basis (P1 or Q1) into the extra nodes, i.e. define the
         extra DOF values.
         """
         if not self.node_desc.has_extra_nodes():

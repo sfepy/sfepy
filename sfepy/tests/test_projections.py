@@ -104,7 +104,7 @@ def test_projection_iga_fem():
 
     ig_omega = ig_domain.create_region('Omega', 'all')
     ig_field = Field.from_args('iga', nm.float64, 1, ig_omega,
-                               approx_order='iga', poly_space_base='iga')
+                               approx_order='iga', poly_space_basis='iga')
     ig_u = FieldVariable('ig_u', 'parameter', ig_field,
                          primary_var_name='(set-to-None)')
 

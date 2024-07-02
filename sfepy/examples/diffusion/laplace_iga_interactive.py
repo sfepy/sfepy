@@ -233,7 +233,7 @@ def main():
     order_increase *= int(order_increase>0)
     field = Field.from_args('fu', nm.float64, 'scalar', omega,
                             approx_order='iga', space='H1',
-                            poly_space_base='iga')
+                            poly_space_basis='iga')
 
     # Variables
     u = FieldVariable('u', 'unknown', field) # unknown function

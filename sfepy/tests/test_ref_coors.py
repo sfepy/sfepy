@@ -89,7 +89,7 @@ def test_ref_coors_iga():
     omega = domain.create_region('Omega', 'all')
 
     field = Field.from_args('iga', nm.float64, 'scalar', omega,
-                            approx_order='iga', poly_space_base='iga')
+                            approx_order='iga', poly_space_basis='iga')
 
     mcoors = field.nurbs.cps
     conn = field.get_econn('cell', field.region)
