@@ -130,6 +130,69 @@ def conv_test(conf, it, err, err0):
 
     return status
 
+def apply_line_search_bt(vec_x0, vec_dx0, it, err_last, conf, fun,
+                         timers, log=None, context=None):
+    """
+    Apply a backtracking line-search.
+    """
+    ls = 1.0
+    vec_dx = vec_dx0
+
+    while 1:
+        vec_x = vec_x0 - vec_dx
+
+        timers.residual.start()
+        try:
+            vec_r = fun(vec_x)
+
+        except ValueError:
+            if (it == 0) or (ls < conf.ls_min):
+                output('giving up!')
+                raise
+
+            else:
+                ok = False
+
+        else:
+            ok = True
+
+        timers.residual.stop()
+
+        if ok:
+            err = nla.norm(vec_r)
+            if not nm.isfinite(err):
+                output('residual:', vec_r)
+                output(nm.isfinite(vec_r).all())
+                raise ValueError('infs or nans in the residual')
+
+            if log is not None:
+                log(err, it)
+
+            if (it == 0) or (err < (err_last * conf.ls_on)):
+                break
+
+            red = conf.ls_red
+            output('linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'
+                   % (it, err, err_last * conf.ls_on, red * ls))
+
+        else: # Failure.
+            if conf.give_up_warp:
+                output('giving up!')
+                break
+
+            red = conf.ls_red_warp
+            output('residual computation failed for iter %d'
+                   ' (new ls: %e)!' % (it, red * ls))
+
+        if ls < conf.ls_min:
+            output('linesearch failed, continuing anyway')
+            break
+
+        ls *= red
+        vec_dx = ls * vec_dx0
+
+    return vec_x, vec_r, err, ok
+
 class Newton(NonlinearSolver):
     r"""
     Solves a nonlinear system :math:`f(x) = 0` using the Newton method.
@@ -160,6 +223,11 @@ class Newton(NonlinearSolver):
             nonlinear iteration relative to the current residual norm by the
             `lin_precision` factor. Ignored for direct linear solvers."""),
         ('step_red', '0.0 < float <= 1.0', 1.0, False,
+         """Step reduction factor. Equivalent to the mixing parameter :math:`a`:
+            :math:`(1 - a) x + a (x + dx) = x + a dx`"""),
+        ('line_search_fun',
+         'function(it, vec_x0, vec_dx0, err_last, conf, fun, timers, log=None)',
+         apply_line_search_bt, False,
          """Step reduction factor. Equivalent to the mixing parameter :math:`a`:
             :math:`(1 - a) x + a (x + dx) = x + a dx`"""),
         ('ls_on', 'float', 0.99999, False,
@@ -251,6 +319,8 @@ class Newton(NonlinearSolver):
         lin_solver = get_default(lin_solver, self.lin_solver)
         iter_hook = get_default(iter_hook, self.iter_hook)
         status = get_default(status, self.status)
+        apply_line_search = get_default(conf.line_search_fun,
+                                        apply_line_search_bt)
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
         eps_a = get_default(ls_eps_a, 1.0)
@@ -267,7 +337,7 @@ class Newton(NonlinearSolver):
 
         vec_x = vec_x0.copy()
         vec_x_last = vec_x0.copy()
-        vec_dx = None
+        vec_dx = 0.0
 
         if self.log is not None:
             self.log.plot_vlines(color='r', linewidth=1.0)
@@ -281,67 +351,17 @@ class Newton(NonlinearSolver):
             if iter_hook is not None:
                 iter_hook(self.context, self, vec_x, it, err, err0)
 
-            ls = 1.0
-            vec_dx0 = vec_dx
-            while 1:
-                timers.residual.start()
-
-                try:
-                    vec_r = fun(vec_x)
-
-                except ValueError:
-                    if (it == 0) or (ls < conf.ls_min):
-                        output('giving up!')
-                        raise
-
-                    else:
-                        ok = False
-
-                else:
-                    ok = True
-
-                timers.residual.stop()
-                if ok:
-                    try:
-                        err = nla.norm(vec_r)
-                    except:
-                        output('infs or nans in the residual:', vec_r)
-                        output(nm.isfinite(vec_r).all())
-                        debug()
-
-                    if self.log is not None:
-                        self.log(err, it)
-
-                    if it == 0:
-                        err0 = err;
-                        break
-                    if err < (err_last * conf.ls_on): break
-                    red = conf.ls_red;
-                    output('linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'
-                           % (it, err, err_last * conf.ls_on, red * ls))
-                else: # Failure.
-                    if conf.give_up_warp:
-                        output('giving up!')
-                        break
-
-                    red = conf.ls_red_warp;
-                    output('residual computation failed for iter %d'
-                           ' (new ls: %e)!' % (it, red * ls))
-
-                if ls < conf.ls_min:
-                    output('linesearch failed, continuing anyway')
-                    break
-
-                ls *= red;
-
-                vec_dx = ls * vec_dx0;
-                vec_x = vec_x_last.copy() - vec_dx
-            # End residual loop.
+            vec_x, vec_r, err, ok = apply_line_search(
+                vec_x_last, vec_dx, it, err_last, conf, fun, timers,
+                log=self.log, context=self.context,
+            )
+            if it == 0:
+                err0 = err
 
             if self.log is not None:
                 self.log.plot_vlines([1], color='g', linewidth=0.5)
 
-            err_last = err;
+            err_last = err
             vec_x_last = vec_x.copy()
 
             condition = conv_test(conf, it, err, err0)
@@ -401,7 +421,7 @@ class Newton(NonlinearSolver):
                            ' then the value set in solver options!'
                            ' (err = %e < %e)' % (lerr, lin_red))
 
-            vec_x -= conf.step_red * vec_dx
+            vec_dx *= conf.step_red
             it += 1
 
         time_stats = timers.get_totals()
