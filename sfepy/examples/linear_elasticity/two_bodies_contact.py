@@ -34,6 +34,7 @@ Usage examples::
 import os.path as op
 from functools import partial
 
+from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.meshio import UserMeshIO
 
@@ -71,6 +72,100 @@ def gen_two_bodies(dims0, shape0, centre0, dims1, shape1, centre1, shift1):
     mesh = Mesh.from_data(name, coors, ngroups, [conn], [mat_id], m0.descs)
 
     return mesh
+
+def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
+                      timers, log=None, context=None):
+    """
+    Apply a backtracking line-search with continuous collision detection from
+    IPC toolkit.
+    """
+    pb = context
+    for eq in pb.equations:
+        for term in eq.terms:
+            if term.name == 'dw_contact_ipc':
+                break
+
+        else:
+            continue
+
+        break
+
+    else:
+        raise ValueError('no dw_contact_ipc in equations!')
+
+    ls = 1.0
+    vec_dx = vec_dx0
+
+    ci = term.ci
+    variables = pb.get_variables()
+    while 1:
+        vec_x = vec_x0 - vec_dx
+        if it > 0:
+            # Determine max. step size using continuous collision detection.
+            u0 = variables.make_full_vec(vec_x0).reshape((-1, ci.dim))
+            u1 = variables.make_full_vec(vec_x).reshape((-1, ci.dim))
+            x0 = ci.smesh.coors + u0[ci.nods]
+            x1 = ci.smesh.coors + u1[ci.nods]
+
+            max_step_size = term.ipc.compute_collision_free_stepsize(
+                ci.collision_mesh, x0, x1,
+            )
+            if max_step_size < 1.0:
+                vec_x = vec_x0 - max_step_size * vec_dx
+
+            ls = min(ls, max_step_size)
+
+        timers.residual.start()
+        try:
+            vec_r = fun(vec_x)
+
+        except ValueError:
+            if (it == 0) or (ls < conf.ls_min):
+                output('giving up!')
+                raise
+
+            else:
+                ok = False
+
+        else:
+            ok = True
+
+        timers.residual.stop()
+
+        if ok:
+            err = nm.linalg.norm(vec_r)
+            if not nm.isfinite(err):
+                output('residual:', vec_r)
+                output(nm.isfinite(vec_r).all())
+                raise ValueError('infs or nans in the residual')
+
+            if log is not None:
+                log(err, it)
+
+            if (it == 0) or (err < (err_last * conf.ls_on)):
+                break
+
+            red = conf.ls_red
+            output('linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'
+                   % (it, err, err_last * conf.ls_on, red * ls))
+
+        else: # Failure.
+            if conf.give_up_warp:
+                output('giving up!')
+                break
+
+            red = conf.ls_red_warp
+            output('residual computation failed for iter %d'
+                   ' (new ls: %e)!' % (it, red * ls))
+
+        if ls < conf.ls_min:
+            output('linesearch failed, continuing anyway')
+            break
+
+        ls *= red
+        vec_dx = ls * vec_dx0
+
+    return vec_x, vec_r, err, ok
 
 def define(
         dims0=(1.0, 0.5),
@@ -190,7 +285,7 @@ def define(
     }
 
     integrals = {
-        'i' : 10,
+        'i' : 2,
     }
 
     if contact == 'builtin':
@@ -216,13 +311,14 @@ def define(
     solvers = {
         'ls' : ('ls.scipy_direct', {}),
         'newton' : ('nls.newton', {
-            'i_max' : 15,
+            'i_max' : 20,
             'eps_a' : 1e-6,
             'eps_r' : 1.0,
             'macheps' : 1e-16,
             # Linear system error < (eps_a * lin_red).
-            'lin_red' : 1e-2,
-            'ls_red' : 0.1,
+            'lin_red' : None,
+            'line_search_fun' : apply_line_search if contact == 'ipc' else None,
+            'ls_red' : 0.5,
             'ls_red_warp' : 0.001,
             'ls_on' : 1.0,
             'ls_min' : 1e-5,
