@@ -343,18 +343,19 @@ class ContactIPCTerm(Term):
             create_adof_conn(nm.arange(state.n_dof), econn, smesh.dim, 0)
         )
 
+        collision_mesh = self.ipc.CollisionMesh(smesh.coors, edges, faces)
+
         self.ci = Struct(smesh=smesh, edges=edges, faces=faces, nods=nods,
-                         econn=econn, dofs=dofs)
+                         econn=econn, dofs=dofs, dim=smesh.dim,
+                         collision_mesh=collision_mesh)
         return self.ci
 
     def get_fargs(self, dhat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         ci = self.get_contact_info(state)
-        smesh = ci.smesh
+        collision_mesh = ci.collision_mesh
 
-        collision_mesh = self.ipc.CollisionMesh(smesh.coors, ci.edges, ci.faces)
-
-        uvec = state().reshape((-1, smesh.dim))[ci.nods]
+        uvec = state().reshape((-1, ci.dim))[ci.nods]
 
         vertices = collision_mesh.rest_positions + uvec
         collisions = self.ipc.Collisions()
