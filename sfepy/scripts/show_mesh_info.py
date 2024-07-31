@@ -25,7 +25,8 @@ def show_mesh_info(options):
     output('bounding box:\n%s'
            % '\n'.join('%s: [%14.7e, %14.7e]' % (name, bbox[0, ii], bbox[1, ii])
                        for ii, name in enumerate('xyz'[:mesh.dim])))
-
+    output('box dimensions:   [%s]'
+           % ', '.join('%14.7e' % ii for ii in (bbox[1] - bbox[0])))
     output('centre:           [%s]'
            % ', '.join('%14.7e' % ii for ii in 0.5 * (bbox[0] + bbox[1])))
     output('coordinates mean: [%s]'
