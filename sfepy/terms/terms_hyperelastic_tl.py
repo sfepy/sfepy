@@ -214,6 +214,8 @@ class OgdenTLTerm(HyperElasticTLBase):
     and :math:`\mathbf{N}^{(k)}`, :math:`k=1, 2, 3` are the eigenvectors of
     :math:`\mathbf{C}`.
 
+    Tangent stiffness is implemented according to sec. 13.8.2 in [3].
+
     :Definition:
 
     .. math::
@@ -234,6 +236,9 @@ class OgdenTLTerm(HyperElasticTLBase):
     Treloar's data. Archive of Applied Mechanics, Vol. 82, No. 9, Pp. 1183-1217
     (2012), DOI `10.1007/s00419-012-0610-z
     <https://dx.doi.org/10.1007/s00419-012-0610-z>`_.
+
+    [3] Crisfield, M. A. Non-linear Finite Element Analysis of Solids and
+    Structures. Volume 2: Advanced Topics. John Wiley and Sons (1997).
     """
     name = 'dw_tl_he_ogden'
     family_data_names = ['det_f', 'sym_c', 'tr_c', 'sym_inv_c']
@@ -253,14 +258,14 @@ class OgdenTLTerm(HyperElasticTLBase):
         return out
 
     def stress_function(self, out, mat, *fargs, **kwargs):
-        det_f, sym_c, _, _ = fargs
+        det_f, sym_c = fargs[:2]
         mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
         coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         # compute principal stretches and directions
         c_mats = sym_c[:, :, [[0, 3, 4], [3, 1, 5], [4, 5, 2]], 0]
         lbds, nks = nm.linalg.eigh(c_mats)
-        lbds = lbds**.5
+        lbds = nm.sqrt(det_f[..., 0]**(-2.0/3.0) * lbds)
 
         # evaluate stress
         n_cells, n_qps, _, _ = out.shape
@@ -275,61 +280,65 @@ class OgdenTLTerm(HyperElasticTLBase):
         return out
 
     @staticmethod
-    def _get_single_tan_mod(total_lbds, nks, det_f, coef, exp):
-        lbds = det_f**(-1/3) * total_lbds
-        _bracket = [
-            (det_f**(-1 / 3) * lbdi)**(exp - 2)
-            -sum([1. / 3 * lbdj**exp / lbdi**2 for lbdj in lbds])
-            for lbdi in lbds]
-        s_k = nm.array([
-            coef * det_f**(-2 / 3) * _bracket_ii
-            for lbdi, _bracket_ii in zip(lbds, _bracket)])
+    def _get_single_tan_mod(total_lbds, nks, det_j, coef, exp):
+        iso_lbds = nm.array([det_j**(-1 / 3) * lbd for lbd in total_lbds])
 
-        dj_dlbd = [det_f / lbdj for lbdj in lbds]
+        s_k = det_j**(-2 / 3) * coef * nm.array([
+            lbd_ii**(exp - 2)
+            -nm.sum([lbd_jj**exp / lbd_ii**2 for lbd_jj in iso_lbds]) / 3
+            for lbd_ii in iso_lbds])
 
-        dlbd_dlbd = det_f**(-1/3) * nm.array([[
-            nm.eye(3)[ii, jj] - lbds[ii] / lbds[jj] / 3
-            for jj in range(3)] for ii, dj_dlbdi in enumerate(dj_dlbd)])
+        dj_dlbd = nm.array([
+            total_lbds[1] * total_lbds[2],
+            total_lbds[0] * total_lbds[2],
+            total_lbds[0] * total_lbds[1],
+        ])
+        dlbd_iso_dlbd_total = det_j**(-1 / 3) * (
+            nm.eye(3) - nm.outer(iso_lbds, 1 / iso_lbds)
+        )
 
-        dsk_dlbd_1 = coef * nm.array([[
-            -2 / 3 * det_f**(-5 / 3) * dj_dlbd[ii] * lbds[kk]**(exp - 2)
-            +det_f**(-2/3) * (exp - 2) * lbds[kk]**(exp - 3) * dlbd_dlbd[kk, ii]
-            for ii in range(3)] for kk in range(3)])
+        dsk_dlbd_1 = nm.array([
+            [-2 / 3 * skk / det_j * dj_dlbd_ii
+             for dj_dlbd_ii in dj_dlbd]
+            for skk in s_k])
+        dsk_dlbd_2 = det_j**(-2 / 3) * coef * nm.array([
+            (exp - 2) * iso_lbd_ii**(exp - 3)
+            * dlbd_iso_dlbd_total[ii]
+            - nm.sum([
+                exp * iso_lbd_jj**(exp - 1)
+                / iso_lbd_ii**2
+                * dlbd_iso_dlbd_total[jj]
+                -2 * iso_lbd_jj**exp
+                / iso_lbd_ii**3
+                * dlbd_iso_dlbd_total[ii]
+                for jj, iso_lbd_jj in enumerate(iso_lbds)
+            ], axis=0) / 3
+            for ii, iso_lbd_ii in enumerate(iso_lbds)
+        ])
+        dsk_dlbd = dsk_dlbd_1 + dsk_dlbd_2
 
-        dsk_dlbd_2 = coef / 3 * nm.array([[
-            -2 / 3 * det_f**(-5 / 3) * dj_dlbd[ii] * nm.sum([
-                lbds[jj]**exp / lbds[kk]**2
-                for jj in range(3)])
-            +det_f**(-2/3) * nm.sum([
-                exp * lbds[jj]**(exp - 1) / lbds[kk]**2 * dlbd_dlbd[jj, ii]
-                -2 * lbds[jj]**exp / lbds[kk]**3 * dlbd_dlbd[kk, ii]
-                for jj in range(3)])
-            for ii in range(3)] for kk in range(3)])
-        dsk_dlbd = dsk_dlbd_1 - dsk_dlbd_2
+        out = nm.zeros((3, 3, 3, 3))
+        for ii in range(3):
+            for jj in range(3):
+                outers_1 = nm.einsum(
+                    'i,j,k,l->ijkl', nks[ii], nks[ii], nks[jj], nks[jj])
+                outers_2 = nm.einsum(
+                    'i,j,k,l->ijkl', nks[ii], nks[jj], nks[ii], nks[jj])
+                outers_3 = nm.einsum(
+                    'i,j,k,l->ijkl', nks[ii], nks[jj], nks[jj], nks[ii])
 
-        tan_mod = nm.zeros((3, 3, 3, 3))
-        for mm, nn, pp, qq in zip(*[ind.flatten()
-                                    for ind in nm.indices(tan_mod.shape)]):
-            for ii, jj in zip(*[ind.flatten() for ind in nm.indices((3, 3))]):
-                tan_mod[mm, nn, pp, qq] += 1. / lbds[jj] * dsk_dlbd[ii, jj] * (
-                    nks[ii, mm] * nks[ii, nn] * nks[jj, pp] * nks[jj, qq])
+                coef = dsk_dlbd[ii, jj] / total_lbds[jj]
+                out += coef * outers_1
+
                 if ii != jj:
-                    if lbds[ii] != lbds[jj]:
-                        tan_mod[mm, nn, pp, qq] += (s_k[jj] - s_k[ii]) / \
-                            (lbds[jj]**2 - lbds[ii]**2) * (
-                                nks[ii, mm] * nks[jj, nn] * nks[ii, pp]
-                                *nks[jj, qq]
-                                +nks[ii, mm] * nks[jj, nn] * nks[jj, pp]
-                                *nks[ii, qq])
+                    if total_lbds[ii] != total_lbds[jj]:
+                        coef = (s_k[jj] - s_k[ii]) / (
+                            total_lbds[jj]**2 - total_lbds[ii]**2)
                     else:
-                        _val = 0.5 * (
-                            dsk_dlbd[ii, ii] - dsk_dlbd[jj, ii]) / lbds[ii]
-                        tan_mod[mm, nn, pp, qq] += _val * (
-                                nks[ii, mm] * nks[jj, nn] * nks[ii, pp]
-                                *nks[jj, qq]
-                                +nks[ii, mm] * nks[jj, nn] * nks[jj, pp]
-                                *nks[ii, qq])
-        return tan_mod
+                        coef = .5 / total_lbds[ii] * (
+                            dsk_dlbd[ii, ii] - dsk_dlbd[ii, jj])
+                    out +=  coef * (outers_2 + outers_3)
+        return out
 
     def tan_mod_function(self, out, mat, *fargs, **kwargs):
         det_f, sym_c, tr_c, inv_c = fargs
