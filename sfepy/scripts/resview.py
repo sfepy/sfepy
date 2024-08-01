@@ -794,7 +794,7 @@ helps = {
         '"cX" - plot only Xth field component; '
         '"e" - print edges; '
         '"fX" - scale factor for warp/glyphs, see --factor option; '
-        '"g - glyphs (for vector fields only), scale by factor; '
+        '"g - glyphs (for vector fields or scalar fields), scale by factor; '
         '"iX" - plot X isosurfaces; '
         '"tX" - plot X streamlines, gradient employed for scalar fields; '
         '"mX" - plot cells with mat_id=X; '
