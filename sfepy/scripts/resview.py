@@ -559,12 +559,33 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar_label = f'|{field}|'
             pipe[-1][scalar] = nm.linalg.norm(field_data, axis=1)
 
-        if 'g' in opts and is_vector_field and is_point_field:  # glyphs
-            pipe[-1][field] *= factor
-            pipe[-1].set_active_vectors(field)
-            pipe.append(pipe[-1].arrows)
-            show_edges = False
-            plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
+        if 'g' in opts and is_point_field:  # glyphs
+            gfield = opts['g']
+            if isinstance(gfield, str):
+                is_gvector_field = ((gfield is not None)
+                                    and (len(pipe[-1][gfield].shape) > 1)
+                                    and (pipe[-1][gfield].shape[1] == dim))
+
+            else:
+                gfield = field
+                is_gvector_field = is_vector_field
+
+            if is_gvector_field:
+                pipe[-1][gfield] *= factor
+                pipe[-1].set_active_vectors(gfield)
+                pipe.append(pipe[-1].arrows)
+                show_edges = False
+                plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
+
+            else:
+                g_pipe = pipe[-1].compute_derivative(scalars=gfield)
+                g_pipe['gradient'] *= factor
+                g_pipe.set_active_vectors('gradient')
+                pipe.append(g_pipe.arrows)
+                show_edges = False
+                plot_info.append('glyphs=grad(%s), factor=%.2e'
+                                 % (field, factor))
+
         elif 'c' in opts and is_vector_field:  # select field component
             comp = opts['c']
             scalar = field + '_%d' % comp
