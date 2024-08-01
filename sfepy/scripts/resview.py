@@ -591,7 +591,9 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar = field + '_%d' % comp
             pipe[-1][scalar] = field_data[:, comp]
         elif 't' in opts:  # streamlines
-            npts = opts.get('t')
+            aux = opts.get('t').split(',')
+            npts = int(aux[0])
+            scalar = aux[1]
             if npts is True:
                 npts = 20
 
@@ -617,6 +619,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                                                   max_time=1e12)
 
             pipe.append(streamlines)
+            #pipe.append(streamlines.tube(radius=0.2))
 
         isosurfaces = int(opts.get('i', options.isosurfaces))
         if isosurfaces > 0:  # iso-surfaces
