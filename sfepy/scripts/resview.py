@@ -625,11 +625,16 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             pars = (nm.min(field_data), nm.max(field_data), isosurfaces + 1)
             pipe.append(pipe[-1].contour(nm.linspace(*pars)))
 
+        kwargs = {}
+        if options.color_limits is not None:
+            kwargs['clim'] = options.color_limits
+
         plotter.add_mesh(pipe[-1], scalars=scalar, color=color,
                          style=style, show_edges=show_edges,
                          opacity=opacity,
                          cmap=options.color_map,
-                         show_scalar_bar=False, label=scalar_label)
+                         show_scalar_bar=False, label=scalar_label,
+                         **kwargs)
 
         bnds = pipe[-1].bounds
         if position not in plots:
@@ -653,6 +658,10 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
     if options.show_scalar_bars:
         if scalar_bar_limits is None:
             scalar_bar_limits = {}
+
+            if options.color_limits is not None:
+                scalar_bar_limits = {k: options.color_limits
+                                     for k in scalar_bars.keys()}
 
         width, height = options.scalar_bar_size
         position_x, position_y, shift_x, shift_y = options.scalar_bar_position
@@ -821,6 +830,9 @@ helps = {
         'set opacity [default: %(default)s]',
     'color_map':
         'set color_map, e.g. hot, cool, bone, etc. [default: %(default)s]',
+    'color_limits':
+        'set color bar range (min, max) for scalars'
+        ' [default: given by data limits]',
     'axes_options':
         'options for directional axes, e.g. xlabel="z1" ylabel="z2",'
         ' zlabel="z3"',
@@ -905,6 +917,9 @@ def main():
     parser.add_argument('--color-map', metavar='cmap',
                         action='store', dest='color_map',
                         default='viridis', help=helps['color_map'])
+    parser.add_argument('--color-limits', metavar='min,max',
+                        action=StoreNumberAction, dest='color_limits',
+                        default=None, help=helps['color_limits'])
     parser.add_argument('--axes-options', metavar='options',
                         action=OptsToListAction, nargs="+",
                         dest='axes_options',
