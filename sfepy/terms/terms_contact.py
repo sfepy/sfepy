@@ -355,7 +355,8 @@ class ContactIPCTerm(Term):
                          min_distance=None,
                          vec_r=None,
                          barrier_stiffness=None,
-                         max_barrier_stiffness=None)
+                         max_barrier_stiffness=None,
+                         adapt_stiffness=False)
         return self.ci
 
     def get_fargs(self, avg_mass, stiffness, dhat, virtual, state,
@@ -381,6 +382,7 @@ class ContactIPCTerm(Term):
         actual_stiffness = stiffness
         if actual_stiffness == 0.0: # Adaptive barrier stiffness
             if ci.barrier_stiffness is None:
+                # This should be done at the start of each time step.
                 bp_grad = B.gradient(collisions, collision_mesh, vertices)
                 e_grad = bp_grad.copy()
                 e_grad[:] = 0.0 # WIP
@@ -395,7 +397,8 @@ class ContactIPCTerm(Term):
                 actual_stiffness = ci.barrier_stiffness
                 ci.prev_min_distance = ci.min_distance
 
-            elif diff_var is None:
+            elif ci.adapt_stiffness and (diff_var is None):
+                # Do not update during line-search!
                 actual_stiffness = self.ipc.update_barrier_stiffness(
                     ci.prev_min_distance, ci.min_distance,
                     ci.max_barrier_stiffness, ci.barrier_stiffness,
