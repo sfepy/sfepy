@@ -24,41 +24,22 @@ Usage examples::
 
   sfepy-run sfepy/examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
 
-  sfepy-view two_bodies.mesh.vtk -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
+  sfepy-view two_bodies.h5 -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
 
   python3 sfepy/scripts/plot_logs.py log.txt
 
-  sfepy-view two_bodies.mesh_ebc_nodes.vtk -2
-  sfepy-view two_bodies.mesh_regions.vtk -2
+  sfepy-view two_bodies_ebc_nodes.vtk -2
+  sfepy-view two_bodies_regions.h5 -2
 """
+import os.path as op
+from functools import partial
+
+from sfepy.base.base import output
+from sfepy.base.log import Log
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.meshio import UserMeshIO
 
 import numpy as nm
-
-dim = 2
-
-if dim == 2:
-    dims0 = [1.0, 0.5]
-    shape0 = [4, 4]
-    centre0 = [0, -0.25]
-
-    dims1 = [1.0, 0.5]
-    shape1 = [3, 3]
-    centre1 = [0, 0.25]
-
-    shift1 = [0.0, -0.1]
-
-else:
-    dims0 = [1.0, 1.0, 0.5]
-    shape0 = [2, 2, 2]
-    centre0 = [0, 0, -0.25]
-
-    dims1 = [1.0, 1.0, 0.5]
-    shape1 = [2, 2, 2]
-    centre1 = [0, 0, 0.25]
-
-    shift1 = [0.0, 0.0, -0.1]
 
 def get_bbox(dims, centre, eps=0.0):
     dims = nm.asarray(dims)
@@ -87,118 +68,305 @@ def gen_two_bodies(dims0, shape0, centre0, dims1, shape1, centre1, shift1):
     mat_id = nm.zeros(conn.shape[0], dtype=nm.int32)
     mat_id[m0.n_el:] = 1
 
-    name = 'two_bodies.mesh'
+    name = 'two_bodies'
 
     mesh = Mesh.from_data(name, coors, ngroups, [conn], [mat_id], m0.descs)
 
     return mesh
 
-def mesh_hook(mesh, mode):
-    if mode == 'read':
-        return gen_two_bodies(dims0, shape0, centre0,
-                              dims1, shape1, centre1, shift1)
+def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
+                      timers, log=None, context=None, clog=None):
+    """
+    Apply a backtracking line-search with continuous collision detection from
+    IPC toolkit.
+    """
+    pb = context
+    for eq in pb.equations:
+        for term in eq.terms:
+            if term.name == 'dw_contact_ipc':
+                break
 
-    elif mode == 'write':
-        pass
+        else:
+            continue
 
-def post_process(out, pb, state, extend=False):
-    from sfepy.base.base import Struct
-    from sfepy.discrete.fem import extend_cell_data
+        break
 
-    ev = pb.evaluate
-    gap = ev('dw_contact.i.Contact(contact.epss, v, u)',
-             mode='el_avg', term_mode='gap')
-    gap = extend_cell_data(gap, pb.domain, 'Contact', val=0.0, is_surface=True)
-    out['gap'] = Struct(name='output_data',
-                        mode='cell', data=gap, dofs=None)
+    else:
+        raise ValueError('no dw_contact_ipc in equations!')
 
-    return out
+    ls = 1.0
+    vec_dx = vec_dx0
 
-filename_mesh = UserMeshIO(mesh_hook)
+    variables = pb.get_variables()
 
-options = {
-    'nls' : 'newton',
-    'ls' : 'ls',
-    'post_process_hook' : 'post_process',
-}
+    ci = term.get_contact_info(variables['u'])
+    if it == 0:
+        ci.barrier_stiffness = None
 
-fields = {
-    'displacement': ('real', dim, 'Omega', 1),
-}
+    ls_it = 0
+    while 1:
+        vec_x = vec_x0 - vec_dx
+        if it > 0:
+            # Determine max. step size using continuous collision detection.
+            u0 = variables.make_full_vec(vec_x0).reshape((-1, ci.dim))
+            u1 = variables.make_full_vec(vec_x).reshape((-1, ci.dim))
+            x0 = ci.smesh.coors + u0[ci.nods]
+            x1 = ci.smesh.coors + u1[ci.nods]
 
-materials = {
-    'solid' : ({'D': stiffness_from_youngpoisson(dim,
-                                                 young=1.0, poisson=0.3)},),
-    'contact' : ({'.epss' : 1e1},),
-}
+            max_step_size = term.ipc.compute_collision_free_stepsize(
+                ci.collision_mesh, x0, x1,
+            )
+            if max_step_size < 1.0:
+                vec_x = vec_x0 - max_step_size * vec_dx
 
-variables = {
-    'u' : ('unknown field', 'displacement', 0),
-    'v' : ('test field', 'displacement', 'u'),
-}
+            ls = min(ls, max_step_size)
 
-bbox0 = get_bbox(dims0, centre0, eps=1e-5)
-bbox1 = get_bbox(dims1, nm.asarray(centre1) + nm.asarray(shift1), eps=1e-5)
+        timers.residual.start()
 
-if dim == 2:
-    regions = {
-        'Omega' : 'all',
-        'Omega0' : 'cells of group 0',
-        'Omega1' : 'cells of group 1',
-        'Bottom' : ('vertices in (y < %f)' % bbox0[0, 1], 'facet'),
-        'Top' : ('vertices in (y > %f)' % bbox1[1, 1], 'facet'),
-        'Contact0' : ('(vertices in (y > %f) *v r.Omega0)' % bbox0[1, 1],
-                      'facet'),
-        'Contact1' : ('(vertices in (y < %f) *v r.Omega1)' % bbox1[0, 1],
-                      'facet'),
-        'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
+        ci.adapt_stiffness = ls_it == 0
+
+        try:
+            vec_r = fun(vec_x)
+
+        except ValueError:
+            if (it == 0) or (ls < conf.ls_min):
+                output('giving up!')
+                raise
+
+            else:
+                ok = False
+
+        else:
+            ok = True
+
+        timers.residual.stop()
+
+        if ok:
+            err = nm.linalg.norm(vec_r)
+            if not nm.isfinite(err):
+                output('residual:', vec_r)
+                output(nm.isfinite(vec_r).all())
+                raise ValueError('infs or nans in the residual')
+
+            if log is not None:
+                log(err, it)
+
+            if clog is not None:
+                if it > 0:
+                    clog(ci.min_distance, ci.barrier_stiffness)
+
+                else:
+                    clog(nm.nan, nm.nan)
+
+            if (it == 0) or (err < (err_last * conf.ls_on)):
+                break
+
+            red = conf.ls_red
+            output('linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'
+                   % (it, err, err_last * conf.ls_on, red * ls))
+
+        else: # Failure.
+            if conf.give_up_warp:
+                output('giving up!')
+                break
+
+            red = conf.ls_red_warp
+            output('residual computation failed for iter %d'
+                   ' (new ls: %e)!' % (it, red * ls))
+
+        if ls < conf.ls_min:
+            output('linesearch failed, continuing anyway')
+            break
+
+        ls *= red
+        vec_dx = ls * vec_dx0
+        ls_it += 1
+
+    return vec_x, vec_r, err, ok
+
+def define(
+        dims0=(1.0, 0.5),
+        shape0=(4, 4),
+        centre0=(0, -0.25),
+
+        dims1=(1.0, 0.5),
+        shape1=(3, 3),
+        centre1=(0, 0.25),
+
+        shift10=(0.0, 1e-4),
+        shift11=(0.0, -0.1),
+
+        n_step=5,
+        contact='builtin',
+        output_dir='.',
+):
+    dim = len(dims0)
+    inodir = partial(op.join, output_dir)
+
+    shift11 = nm.array(shift11)
+
+    clog = Log([[r'$d$'], [r'$k$']],
+               xlabels=['', 'all iterations'],
+               ylabels=[r'$d$', r'$k$'],
+               yscales=['log', 'linear'],
+               is_plot=True,
+               log_filename=inodir('clog.txt'),
+               formats=[['%.8e'], ['%.8e']])
+
+    def mesh_hook(mesh, mode):
+        if mode == 'read':
+            return gen_two_bodies(dims0, shape0, centre0,
+                                  dims1, shape1, centre1, shift10)
+
+        elif mode == 'write':
+            pass
+
+    def post_process(out, pb, state, extend=False):
+        from sfepy.base.base import Struct
+        from sfepy.discrete.fem import extend_cell_data
+
+        ev = pb.evaluate
+        gap = ev('dw_contact.i.Contact(contact.epss, v, u)',
+                 mode='el_avg', term_mode='gap')
+        gap = extend_cell_data(gap, pb.domain, 'Contact', val=0.0,
+                               is_surface=True)
+        out['gap'] = Struct(name='output_data',
+                            mode='cell', data=gap, dofs=None)
+
+        return out
+
+    filename_mesh = UserMeshIO(mesh_hook)
+
+    options = {
+        'nls' : 'newton',
+        'ls' : 'ls',
+        'output_dir' : output_dir,
+        'output_format' : 'h5',
+        'post_process_hook' : 'post_process',
     }
 
-else:
-    regions = {
-        'Omega' : 'all',
-        'Omega0' : 'cells of group 0',
-        'Omega1' : 'cells of group 1',
-        'Bottom' : ('vertices in (z < %f)' % bbox0[0, 2], 'facet'),
-        'Top' : ('vertices in (z > %f)' % bbox1[1, 2], 'facet'),
-        'Contact0' : ('(vertices in (z > %f) *v r.Omega0)' % bbox0[1, 2],
-                      'facet'),
-        'Contact1' : ('(vertices in (z < %f) *v r.Omega1)' % bbox1[0, 2],
-                      'facet'),
-        'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
+    bbox0 = get_bbox(dims0, centre0, eps=1e-5)
+    bbox1 = get_bbox(dims1, nm.asarray(centre1) + nm.asarray(shift10), eps=1e-5)
+
+    if dim == 2:
+        regions = {
+            'Omega' : 'all',
+            'Omega0' : 'cells of group 0',
+            'Omega1' : 'cells of group 1',
+            'Bottom' : ('vertices in (y < %f)' % bbox0[0, 1], 'facet'),
+            'Top' : ('vertices in (y > %f)' % bbox1[1, 1], 'facet'),
+            'Contact0' : ('(vertices in (y > %f) *v r.Omega0)' % bbox0[1, 1],
+                          'facet'),
+            'Contact1' : ('(vertices in (y < %f) *v r.Omega1)' % bbox1[0, 1],
+                          'facet'),
+            'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
+        }
+
+    else:
+        regions = {
+            'Omega' : 'all',
+            'Omega0' : 'cells of group 0',
+            'Omega1' : 'cells of group 1',
+            'Bottom' : ('vertices in (z < %f)' % bbox0[0, 2], 'facet'),
+            'Top' : ('vertices in (z > %f)' % bbox1[1, 2], 'facet'),
+            'Contact0' : ('(vertices in (z > %f) *v r.Omega0)' % bbox0[1, 2],
+                          'facet'),
+            'Contact1' : ('(vertices in (z < %f) *v r.Omega1)' % bbox1[0, 2],
+                          'facet'),
+            'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
+        }
+
+    fields = {
+        'displacement': ('real', dim, 'Omega', 1),
     }
 
-ebcs = {
-    'fixb' : ('Bottom', {'u.all' : 0.0}),
-    'fixt' : ('Top', {'u.all' : 0.0}),
-}
+    variables = {
+        'u' : ('unknown field', 'displacement', 0),
+        'v' : ('test field', 'displacement', 'u'),
+    }
 
-integrals = {
-    'i' : 10,
-}
+    ebcs = {
+        'fixb' : ('Bottom', {'u.all' : 0.0}),
+        'fixt' : ('Top', {'u.all' : 'move_top'}),
+    }
 
-equations = {
-    'elasticity' :
-    """dw_lin_elastic.2.Omega(solid.D, v, u)
-     + dw_contact.i.Contact(contact.epss, v, u)
-     = 0""",
-}
+    def move_top(ts, coors, bc, problem, **kwargs):
+        val = nm.empty_like(coors)
+        val[:] = ts.nt * shift11
+        return val
 
-solvers = {
-    'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton', {
-            'i_max' : 5,
+    functions = {
+        'move_top' : (move_top,),
+    }
+
+    materials = {
+        'solid' : ({
+            'D' : stiffness_from_youngpoisson(dim, young=1.0, poisson=0.3),
+        },),
+        'contact' : ({
+            '.m' : 1.0e-2,
+            '.k' : 0.0, # 0 = Adaptive barrier stiffness.
+            '.dhat' : 1e-2,
+            '.epss' : 1e+1,
+        },),
+    }
+
+    integrals = {
+        'i' : 2,
+    }
+
+    if contact == 'builtin':
+        equations = {
+            'elasticity' :
+            """
+               dw_lin_elastic.2.Omega(solid.D, v, u)
+             + dw_contact.i.Contact(contact.epss, v, u)
+             = 0
+            """,
+        }
+
+    else:
+        equations = {
+            'elasticity' :
+            """
+               dw_lin_elastic.2.Omega(solid.D, v, u)
+             + dw_contact_ipc.i.Contact(contact.m, contact.k, contact.dhat, v, u)
+             = 0
+            """,
+        }
+
+    if contact == 'ipc':
+        apply_ls = partial(apply_line_search, clog=clog)
+
+    else:
+        apply_ls = None
+
+    solvers = {
+        'ls' : ('ls.scipy_direct', {}),
+        'newton' : ('nls.newton', {
+            'i_max' : 20,
             'eps_a' : 1e-6,
             'eps_r' : 1.0,
             'macheps' : 1e-16,
             # Linear system error < (eps_a * lin_red).
-            'lin_red' : 1e-2,
-            'ls_red' : 0.1,
+            'lin_red' : None,
+            'line_search_fun' : apply_ls,
+            'ls_red' : 0.5,
             'ls_red_warp' : 0.001,
-            'ls_on' : 100.1,
+            'ls_on' : 1.0,
             'ls_min' : 1e-5,
             'check' : 0,
             'delta' : 1e-8,
-            # 'log' : {'text' : 'log.txt', 'plot' : None},
-    })
-}
+            'log' : {'text' : inodir('log.txt'), 'plot' : None},
+        }),
+        'ts' : ('ts.simple', {
+            't0'     : 0.0,
+            't1'     : 1.0,
+            'dt'     : None,
+            'n_step' : n_step, # has precedence over dt!
+            'quasistatic' : True,
+            'verbose' : 1,
+        }),
+    }
+
+    return locals()
