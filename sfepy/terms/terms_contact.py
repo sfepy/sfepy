@@ -248,13 +248,16 @@ class ContactIPCTerm(Term):
         \int_{\Gamma_{c}} \sum_{k \in C} \nabla b(d_k, \ul{u})
 
     :Arguments:
-        - material : :math:`\hat{d}`
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
+        - material_m : :math:`m`
+        - material_k : :math:`k`
+        - material_d : :math:`\hat{d}`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
     """
     name = 'dw_contact_ipc'
-    arg_types = ('material', 'virtual', 'state')
-    arg_shapes = {'material' : '.: 1',
+    arg_types = ('material_m', 'material_k', 'material_d', 'virtual', 'state')
+    arg_shapes = {'material_m' : '.: 1', 'material_k' : '.: 1',
+                  'material_d' : '.: 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     integration = 'facet'
 
@@ -347,10 +350,15 @@ class ContactIPCTerm(Term):
 
         self.ci = Struct(smesh=smesh, edges=edges, faces=faces, nods=nods,
                          econn=econn, dofs=dofs, dim=smesh.dim,
-                         collision_mesh=collision_mesh)
+                         collision_mesh=collision_mesh,
+                         prev_min_distance=None,
+                         min_distance=None,
+                         vec_r=None,
+                         barrier_stiffness=None,
+                         max_barrier_stiffness=None)
         return self.ci
 
-    def get_fargs(self, dhat, virtual, state,
+    def get_fargs(self, avg_mass, stiffness, dhat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         ci = self.get_contact_info(state)
         collision_mesh = ci.collision_mesh
@@ -361,13 +369,55 @@ class ContactIPCTerm(Term):
         collisions = self.ipc.Collisions()
         collisions.build(collision_mesh, vertices, dhat)
 
+        ci.min_distance = collisions.compute_minimum_distance(
+            collision_mesh, vertices,
+        )
+        ci.bbox_diagonal = self.ipc.world_bbox_diagonal_length(vertices)
+
         B = self.ipc.BarrierPotential(dhat)
         barrier_potential = B(collisions, collision_mesh, vertices)
         output('barrier potential:', barrier_potential)
+
+        actual_stiffness = stiffness
+        if actual_stiffness == 0.0: # Adaptive barrier stiffness
+            if ci.barrier_stiffness is None:
+                bp_grad = B.gradient(collisions, collision_mesh, vertices)
+                e_grad = bp_grad.copy()
+                e_grad[:] = 0.0 # WIP
+
+                (ci.barrier_stiffness,
+                 ci.max_barrier_stiffness) = self.ipc.initial_barrier_stiffness(
+                     ci.bbox_diagonal,
+                     B.barrier,
+                     dhat, avg_mass,
+                     e_grad, bp_grad,
+                 )
+                actual_stiffness = ci.barrier_stiffness
+                ci.prev_min_distance = ci.min_distance
+
+            elif diff_var is None:
+                actual_stiffness = self.ipc.update_barrier_stiffness(
+                    ci.prev_min_distance, ci.min_distance,
+                    ci.max_barrier_stiffness, ci.barrier_stiffness,
+                    ci.bbox_diagonal,
+                )
+                ci.barrier_stiffness = actual_stiffness
+                ci.prev_min_distance = ci.min_distance
+
+            else:
+                actual_stiffness = ci.barrier_stiffness
+
+        else:
+            ci.barrier_stiffness = actual_stiffness
+
+        output('min. distance::', ci.min_distance)
+        output('barrier stiffness:', actual_stiffness)
+
         if diff_var is None:
             bp_grad = B.gradient(collisions, collision_mesh, vertices)
 
-            out_cc = (bp_grad, ci.dofs, state)
+            out_cc = (actual_stiffness * bp_grad,
+                      ci.dofs, state)
 
         else:
             bp_hess = B.hessian(collisions, collision_mesh, vertices)
@@ -379,6 +429,7 @@ class ContactIPCTerm(Term):
             else:
                 vals = nm.array([], dtype=bp_hess.dtype)
 
-            out_cc = (vals, ci.dofs[ir], ci.dofs[ic], state, state)
+            out_cc = (actual_stiffness * vals, ci.dofs[ir],
+                      ci.dofs[ic], state, state)
 
         return self.function_weak, out_cc
