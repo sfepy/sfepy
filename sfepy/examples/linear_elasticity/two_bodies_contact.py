@@ -98,10 +98,15 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
     vec_dx = vec_dx0
 
     variables = pb.get_variables()
+
+    ci = term.get_contact_info(variables['u'])
+    if it == 0:
+        ci.barrier_stiffness = None
+
+    ls_it = 0
     while 1:
         vec_x = vec_x0 - vec_dx
         if it > 0:
-            ci = term.ci
             # Determine max. step size using continuous collision detection.
             u0 = variables.make_full_vec(vec_x0).reshape((-1, ci.dim))
             u1 = variables.make_full_vec(vec_x).reshape((-1, ci.dim))
@@ -117,6 +122,9 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
             ls = min(ls, max_step_size)
 
         timers.residual.start()
+
+        ci.adapt_stiffness = ls_it == 0
+
         try:
             vec_r = fun(vec_x)
 
@@ -172,6 +180,7 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
 
         ls *= red
         vec_dx = ls * vec_dx0
+        ls_it += 1
 
     return vec_x, vec_r, err, ok
 
