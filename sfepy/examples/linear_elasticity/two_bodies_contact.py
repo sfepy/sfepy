@@ -24,17 +24,18 @@ Usage examples::
 
   sfepy-run sfepy/examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
 
-  sfepy-view two_bodies.vtk -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
+  sfepy-view two_bodies.h5 -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
 
   python3 sfepy/scripts/plot_logs.py log.txt
 
   sfepy-view two_bodies_ebc_nodes.vtk -2
-  sfepy-view two_bodies_regions.vtk -2
+  sfepy-view two_bodies_regions.h5 -2
 """
 import os.path as op
 from functools import partial
 
 from sfepy.base.base import output
+from sfepy.base.log import Log
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.meshio import UserMeshIO
 
@@ -74,7 +75,7 @@ def gen_two_bodies(dims0, shape0, centre0, dims1, shape1, centre1, shift1):
     return mesh
 
 def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
-                      timers, log=None, context=None):
+                      timers, log=None, context=None, clog=None):
     """
     Apply a backtracking line-search with continuous collision detection from
     IPC toolkit.
@@ -96,11 +97,11 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
     ls = 1.0
     vec_dx = vec_dx0
 
-    ci = term.ci
     variables = pb.get_variables()
     while 1:
         vec_x = vec_x0 - vec_dx
         if it > 0:
+            ci = term.ci
             # Determine max. step size using continuous collision detection.
             u0 = variables.make_full_vec(vec_x0).reshape((-1, ci.dim))
             u1 = variables.make_full_vec(vec_x).reshape((-1, ci.dim))
@@ -141,6 +142,13 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
 
             if log is not None:
                 log(err, it)
+
+            if clog is not None:
+                if it > 0:
+                    clog(ci.min_distance, ci.barrier_stiffness)
+
+                else:
+                    clog(nm.nan, nm.nan)
 
             if (it == 0) or (err < (err_last * conf.ls_on)):
                 break
@@ -187,6 +195,14 @@ def define(
     inodir = partial(op.join, output_dir)
 
     shift11 = nm.array(shift11)
+
+    clog = Log([[r'$d$'], [r'$k$']],
+               xlabels=['', 'all iterations'],
+               ylabels=[r'$d$', r'$k$'],
+               yscales=['log', 'linear'],
+               is_plot=True,
+               log_filename=inodir('clog.txt'),
+               formats=[['%.8e'], ['%.8e']])
 
     def mesh_hook(mesh, mode):
         if mode == 'read':
@@ -279,6 +295,8 @@ def define(
             'D' : stiffness_from_youngpoisson(dim, young=1.0, poisson=0.3),
         },),
         'contact' : ({
+            '.m' : 1.0e-2,
+            '.k' : 0.0, # 0 = Adaptive barrier stiffness.
             '.dhat' : 1e-2,
             '.epss' : 1e+1,
         },),
@@ -303,10 +321,16 @@ def define(
             'elasticity' :
             """
                dw_lin_elastic.2.Omega(solid.D, v, u)
-             + dw_contact_ipc.i.Contact(contact.dhat, v, u)
+             + dw_contact_ipc.i.Contact(contact.m, contact.k, contact.dhat, v, u)
              = 0
             """,
         }
+
+    if contact == 'ipc':
+        apply_ls = partial(apply_line_search, clog=clog)
+
+    else:
+        apply_ls = None
 
     solvers = {
         'ls' : ('ls.scipy_direct', {}),
@@ -317,7 +341,7 @@ def define(
             'macheps' : 1e-16,
             # Linear system error < (eps_a * lin_red).
             'lin_red' : None,
-            'line_search_fun' : apply_line_search if contact == 'ipc' else None,
+            'line_search_fun' : apply_ls,
             'ls_red' : 0.5,
             'ls_red_warp' : 0.001,
             'ls_on' : 1.0,
