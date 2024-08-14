@@ -223,17 +223,19 @@ class MassADTerm(Term):
     """
     name = 'dw_mass_ad'
     arg_types = (('material', 'virtual', 'state'),)
-    arg_shapes = {'material' : '1, 1',
-                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    arg_shapes = [{'material' : '1, 1',
+                   'virtual' : ('D', 'state'), 'state' : 'D'},
+                  {'virtual' : (1, 'state'), 'state' : 1}]
     modes = ('weak',)
     diff_info = {'material' : 1}
+    integration = ('cell', 'facet')
 
     def get_fargs(self, material_density, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
-        vecu = jnp.array(state().reshape((-1, vgmap.dim)))
+        vecu = jnp.array(state().reshape((-1, state.n_components)))
         econn = state.field.get_econn(self.integration, self.region)
         # Transpose is required to have sfepy order (DBD).
         cu = vecu[econn].transpose((0, 2, 1))
