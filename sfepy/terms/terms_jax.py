@@ -97,7 +97,7 @@ class LinearElasticLADTerm(Term):
 
     def get_fargs(self, material1, material2, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vgmap, _ = self.get_mapping(state)
+        vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
         vecu = jnp.array(state().reshape((-1, vgmap.dim)))
@@ -159,7 +159,7 @@ class LinearElasticYPADTerm(Term):
 
     def get_fargs(self, material1, material2, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vgmap, _ = self.get_mapping(state)
+        vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
         vecu = jnp.array(state().reshape((-1, vgmap.dim)))
@@ -230,7 +230,7 @@ class MassADTerm(Term):
 
     def get_fargs(self, material_density, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vgmap, _ = self.get_mapping(state)
+        vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
         vecu = jnp.array(state().reshape((-1, vgmap.dim)))
