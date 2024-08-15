@@ -18,6 +18,16 @@ except ImportError:
 from sfepy.terms import Term
 from sfepy.mechanics.matcoefs import lame_from_youngpoisson
 
+def get_state_per_cell(term, state):
+    aux = state(step=term.arg_steps[state.name],
+                derivative=term.arg_derivatives[state.name])
+    vec = aux.reshape((-1, state.n_components))
+    econn = state.field.get_econn(term.integration, term.region)
+    # Transpose is required to have sfepy order (DBD).
+    cstate = vec[econn].transpose((0, 2, 1))
+
+    return cstate
+
 @jax.jit
 def get_strain(gu):
     return 0.5 * (gu + gu.T)
@@ -100,10 +110,7 @@ class LinearElasticLADTerm(Term):
         vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
-        vecu = jnp.array(state().reshape((-1, vgmap.dim)))
-        econn = state.field.get_econn(self.integration, self.region)
-        # Transpose is required to have sfepy order (DBD).
-        cu = vecu[econn].transpose((0, 2, 1))
+        cu = get_state_per_cell(self, state)
 
         lam = material1[0, 0, 0, 0]
         mu = material2[0, 0, 0, 0]
@@ -162,10 +169,7 @@ class LinearElasticYPADTerm(Term):
         vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
-        vecu = jnp.array(state().reshape((-1, vgmap.dim)))
-        econn = state.field.get_econn(self.integration, self.region)
-        # Transpose is required to have sfepy order (DBD).
-        cu = vecu[econn].transpose((0, 2, 1))
+        cu = get_state_per_cell(self, state)
 
         young = material1[0, 0, 0, 0]
         poisson = material2[0, 0, 0, 0]
@@ -235,10 +239,7 @@ class MassADTerm(Term):
         vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
-        vecu = jnp.array(state().reshape((-1, state.n_components)))
-        econn = state.field.get_econn(self.integration, self.region)
-        # Transpose is required to have sfepy order (DBD).
-        cu = vecu[econn].transpose((0, 2, 1))
+        cu = get_state_per_cell(self, state)
 
         density = material_density[0, 0, 0, 0]
         if diff_var is None:
@@ -365,10 +366,7 @@ class NeoHookeanTLADTerm(Term):
         vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
-        vecu = state().reshape((-1, vgmap.dim))
-        econn = state.field.get_econn(self.integration, self.region)
-        # Transpose is required to have sfepy order (DBD).
-        cu = vecu[econn].transpose((0, 2, 1))
+        cu = get_state_per_cell(self, state)
 
         mu = material[0, 0, 0, 0]
         if diff_var is None:
@@ -474,10 +472,7 @@ class OgdenTLADTerm(Term):
         vgmap, _ = self.get_mapping(virtual)
         sgmap, _ = self.get_mapping(state)
 
-        vecu = state().reshape((-1, vgmap.dim))
-        econn = state.field.get_econn(self.integration, self.region)
-        # Transpose is required to have sfepy order (DBD).
-        cu = vecu[econn].transpose((0, 2, 1))
+        cu = get_state_per_cell(self, state)
 
         mu = material_mu[0, 0, 0, 0]
         alpha = material_alpha[0, 0, 0, 0]
