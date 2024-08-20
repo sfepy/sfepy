@@ -1436,6 +1436,45 @@ class EDivGradTerm(ETermBase):
 
         return fun
 
+
+class ESurfXTerm(ETermBase):
+    r"""
+    Vector field XXX term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \nu \ul{v}\cdot(\nabla \ul{u} \cdot \ul{n})
+
+    :Arguments:
+        - material: :math:`\nu` (viscosity, optional)
+        - virtual/parameter_1: :math:`\ul{v}`
+        - state/parameter_2: :math:`\ul{u}`
+    """
+    name = 'de_surfX'
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                  {'opt_material' : None}]
+    modes = ('weak', 'eval')
+    integration = 'facet_extra'
+
+    def get_function(self, mat, virtual, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        normals = self.get_normals(state)
+        if mat is None:
+            fun = self.make_function(
+                'i,i.j,j', virtual, state, normals, mode=mode, diff_var=diff_var,
+            )
+
+        else:
+            fun = self.make_function(
+                '00,i,i.j,j', mat, virtual, state, normals, mode=mode, diff_var=diff_var,
+            )
+
+        return fun
+
 class EConvectTerm(ETermBase):
     r"""
     Nonlinear convective term.
