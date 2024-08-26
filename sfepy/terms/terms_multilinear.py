@@ -1437,9 +1437,9 @@ class EDivGradTerm(ETermBase):
         return fun
 
 
-class ESurfXTerm(ETermBase):
+class StokesTractionTerm(ETermBase):
     r"""
-    Vector field XXX term.
+    Surface traction term for Stokes flow problem.
 
     :Definition:
 
@@ -1451,7 +1451,7 @@ class ESurfXTerm(ETermBase):
         - virtual/parameter_1: :math:`\ul{v}`
         - state/parameter_2: :math:`\ul{u}`
     """
-    name = 'de_surfX'
+    name = 'de_stokes_traction'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
