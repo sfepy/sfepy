@@ -37,9 +37,12 @@ The released versions of SfePy can be installed as follows.
 - Using `conda`_:
 
   #. Install `miniforge`_. The miniforge distribution contains the minimal
-     installers for `Conda`_ and `Mamba`_ specific to `conda-forge`_. If you
-     have a ``.condarc`` file in your home directory, remove the ``defaults``
-     channel to avoid a potential `Anaconda`_ terms of service violation.
+     installers for `Conda`_ and `Mamba`_ specific to `conda-forge`_. The
+     packages are automatically pulled from the ``conda-forge`` channel. In
+     case of a prior installation, remove the ``defaults`` channel to avoid a
+     potential `Anaconda`_ terms of service violation::
+
+       conda config --remove channels defaults
 
   #. Install `sfepy`::
 
