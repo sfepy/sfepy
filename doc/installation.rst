@@ -158,7 +158,7 @@ Other dependencies/suggestions:
 
 - Mesh generation tools use `pexpect` and `gmsh` or `tetgen`.
 - `IPython`_ is recommended over the regular Python shell to fluently follow
-  some parts of primer/tutorial (see :ref:`using-ipython`).
+  some parts of primer/tutorial.
 - `MUMPS`_ library for using MUMPS linear direct solver
   (real and complex arithmetic, parallel factorization)
 
@@ -280,51 +280,6 @@ to turn on bound checks in the low level C functions, and recompile the code::
     python setup.py build_ext --inplace
 
 Then re-run your code and report the output to the `SfePy mailing list`_.
-
-.. _using-ipython:
-
-Using IPython
--------------
-
-We generally recommend to use (a customized) `IPython`_ interactive shell over
-the regular Python interpreter when following :doc:`tutorial` or
-:doc:`primer` (or even for any regular interactive work with *SfePy*).
-
-Install `IPython`_ (as a generic part of your selected distribution) and then
-customize it to your choice.
-
-Depending on your IPython usage, you can customize your `default` profile or
-create a *SfePy* specific new one as follows:
-
-#. Create a new *SfePy* profile::
-
-     ipython profile create sfepy
-
-#. Open the ``~/.ipython/profile_sfepy/ipython_config.py`` file in a text
-   editor and add/edit after the ``c = get_config()`` line:
-
-   .. sourcecode:: python
-
-      exec_lines = [
-          'import numpy as nm',
-          'import matplotlib as mpl',
-          'mpl.use("WXAgg")',
-      #
-      # Add your preferred SfePy customization here...
-      #
-      ]
-
-      c.InteractiveShellApp.exec_lines = exec_lines
-      c.TerminalIPythonApp.gui = 'wx'
-      c.TerminalInteractiveShell.colors = 'Linux' # NoColor, Linux, or LightBG
-
-   Please note, that generally it is not recommended to use `star` (*)
-   imports here.
-
-#. Run the customized IPython shell::
-
-     ipython --profile=sfepy
-
 
 .. _multi_platform_distributions_notes:
 

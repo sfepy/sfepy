@@ -149,9 +149,8 @@ should look there.
 Exploring the Code
 ------------------
 
-It is convenient to install IPython (see also :ref:`using-ipython`) to have the
-tab completion available. Moreover, all SfePy classes can be easily examined by
-printing them::
+It is convenient to install IPython to have the tab completion available.
+Moreover, all SfePy classes can be easily examined by printing them::
 
     In [1]: from sfepy.discrete.fem import Mesh
 
