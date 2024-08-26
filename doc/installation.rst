@@ -52,6 +52,9 @@ If the installation succeeded, proceed with `Testing Installation`_.
 Using SfePy Docker Images
 ---------------------------
 
+**WARNING:** The image was not yet updated to use `miniforge`_ instead of
+`Anaconda`_, so read the Anaconda's terms of service carefully!
+
 Besides the classical installation we also provide official Docker images
 with ready-to-run Anaconda and *SfePy* installation.
 
