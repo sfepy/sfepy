@@ -8,10 +8,8 @@ See :ref:`introduction_installation` for additional information.
 Pre-built  packages
 -------------------
 
-- `Pre-built *SfePy* packages`_ for `Anaconda`_ Python distribution are
-  available from `conda-forge`_ channel for all supported platforms. (See
-  :ref:`multi_platform_distributions_notes` for further details.)
-
+- `Pre-built *SfePy* packages`_ for the `miniforge`_  distribution are
+  available from `conda-forge`_ channel for all supported platforms.
 - Experimental docker image: `<https://github.com/sfepy/sfepy-docker>`_.
 
 Git repository

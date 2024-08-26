@@ -23,28 +23,6 @@ Note: Depending on Python installation and OS used, replacing ``python`` by
 ``python3`` might be required in all the commands below
 (e.g. in :ref:`compilation`) in order to use Python 3.
 
-.. _Python_distribution:
-
-Notes on selecting Python Distribution
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-It is only matter of taste to use either native OS Python installation, `pip`,
-or any other suitable distribution. On all supported platforms we could
-recommend multi-platform scientific Python distributions `Anaconda`_ as
-easy-to-use, stable and up-to-date Python distribution with all the required
-dependencies (including pre-built `sfepy` package). See also `Notes on
-Multi-platform Python Distributions`_ for further details.
-
-On different platforms the following options can be recommended:
-
-- **Linux**: `Anaconda`_, OS native installation, if available, or `pip`_.
-
-- **macOS**: `Anaconda`_.
-
-- **Windows**: free versions of commercial scientific Python distributions
-  `Anaconda`_ or `Enthought Deployment Manager`_ . In addition a completely free
-  open-source portable distribution `WinPython`_ can be used.
-
 .. _installing_sfepy:
 
 Installing SfePy
@@ -56,11 +34,16 @@ The released versions of SfePy can be installed as follows.
 
     pip install sfepy
 
-- Using `Anaconda`_: install `sfepy` from `conda-forge`_ channel::
+- Using `conda`_:
 
-    conda install -c conda-forge sfepy
+  #. Install `miniforge`_. The miniforge distribution contains the minimal
+     installers for `Conda`_ and `Mamba`_ specific to `conda-forge`_. If you
+     have a ``.condarc`` file in your home directory, remove the ``defaults``
+     channel to avoid a potential `Anaconda`_ terms of service violation.
 
-  See `Notes on Multi-platform Python Distributions`_ for additional notes.
+  #. Install `sfepy`::
+
+       conda install sfepy
 
 If the installation succeeded, proceed with `Testing Installation`_.
 
@@ -224,7 +207,7 @@ or::
 
   conda install pytest
 
-when working in `Anaconda`_. If *SfePy* was installed, it can be tested using
+when working in `miniforge`_. If *SfePy* was installed, it can be tested using
 the command::
 
   sfepy-test
@@ -280,70 +263,3 @@ to turn on bound checks in the low level C functions, and recompile the code::
     python setup.py build_ext --inplace
 
 Then re-run your code and report the output to the `SfePy mailing list`_.
-
-.. _multi_platform_distributions_notes:
-
-Notes on Multi-platform Python Distributions
---------------------------------------------
-
-Anaconda
-^^^^^^^^
-
-We highly recommend this scientific-oriented Python distribution.
-
-(Currently regularly tested by developers on *SfePy* releases
-with Python 3.6 64-bit on Ubuntu 16.04 LTS, Windows 8.1+ and macOS 10.12+.)
-
-Download appropriate `Anaconda`_ Python 3.x installer package and follow
-install instructions. We recommend to choose *user-level* install option (no
-admin privileges required).
-
-Anaconda can be used for:
-
-#. installing the latest release of *SfePy*  directly from the `conda-forge`_
-   channel (see `sfepy-feedstock`_). In this case, follow the instructions
-   in `Installing SfePy`_.
-
-   Installing/upgrading *SfePy*  from the conda-forge channel can also be
-   achieved by adding `conda-forge`_ to your channels with::
-
-     conda config --add channels conda-forge
-
-   Once the `conda-forge`_ channel has been enabled, *SfePy* can be installed
-   with::
-
-     conda install sfepy
-
-   It is possible to list all of the versions of *SfePy*  available on your
-   platform with::
-
-     conda search sfepy --channel conda-forge
-
-#. installing the *SfePy* dependencies only - then proceed with the
-   :ref:`installing_from_sources` instructions.
-
-   In this case, install the missing/required packages using built-in `conda`
-   package manager::
-
-     conda install wxpython
-
-   See `conda help` for further information.
-
-Occasionally, you should check for distribution and/or installed packages
-updates (there is no built-in automatic update mechanism available)::
-
-  conda update conda
-  conda update anaconda
-  conda update <package>
-
-or try::
-
-  conda update --all
-
-
-Compilation of C Extension Modules on Windows
-"""""""""""""""""""""""""""""""""""""""""""""
-
-To build *SfePy* extension modules, included `mingw-w32/64`_ compiler tools
-should work fine. If you encounter any problems, we recommend to install and
-use Microsoft `Visual C++ Build Tools`_ instead (see `Anaconda FAQ`_).
