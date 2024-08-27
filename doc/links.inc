@@ -39,7 +39,10 @@
 
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
 .. _continuum analytics: http://www.continuum.io/
+.. _conda: https://conda.io/
 .. _conda-forge: https://conda-forge.github.io/
+.. _miniforge: https://github.com/conda-forge/miniforge
+.. _mamba: https://github.com/mamba-org/mamba
 .. _Pre-built *SfePy* packages: https://anaconda.org/conda-forge/sfepy
 .. _sfepy-feedstock: https://github.com/conda-forge/sfepy-feedstock
 .. _pip: https://pip.pypa.io/en/stable/

@@ -28,7 +28,7 @@
    There is also a preliminary support for the isogeometric analysis,
    outlined in :ref:`isogeometric_analysis`.
 
-   The easiest way to install SfePy is to use `Anaconda`_ or `pip`_, see
+   The easiest way to install SfePy is to use `pip`_ or `conda`_, see
    :ref:`introduction_installation`.
 
    **License:** :doc:`BSD <license>`

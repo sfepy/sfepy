@@ -47,8 +47,7 @@ All functions of *SfePy* package can be also used interactively (see
 :ref:`sec-interactive-example-linear-elasticity` for instance).
 
 We recommend to use the `IPython`_ interactive shell for the best fluent user
-experience. You can customize your `IPython` startup profile as described in
-:ref:`using-ipython`.
+experience.
 
 Basic Notions
 -------------
