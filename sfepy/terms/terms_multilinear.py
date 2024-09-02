@@ -114,7 +114,8 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
             arg = dargs[arg_name]
             if val_name == 'dofs':
                 step_cache = arg.arg.evaluate_cache.setdefault('dofs', {})
-                cache = step_cache.setdefault(0, {})
+                step = arg.term.arg_steps[arg.name]
+                cache = step_cache.setdefault(step, {})
                 op = arg.get_dofs(cache, expr_cache, oname)
 
             elif val_name == 'bf':
