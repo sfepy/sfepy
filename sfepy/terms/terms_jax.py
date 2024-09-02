@@ -22,7 +22,7 @@ def get_state_per_cell(term, state):
     aux = state(step=term.arg_steps[state.name],
                 derivative=term.arg_derivatives[state.name])
     vec = aux.reshape((-1, state.n_components))
-    econn = state.field.get_econn(term.integration, term.region)
+    econn = state.field.get_econn(term.act_integration, term.region)
     # Transpose is required to have sfepy order (DBD).
     cstate = vec[econn].transpose((0, 2, 1))
 
