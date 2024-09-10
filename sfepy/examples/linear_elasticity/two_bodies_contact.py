@@ -99,6 +99,8 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
     pb = context
     term = find_contact_ipc_term(pb.equations)
 
+    select_other = lambda term: term.name != 'dw_contact_ipc'
+
     ls = 1.0
     vec_dx = vec_dx0
 
@@ -131,7 +133,17 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
         ci.adapt_stiffness = ls_it == 0
 
         try:
-            vec_r = fun(vec_x)
+            vec_r1 = fun(vec_x, select_term=select_other)
+
+            vec_r1_full = pb.equations.make_full_vec(vec_r1, force_value=0.0)
+            val, iels = term.evaluate(mode='weak', dw_mode='vector',
+                                      standalone=False,
+                                      e_grad_full=vec_r1_full)
+
+            vec_r2 = nm.zeros_like(vec_r1)
+            term.assemble_to(vec_r2, val, iels, mode='vector')
+
+            vec_r = vec_r1 + vec_r2
 
         except ValueError:
             if (it == 0) or (ls < conf.ls_min):
@@ -158,10 +170,11 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
 
             if clog is not None:
                 if it > 0:
-                    clog(ci.min_distance, ci.barrier_stiffness)
+                    clog(ci.min_distance, ci.barrier_stiffness,
+                         ci.bp_grad_norm, ci.e_grad_norm)
 
                 else:
-                    clog(nm.nan, nm.nan)
+                    clog(nm.nan, nm.nan, nm.nan, nm.nan)
 
             if (it == 0) or (err < (err_last * conf.ls_on)):
                 break
@@ -210,13 +223,13 @@ def define(
 
     shift11 = nm.array(shift11)
 
-    clog = Log([[r'$d$'], [r'$k$']],
-               xlabels=['', 'all iterations'],
-               ylabels=[r'$d$', r'$k$'],
-               yscales=['log', 'linear'],
+    clog = Log([[r'$d$'], [r'$k$'], [r'$\nabla B$'], [r'$\nabla E$']],
+               xlabels=['', '', 'all iterations', 'all iterations'],
+               ylabels=[r'$d$', r'$k$', r'$\nabla B$', r'$\nabla E$'],
+               yscales=['log', 'linear', 'linear', 'linear'],
                is_plot=True,
                log_filename=inodir('clog.txt'),
-               formats=[['%.8e'], ['%.8e']])
+               formats=[['%.8e']] * 4)
 
     def mesh_hook(mesh, mode):
         if mode == 'read':
