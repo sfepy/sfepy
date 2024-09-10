@@ -74,14 +74,8 @@ def gen_two_bodies(dims0, shape0, centre0, dims1, shape1, centre1, shift1):
 
     return mesh
 
-def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
-                      timers, log=None, context=None, clog=None):
-    """
-    Apply a backtracking line-search with continuous collision detection from
-    IPC toolkit.
-    """
-    pb = context
-    for eq in pb.equations:
+def find_contact_ipc_term(equations):
+    for eq in equations:
         for term in eq.terms:
             if term.name == 'dw_contact_ipc':
                 break
@@ -93,6 +87,17 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
 
     else:
         raise ValueError('no dw_contact_ipc in equations!')
+
+    return term
+
+def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
+                      timers, log=None, context=None, clog=None):
+    """
+    Apply a backtracking line-search with continuous collision detection from
+    IPC toolkit.
+    """
+    pb = context
+    term = find_contact_ipc_term(pb.equations)
 
     ls = 1.0
     vec_dx = vec_dx0
