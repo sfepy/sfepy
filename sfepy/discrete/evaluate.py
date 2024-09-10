@@ -75,14 +75,17 @@ class Evaluator(Struct):
         problem.set_mesh_coors(coors, update_fields=False, actual=True,
                                clear_all=False)
 
-    def eval_residual(self, vec, is_full=False):
+    def eval_residual(self, vec, is_full=False,
+                      select_term=None):
         if not is_full and self.problem.active_only:
             vec = self.make_full_vec(vec)
 
         else:
             self.problem.equations.variables.apply_ebc(vec)
 
-        vec_r = self.problem.equations.eval_residuals(vec)
+        vec_r = self.problem.equations.eval_residuals(
+            vec, select_term=select_term,
+        )
         if self.matrix_hook is not None:
             vec_r = self.matrix_hook(vec_r, self.problem, call_mode='residual')
 
@@ -97,7 +100,8 @@ class Evaluator(Struct):
 
         return vec_r
 
-    def eval_tangent_matrix(self, vec, mtx=None, is_full=False):
+    def eval_tangent_matrix(self, vec, mtx=None, is_full=False,
+                            select_term=None):
         if isinstance(vec, basestr) and vec == 'linear':
             return get_default(mtx, self.problem.mtx_a)
 
@@ -110,7 +114,9 @@ class Evaluator(Struct):
         pb = self.problem
         if mtx is None:
             mtx = pb.mtx_a
-        mtx = pb.equations.eval_tangent_matrices(vec, mtx)
+        mtx = pb.equations.eval_tangent_matrices(
+            vec, mtx, select_term=select_term,
+        )
 
         if not pb.active_only:
             apply_ebc_to_matrix(mtx, *pb.get_ebc_indices())
