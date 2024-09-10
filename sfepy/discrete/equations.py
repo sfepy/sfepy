@@ -569,7 +569,8 @@ class Equations(Container):
         return self.variables.get_lcbc_operator()
 
     def evaluate(self, names=None, mode='eval', dw_mode='vector',
-                 term_mode=None, diff_vars=None, asm_obj=None):
+                 term_mode=None, diff_vars=None, asm_obj=None,
+                 select_term=None):
         """
         Evaluate the equations.
 
@@ -589,6 +590,9 @@ class Equations(Container):
             differentiated if `dw_mode` is ``'sensitivity'``.
         asm_obj : ndarray or spmatrix
             The object for storing the evaluation result in the ``'weak'`` mode.
+        select_term : function(term)
+            Optional boolean function returning True for terms that should be
+            evaluated.
 
         Returns
         -------
@@ -613,7 +617,8 @@ class Equations(Container):
             for eq in eqs:
                 out = eq.evaluate(mode=mode, dw_mode=dw_mode,
                                   term_mode=term_mode, diff_vars=diff_vars,
-                                  asm_obj=asm_obj)
+                                  asm_obj=asm_obj,
+                                  select_term=select_term)
                 if isinstance(out, tuple): extras.extend(out[1])
 
             out = asm_obj
@@ -624,7 +629,8 @@ class Equations(Container):
             out = {}
             for eq in eqs:
                 eout = eq.evaluate(mode=mode, dw_mode=dw_mode,
-                                   term_mode=term_mode)
+                                   term_mode=term_mode,
+                                   select_term=select_term)
                 out[eq.name] = eout
 
             if single:
@@ -632,7 +638,8 @@ class Equations(Container):
 
         return out
 
-    def eval_residuals(self, state, by_blocks=False, names=None):
+    def eval_residuals(self, state, by_blocks=False, names=None,
+                       select_term=None):
         """
         Evaluate (assemble) residual vectors.
 
@@ -649,6 +656,9 @@ class Equations(Container):
         names : list of str, optional
             Optionally, select only blocks with the given `names`, if
             `by_blocks` is True.
+        select_term : function(term)
+            Optional boolean function returning True for terms that should be
+            evaluated.
 
         Returns
         -------
@@ -673,19 +683,21 @@ class Equations(Container):
                 ir = get_indx(rname, reduced=True, allow_dual=True)
 
                 residual = self.create_reduced_vec()
-                eq.evaluate(mode='weak', dw_mode='vector', asm_obj=residual)
+                eq.evaluate(mode='weak', dw_mode='vector', asm_obj=residual,
+                            select_term=select_term)
 
                 out[key] = residual[ir]
 
         else:
             out = self.create_reduced_vec()
 
-            self.evaluate(mode='weak', dw_mode='vector', asm_obj=out)
+            self.evaluate(mode='weak', dw_mode='vector', asm_obj=out,
+                          select_term=select_term)
 
         return out
 
     def eval_tangent_matrices(self, state, tangent_matrix,
-                              by_blocks=False, names=None):
+                              by_blocks=False, names=None, select_term=None):
         """
         Evaluate (assemble) tangent matrices.
 
@@ -704,6 +716,9 @@ class Equations(Container):
         names : list of str, optional
             Optionally, select only blocks with the given `names`, if
             `by_blocks` is True.
+        select_term : function(term)
+            Optional boolean function returning True for terms that should be
+            evaluated.
 
         Returns
         -------
@@ -730,7 +745,8 @@ class Equations(Container):
 
                 tangent_matrix.data[:] = 0.0
                 aux = eq.evaluate(mode='weak', dw_mode='matrix',
-                                  asm_obj=tangent_matrix)
+                                  asm_obj=tangent_matrix,
+                                  select_term=select_term)
 
                 out[key] = aux[ir, ic]
 
@@ -738,7 +754,8 @@ class Equations(Container):
             tangent_matrix.data[:] = 0.0
 
             out = self.evaluate(mode='weak', dw_mode='matrix',
-                                asm_obj=tangent_matrix)
+                                asm_obj=tangent_matrix,
+                                select_term=select_term)
 
         return out
 
@@ -813,7 +830,7 @@ class Equation(Struct):
             conn_info[key] = term.get_conn_info()
 
     def evaluate(self, mode='eval', dw_mode='vector', term_mode=None,
-                 diff_vars=None, asm_obj=None):
+                 diff_vars=None, asm_obj=None, select_term=None):
         """
         Evaluate the equation.
 
@@ -831,6 +848,9 @@ class Equation(Struct):
             differentiated if `dw_mode` is ``'sensitivity'``.
         asm_obj : ndarray or spmatrix
             The object for storing the evaluation result in the ``'weak'`` mode.
+        select_term : function(term)
+            Optional boolean function returning True for terms that should be
+            evaluated.
 
         Returns
         -------
@@ -838,9 +858,13 @@ class Equation(Struct):
             The evaluation result. In 'weak' mode it is the
             `asm_obj`.
         """
+        terms = self.terms
+        if select_term is not None:
+            terms = [term for term in self.terms if select_term(term)]
+
         if mode in ('eval', 'el_eval', 'el_avg', 'qp'):
             val = 0.0
-            for term in self.terms:
+            for term in terms:
                 aux, status = term.evaluate(mode=mode,
                                             term_mode=term_mode,
                                             standalone=False,
@@ -853,7 +877,7 @@ class Equation(Struct):
 
             if dw_mode == 'vector':
 
-                for term in self.terms:
+                for term in terms:
                     val, iels, status = term.evaluate(mode=mode,
                                                       term_mode=term_mode,
                                                       standalone=False,
@@ -865,7 +889,7 @@ class Equation(Struct):
             elif dw_mode == 'matrix':
 
                 extras = []
-                for term in self.terms:
+                for term in terms:
                     svars = term.get_state_variables(unknown_only=True)
 
                     for svar in svars:
@@ -885,7 +909,7 @@ class Equation(Struct):
                 if diff_vars is None: diff_vars = ()
 
                 for ic, diff_var in enumerate(diff_vars):
-                    for term in self.terms:
+                    for term in terms:
                         if not (term.diff_info and
                                 (diff_var in term.get_material_names(part=1))):
                             continue
