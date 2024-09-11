@@ -260,6 +260,7 @@ class ContactIPCTerm(Term):
                   'material_d' : '.: 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     integration = 'facet'
+    geometries = ['3_4', '3_8']
 
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
@@ -337,7 +338,9 @@ class ContactIPCTerm(Term):
             faces = faces.reshape((-1, 3))
 
         else:
-            faces = None
+            raise ValueError(
+                'dw_contact_ipc term can only be used on 2D surface regions!'
+            )
 
         nods = state.field.get_dofs_in_region(self.region, merge=True)
 
