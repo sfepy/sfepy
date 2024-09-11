@@ -357,6 +357,9 @@ def test_term_call_modes(data):
                         _ok = _test_single_term(data, term_cls, domain,
                                                 rname)
 
+                    except ModuleNotFoundError as exc:
+                        _ok = exc.name in {'ipctk'}
+
                     except:
                         _ok = False
 
