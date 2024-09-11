@@ -385,10 +385,14 @@ class ContactIPCTerm(Term):
         actual_stiffness = stiffness
         if actual_stiffness == 0.0: # Adaptive barrier stiffness
             if ci.barrier_stiffness is None:
-                e_grad = e_grad_full[ci.dofs]
-
                 # This should be done at the start of each time step.
                 bp_grad = B.gradient(collisions, collision_mesh, vertices)
+
+                if e_grad_full is not None:
+                    e_grad = e_grad_full[ci.dofs]
+
+                else:
+                    e_grad = nm.zeros_like(bp_grad)
 
                 (ci.barrier_stiffness,
                  ci.max_barrier_stiffness) = self.ipc.initial_barrier_stiffness(
