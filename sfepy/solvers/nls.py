@@ -253,6 +253,10 @@ class Newton(NonlinearSolver):
          """If not None, log the convergence according to the configuration in
             the following form: ``{'text' : 'log.txt', 'plot' : 'log.pdf'}``.
             Each of the dict items can be None."""),
+        ('log_vlines', "'iteration' or 'solve' or both",
+         ('solve',), False,
+         """Put log vertical lines after each iteration and/or before the
+            solve."""),
         ('is_linear', 'bool', False, False,
          'If True, the problem is considered to be linear.'),
     ]
@@ -338,7 +342,7 @@ class Newton(NonlinearSolver):
         vec_x_last = vec_x0.copy()
         vec_dx = 0.0
 
-        if self.log is not None:
+        if (self.log is not None) and ('solve' in conf.log_vlines):
             self.log.plot_vlines(color='r', linewidth=1.0)
 
         err = err0 = -1.0
@@ -357,7 +361,7 @@ class Newton(NonlinearSolver):
             if it == 0:
                 err0 = err
 
-            if self.log is not None:
+            if (self.log is not None) and ('iteration' in conf.log_vlines):
                 self.log.plot_vlines([1], color='g', linewidth=0.5)
 
             err_last = err
