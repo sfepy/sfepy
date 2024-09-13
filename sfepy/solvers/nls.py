@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import output, get_default, debug, Struct
+from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.base.timing import Timer, Timers
 from sfepy.solvers.solvers import NonlinearSolver
@@ -228,8 +228,7 @@ class Newton(NonlinearSolver):
         ('line_search_fun',
          'function(it, vec_x0, vec_dx0, err_last, conf, fun, timers, log=None)',
          apply_line_search_bt, False,
-         """Step reduction factor. Equivalent to the mixing parameter :math:`a`:
-            :math:`(1 - a) x + a (x + dx) = x + a dx`"""),
+         """The line search function."""),
         ('ls_on', 'float', 0.99999, False,
          """Start the backtracking line-search by reducing the step, if
             :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
