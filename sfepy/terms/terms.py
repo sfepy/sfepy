@@ -370,6 +370,7 @@ class Term(Struct):
         self.region = region
         self._kwargs = kwargs
         self.sign = 1.0
+        self.verbosity = 0
 
         self.set_integral(integral)
 
