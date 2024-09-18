@@ -317,12 +317,15 @@ def define(
         'move_top' : (move_top,),
     }
 
+    volume = nm.prod(dims0) + nm.prod(dims1)
+    mass = volume * rho
+
     materials = {
         'solid' : ({
             'D' : stiffness_from_youngpoisson(dim, young=1.0, poisson=0.3),
         },),
         'contact' : ({
-            '.m' : 1.0e-2,
+            '.m' : mass,
             '.k' : 0.0, # 0 = Adaptive barrier stiffness.
             '.dhat' : 1e-2,
             '.Pspd' : 'NONE',
