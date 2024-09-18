@@ -271,11 +271,11 @@ def define(
             'Omega' : 'all',
             'Omega0' : 'cells of group 0',
             'Omega1' : 'cells of group 1',
-            'Bottom' : ('vertices in (y < %f)' % bbox0[0, 1], 'facet'),
-            'Top' : ('vertices in (y > %f)' % bbox1[1, 1], 'facet'),
-            'Contact0' : ('(vertices in (y > %f) *v r.Omega0)' % bbox0[1, 1],
+            'Bottom' : ('vertices in (y < %.12e)' % bbox0[0, 1], 'facet'),
+            'Top' : ('vertices in (y > %.12e)' % bbox1[1, 1], 'facet'),
+            'Contact0' : ('(vertices in (y > %.12e) *v r.Omega0)' % bbox0[1, 1],
                           'facet'),
-            'Contact1' : ('(vertices in (y < %f) *v r.Omega1)' % bbox1[0, 1],
+            'Contact1' : ('(vertices in (y < %.12e) *v r.Omega1)' % bbox1[0, 1],
                           'facet'),
             'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
         }
@@ -285,11 +285,11 @@ def define(
             'Omega' : 'all',
             'Omega0' : 'cells of group 0',
             'Omega1' : 'cells of group 1',
-            'Bottom' : ('vertices in (z < %f)' % bbox0[0, 2], 'facet'),
-            'Top' : ('vertices in (z > %f)' % bbox1[1, 2], 'facet'),
-            'Contact0' : ('(vertices in (z > %f) *v r.Omega0)' % bbox0[1, 2],
+            'Bottom' : ('vertices in (z < %.12e)' % bbox0[0, 2], 'facet'),
+            'Top' : ('vertices in (z > %.12e)' % bbox1[1, 2], 'facet'),
+            'Contact0' : ('(vertices in (z > %.12e) *v r.Omega0)' % bbox0[1, 2],
                           'facet'),
-            'Contact1' : ('(vertices in (z < %f) *v r.Omega1)' % bbox1[0, 2],
+            'Contact1' : ('(vertices in (z < %.12e) *v r.Omega1)' % bbox1[0, 2],
                           'facet'),
             'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
         }
