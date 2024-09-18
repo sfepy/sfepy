@@ -357,6 +357,7 @@ class ContactIPCTerm(Term):
                          prev_min_distance=None,
                          min_distance=None,
                          vec_r=None,
+                         barrier_potential=None,
                          barrier_stiffness=None,
                          max_barrier_stiffness=None,
                          adapt_stiffness=False,
@@ -382,8 +383,6 @@ class ContactIPCTerm(Term):
         ci.bbox_diagonal = self.ipc.world_bbox_diagonal_length(vertices)
 
         B = self.ipc.BarrierPotential(dhat)
-        barrier_potential = B(collisions, collision_mesh, vertices)
-        output('barrier potential:', barrier_potential)
 
         actual_stiffness = stiffness
         if actual_stiffness == 0.0: # Adaptive barrier stiffness
@@ -424,9 +423,15 @@ class ContactIPCTerm(Term):
 
         else:
             ci.barrier_stiffness = actual_stiffness
+            ci.e_grad_norm = 0.0
+            ci.bp_grad_norm = 0.0
 
-        output('min. distance::', ci.min_distance)
-        output('barrier stiffness:', actual_stiffness)
+        ci.barrier_potential = B(collisions, collision_mesh, vertices)
+
+        if self.verbosity > 0:
+            output('min. distance::', ci.min_distance)
+            output('barrier potential:', ci.barrier_potential)
+            output('barrier stiffness:', actual_stiffness)
 
         if diff_var is None:
             bp_grad = B.gradient(collisions, collision_mesh, vertices)
