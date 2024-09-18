@@ -251,13 +251,15 @@ class ContactIPCTerm(Term):
         - material_m : :math:`m`
         - material_k : :math:`k`
         - material_d : :math:`\hat{d}`
+        - material_p : PSDProjectionMethod
         - virtual    : :math:`\ul{v}`
         - state      : :math:`\ul{u}`
     """
     name = 'dw_contact_ipc'
-    arg_types = ('material_m', 'material_k', 'material_d', 'virtual', 'state')
+    arg_types = ('material_m', 'material_k', 'material_d', 'material_p',
+                 'virtual', 'state')
     arg_shapes = {'material_m' : '.: 1', 'material_k' : '.: 1',
-                  'material_d' : '.: 1',
+                  'material_d' : '.: 1', 'material_p' : '.: str',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     integration = 'facet'
     geometries = ['3_4', '3_8']
@@ -365,7 +367,8 @@ class ContactIPCTerm(Term):
                          e_grad_norm=None)
         return self.ci
 
-    def get_fargs(self, avg_mass, stiffness, dhat, virtual, state,
+    def get_fargs(self, avg_mass, stiffness, dhat, spd_projection,
+                  virtual, state,
                   mode=None, term_mode=None, diff_var=None, e_grad_full=None,
                   **kwargs):
         ci = self.get_contact_info(state)
@@ -440,7 +443,12 @@ class ContactIPCTerm(Term):
                       ci.dofs, state)
 
         else:
-            bp_hess = B.hessian(collisions, collision_mesh, vertices)
+            proj = getattr(self.ipc.PSDProjectionMethod, spd_projection,
+                           self.ipc.PSDProjectionMethod.NONE)
+            bp_hess = B.hessian(
+                collisions, collision_mesh, vertices,
+                project_hessian_to_psd=proj,
+            )
 
             ir, ic = bp_hess.nonzero()
             if len(ir):

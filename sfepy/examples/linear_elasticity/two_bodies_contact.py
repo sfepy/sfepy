@@ -325,6 +325,7 @@ def define(
             '.m' : 1.0e-2,
             '.k' : 0.0, # 0 = Adaptive barrier stiffness.
             '.dhat' : 1e-2,
+            '.Pspd' : 'NONE',
             '.epss' : 1e+1,
         },),
     }
@@ -348,7 +349,9 @@ def define(
             'elasticity' :
             """
                dw_lin_elastic.2.Omega(solid.D, v, u)
-             + dw_contact_ipc.i.Contact(contact.m, contact.k, contact.dhat, v, u)
+             + dw_contact_ipc.i.Contact(
+                   contact.m, contact.k, contact.dhat, contact.Pspd, v, u
+               )
              = 0
             """,
         }
