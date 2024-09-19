@@ -203,17 +203,27 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
     return vec_x, vec_r, err, ok
 
 def define(
-        dims0=(1.0, 0.5),
-        shape0=(4, 4),
-        centre0=(0, -0.25),
+        dims0=(1.0, 1.0, 0.5),
+        shape0=(2, 2, 2),
+        centre0=(0, 0, -0.25),
 
-        dims1=(1.0, 0.5),
-        shape1=(3, 3),
-        centre1=(0, 0.25),
+        dims1=(1.2, 0.8, 0.5),
+        shape1=(3, 3, 2),
+        centre1=(0, 0, 0.25),
 
-        shift10=(0.0, 1e-4),
-        shift11=(0.0, -0.1),
+        shift10=(0.0, 0.0, 1e-4),
+        shift11=(0.0, 0.0, -0.1),
 
+        young=1.0,
+        poisson=0.3,
+        rho=1.0,
+
+        cm=None,
+        ck=0.0,
+        dhat=1e-2,
+        pspd='NONE',
+
+        t1=1000,
         n_step=5,
         contact='builtin',
         output_dir='.',
@@ -322,13 +332,13 @@ def define(
 
     materials = {
         'solid' : ({
-            'D' : stiffness_from_youngpoisson(dim, young=1.0, poisson=0.3),
+            'D' : stiffness_from_youngpoisson(dim, young=young, poisson=poisson),
         },),
         'contact' : ({
-            '.m' : mass,
-            '.k' : 0.0, # 0 = Adaptive barrier stiffness.
-            '.dhat' : 1e-2,
-            '.Pspd' : 'NONE',
+            '.m' : cm if cm is not None else mass,
+            '.k' : ck, # 0 = Adaptive barrier stiffness.
+            '.dhat' : dhat,
+            '.Pspd' : pspd,
             '.epss' : 1e+1,
         },),
     }
@@ -385,9 +395,9 @@ def define(
         }),
         'ts' : ('ts.simple', {
             't0'     : 0.0,
-            't1'     : 1.0,
+            't1'     : t1,
             'dt'     : None,
-            'n_step' : n_step, # has precedence over dt!
+            'n_step' : n_step,
             'quasistatic' : True,
             'verbose' : 1,
         }),
