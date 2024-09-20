@@ -338,11 +338,11 @@ class ContactIPCTerm(Term):
         if tdim == 2:
             faces = cmesh.get_conn(2, 0).indices.astype(nm.int32)
             faces = faces.reshape((-1, 3))
+            collision_mesh = self.ipc.CollisionMesh(smesh.coors, edges, faces)
 
         else:
-            raise ValueError(
-                'dw_contact_ipc term can only be used on 2D surface regions!'
-            )
+            faces = None
+            collision_mesh = self.ipc.CollisionMesh(smesh.coors, edges)
 
         nods = state.field.get_dofs_in_region(self.region, merge=True)
 
@@ -350,8 +350,6 @@ class ContactIPCTerm(Term):
         dofs = nm.unique(
             create_adof_conn(nm.arange(state.n_dof), econn, smesh.dim, 0)
         )
-
-        collision_mesh = self.ipc.CollisionMesh(smesh.coors, edges, faces)
 
         self.ci = Struct(smesh=smesh, edges=edges, faces=faces, nods=nods,
                          econn=econn, dofs=dofs, dim=smesh.dim,
