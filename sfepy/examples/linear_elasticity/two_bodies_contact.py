@@ -376,22 +376,24 @@ def define(
         apply_ls = None
 
     solvers = {
-        'ls' : ('ls.scipy_direct', {}),
+        'ls' : ('ls.auto_direct', {}),
         'newton' : ('nls.newton', {
             'i_max' : 20,
-            'eps_a' : 1e-6,
-            'eps_r' : 1.0,
+            'eps_a' : 1e-8,
+            'eps_r' : 1e-5,
+            'eps_mode' : 'or',
             'macheps' : 1e-16,
             # Linear system error < (eps_a * lin_red).
             'lin_red' : None,
             'line_search_fun' : apply_ls,
             'ls_red' : 0.5,
-            'ls_red_warp' : 0.001,
+            'ls_red_warp' : 0.5,
             'ls_on' : 1.0,
             'ls_min' : 1e-5,
             'check' : 0,
             'delta' : 1e-8,
-            'log' : {'text' : inodir('log.txt'), 'plot' : None},
+            'log' : {'text' : inodir('log.txt'), 'plot' : inodir('log.png')},
+            'log_vlines' : 'solve',
         }),
         'ts' : ('ts.simple', {
             't0'     : 0.0,
