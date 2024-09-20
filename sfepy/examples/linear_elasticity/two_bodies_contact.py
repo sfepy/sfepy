@@ -231,6 +231,16 @@ def define(
     dim = len(dims0)
     inodir = partial(op.join, output_dir)
 
+    shape0 = shape0[:dim]
+    centre0 = centre0[:dim]
+
+    dims1 = dims1[:dim]
+    shape1 = shape1[:dim]
+    centre1 = centre1[:dim]
+
+    shift10 = shift10[:dim]
+    shift11 = shift11[:dim]
+
     shift11 = nm.array(shift11)
 
     clog = Log([[r'$d$'], [r'$k$'], [r'$\nabla B$'], [r'$\nabla E$']],
