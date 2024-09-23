@@ -356,20 +356,23 @@ class ContactIPCTerm(Term):
                          collision_mesh=collision_mesh,
                          prev_min_distance=None,
                          min_distance=None,
-                         vec_r=None,
+                         it=0,
+                         ls_it=0,
                          barrier_potential=None,
                          barrier_stiffness=None,
                          max_barrier_stiffness=None,
-                         adapt_stiffness=False,
+                         e_grad_full=None,
                          bp_grad_norm=None,
                          e_grad_norm=None)
         return self.ci
 
     def get_fargs(self, avg_mass, stiffness, dhat, spd_projection,
                   virtual, state,
-                  mode=None, term_mode=None, diff_var=None, e_grad_full=None,
+                  mode=None, term_mode=None, diff_var=None, ci=None,
                   **kwargs):
-        ci = self.get_contact_info(state)
+        if diff_var is not None:
+            ci = self.ci
+
         collision_mesh = ci.collision_mesh
 
         uvec = state().reshape((-1, ci.dim))[ci.nods]
@@ -387,12 +390,12 @@ class ContactIPCTerm(Term):
 
         actual_stiffness = stiffness
         if actual_stiffness == 0.0: # Adaptive barrier stiffness
-            if ci.barrier_stiffness is None:
+            if ci.it == 0:
                 # This should be done at the start of each time step.
                 bp_grad = B.gradient(collisions, collision_mesh, vertices)
 
-                if e_grad_full is not None:
-                    e_grad = e_grad_full[ci.dofs]
+                if ci.e_grad_full is not None:
+                    e_grad = ci.e_grad_full[ci.dofs]
 
                 else:
                     e_grad = nm.zeros_like(bp_grad)
@@ -409,7 +412,7 @@ class ContactIPCTerm(Term):
                 ci.e_grad_norm = nm.linalg.norm(e_grad)
                 ci.bp_grad_norm = nm.linalg.norm(bp_grad)
 
-            elif ci.adapt_stiffness and (diff_var is None):
+            elif (ci.ls_it == 0) and (diff_var is None):
                 # Do not update during line-search!
                 actual_stiffness = self.ipc.update_barrier_stiffness(
                     ci.prev_min_distance, ci.min_distance,

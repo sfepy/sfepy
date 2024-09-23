@@ -107,8 +107,7 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
     variables = pb.get_variables()
 
     ci = term.get_contact_info(variables['u'])
-    if it == 0:
-        ci.barrier_stiffness = None
+    ci.it = it
 
     ls_it = 0
     while 1:
@@ -130,15 +129,16 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
 
         timers.residual.start()
 
-        ci.adapt_stiffness = ls_it == 0
+        ci.ls_it = ls_it
 
         try:
             vec_r1 = fun(vec_x, select_term=select_other)
 
             vec_r1_full = pb.equations.make_full_vec(vec_r1, force_value=0.0)
+            ci.e_grad_full = vec_r1_full
+
             val, iels = term.evaluate(mode='weak', dw_mode='vector',
-                                      standalone=False,
-                                      e_grad_full=vec_r1_full)
+                                      standalone=False, ci=ci)
 
             vec_r2 = nm.zeros_like(vec_r1)
             term.assemble_to(vec_r2, val, iels, mode='vector')
