@@ -33,6 +33,7 @@ Usage examples::
 """
 import os.path as op
 from functools import partial
+import inspect
 
 from sfepy.base.base import output
 from sfepy.base.log import Log
@@ -202,6 +203,13 @@ def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
 
     return vec_x, vec_r, err, ok
 
+def markdown_table_from_dict(adict):
+    header = '| option | value |\n'
+    separator = '| --- | --- |\n'
+    rows = '\n'.join([f'| {key} | {val} |' for key, val in adict.items()])
+
+    return header + separator + rows
+
 def define(
         dims0=(1.0, 1.0, 0.5),
         shape0=(2, 2, 2),
@@ -226,11 +234,25 @@ def define(
         t1=1000,
         n_step=5,
         contact='builtin',
+
         output_dir='.',
+        verbose=True,
 ):
-    dim = len(dims0)
+    args = locals()
+
     inodir = partial(op.join, output_dir)
 
+    output.set_output(filename=inodir('output_log.txt'), quiet=not verbose,
+                      combined=True)
+
+    signature = inspect.signature(define)
+    arg_names = list(signature.parameters.keys())
+    options = {name : args[name] for name in arg_names}
+    table = markdown_table_from_dict(options)
+    with open(inodir('options.md'), 'w') as fd:
+        fd.write(table)
+
+    dim = len(dims0)
     shape0 = shape0[:dim]
     centre0 = centre0[:dim]
 
