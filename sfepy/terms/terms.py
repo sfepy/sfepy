@@ -527,11 +527,12 @@ class Term(Struct):
                     f"{ia+1}. term argument '{name}' not found!"
                 )
 
-            if arg.name != name:
+            actual_name = getattr(arg, 'name', name)
+            if (actual_name != name):
                 raise ValueError(
                     f"term '{self.get_str()}': "
                     f"{ia+1}. term argument name '{name}' differs from "
-                    f"the actual argument name '{arg.name}'!"
+                    f"the actual argument name '{actual_name}'!"
                 )
 
             term_arg = arg if append is None else (arg, append)
