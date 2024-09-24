@@ -867,10 +867,10 @@ class SchurMUMPSSolver(MUMPSSolver):
             slc = self.context.equations.variables.adi.indx[schur_var]
             schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i'))
 
-        self.mumps_ls = self.mumps.SchurContext()
+        self.mumps_ls = self.mumps.Context()
         self.mumps_ls.get_schur(nm.hstack(schur_list), mtx)
 
-        return self.mumps_ls.solve(rhs)
+        return self.mumps_ls.solve_schur(rhs)
 
 
 class CholeskySolver(ScipyDirect):
