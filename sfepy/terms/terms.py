@@ -324,10 +324,26 @@ class Term(Struct):
     geometries = ['1_2', '2_3', '2_4', '3_4', '3_8']
 
     @staticmethod
-    def new(name, integral, region, **kwargs):
+    def new(name_args, integral, region, **kwargs):
+        """
+        Create a new Term instance.
+
+        Parameters
+        ----------
+        name_args : str
+            The term name and arguments, e.g. 'dw_laplace(m.coef, v, u)'.
+        integral : Integral instance
+            The integral defining the term quadrature.
+        region : Region instance
+            The term region (domain of integration for most terms).
+        **kwargs : keyword arguments, optional
+            The actual term arguments. Their compatibility with `name_args` is
+            checked when a term is added to an Equation instance, or when
+            evaluated.
+        """
         from sfepy.terms import term_table
 
-        arg_str = _match_args(name)
+        arg_str = _match_args(name_args)
         if arg_str is not None:
             name, arg_str = arg_str.groups()
 
