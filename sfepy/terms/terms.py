@@ -497,12 +497,29 @@ class Term(Struct):
         self._kwargs = kwargs
 
         self.args = []
-        for arg_name in self.arg_names:
+        for ia, arg_name in enumerate(self.arg_names):
             if isinstance(arg_name, basestr):
-                self.args.append(self._kwargs[arg_name])
+                name, append = arg_name, None
 
             else:
-                self.args.append((self._kwargs[arg_name[0]], arg_name[1]))
+                name, append = arg_name
+
+            arg = self._kwargs.get(name)
+            if arg is None:
+                raise ValueError(
+                    f"term '{self.get_str()}': "
+                    f"{ia+1}. term argument '{name}' not found!"
+                )
+
+            if arg.name != name:
+                raise ValueError(
+                    f"term '{self.get_str()}': "
+                    f"{ia+1}. term argument name '{name}' differs from "
+                    f"the actual argument name '{arg.name}'!"
+                )
+
+            term_arg = arg if append is None else (arg, append)
+            self.args.append(term_arg)
 
         self.classify_args()
         self.check_args()
