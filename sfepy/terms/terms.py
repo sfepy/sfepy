@@ -324,10 +324,26 @@ class Term(Struct):
     geometries = ['1_2', '2_3', '2_4', '3_4', '3_8']
 
     @staticmethod
-    def new(name, integral, region, **kwargs):
+    def new(name_args, integral, region, **kwargs):
+        """
+        Create a new Term instance.
+
+        Parameters
+        ----------
+        name_args : str
+            The term name and arguments, e.g. 'dw_laplace(m.coef, v, u)'.
+        integral : Integral instance
+            The integral defining the term quadrature.
+        region : Region instance
+            The term region (domain of integration for most terms).
+        **kwargs : keyword arguments, optional
+            The actual term arguments. Their compatibility with `name_args` is
+            checked when a term is added to an Equation instance, or when
+            evaluated.
+        """
         from sfepy.terms import term_table
 
-        arg_str = _match_args(name)
+        arg_str = _match_args(name_args)
         if arg_str is not None:
             name, arg_str = arg_str.groups()
 
@@ -497,12 +513,30 @@ class Term(Struct):
         self._kwargs = kwargs
 
         self.args = []
-        for arg_name in self.arg_names:
+        for ia, arg_name in enumerate(self.arg_names):
             if isinstance(arg_name, basestr):
-                self.args.append(self._kwargs[arg_name])
+                name, append = arg_name, None
 
             else:
-                self.args.append((self._kwargs[arg_name[0]], arg_name[1]))
+                name, append = arg_name
+
+            arg = self._kwargs.get(name)
+            if arg is None:
+                raise ValueError(
+                    f"term '{self.get_str()}': "
+                    f"{ia+1}. term argument '{name}' not found!"
+                )
+
+            actual_name = getattr(arg, 'name', name)
+            if (actual_name != name):
+                raise ValueError(
+                    f"term '{self.get_str()}': "
+                    f"{ia+1}. term argument name '{name}' differs from "
+                    f"the actual argument name '{actual_name}'!"
+                )
+
+            term_arg = arg if append is None else (arg, append)
+            self.args.append(term_arg)
 
         self.classify_args()
         self.check_args()
