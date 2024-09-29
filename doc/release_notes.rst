@@ -1,5 +1,116 @@
 # created: 20.07.2007 (-1)
 
+.. _2024.2-2024.3:
+
+from 2024.2 to 2024.3
+=====================
+
+- merge pull request #1126 from rc/misc-updates
+
+  - update docstring of multi_point_constraints.py example
+  - fix whitespace in refine_3_4() docstring
+
+- merge pull request #1127 from rc/refine-use-tdim
+
+  - use topological mesh entity dimensions in refine functions - update
+    refine_1_2(), refine_2_3(), refine_2_4(), refine_3_4(), refine_3_8()
+
+- merge pull request #1128 from rc/rename-get-base
+
+  - rename FEMapping.get_base() -> .eval_basis()
+
+    - new name describes better the method's purpuse
+    - update .get_physical_qps(), .get_mapping()
+
+  - rename .get_base() -> .eval_basis() of FEM-related fields
+
+    - rename FEField.get_base() -> .eval_basis()
+    - update .set_basis_transform() docstring, .interp_to_qp(),
+      .create_mapping()
+    - rename L2ConstantVolumeField.get_base() -> .eval_basis()
+    - update H1NodalMixin._eval_basis_transform()
+    - update DGField.create_mapping()
+    - update SurfaceFluxOperatorTerm.get_fargs()
+    - update SurfaceTractionTLTerm.get_fargs()
+    - update VolumeSurfaceTLTerm.get_fargs()
+    - update ExpressionArg.get_bf()
+
+  - rename PolySpace.eval_base() -> .eval_basis()
+
+    - rename ._eval_base() -> ._eval_basis()
+    - rename all occurrences
+
+  - rename poly_space_base -> poly_space_basis in problem description and
+    fields
+
+    - rename Field attribute
+    - update transform_fields()
+    - rename all occurrences in code and docs
+
+  - rename base argument of PolySpace.any_from_args(), .suggest_name() to basis
+
+    - rename test_base_functions_values() -> test_basis_functions_values()
+    - rename test_base_functions_delta() -> test_basis_functions_delta()
+    - rename all occurrences in code
+
+  - rename FEField._setup_global_base(), .clear_qp_base() to ..._basis()
+
+    - rename base_only argument of .eval_basis() to basis_only
+    - more base -> basis renaming in fields realted code
+
+  - rename base -> basis renaming in DG related code
+
+- merge pull request #1130 from rc/mesh-info-print-bbox-dimensions
+
+  - show_mesh_info.py: print bounding box dimensions in show_mesh_info()
+
+- merge pull request #1131 from rc/resview-color-fields
+
+  - resview.py: support glyph fields, glyph scalar gradients in pv_plot()
+  - resview.py: update help
+  - resview.py: new --color-limits option, update main(), pv_plot()
+
+- merge pull request #1140 from rc/ci-clean-up
+
+  - CI: remove obsolete config files
+
+- merge pull request #1141 from rc/docs-conda-miniforge-install
+
+  - docs: remove old ipython related instructions
+  - docs: simplify installation instructions, use miniforge instead of Anaconda
+  - docs: add warning to docker instructions
+  - docs: update miniforge installation instructions
+  - docs: update docker instructions
+
+- merge pull request #1143 from rc/update-jax-terms
+
+  - fix vgmap variable in AD terms - update .get_fargs() of
+    LinearElasticLADTerm, LinearElasticYPADTerm, MassADTerm
+  - update MassADTerm for scalar fields and surface integration - update
+    .get_fargs()
+  - fix AD terms for state time derivatives and history, new
+    get_state_per_cell() - update .get_fargs() of LinearElasticLADTerm,
+    LinearElasticYPADTerm, MassADTerm, NeoHookeanTLADTerm, OgdenTLADTerm
+
+- merge pull request #1144 from rc/multilinear-terms-support-history
+
+  - update get_einsum_ops() for variables with history
+
+- merge pull request #1145 from rc/fix-jax-terms-multi-integrations
+
+  - fix get_state_per_cell() for terms supporting multiple integrations
+
+- merge pull request #1139 from vlukes/new_surface_flow_term
+
+  - new surface term (term name?)
+  - fix term name
+
+- merge pull request #1149 from rc/check-argument-names, closes #1146
+
+  - check argument names in Term.setup_args()
+  - add docstring to Term.new(), rename name argument to name_args
+  - fix Term.setup_args() for arguments without 'name' attribute
+
 .. _2024.1-2024.2:
 
 from 2024.1 to 2024.2
