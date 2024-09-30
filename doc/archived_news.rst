@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **29.06.2023** Version 2023.2 released (replace numpy.distutils by
+  scikit-build (cmake), interface for the PRIMME eigenvalue problem solver, new
+  declarative modal analysis example, new terms: nonlinear diffusion and
+  nonlinear volume forces, etc.), see :ref:`release notes <2023.1-2023.2>`.
+
 * **29.03.2023** Version 2023.1 released (support meshes with cells of
   different topological dimensions, unified treatment of volume and surface
   integrals, updated elastodynamics solvers, reciprocal mass matrix algorithm,

@@ -1,6 +1,9 @@
 News
 ====
 
+* **30.09.2024** Version 2024.3 released (updated installation instructions,
+  new Stokes traction term, etc.), see :ref:`release notes <2024.2-2024.3>`.
+
 * **28.06.2024** Version 2024.2 released (multi-point constraints terms + new
   example, mixed formulation flexoelecticity terms, improved and new eigenvalue
   problem solvers, etc.), see :ref:`release notes <2024.1-2024.2>`.
@@ -24,10 +27,5 @@ News
   JAX-based auto-differentiable terms (elasticity, mass) + elastodynamics
   parameter identification example, etc.), see :ref:`release notes
   <2023.2-2023.3>`.
-
-* **29.06.2023** Version 2023.2 released (replace numpy.distutils by
-  scikit-build (cmake), interface for the PRIMME eigenvalue problem solver, new
-  declarative modal analysis example, new terms: nonlinear diffusion and
-  nonlinear volume forces, etc.), see :ref:`release notes <2023.1-2023.2>`.
 
 For historians: see :ref:`archived_news`.
