@@ -283,3 +283,16 @@ Material Parameters
    ``n_cell * n_qp``, where ``n_qp`` is the number of quadrature
    points per cell, and ``n_cell = len(term.region.cells)``, so that
    ``coors.reshape((n_cell, n_qp, -1))`` can be used.
+
+#. Ordering of symmetric tensor components - no Voigt notation!
+
+   Due to historical reasons, SfePy does not use the `Voigt notation
+   <https://en.wikipedia.org/wiki/Voigt_notation>`_ for storing 3D symmetric
+   tensors. Instead, the ordering found in Crisfield [1]_ is used, where e.g.
+   the stress tensor components stored in a vector are ordered as :math:`[11,
+   22, 33, 12, 13, 23]`. That is, the :math:`12` and :math:`23` components are
+   swapped w.r.t. the Voigt notation. The same holds for the strain vector or
+   the :math:`6\times6` stiffness matrix.
+
+   .. [1] M. A. Crisfield, Non-Linear Finite Element Analysis of Solids and
+          Structures (John Wiley & Sons, Chichester, 1996).
