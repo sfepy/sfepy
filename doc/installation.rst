@@ -48,6 +48,14 @@ The released versions of SfePy can be installed as follows.
 
        conda install sfepy
 
+The above commands pull automatically all required dependencies. This, in
+combination with `installing_from_sources`_, enables to try the git version
+easily. For example with `conda`, use::
+
+  conda remove --force sfepy
+
+to remove the installed `sfepy` package but keep the dependencies installed.
+
 If the installation succeeded, proceed with `Testing Installation`_.
 
 .. _running_sfepy_docker_images:
