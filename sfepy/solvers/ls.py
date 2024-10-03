@@ -973,7 +973,8 @@ class SchurMumps(MUMPSSolver):
                                                mem_relax=mem_relax)
 
         self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest, factorize=False)
-        return self.mumps_ls.schur_solve(nm.hstack(schur_list), rhs)
+        # shur_list indexing starts from 1!
+        return self.mumps_ls.schur_solve(nm.hstack(schur_list) + 1, rhs)
 
 
 class MultiProblem(ScipyDirect):
