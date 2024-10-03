@@ -802,15 +802,38 @@ class MUMPSSolver(LinearSolver):
          'The percentage increase in the estimated working space.'),
     ]
 
+    @staticmethod
+    def coo_is_symmetric(mtx, tol=1e-9):
+        """Symmetry check of the sparse matrix."""
+        a_at = mtx - mtx.T
+
+        if a_at.nnz == 0 or nm.all(nm.abs(a_at.data) < tol):
+            return True
+
+        norm = nm.linalg.norm(mtx.data)
+        if nm.all(nm.abs(a_at.data) < tol * norm):
+            return True
+
+        return False
+
     def __init__(self, conf, **kwargs):
-        import sfepy.solvers.ls_mumps as mumps
+        def mumps_import(modules):
+            import importlib
+
+            for module in modules:
+                try:
+                    return importlib.import_module(module), module
+                except ImportError:
+                    continue
+
+            msg =  'cannot import MUMPS!'
+            raise ImportError(msg)
+
+        mumps, module = mumps_import(['mumpspy', 'mumps'])
 
         LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
-                              mumps_presolved=False, **kwargs)
-        mumps.load_mumps_libraries()  # try to load MUMPS libraries
-        if not mumps.use_mpi:
-            raise AttributeError('No mpi4py found! Required by MUMPS solver.')
-
+                              mumps_presolved=False, mumps_module=module,
+                              **kwargs)
         self.clear()
 
     @standard_call
@@ -821,20 +844,15 @@ class MUMPSSolver(LinearSolver):
 
         self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest)
 
-        out = rhs.copy(order='F')
-
-        self.mumps_ls.set_rhs(out)
-        self.mumps_ls(3)  # solve
-
-        return out
+        return self.mumps_ls.solve(rhs)
 
     def clear(self):
         if self.mumps_ls is not None:
-            del(self.mumps_ls)
+            del self.mumps_ls
 
         self.mumps_ls = None
 
-    def presolve(self, mtx, use_mtx_digest=True):
+    def presolve(self, mtx, use_mtx_digest=True, factorize=True):
         if use_mtx_digest:
             is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
 
@@ -845,97 +863,31 @@ class MUMPSSolver(LinearSolver):
             if not isinstance(mtx, sps.coo_matrix):
                 mtx = mtx.tocoo()
 
-            if self.mumps_ls is None:
-                system = 'complex' if mtx.dtype.name.startswith('complex')\
-                    else 'real'
-                is_sym = self.mumps.coo_is_symmetric(mtx)
-                mem_relax = self.conf.memory_relaxation
-                self.mumps_ls = self.mumps.MumpsSolver(system=system,
-                                                       is_sym=is_sym,
-                                                       mem_relax=mem_relax)
-            if self.conf.verbose:
-                self.mumps_ls.set_verbose()
+            is_sym = self.coo_is_symmetric(mtx)
 
-            self.mumps_ls.set_mtx_centralized(mtx)
-            self.mumps_ls(4)  # analyze + factorize
+            if self.mumps_ls is None:
+                if self.mumps_module == 'mumpspy':
+                    system = 'complex' if mtx.dtype.name.startswith('complex')\
+                        else 'real'
+                    mem_relax = self.conf.memory_relaxation
+                    self.mumps_ls = self.mumps.MumpsSolver(system=system,
+                                                           is_sym=is_sym,
+                                                           mem_relax=mem_relax)
+                    if self.conf.verbose:
+                        self.mumps_ls.set_verbose()
+                else:
+                    self.mumps_ls = self.mumps.Context(self.conf.verbose)
+
+            if self.mumps_module == 'mumpspy':
+                self.mumps_ls.set_mtx(mtx, factorize=factorize)
+            else:
+                self.mumps_ls.set_matrix(mtx, symmetric=is_sym)
+                self.mumps_ls.factor()
+
             self.mtx_digest = mtx_digest
 
     def __del__(self):
         self.clear()
-
-class MUMPSParallelSolver(LinearSolver):
-    """
-    Interface to MUMPS parallel solver.
-    """
-    name = 'ls.mumps_par'
-
-    _parameters = [
-        ('memory_relaxation', 'int', 20, False,
-         'The percentage increase in the estimated working space.'),
-    ]
-
-    def __init__(self, conf, **kwargs):
-        import multiprocessing
-        import sfepy.solvers.ls_mumps as mumps
-
-        mumps.load_mumps_libraries()  # try to load MUMPS libraries
-
-        LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
-                              number_of_cpu=multiprocessing.cpu_count(),
-                              mumps_presolved=False, **kwargs)
-
-    @standard_call
-    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, **kwargs):
-        from mpi4py import MPI
-        import sys
-        from sfepy import data_dir
-        import os.path as op
-        from tempfile import gettempdir
-
-        def tmpfile(fname):
-            return op.join(gettempdir(), fname)
-
-        if not isinstance(mtx, sps.coo_matrix):
-            mtx = mtx.tocoo()
-
-        is_sym = self.mumps.coo_is_symmetric(mtx)
-        rr, cc, data = mtx.row + 1, mtx.col + 1, mtx.data
-        if is_sym:
-            idxs = nm.where(cc >= rr)[0]  # upper triangular matrix
-            rr, cc, data = rr[idxs], cc[idxs], data[idxs]
-
-        n = mtx.shape[0]
-        nz = rr.shape[0]
-        flags = nm.memmap(tmpfile('vals_flags.array'), dtype='int32',
-                          mode='w+', shape=(4,))
-        flags[0] = n
-        flags[1] = 1 if data.dtype.name.startswith('complex') else 0
-        flags[2] = int(is_sym)
-        flags[3] = int(self.conf.verbose)
-
-        idxs = nm.memmap(tmpfile('idxs.array'), dtype='int32',
-                         mode='w+', shape=(2, nz))
-        idxs[0, :] = rr
-        idxs[1, :] = cc
-
-        dtype = {0: 'float64', 1: 'complex128'}[flags[1]]
-        vals_mtx = nm.memmap(tmpfile('vals_mtx.array'), dtype=dtype,
-                             mode='w+', shape=(nz,))
-        vals_rhs = nm.memmap(tmpfile('vals_rhs.array'), dtype=dtype,
-                             mode='w+', shape=(n,))
-        vals_mtx[:] = data
-        vals_rhs[:] = rhs
-
-        mumps_call = op.join(data_dir, 'sfepy', 'solvers',
-                             'ls_mumps_parallel.py')
-        comm = MPI.COMM_SELF.Spawn(sys.executable, args=[mumps_call],
-                                   maxprocs=self.number_of_cpu)
-        comm.Disconnect()
-
-        out = nm.memmap(tmpfile('vals_x.array'), dtype=dtype, mode='r')
-
-        return out
 
 
 class CholeskySolver(ScipyDirect):
@@ -1002,32 +954,26 @@ class SchurMumps(MUMPSSolver):
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        import scipy.linalg as sla
-
-        if not isinstance(mtx, sps.coo_matrix):
-            mtx = mtx.tocoo()
-
-        system = 'complex' if mtx.dtype.name.startswith('complex') else 'real'
-        self.mumps_ls = self.mumps.MumpsSolver(system=system)
-
-        if self.conf.verbose:
-            self.mumps_ls.set_verbose()
+        if not conf.use_presolve:
+            self.clear()
 
         schur_list = []
         for schur_var in conf.schur_variables:
             slc = self.context.equations.variables.adi.indx[schur_var]
             schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i'))
 
-        self.mumps_ls.set_mtx_centralized(mtx)
+        if not isinstance(mtx, sps.coo_matrix):
+            mtx = mtx.tocoo()
 
-        out = rhs.copy(order='F')
+        system = 'complex' if mtx.dtype.name.startswith('complex') else 'real'
+        is_sym = self.coo_is_symmetric(mtx)
+        mem_relax = self.conf.memory_relaxation
+        self.mumps_ls = self.mumps.MumpsSolver(system=system,
+                                               is_sym=is_sym,
+                                               mem_relax=mem_relax)
 
-        self.mumps_ls.set_rhs(out)
-
-        S, y2 = self.mumps_ls.get_schur(nm.hstack(schur_list))
-        x2 = sla.solve(S.T, y2)  # solve the dense Schur system using scipy.linalg
-
-        return self.mumps_ls.expand_schur(x2)
+        self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest, factorize=False)
+        return self.mumps_ls.schur_solve(nm.hstack(schur_list), rhs)
 
 
 class MultiProblem(ScipyDirect):
