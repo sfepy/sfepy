@@ -962,19 +962,16 @@ class SchurMumps(MUMPSSolver):
             slc = self.context.equations.variables.adi.indx[schur_var]
             schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i'))
 
-        if not isinstance(mtx, sps.coo_matrix):
-            mtx = mtx.tocoo()
-
-        system = 'complex' if mtx.dtype.name.startswith('complex') else 'real'
-        is_sym = self.coo_is_symmetric(mtx)
-        mem_relax = self.conf.memory_relaxation
-        self.mumps_ls = self.mumps.MumpsSolver(system=system,
-                                               is_sym=is_sym,
-                                               mem_relax=mem_relax)
+        # shur_list indexing starts from 1!
+        schur_list = nm.hstack(schur_list) + 1
 
         self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest, factorize=False)
-        # shur_list indexing starts from 1!
-        return self.mumps_ls.schur_solve(nm.hstack(schur_list) + 1, rhs)
+
+        if self.mumps_module == 'mumpspy':
+            return self.mumps_ls.schur_solve(schur_list, rhs)
+        else:
+            msg = 'Schur complement method not implemented in python-mumps!'
+            raise NotImplementedError(msg)
 
 
 class MultiProblem(ScipyDirect):
