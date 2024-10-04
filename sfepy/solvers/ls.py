@@ -826,7 +826,7 @@ class MUMPSSolver(LinearSolver):
                 except ImportError:
                     continue
 
-            msg =  'cannot import MUMPS!'
+            msg = 'cannot import MUMPS! Install either mumspy or python-mumps.'
             raise ImportError(msg)
 
         mumps, module = mumps_import(['mumpspy', 'mumps'])
@@ -847,9 +847,6 @@ class MUMPSSolver(LinearSolver):
         return self.mumps_ls.solve(rhs)
 
     def clear(self):
-        if self.mumps_ls is not None:
-            del self.mumps_ls
-
         self.mumps_ls = None
 
     def presolve(self, mtx, use_mtx_digest=True, factorize=True):
