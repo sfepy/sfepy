@@ -11,19 +11,6 @@ msg_numpydoc = """could not find numpydoc!
 If it is installed in a non-standard location, try setting it in
 site_cfg.py manually."""
 
-if not os.path.exists('site_cfg.py'):
-    try:
-        shutil.copyfile('site_cfg_template.py', 'site_cfg.py')
-
-    except:
-        pass
-
-try:
-    import site_cfg
-
-except ImportError:
-    site_cfg = None
-
 has_attr = lambda obj, attr: obj and hasattr(obj, attr)
 
 
@@ -44,27 +31,54 @@ def compose_system_compile_flags(is_posix: bool) -> list:
 
 
 class Config(object):
+    """
+    Read and access the site configuration from the current directory.
+    """
+
+    def __init__(self):
+        import sfepy
+        from sfepy.base.base import import_file
+
+        if not os.path.exists('site_cfg.py'):
+            try:
+                shutil.copyfile(os.path.join(sfepy.top_dir,
+                                             'site_cfg_template.py'),
+                                'site_cfg.py')
+
+            except:
+                pass
+
+
+        try:
+            cwd = os.getcwd()
+            self.site_cfg = import_file(os.path.join(cwd, 'site_cfg.py'))
+
+        except ImportError:
+            self.site_cfg = None
+
     def python_version(self):
-        if has_attr(site_cfg, 'python_version'):
-            if '*' in site_cfg.python_version:
+        if has_attr(self.site_cfg, 'python_version'):
+            if '*' in self.site_cfg.python_version:
                 return "%d.%d" % tuple(sys.version_info[:2])
             else:
-                return site_cfg.python_version
+                return self.site_cfg.python_version
         else:
             return "%d.%d" % tuple(sys.version_info[:2])
 
     def python_include(self):
-        if (has_attr(site_cfg, 'python_include')
-            and (site_cfg.python_include != 'auto')):
-            return site_cfg.python_include
+        if (has_attr(self.site_cfg, 'python_include')
+            and (self.site_cfg.python_include != 'auto')):
+            return self.site_cfg.python_include
 
         else:
             return sysconfig.get_config_var('INCLUDEPY')
 
 
     def system(self):
-        if has_attr(site_cfg, 'system') and site_cfg.system is not None:
-            return site_cfg.system
+        if (has_attr(self.site_cfg, 'system')
+            and self.site_cfg.system is not None):
+            return self.site_cfg.system
+
         else:
             if os.name in ['posix']:
                 return 'posix'
@@ -74,11 +88,12 @@ class Config(object):
                 raise ValueError(msg_unknown_os)
 
     def compile_flags(self):
-        if has_attr(site_cfg, 'compile_flags'):
-            flags = site_cfg.compile_flags
+        if has_attr(self.site_cfg, 'compile_flags'):
+            flags = self.site_cfg.compile_flags
             if isinstance(flags, str):
                 warn('Compile flags should be given as a list of strings.'
-                     ' Space-separated strings may be removed in the near future.',
+                     ' Space-separated strings may be removed in the'
+                     ' near future.',
                      DeprecationWarning, stacklevel=2)
 
                 flags = flags.split()
@@ -89,36 +104,36 @@ class Config(object):
         return flags + compose_system_compile_flags(self.system() == 'posix')
 
     def debug_flags(self) -> list:
-        if has_attr(site_cfg, 'debug_flags'):
-            return site_cfg.debug_flags
+        if has_attr(self.site_cfg, 'debug_flags'):
+            return self.site_cfg.debug_flags
         else:
             return []
 
     def numpydoc_path(self):
-        if (has_attr(site_cfg, 'numpydoc_path') and
-            (site_cfg.numpydoc_path is not None)):
-            return site_cfg.numpydoc_path
+        if (has_attr(self.site_cfg, 'numpydoc_path') and
+            (self.site_cfg.numpydoc_path is not None)):
+            return self.site_cfg.numpydoc_path
 
         else:
             try:
-                import numpydoc
+                import numpydoc; numpydoc
             except ImportError:
                 raise ValueError(msg_numpydoc)
 
     def is_release(self):
-        if has_attr(site_cfg, 'is_release'):
-            return site_cfg.is_release
+        if has_attr(self.site_cfg, 'is_release'):
+            return self.site_cfg.is_release
         else:
             return ''
 
     def tetgen_path(self):
-        if has_attr(site_cfg, 'tetgen_path'):
-            return site_cfg.tetgen_path
+        if has_attr(self.site_cfg, 'tetgen_path'):
+            return self.site_cfg.tetgen_path
         else:
             return '/usr/bin/tetgen'
 
     def refmap_memory_factor(self):
-        if has_attr(site_cfg, 'refmap_memory_factor'):
-            return site_cfg.refmap_memory_factor
+        if has_attr(self.site_cfg, 'refmap_memory_factor'):
+            return self.site_cfg.refmap_memory_factor
         else:
             return None
