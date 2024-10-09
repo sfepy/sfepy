@@ -345,11 +345,6 @@ int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
 
     // Determinant of deformation gradient.
     geme_det3x3( detF->val, mtxF );
-    for (iqp = 0; iqp < nQP; iqp++) {
-      if (detF->val[iqp] <= 0.0) {
-        errset( "warp violation!" );
-      }
-    }
     if (mode_ul) {
       // Left Cauchy-Green tensor b = F F^T.
       fmf_mulABT_nn( mtx1, mtxF, mtxF );
@@ -442,11 +437,6 @@ int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
 
     // Determinant of deformation gradient.
     geme_det3x3( detF->val, mtxF );
-    for (iqp = 0; iqp < nQP; iqp++) {
-      if (detF->val[iqp] <= 0.0) {
-        errset( "warp violation!" );
-      }
-    }
     geme_invert3x3( mtxFI, mtxF );
 
     ERR_CheckGo( ret );
