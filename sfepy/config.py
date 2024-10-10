@@ -137,3 +137,9 @@ class Config(object):
             return self.site_cfg.refmap_memory_factor
         else:
             return None
+
+    def debug_warped_cells(self):
+        if has_attr(self.site_cfg, 'debug_warped_cells'):
+            return self.site_cfg.debug_warped_cells
+        else:
+            return False
