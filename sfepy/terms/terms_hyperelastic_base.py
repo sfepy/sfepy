@@ -1,6 +1,8 @@
 import numpy as nm
 from sfepy.terms.terms import Term, terms
 from sfepy.base.base import Struct
+from sfepy import Config
+
 import six
 
 _msg_missing_data = 'missing family data!'
@@ -25,6 +27,11 @@ class HyperElasticFamilyData(Struct):
             'green_strain': ('n_el', 'n_qp', 'sym', 1),
             'inv_f': ('n_el', 'n_qp', 'dim', 'dim'),
     }
+
+    def __init__(self, **kwargs):
+        Struct.__init__(self, **kwargs)
+
+        self.site_config = Config()
 
     def init_data_struct(self, state_shape, name='family_data'):
         from sfepy.mechanics.tensors import dim2sym
@@ -74,6 +81,30 @@ class HyperElasticFamilyData(Struct):
 
             self.family_function(*fargs)
             cache[data_key] = data
+
+            det_f = data.det_f
+            neg_vol = ~nm.min((det_f > 0.0), axis=1, keepdims=True)
+            is_warp = neg_vol.any()
+            if is_warp:
+                if self.site_config.debug_warped_cells():
+                    from sfepy.base.base import output
+                    from sfepy.discrete.fem import extend_cell_data
+
+                    output('warped (negative volume) elements:')
+                    output(nm.unique(nm.nonzero(neg_vol[:, 0, 0, 0])[0]))
+
+                    mesh = region.domain.mesh
+                    neg_vol = extend_cell_data((neg_vol).astype(nm.float64),
+                                               region.domain, region.name,
+                                               val=0.0)
+                    out = {'neg_vol' : Struct(name='output_data',
+                                              mode='cell', data=neg_vol)}
+                    mesh.write('warped_cells.vtk', io='auto', out=out)
+                    raise RuntimeError(
+                        "inspect 'warped_cells.vtk' for negative volume cells"
+                    )
+
+                raise ValueError('warp violation!')
 
         return data
 
