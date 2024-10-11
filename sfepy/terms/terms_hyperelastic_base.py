@@ -1,6 +1,8 @@
 import numpy as nm
 from sfepy.terms.terms import Term, terms
 from sfepy.base.base import Struct
+from sfepy import Config
+
 import six
 
 _msg_missing_data = 'missing family data!'
@@ -25,6 +27,11 @@ class HyperElasticFamilyData(Struct):
             'green_strain': ('n_el', 'n_qp', 'sym', 1),
             'inv_f': ('n_el', 'n_qp', 'dim', 'dim'),
     }
+
+    def __init__(self, **kwargs):
+        Struct.__init__(self, **kwargs)
+
+        self.site_config = Config()
 
     def init_data_struct(self, state_shape, name='family_data'):
         from sfepy.mechanics.tensors import dim2sym
@@ -74,6 +81,39 @@ class HyperElasticFamilyData(Struct):
 
             self.family_function(*fargs)
             cache[data_key] = data
+
+            det_f = data.det_f
+            # Minimum over quadrature points.
+            jmin = nm.min(det_f, axis=1, keepdims=True)
+            jneg = jmin < 0.0
+            is_warp = jneg.any()
+            if is_warp:
+                if self.site_config.debug_warped_cells():
+                    from sfepy.base.base import output
+                    from sfepy.discrete.fem import extend_cell_data
+
+                    output('warped (negative volume) elements:')
+                    output(nm.unique(nm.nonzero(jneg[:, 0, 0, 0])[0]))
+
+                    mesh = region.domain.mesh
+                    jmin = extend_cell_data(jmin,
+                                            region.domain, region.name,
+                                            val=jmin.max())
+                    jneg = extend_cell_data(jneg.astype(nm.float64),
+                                            region.domain, region.name,
+                                            val=0.0)
+                    out = {
+                        'jmin' : Struct(name='output_data',
+                                        mode='cell', data=jmin),
+                        'jneg' : Struct(name='output_data',
+                                        mode='cell', data=jneg),
+                    }
+                    mesh.write('warped_cells.vtk', io='auto', out=out)
+                    raise RuntimeError(
+                        "inspect 'warped_cells.vtk' for negative volume cells"
+                    )
+
+                raise ValueError('warp violation!')
 
         return data
 

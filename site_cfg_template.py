@@ -31,3 +31,8 @@ tetgen_path = '/usr/bin/tetgen'
 # Reference mapping memory allocation safety factor (float), requires psutil
 # installed. Use None for skipping the memory check.
 refmap_memory_factor = None
+
+# If True, the large deformation terms print cells with a negative deformation
+# gradient determinant, save the negative volume indicator to
+# warped_cells.vtk in the working directory and raise RuntimeError.
+debug_warped_cells = False
