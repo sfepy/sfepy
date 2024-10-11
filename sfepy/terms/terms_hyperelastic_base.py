@@ -83,22 +83,31 @@ class HyperElasticFamilyData(Struct):
             cache[data_key] = data
 
             det_f = data.det_f
-            neg_vol = ~nm.min((det_f > 0.0), axis=1, keepdims=True)
-            is_warp = neg_vol.any()
+            # Minimum over quadrature points.
+            jmin = nm.min(det_f, axis=1, keepdims=True)
+            jneg = jmin < 0.0
+            is_warp = jneg.any()
             if is_warp:
                 if self.site_config.debug_warped_cells():
                     from sfepy.base.base import output
                     from sfepy.discrete.fem import extend_cell_data
 
                     output('warped (negative volume) elements:')
-                    output(nm.unique(nm.nonzero(neg_vol[:, 0, 0, 0])[0]))
+                    output(nm.unique(nm.nonzero(jneg[:, 0, 0, 0])[0]))
 
                     mesh = region.domain.mesh
-                    neg_vol = extend_cell_data((neg_vol).astype(nm.float64),
-                                               region.domain, region.name,
-                                               val=0.0)
-                    out = {'neg_vol' : Struct(name='output_data',
-                                              mode='cell', data=neg_vol)}
+                    jmin = extend_cell_data(jmin,
+                                            region.domain, region.name,
+                                            val=jmin.max())
+                    jneg = extend_cell_data(jneg.astype(nm.float64),
+                                            region.domain, region.name,
+                                            val=0.0)
+                    out = {
+                        'jmin' : Struct(name='output_data',
+                                        mode='cell', data=jmin),
+                        'jneg' : Struct(name='output_data',
+                                        mode='cell', data=jneg),
+                    }
                     mesh.write('warped_cells.vtk', io='auto', out=out)
                     raise RuntimeError(
                         "inspect 'warped_cells.vtk' for negative volume cells"
