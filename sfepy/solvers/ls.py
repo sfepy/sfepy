@@ -968,8 +968,8 @@ class SchurMumps(MUMPSSolver):
             # shur_list indexing starts from 1!
             return self.mumps_ls.schur_solve(schur_list + 1, rhs)
         else:
-            msg = 'Schur complement method not implemented in python-mumps!'
-            raise NotImplementedError(msg)
+            self.mumps_ls.schur(schur_list)
+            return self.mumps_ls.solve_schur(rhs)
 
 
 class MultiProblem(ScipyDirect):
