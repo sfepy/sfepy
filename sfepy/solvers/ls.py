@@ -829,11 +829,11 @@ class MUMPSSolver(LinearSolver):
             msg = 'cannot import MUMPS! Install either mumspy or python-mumps.'
             raise ImportError(msg)
 
-        mumps, module = mumps_import(['mumpspy', 'mumps'])
+        aux = try_imports(['import mumpspy as mumps', 'import mumps'],
+                          'cannot import MUMPS!')
 
-        LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
-                              mumps_presolved=False, mumps_module=module,
-                              **kwargs)
+        LinearSolver.__init__(self, conf, mumps=aux['mumps'], mumps_ls=None,
+                              mumps_presolved=False, **kwargs)
         self.clear()
 
     @standard_call
@@ -863,7 +863,7 @@ class MUMPSSolver(LinearSolver):
             is_sym = self.coo_is_symmetric(mtx)
 
             if self.mumps_ls is None:
-                if self.mumps_module == 'mumpspy':
+                if self.mumps.__name__ == 'mumpspy':
                     system = 'complex' if mtx.dtype.name.startswith('complex')\
                         else 'real'
                     mem_relax = self.conf.memory_relaxation
@@ -875,11 +875,12 @@ class MUMPSSolver(LinearSolver):
                 else:
                     self.mumps_ls = self.mumps.Context(self.conf.verbose)
 
-            if self.mumps_module == 'mumpspy':
+            if self.mumps.__name__ == 'mumpspy':
                 self.mumps_ls.set_mtx(mtx, factorize=factorize)
             else:
                 self.mumps_ls.set_matrix(mtx, symmetric=is_sym)
-                self.mumps_ls.factor()
+                if factorize:
+                    self.mumps_ls.factor()
 
             self.mtx_digest = mtx_digest
 
@@ -959,13 +960,13 @@ class SchurMumps(MUMPSSolver):
             slc = self.context.equations.variables.adi.indx[schur_var]
             schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i'))
 
-        # shur_list indexing starts from 1!
-        schur_list = nm.hstack(schur_list) + 1
+        schur_list = nm.hstack(schur_list)
 
         self.presolve(mtx, use_mtx_digest=conf.use_mtx_digest, factorize=False)
 
-        if self.mumps_module == 'mumpspy':
-            return self.mumps_ls.schur_solve(schur_list, rhs)
+        if self.mumps.__name__ == 'mumpspy':
+            # shur_list indexing starts from 1!
+            return self.mumps_ls.schur_solve(schur_list + 1, rhs)
         else:
             msg = 'Schur complement method not implemented in python-mumps!'
             raise NotImplementedError(msg)
