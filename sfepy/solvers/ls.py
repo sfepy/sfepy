@@ -817,18 +817,6 @@ class MUMPSSolver(LinearSolver):
         return False
 
     def __init__(self, conf, **kwargs):
-        def mumps_import(modules):
-            import importlib
-
-            for module in modules:
-                try:
-                    return importlib.import_module(module), module
-                except ImportError:
-                    continue
-
-            msg = 'cannot import MUMPS! Install either mumspy or python-mumps.'
-            raise ImportError(msg)
-
         aux = try_imports(['import mumpspy as mumps', 'import mumps'],
                           'cannot import MUMPS!')
 
