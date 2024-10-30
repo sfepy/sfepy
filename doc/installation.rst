@@ -119,6 +119,7 @@ Python packages required for using *SfePy*:
 - `SciPy`_,
 - `meshio`_ for reading and writing mesh files,
 - `scikit-umfpack`_ for enabling `UMFPACK`_ solver for SciPy >= 0.14.0,
+- `mumpspy`_ or `python-mumps`_ for linear direct and Schur solver `MUMPS`_
 - `Matplotlib`_ for various plots,
 - `PyTables`_ for storing results in HDF5 files,
 - `SymPy`_ for some tests and functions,
@@ -132,10 +133,10 @@ Python packages required for using *SfePy*:
 - `PyVista`_ for post-processing.
 
 Make sure the dependencies of those packages are also installed (e.g `igakit`_
-reguires FORTRAN compiler, `scikit-umfpack`_ does not work without UMFPACK,
-`petsc4py`_ without PETSc etc.). All dependencies of `meshio`_ need to be
-installed for full mesh file format support (when using pip: ``pip install
-meshio[all]``).
+reguires FORTRAN compiler, `mumpspy`_ requires `MUMPS`_ library,
+`scikit-umfpack`_ does not work without UMFPACK, `petsc4py`_ without PETSc
+etc.). All dependencies of `meshio`_ need to be installed for full mesh file
+format support (when using pip: ``pip install meshio[all]``).
 
 *SfePy* should work both with bleeding edge (Git) and last released versions of
 `NumPy` and `SciPy`. Please, submit an issue at `Issues`_ page in case this
@@ -153,8 +154,6 @@ Other dependencies/suggestions:
 - Mesh generation tools use `pexpect` and `gmsh` or `tetgen`.
 - `IPython`_ is recommended over the regular Python shell to fluently follow
   some parts of primer/tutorial.
-- `MUMPS`_ library for using MUMPS linear direct solver
-  (real and complex arithmetic, parallel factorization)
 
 .. _compilation:
 

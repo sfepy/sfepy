@@ -77,6 +77,8 @@
 .. _wxPython: https://wxpython.org/
 .. _psutil: https://github.com/giampaolo/psutil
 .. _PyVista: https://docs.pyvista.org
+.. _mumpspy: https://github.com/vlukes/mumpspy
+.. _python-mumps: https://gitlab.kwant-project.org/kwant/python-mumps
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
