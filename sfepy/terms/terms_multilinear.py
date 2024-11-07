@@ -1204,6 +1204,22 @@ class ETermBase(Term):
                                     kind='ndarray')
         return normals
 
+    def print_expressions(self, diff_var=None):
+        operands = self.get_operands(diff_var)
+
+        einfo = self.einfos[diff_var]
+        ebuilder = einfo.ebuilder
+
+        subscripts, operands = ebuilder.apply_layout(
+            self.layout, operands, verbosity=self.verbosity,
+        )
+
+        parsed_expressions = ebuilder.get_expressions(subscripts)
+        output('parsed expressions:', parsed_expressions)
+        ebuilder.print_shapes(subscripts, operands)
+
+        return ebuilder
+
 class EIntegrateOperatorTerm(ETermBase):
     r"""
     Volume and surface integral of a test function weighted by a scalar
