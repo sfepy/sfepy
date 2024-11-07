@@ -30,10 +30,10 @@ def write_results(filename, probe, results):
     fd.write('\n'.join(probe.report()) + '\n')
     for key, result in six.iteritems(results):
         pars, vals = result
+        vals = vals.reshape(pars.shape[0], -1)
         fd.write('\n# %s %d\n' % (key, vals.shape[-1]))
 
-        aux = nm.concatenate((pars[:, None], vals.reshape(pars.shape[0], -1)),
-                             axis=1)
+        aux = nm.concatenate((pars[:, None], vals), axis=1)
 
         nm.savetxt(fd, aux)
 
