@@ -2095,12 +2095,12 @@ class Problem(Struct):
 
         if (mode == -1) and len(self._restart_filenames):
             last_filename = self._restart_filenames.pop()
+            if last_filename != filename:
+                try:
+                    os.remove(last_filename)
 
-            try:
-                os.remove(last_filename)
-
-            except OSError:
-                pass
+                except OSError:
+                    pass
 
         self._restart_filenames.append(filename)
 
