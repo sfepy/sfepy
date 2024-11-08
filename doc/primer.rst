@@ -75,7 +75,7 @@ symmetry. The meshing program `Gmsh`_ is used here to very quickly mesh the
 model. Follow these steps to model the ITS, creating the file
 `its2D.mesh <../meshes/2d/its2D.mesh>`:
 
-#. The ITS specimen has a diameter of 150 mm. Using *Gmsh* add (geometry/Elementary Entities/add) three new
+#. The ITS specimen has a diameter of 150 mm. Using *Gmsh* add (geometry/Elementary Entities/Add) three new
    points at the following coordinates:
    :math:`(75.0,0.0,0.0), (0.0,0.0,0.0) \,\textrm{and}\, (0.0,75.0,0.0)`.
 #. Next add two straight lines connecting the points.
