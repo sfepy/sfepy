@@ -807,7 +807,7 @@ class MUMPSSolver(LinearSolver):
         """Symmetry check of the sparse matrix."""
         row, col, data = mtx.row, mtx.col, mtx.data
 
-        out_of_diag = nm.where(row != col)[0]
+        out_of_diag = (row != col)
         row, col, data = row[out_of_diag], col[out_of_diag], data[out_of_diag]
 
         idxs_u = nm.where(col > row)[0]
