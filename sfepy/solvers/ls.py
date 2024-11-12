@@ -805,16 +805,24 @@ class MUMPSSolver(LinearSolver):
     @staticmethod
     def coo_is_symmetric(mtx, tol=1e-9):
         """Symmetry check of the sparse matrix."""
-        a_at = mtx - mtx.T
+        row, col, data = mtx.row, mtx.col, mtx.data
 
-        if a_at.nnz == 0 or nm.all(nm.abs(a_at.data) < tol):
-            return True
+        out_of_diag = (row != col)
+        row, col, data = row[out_of_diag], col[out_of_diag], data[out_of_diag]
 
-        norm = nm.linalg.norm(mtx.data)
-        if nm.all(nm.abs(a_at.data) < tol * norm):
-            return True
+        idxs_u = nm.where(col > row)[0]
+        idxs_l = nm.where(col < row)[0]
+        if idxs_l.shape[0] != idxs_u.shape[0]:
+            return False
 
-        return False
+        iu = nm.lexsort((row[idxs_u], col[idxs_u]))
+        il = nm.lexsort((col[idxs_l], row[idxs_l]))
+
+        err = nm.abs(data[idxs_u[iu]] - data[idxs_l[il]])
+        if nm.any(err/nm.abs(data[idxs_u].max()) >= tol):
+            return False
+
+        return True
 
     def __init__(self, conf, **kwargs):
         aux = try_imports(['import mumpspy as mumps', 'import mumps'],
@@ -835,6 +843,9 @@ class MUMPSSolver(LinearSolver):
         return self.mumps_ls.solve(rhs)
 
     def clear(self):
+        if self.mumps_ls is not None:
+            del self.mumps_ls
+
         self.mumps_ls = None
 
     def presolve(self, mtx, use_mtx_digest=True, factorize=True):
