@@ -819,7 +819,7 @@ class MUMPSSolver(LinearSolver):
         il = nm.lexsort((col[idxs_l], row[idxs_l]))
 
         err = nm.abs(data[idxs_u[iu]] - data[idxs_l[il]])
-        if not nm.all(err/nm.abs(data[idxs_u].max()) < tol):
+        if nm.any(err/nm.abs(data[idxs_u].max()) >= tol):
             return False
 
         return True
