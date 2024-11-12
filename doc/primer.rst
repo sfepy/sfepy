@@ -72,15 +72,17 @@ symmetrical about the x- and y-axes passing through the centre of the
 circle. To take advantage of this symmetry only one quarter of the 2D model
 will be meshed and boundary conditions will be established to indicate this
 symmetry. The meshing program `Gmsh`_ is used here to very quickly mesh the
-model. Follow these steps to model the ITS:
+model. Follow these steps to model the ITS, creating the file
+`its2D.mesh <../meshes/2d/its2D.mesh>`:
 
-#. The ITS specimen has a diameter of 150 mm. Using *Gmsh* add three new
-   points (geometry elementary entities) at the following coordinates:
-   :math:`(0.0 0.0), (75.0,0.0) \,\textrm{and}\, (0.0,75.0)`.
+#. The ITS specimen has a diameter of 150 mm. Using *Gmsh* add
+   (geometry/Elementary Entities/Add) three new points at the following
+   coordinates:
+   :math:`(75.0,0.0,0.0), (0.0,0.0,0.0) \,\textrm{and}\, (0.0,75.0,0.0)`.
 #. Next add two straight lines connecting the points.
 #. Next add a Circle arc connecting two of the points to form the
    quarter circle segment.
-#. Still under `Geometry` add a ruled surface.
+#. Still under `Geometry/Elementary entities` add a Plane Surface.
 #. With the geometry of the model defined, add a mesh by clicking on the
    2D button under the Mesh functions.
 
