@@ -766,8 +766,8 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
             out['recovery_id'] = Struct(name='output_data',
                                         mode='cell',
                                         data=rec_ids[gcidxs, ...])
-            micro_name = pb.get_output_name(extra='recovered%s_%s'
-                                            % (recovery_file_tag, rlabel))
+            micro_name = pb.get_output_name(extra='recovered_%s%s'
+                                            % (rlabel, recovery_file_tag))
             filename = op.join(output_dir, op.basename(micro_name))
             mesh_out = Mesh.from_data('recovery_%s' % rlabel, rcoors,
                                       ngroups[vidxs], [rconn],
