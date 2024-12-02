@@ -749,14 +749,15 @@ class PETScKrylovSolver(LinearSolver):
         else:
             ksp = self.init_ksp(conf=conf, comm=comm)
             ksp.setOperators(pmtx)
-            ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
-                              max_it=i_max)
 
-            setup_precond = self.conf.setup_precond
-            if setup_precond is not None:
-                ksp.pc.setPythonContext(setup_precond(mtx, context))
+        ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
+                          max_it=i_max)
 
-            self.ksp.setFromOptions()
+        setup_precond = self.conf.setup_precond
+        if setup_precond is not None:
+            ksp.pc.setPythonContext(setup_precond(mtx, context))
+
+        self.ksp.setFromOptions()
 
         if isinstance(rhs, self.petsc.Vec):
             prhs = rhs
