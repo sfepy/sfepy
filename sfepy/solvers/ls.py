@@ -713,12 +713,18 @@ class PETScKrylovSolver(LinearSolver):
 
         return pmtx
 
+    def init_ksp(self, conf=None, comm=None):
+        if conf is None:
+            conf = self.conf
+
+        solver_kwargs = self.build_solver_kwargs(conf)
+        self.ksp = self.create_ksp(options=solver_kwargs, comm=comm)
+        return self.ksp
+
     @petsc_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, comm=None, context=None,
                  **kwargs):
-        solver_kwargs = self.build_solver_kwargs(conf)
-
         eps_a = get_default(eps_a, self.conf.eps_a)
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
@@ -726,14 +732,22 @@ class PETScKrylovSolver(LinearSolver):
 
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest,
                                             force_reuse=conf.force_reuse)
-        if (not is_new) and self.ksp is not None:
-            ksp = self.ksp
+        if (not is_new) and (self.pmtx is not None):
             pmtx = self.pmtx
-
         else:
+            is_new = True
             pmtx = self.create_petsc_matrix(mtx, comm=comm)
 
-            ksp = self.create_ksp(options=solver_kwargs, comm=comm)
+            self.mtx_digest = mtx_digest
+            self.pmtx = pmtx
+
+        if self.ksp is not None:
+            ksp = self.ksp
+            if is_new:
+                ksp.setOperators(pmtx)
+
+        else:
+            ksp = self.init_ksp(conf=conf, comm=comm)
             ksp.setOperators(pmtx)
             ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
                               max_it=i_max)
@@ -742,10 +756,7 @@ class PETScKrylovSolver(LinearSolver):
             if setup_precond is not None:
                 ksp.pc.setPythonContext(setup_precond(mtx, context))
 
-            ksp.setFromOptions()
-            self.mtx_digest = mtx_digest
-            self.ksp = ksp
-            self.pmtx = pmtx
+            self.ksp.setFromOptions()
 
         if isinstance(rhs, self.petsc.Vec):
             prhs = rhs
