@@ -26,6 +26,9 @@ class LCBCOperator(Struct):
         if dof_map_fun is not None:
             self.dof_map_fun = get_condition_value(dof_map_fun, functions,
                                                    'LCBC', 'dof_map_fun')
+        else:
+            self.dof_map_fun = None
+
         self._setup_dof_names(variables)
 
     def _setup_dof_names(self, variables):
