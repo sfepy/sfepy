@@ -281,6 +281,7 @@ class AverageForceOperator(LCBCOperator):
             length = 1.0
 
         sym = dim2sym(dim)
+        dof_map_fun = self.dof_map_fun
         if dof_map_fun is None:
             dof_map_fun = lambda a, b: nm.ones((n_nod, sym),
                                                dtype=nm.float64)
