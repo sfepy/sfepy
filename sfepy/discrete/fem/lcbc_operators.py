@@ -235,8 +235,12 @@ class AverageForceOperator(LCBCOperator):
     Functionally it corresponds to the RBE3 multi-point constraint in
     MSC/Nastran.
 
-    A simplified version for fields without the rotation DOFs is also
-    supported.
+    Rotation DOFs in independent nodes are not supported (ignored), see the
+    comment (*) in the code. This is because the independent field is assumed
+    to come from solid elements.
+
+    A simplified version for the dependent field without the rotation DOFs is
+    also supported.
     """
     kind = 'average_force'
 
@@ -293,13 +297,19 @@ class AverageForceOperator(LCBCOperator):
             mtx_s[...] = nm.eye(sym, dtype=nm.float64)
             mtx_s[:, :dim, dim:] = _create_spin_matrix(coors)
 
+            # Equivalent to:
+            # W = nm.einsum('na,ab->nab', sweights, nm.eye(3))
+            # mtx_ix = nm.einsum('nic,nij,njk->ck', mtx_s, W, mtx_s)
+            # i.e. X^{-1} = \sum_k (S_k^T W_k S_k)
             mtx_ws = (mtx_s * sweights[..., None])
             mtx_ix = mtx_s.reshape((-1, sym)).T @ mtx_ws.reshape((-1, sym))
 
             mtx_x = nm.linalg.inv(mtx_ix)
 
+            # G_k = W_k S_k X
             mtx_g = mtx_ws @ mtx_x
 
+            # (*) Rotation DOFs on independent nodes are ignored!
             mtx = mtx_g[:, :dim, :].reshape((-1, sym)).T
 
         else:
