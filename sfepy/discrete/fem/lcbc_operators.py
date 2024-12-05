@@ -313,8 +313,14 @@ class AverageForceOperator(LCBCOperator):
             mtx = mtx_g[:, :dim, :].reshape((-1, sym)).T
 
         else:
-            mtx = nm.tile(nm.eye(dim, dtype=nm.float64) * 1.0 / n_nod,
-                          (1, n_nod))
+            # As above, but S = I(dim) -> simplified code.
+            mtx_ws = (nm.eye(dim) * sweights[..., None])
+            mtx_ix = mtx_ws.sum(axis=0)
+            mtx_x = nm.linalg.inv(mtx_ix)
+
+            mtx_g = mtx_ws @ mtx_x
+
+            mtx = mtx_g.reshape((-1, dim)).T
 
         rows = nm.repeat(meq, len(seq))
         cols = nm.tile(seq, len(meq))
