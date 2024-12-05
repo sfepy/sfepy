@@ -24,7 +24,7 @@ on the directions :math:`\ul{d}` of the springs and the stiffness vector
 :math:`\ul{k}`.
 
 The deformation is governed by the Dirichlet conditions applied to one of the
-sping end points, see the `dofs` argument of :func:`define()` below.
+spring end points, see the `dofs` argument of :func:`define()` below.
 
 Usage Examples
 --------------
@@ -39,6 +39,7 @@ Usage Examples
 
     sfepy-run sfepy/examples/linear_elasticity/multi_point_constraints.py
     sfepy-run sfepy/examples/linear_elasticity/multi_point_constraints.py -d "dofs=(0,1)"
+    sfepy-run sfepy/examples/linear_elasticity/multi_point_constraints.py -d "dofs=(0,1), is_rot=False"
     sfepy-run sfepy/examples/linear_elasticity/multi_point_constraints.py -d "dofs=2"
 
 - Display results::
@@ -53,6 +54,13 @@ from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.linalg import get_coors_in_ball
 from sfepy.mechanics.matcoefs import stiffness_from_lame
+from sfepy.mechanics.tensors import dim2sym
+
+def get_weights(mcoors, scoors):
+    n_nod, dim = scoors.shape
+    out = nm.empty((n_nod, dim2sym(dim)))
+    out[:] = nm.linspace(0, 10, n_nod)[:, None]
+    return out
 
 def define(dims=(1, 1, 2, 2, 0), shape=(5, 32, 0), order=1, dofs=(0, 1, 2),
            is_rot=True, output_dir='.'):
@@ -119,6 +127,7 @@ def define(dims=(1, 1, 2, 2, 0), shape=(5, 32, 0), order=1, dofs=(0, 1, 2),
                         get_coors_in_ball(coors, centre, 2.6, 2.4),),
         'get_gamma4' : (lambda coors, domain:
                         get_coors_in_ball(coors, centre, 5.1, 4.9),),
+        'get_weights' : (get_weights,),
     }
 
     fields = {
@@ -149,7 +158,7 @@ def define(dims=(1, 1, 2, 2, 0), shape=(5, 32, 0), order=1, dofs=(0, 1, 2),
         'rigid' : (('Gamma1', 'Gamma2C'), {'u.all' : 'uc.all'},
                    None, 'rigid2'),
         'avg1' : (('Gamma2', 'Gamma3C'), {'u.all' : 'uc.all'},
-                  None, 'average_force'),
+                  'get_weights', 'average_force'),
         'avg2' : (('Gamma3', 'Gamma4C'), {'u.all' : 'uc.all'},
                   None, 'average_force'),
     }
