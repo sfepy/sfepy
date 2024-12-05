@@ -26,6 +26,9 @@ class LCBCOperator(Struct):
         if dof_map_fun is not None:
             self.dof_map_fun = get_condition_value(dof_map_fun, functions,
                                                    'LCBC', 'dof_map_fun')
+        else:
+            self.dof_map_fun = None
+
         self._setup_dof_names(variables)
 
     def _setup_dof_names(self, variables):
@@ -232,8 +235,12 @@ class AverageForceOperator(LCBCOperator):
     Functionally it corresponds to the RBE3 multi-point constraint in
     MSC/Nastran.
 
-    A simplified version for fields without the rotation DOFs is also
-    supported.
+    Rotation DOFs in independent nodes are not supported (ignored), see the
+    comment (*) in the code. This is because the independent field is assumed
+    to come from solid elements.
+
+    A simplified version for the dependent field without the rotation DOFs is
+    also supported.
     """
     kind = 'average_force'
 
@@ -278,6 +285,7 @@ class AverageForceOperator(LCBCOperator):
             length = 1.0
 
         sym = dim2sym(dim)
+        dof_map_fun = self.dof_map_fun
         if dof_map_fun is None:
             dof_map_fun = lambda a, b: nm.ones((n_nod, sym),
                                                dtype=nm.float64)
@@ -289,18 +297,30 @@ class AverageForceOperator(LCBCOperator):
             mtx_s[...] = nm.eye(sym, dtype=nm.float64)
             mtx_s[:, :dim, dim:] = _create_spin_matrix(coors)
 
+            # Equivalent to:
+            # W = nm.einsum('na,ab->nab', sweights, nm.eye(3))
+            # mtx_ix = nm.einsum('nic,nij,njk->ck', mtx_s, W, mtx_s)
+            # i.e. X^{-1} = \sum_k (S_k^T W_k S_k)
             mtx_ws = (mtx_s * sweights[..., None])
             mtx_ix = mtx_s.reshape((-1, sym)).T @ mtx_ws.reshape((-1, sym))
 
             mtx_x = nm.linalg.inv(mtx_ix)
 
+            # G_k = W_k S_k X
             mtx_g = mtx_ws @ mtx_x
 
+            # (*) Rotation DOFs on independent nodes are ignored!
             mtx = mtx_g[:, :dim, :].reshape((-1, sym)).T
 
         else:
-            mtx = nm.tile(nm.eye(dim, dtype=nm.float64) * 1.0 / n_nod,
-                          (1, n_nod))
+            # As above, but S = I(dim) -> simplified code.
+            mtx_ws = (nm.eye(dim) * sweights[..., None])
+            mtx_ix = mtx_ws.sum(axis=0)
+            mtx_x = nm.linalg.inv(mtx_ix)
+
+            mtx_g = mtx_ws @ mtx_x
+
+            mtx = mtx_g.reshape((-1, dim)).T
 
         rows = nm.repeat(meq, len(seq))
         cols = nm.tile(seq, len(meq))
