@@ -373,6 +373,10 @@ class ContactIPCTerm(Term):
         if diff_var is not None:
             ci = self.ci
 
+        if ci is None:
+            output('WARNING: ci argument was not passed to dw_contact_ipc')
+            ci = self.get_contact_info(state)
+
         collision_mesh = ci.collision_mesh
 
         uvec = state().reshape((-1, ci.dim))[ci.nods]
