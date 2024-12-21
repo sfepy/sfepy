@@ -287,7 +287,7 @@ def define(
                xlabels=['', '', 'all iterations', 'all iterations'],
                ylabels=[r'$d$', r'$k$', r'$\nabla B$', r'$\nabla E$'],
                yscales=['log', 'linear', 'linear', 'linear'],
-               is_plot=True,
+               is_plot=False,
                log_filename=inodir('clog.txt'),
                formats=[['%.8e']] * 4)
 
@@ -445,7 +445,7 @@ def define(
             'ls_min' : 1e-5,
             'check' : 0,
             'delta' : 1e-8,
-            'log' : {'text' : inodir('log.txt'), 'plot' : inodir('log.png')},
+            'log' : {'text' : inodir('log.txt')},
             'log_vlines' : 'solve',
         }),
         'ts' : ('ts.simple', {
