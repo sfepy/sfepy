@@ -248,6 +248,9 @@ def _test_single_term(data, term_cls, domain, rname):
             elif 'de_mass' in term_cls.name:
                 material_value = {'material_lumping' : 'row_sum'}
 
+            elif 'dw_contact_ipc' in term_cls.name:
+                material_value = {'material_p' : 'NONE'}
+
             else:
                 material_value = 1.0
             aux = make_term_args(arg_shapes, arg_kinds, ats, mode, domain,
