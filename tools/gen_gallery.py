@@ -553,6 +553,15 @@ custom = {
                                 0, 0, 1],
         },
     },
+    'linear_elasticity/two_bodies_contact.py': {
+        '': {
+            'fields': ['u:wu:f1:p0', '1:vw:wu:f1:p0'],
+            'camera_position': [-1.39408,-2.02778,0.937677,
+                                -0.0018284,-0.034985,-0.15843,
+                                0.208882,0.355227,0.911143],
+
+        }
+    },
     'linear_elasticity/wedge_mesh.py': {
         'command': 'sfepy-run sfepy/examples/linear_elasticity/wedge_mesh.py',
         'result': 'beam_w14.vtk',
