@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import Struct
+from sfepy.base.base import output, Struct
 from sfepy.terms.terms import Term
 from sfepy.terms.extmods import terms
 import sfepy.mechanics.extmods.ccontres as cc
@@ -235,3 +235,234 @@ class ContactTerm(Term):
             n_qp = 1
 
         return (n_el, n_qp, 1, 1), state.dtype
+
+class ContactIPCTerm(Term):
+    r"""
+    Contact term based on IPC Toolkit.
+
+    This term has a dynamic connectivity of DOFs in its region.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma_{c}} \sum_{k \in C} \nabla b(d_k, \ul{u})
+
+    :Arguments:
+        - material_m : :math:`m`
+        - material_k : :math:`k`
+        - material_d : :math:`\hat{d}`
+        - material_p : PSDProjectionMethod
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+    """
+    name = 'dw_contact_ipc'
+    arg_types = ('material_m', 'material_k', 'material_d', 'material_p',
+                 'virtual', 'state')
+    arg_shapes = {'material_m' : '.: 1', 'material_k' : '.: 1',
+                  'material_d' : '.: 1', 'material_p' : '.: str',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    integration = 'facet'
+    geometries = ['3_4', '3_8']
+
+    def __init__(self, *args, **kwargs):
+        Term.__init__(self, *args, **kwargs)
+
+        import ipctk
+
+        self.ipc = ipctk
+        self.ci = None
+
+    def call_function(self, out, fargs):
+        try:
+            out, status = self.function(out, *fargs)
+
+        except (RuntimeError, ValueError):
+            terms.errclear()
+            raise
+
+        if status:
+            terms.errclear()
+            raise ValueError('term evaluation failed! (%s)' % self.name)
+
+        return out, status
+
+    def eval_real(self, shape, fargs, mode='eval', term_mode=None,
+                  diff_var=None, **kwargs):
+        if mode == 'weak':
+            out, status = self.call_function(None, fargs)
+
+        else:
+            out = nm.empty(shape, dtype=nm.float64)
+            status = self.call_function(out, fargs)
+
+        return out, status
+
+    @staticmethod
+    def function_weak(out, out_cc):
+        return out_cc, 0
+
+    @staticmethod
+    def function(out, fun, *args):
+        return fun(out, *args)
+
+    def get_contact_info(self, state):
+        from sfepy.discrete.fem.mesh import Mesh
+        from sfepy.mesh.mesh_tools import triangulate
+        from sfepy.discrete.fem.geometry_element import create_geometry_elements
+        from sfepy.discrete.variables import create_adof_conn
+
+        if self.ci is not None:
+            return self.ci
+
+        tdim = self.region.kind_tdim
+        if tdim not in (1, 2):
+            raise ValueError(
+                'contact region topological dimension must be 1 or 2!'
+                f' (is {tdim})'
+            )
+
+        smesh = Mesh.from_region(self.region, self.region.domain.mesh,
+                                 localize=True, is_surface=True)
+
+        if '2_4' in smesh.descs:
+            smesh = triangulate(smesh)
+
+        gels = create_geometry_elements()
+
+        cmesh = smesh.cmesh
+        cmesh.set_local_entities(gels)
+        cmesh.setup_entities()
+
+        edges = cmesh.get_conn(1, 0).indices.astype(nm.int32)
+        edges = edges.reshape((-1, 2))
+        if tdim == 2:
+            faces = cmesh.get_conn(2, 0).indices.astype(nm.int32)
+            faces = faces.reshape((-1, 3))
+            collision_mesh = self.ipc.CollisionMesh(smesh.coors, edges, faces)
+
+        else:
+            faces = None
+            collision_mesh = self.ipc.CollisionMesh(smesh.coors, edges)
+
+        nods = state.field.get_dofs_in_region(self.region, merge=True)
+
+        econn = state.field.get_econn('facet', self.region)
+        dofs = nm.unique(
+            create_adof_conn(nm.arange(state.n_dof), econn, smesh.dim, 0)
+        )
+
+        self.ci = Struct(smesh=smesh, edges=edges, faces=faces, nods=nods,
+                         econn=econn, dofs=dofs, dim=smesh.dim,
+                         collision_mesh=collision_mesh,
+                         prev_min_distance=None,
+                         min_distance=None,
+                         it=0,
+                         ls_it=0,
+                         barrier_potential=None,
+                         barrier_stiffness=None,
+                         max_barrier_stiffness=None,
+                         e_grad_full=None,
+                         bp_grad_norm=None,
+                         e_grad_norm=None)
+        return self.ci
+
+    def get_fargs(self, avg_mass, stiffness, dhat, spd_projection,
+                  virtual, state,
+                  mode=None, term_mode=None, diff_var=None, ci=None,
+                  **kwargs):
+        if diff_var is not None:
+            ci = self.ci
+
+        if ci is None:
+            output('WARNING: ci argument was not passed to dw_contact_ipc')
+            ci = self.get_contact_info(state)
+
+        collision_mesh = ci.collision_mesh
+
+        uvec = state().reshape((-1, ci.dim))[ci.nods]
+
+        vertices = collision_mesh.rest_positions + uvec
+        collisions = self.ipc.Collisions()
+        collisions.build(collision_mesh, vertices, dhat)
+
+        ci.min_distance = collisions.compute_minimum_distance(
+            collision_mesh, vertices,
+        )
+        ci.bbox_diagonal = self.ipc.world_bbox_diagonal_length(vertices)
+
+        B = self.ipc.BarrierPotential(dhat)
+
+        actual_stiffness = stiffness
+        if actual_stiffness == 0.0: # Adaptive barrier stiffness
+            if ci.it == 0:
+                # This should be done at the start of each time step.
+                bp_grad = B.gradient(collisions, collision_mesh, vertices)
+
+                if ci.e_grad_full is not None:
+                    e_grad = ci.e_grad_full[ci.dofs]
+
+                else:
+                    e_grad = nm.zeros_like(bp_grad)
+
+                (ci.barrier_stiffness,
+                 ci.max_barrier_stiffness) = self.ipc.initial_barrier_stiffness(
+                     ci.bbox_diagonal,
+                     B.barrier,
+                     dhat, avg_mass,
+                     e_grad, bp_grad,
+                 )
+                actual_stiffness = ci.barrier_stiffness
+                ci.prev_min_distance = ci.min_distance
+                ci.e_grad_norm = nm.linalg.norm(e_grad)
+                ci.bp_grad_norm = nm.linalg.norm(bp_grad)
+
+            elif (ci.ls_it == 0) and (diff_var is None):
+                # Do not update during line-search!
+                actual_stiffness = self.ipc.update_barrier_stiffness(
+                    ci.prev_min_distance, ci.min_distance,
+                    ci.max_barrier_stiffness, ci.barrier_stiffness,
+                    ci.bbox_diagonal,
+                )
+                ci.barrier_stiffness = actual_stiffness
+                ci.prev_min_distance = ci.min_distance
+
+            else:
+                actual_stiffness = ci.barrier_stiffness
+
+        else:
+            ci.barrier_stiffness = actual_stiffness
+            ci.e_grad_norm = 0.0
+            ci.bp_grad_norm = 0.0
+
+        ci.barrier_potential = B(collisions, collision_mesh, vertices)
+
+        if self.verbosity > 0:
+            output('min. distance::', ci.min_distance)
+            output('barrier potential:', ci.barrier_potential)
+            output('barrier stiffness:', actual_stiffness)
+
+        if diff_var is None:
+            bp_grad = B.gradient(collisions, collision_mesh, vertices)
+
+            out_cc = (actual_stiffness * bp_grad,
+                      ci.dofs, state)
+
+        else:
+            proj = getattr(self.ipc.PSDProjectionMethod, spd_projection,
+                           self.ipc.PSDProjectionMethod.NONE)
+            bp_hess = B.hessian(
+                collisions, collision_mesh, vertices,
+                project_hessian_to_psd=proj,
+            )
+
+            ir, ic = bp_hess.nonzero()
+            if len(ir):
+                vals = bp_hess[ir, ic].A1
+
+            else:
+                vals = nm.array([], dtype=bp_hess.dtype)
+
+            out_cc = (actual_stiffness * vals, ci.dofs[ir],
+                      ci.dofs[ic], state, state)
+
+        return self.function_weak, out_cc
