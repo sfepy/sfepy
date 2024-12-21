@@ -59,6 +59,7 @@ omit_images = [
 
 omit_dirs = [
     re.compile('.*output.*/').match,
+    re.compile('.*__pycache__/').match,
 ]
 
 custom = {
