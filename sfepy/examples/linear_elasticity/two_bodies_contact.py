@@ -20,16 +20,34 @@ g_N(\ul{u}) \rangle` are the Macaulay's brackets of the gap function
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 
+This example also demonstrates use of an experimental contact term based on the
+IPC Toolkit [1].
+
+[1] https://github.com/ipc-sim/ipc-toolkit
+
 Usage examples::
 
-  sfepy-run sfepy/examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
+  # Check regions and EBC nodes.
+  sfepy-run sfepy/examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes --solve-not
 
-  sfepy-view two_bodies.h5 -f u:wu:f2:p0 1:vw:p0 gap:p1 -2
+  sfepy-view two_bodies_ebc_nodes.vtk
+  sfepy-view two_bodies_regions.h5
 
-  python3 sfepy/scripts/plot_logs.py log.txt
+  # Run with default parameters and view results.
+  sfepy-run sfepy/examples/linear_elasticity/two_bodies_contact.py
 
-  sfepy-view two_bodies_ebc_nodes.vtk -2
-  sfepy-view two_bodies_regions.h5 -2
+  sfepy-view output/contact/two_bodies.h5
+  sfepy-view output/contact/two_bodies.h5 -f u:wu:f1:p0 1:vw:wu:f1:p0
+
+  # Plot the nonlinear solver convergence.
+  python3 sfepy/scripts/plot_logs.py output/contact/log.txt
+
+  # Run with default parameters and IPC toolkit, view results.
+  sfepy-run sfepy/examples/linear_elasticity/two_bodies_contact.py -d "contact='ipc'"
+  sfepy-view output/contact/two_bodies.h5 -f u:wu:f1:p0 1:vw:wu:f1:p0
+
+  # Plot the IPC contact parameters evolution.
+  python3 sfepy/scripts/plot_logs.py output/contact/clog.txt
 """
 import os.path as op
 from functools import partial
@@ -235,7 +253,7 @@ def define(
         n_step=5,
         contact='builtin',
 
-        output_dir='.',
+        output_dir='output/contact',
         verbose=True,
 ):
     args = locals()
@@ -371,7 +389,7 @@ def define(
             '.k' : ck, # 0 = Adaptive barrier stiffness.
             '.dhat' : dhat,
             '.Pspd' : pspd,
-            '.epss' : 1e+1,
+            '.epss' : 2e+1,
         },),
     }
 
@@ -389,7 +407,7 @@ def define(
             """,
         }
 
-    else:
+    elif contact == 'ipc':
         equations = {
             'elasticity' :
             """
@@ -401,6 +419,9 @@ def define(
             """,
         }
 
+    else:
+        raise ValueError("contact argument can be one of 'builtin', 'ipc'!")
+
     if contact == 'ipc':
         apply_ls = partial(apply_line_search, clog=clog)
 
@@ -410,9 +431,9 @@ def define(
     solvers = {
         'ls' : ('ls.auto_direct', {}),
         'newton' : ('nls.newton', {
-            'i_max' : 20,
+            'i_max' : 30,
             'eps_a' : 1e-8,
-            'eps_r' : 1e-5,
+            'eps_r' : 1e-8,
             'eps_mode' : 'or',
             'macheps' : 1e-16,
             # Linear system error < (eps_a * lin_red).
