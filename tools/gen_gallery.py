@@ -860,6 +860,7 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
                           factor=1.,
                           opacity=1.,
                           color_map='viridis',
+                          color_limits=None,
                           axes_options=[],
                           axes_visibility=False,
                           grid_vector1=None,
