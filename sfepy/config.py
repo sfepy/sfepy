@@ -60,24 +60,30 @@ class Config(object):
     """
 
     def __init__(self):
-        import sfepy
-        from sfepy.base.base import import_file
+        from importlib.machinery import SourceFileLoader
+        from sfepy.base.base import sfepy_config_dir
 
-        if not os.path.exists('site_cfg.py'):
+        cwd = os.getcwd()
+        config_filename = os.path.join(cwd, 'site_cfg.py')
+        if not os.path.exists(config_filename):
+            config_filename = os.path.join(sfepy_config_dir, 'site_cfg.py')
+
+        if not os.path.exists(config_filename):
             try:
-                shutil.copyfile(os.path.join(sfepy.top_dir,
+                shutil.copyfile(os.path.join(top_dir,
                                              'site_cfg_template.py'),
-                                'site_cfg.py')
+                                config_filename)
 
             except:
                 pass
 
-
         try:
-            cwd = os.getcwd()
-            self.site_cfg = import_file(os.path.join(cwd, 'site_cfg.py'))
+            self.site_cfg = (SourceFileLoader('site_cfg', config_filename)
+                             .load_module())
 
-        except ImportError:
+        except FileNotFoundError:
+            print(f'Warning: SfePy site configuration file ({config_filename})'
+                  ' not found.')
             self.site_cfg = None
 
     def python_version(self):
