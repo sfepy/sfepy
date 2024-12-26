@@ -4,6 +4,30 @@ import shutil
 import sysconfig
 from warnings import warn
 
+def get_top_dir():
+    """
+    Return SfePy installation directory information.
+    """
+    import os.path as op
+
+    # If installed, up_dir is '.', otherwise (in (git) source directory) '..'.
+    for up_dir in ['..', '.']:
+        top_dir = op.normpath(op.realpath(op.join(op.dirname(__file__),
+                                                  up_dir)))
+        aux = op.join(top_dir, 'LICENSE')
+        if op.isfile(aux):
+            break
+    else:
+        print('Warning: cannot determine SfePy top level directory.')
+        up_dir = top_dir = ''
+
+    in_source_tree = up_dir == '..'
+
+    return top_dir, in_source_tree
+
+top_dir, in_source_tree = get_top_dir()
+
+
 msg_unknown_os = """could not determine operating system!
 try setting it in site_cfg.py manually, see site_cfg_template.py"""
 

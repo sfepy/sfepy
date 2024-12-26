@@ -1,7 +1,7 @@
 import os, glob
 
-from .config import Config
-from .version import __version__, in_source_tree, top_dir
+from .config import in_source_tree, top_dir, Config
+from .version import __version__
 
 data_dir = os.path.realpath(top_dir)
 base_dir = os.path.dirname(os.path.normpath(os.path.realpath(__file__)))
