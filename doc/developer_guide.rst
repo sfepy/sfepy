@@ -1297,8 +1297,6 @@ sfepy.solvers package
    src/sfepy/solvers/auto_fallback
    src/sfepy/solvers/eigen
    src/sfepy/solvers/ls
-   src/sfepy/solvers/ls_mumps
-   src/sfepy/solvers/ls_mumps_parallel
    src/sfepy/solvers/nls
    src/sfepy/solvers/optimize
    src/sfepy/solvers/oseen
