@@ -4,6 +4,30 @@ import shutil
 import sysconfig
 from warnings import warn
 
+def get_top_dir():
+    """
+    Return SfePy installation directory information.
+    """
+    import os.path as op
+
+    # If installed, up_dir is '.', otherwise (in (git) source directory) '..'.
+    for up_dir in ['..', '.']:
+        top_dir = op.normpath(op.realpath(op.join(op.dirname(__file__),
+                                                  up_dir)))
+        aux = op.join(top_dir, 'LICENSE')
+        if op.isfile(aux):
+            break
+    else:
+        print('Warning: cannot determine SfePy top level directory.')
+        up_dir = top_dir = ''
+
+    in_source_tree = up_dir == '..'
+
+    return top_dir, in_source_tree
+
+top_dir, in_source_tree = get_top_dir()
+
+
 msg_unknown_os = """could not determine operating system!
 try setting it in site_cfg.py manually, see site_cfg_template.py"""
 
@@ -36,24 +60,30 @@ class Config(object):
     """
 
     def __init__(self):
-        import sfepy
-        from sfepy.base.base import import_file
+        from importlib.machinery import SourceFileLoader
+        from sfepy.base.base import sfepy_config_dir
 
-        if not os.path.exists('site_cfg.py'):
+        cwd = os.getcwd()
+        config_filename = os.path.join(cwd, 'site_cfg.py')
+        if not os.path.exists(config_filename):
+            config_filename = os.path.join(sfepy_config_dir, 'site_cfg.py')
+
+        if not os.path.exists(config_filename):
             try:
-                shutil.copyfile(os.path.join(sfepy.top_dir,
+                shutil.copyfile(os.path.join(top_dir,
                                              'site_cfg_template.py'),
-                                'site_cfg.py')
+                                config_filename)
 
             except:
                 pass
 
-
         try:
-            cwd = os.getcwd()
-            self.site_cfg = import_file(os.path.join(cwd, 'site_cfg.py'))
+            self.site_cfg = (SourceFileLoader('site_cfg', config_filename)
+                             .load_module())
 
-        except ImportError:
+        except FileNotFoundError:
+            print(f'Warning: SfePy site configuration file ({config_filename})'
+                  ' not found.')
             self.site_cfg = None
 
     def python_version(self):
@@ -143,3 +173,5 @@ class Config(object):
             return self.site_cfg.debug_warped_cells
         else:
             return False
+
+site_config = Config()

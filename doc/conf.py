@@ -34,7 +34,7 @@ sys.path.append(os.path.abspath('../tools'))
 
 import sfepy
 
-numpydoc_path = sfepy.Config().numpydoc_path()
+numpydoc_path = sfepy.site_config.numpydoc_path()
 
 if numpydoc_path is not None:
     sys.path.append(os.path.abspath(numpydoc_path))

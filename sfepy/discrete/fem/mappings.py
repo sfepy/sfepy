@@ -3,7 +3,7 @@ Finite element reference mappings.
 """
 import numpy as nm
 
-from sfepy import Config
+from sfepy import site_config
 from sfepy.base.base import get_default, output
 from sfepy.base.mem_usage import raise_if_too_large
 from sfepy.discrete.common.mappings import Mapping, PyCMapping
@@ -335,7 +335,6 @@ class FEMapping(Mapping):
             ebf_g = poly_space.eval_basis(qp_coors, diff=True, ori=ori,
                                           force_axis=True, transform=transform)
             size = ebf_g.nbytes * self.n_el
-            site_config = Config()
             raise_if_too_large(size, site_config.refmap_memory_factor())
             se_conn, se_bf_bg = None, None
         else:
