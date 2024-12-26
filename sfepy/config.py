@@ -173,3 +173,5 @@ class Config(object):
             return self.site_cfg.debug_warped_cells
         else:
             return False
+
+site_config = Config()

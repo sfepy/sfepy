@@ -37,10 +37,9 @@ def get_version(version=__version__):
     in the site configuration.
     """
     import os.path as op
-    from sfepy.config import top_dir, Config
+    from sfepy.config import top_dir, site_config
 
-    config = Config()
-    if not config.is_release():
+    if not site_config.is_release():
         # Append current git commit hash to __version__.
         master = op.join(top_dir, '.git/refs/heads/master')
         if op.isfile(master):

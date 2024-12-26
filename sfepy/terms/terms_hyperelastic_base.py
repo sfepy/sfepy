@@ -1,7 +1,7 @@
 import numpy as nm
 from sfepy.terms.terms import Term, terms
 from sfepy.base.base import Struct
-from sfepy import Config
+from sfepy import site_config
 
 import six
 
@@ -30,8 +30,6 @@ class HyperElasticFamilyData(Struct):
 
     def __init__(self, **kwargs):
         Struct.__init__(self, **kwargs)
-
-        self.site_config = Config()
 
     def init_data_struct(self, state_shape, name='family_data'):
         from sfepy.mechanics.tensors import dim2sym
@@ -88,7 +86,7 @@ class HyperElasticFamilyData(Struct):
             jneg = jmin < 0.0
             is_warp = jneg.any()
             if is_warp:
-                if self.site_config.debug_warped_cells():
+                if site_config.debug_warped_cells():
                     from sfepy.base.base import output
                     from sfepy.discrete.fem import extend_cell_data
 

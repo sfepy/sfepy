@@ -16,7 +16,7 @@ import sys
 sys.path.append('./tools')
 from build_helpers import INFO, cmdclass, logging, log, package_check
 
-from sfepy import config, version
+from sfepy import site_config, version
 
 DOCLINES = __doc__.split("\n")
 
@@ -167,11 +167,10 @@ def cmake_bool(py_bool: bool) -> str:
 
 
 def compose_cmake_args() -> list:
-    conf = config.Config()
-    cmake_args = [f'-DCMAKE_C_FLAGS={" ".join(conf.compile_flags())}']
+    cmake_args = [f'-DCMAKE_C_FLAGS={" ".join(site_config.compile_flags())}']
 
     # Debug flags are always added explicitly, so they won't be taken from cmake cache.
-    debug_flags = set(conf.debug_flags())
+    debug_flags = set(site_config.debug_flags())
     cmake_args.append(f"-DDEBUG_FMF={cmake_bool('DEBUG_FMF' in debug_flags)}")
     cmake_args.append(f"-DDEBUG_MESH={cmake_bool('DEBUG_MESH' in debug_flags)}")
 
@@ -251,9 +250,6 @@ def setup_package():
 if __name__ == '__main__':
     check_versions()
     setup_package()
-
-    from sfepy import Config
-    site_config = Config()
 
     logging.basicConfig(level=logging.INFO, force=True)
 

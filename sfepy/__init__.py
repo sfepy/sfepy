@@ -1,6 +1,6 @@
 import os, glob
 
-from .config import in_source_tree, top_dir, Config
+from .config import in_source_tree, top_dir, site_config
 from .version import __version__
 
 data_dir = os.path.realpath(top_dir)
