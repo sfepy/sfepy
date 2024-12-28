@@ -1,5 +1,211 @@
 # created: 20.07.2007 (-1)
 
+.. _2024.3-2024.4:
+
+from 2024.3 to 2024.4
+=====================
+
+- merge pull request #1152 from rc/update-installation
+
+  - docs: update installation
+
+- merge pull request #1151 from rc/restructure-faq, closes #1147
+
+  - docs: add symmetric tensor components ordering to FAQ
+  - docs: restructure and update FAQ
+
+- merge pull request #1154 from rc/fix-site-config
+
+  - fix Config to search site_cfg.py in cwd and site_cfg_template.py in
+    top_dir - move module level code to new .__init__()
+
+- merge pull request #1155 from rc/debug-warped-cells-option
+
+  - do not check warp violation in dq_finite_strain() C function
+  - new Config.debug_warped_cells(), update site_cfg_template.py
+  - support debug_warped_cells in HyperElasticFamilyData.__call__()
+
+    - check deformed cells volumes in .__call__()
+    - new .__init__()
+
+  - save both min(J) per cell and neg(J) flag in
+    HyperElasticFamilyData.__call__()
+
+- merge pull request #1153 from vlukes/extern-wrappers-for-mumps-solver
+
+  - use external mumpspy and python-mumps wrappers to MUMPS lib
+  - update installation instructions for MUMPS lib and wrappers
+  - check minimal versions of MUMPS wrappers
+  - fix schur_list: indices start from 1
+  - Schur complement: raise NotImplementedError when using python-mumps
+  - fix MUMPSSolver.clear() for no mumps_ls attribute, update exception message
+  - use try_imports() in MUMPSSolver
+  - python-mumps-0.0.3 supports complete Schur solution
+  - remove unused function mumps_import()
+
+- merge pull request #1156 from rc/misc-updates
+
+  - fix last file removal in Problem.save_restart()
+  - fix write_results() for multidimensional arrays
+  - new ETermBase.print_expressions() debug/utility function
+
+- merge pull request #1158 from jidhub/jidhub-patch-1
+
+  - Update primer.rst to gmsh 4.12.1 updated to gmsh 4.12.1 linux64-sdk written
+    by C. Geuzaine and J.-F. Remacle. I did not find any button to change the
+    file type in gmsh 4.12.1 at saving step.
+  - Update primer.rst
+  - wrap long line
+
+- merge pull request #1160 from vlukes/fix-mumps-solver, closes #1159
+
+  - mumps solver: fix matrix symmetry check, update clear function
+  - update coo_is_symmetric(): use faster boolean indexing
+  - update coo_is_summetric(): nm.any() faster than not nm.all()
+
+- merge pull request #1162 from vlukes/update-recovery_micro_hook
+
+  - output file name: time step at the last position
+
+- merge pull request #1163 from rc/petsc-init-ksp
+
+  - new PETScKrylovSolver.init_ksp() to allow ksp user config prior to
+    solving - update .__call__()
+  - set tolerances and other options in every PETScKrylovSolver.__call__()
+
+- merge pull request #1164 from rc/fix-mpc-weights
+
+  - fix self.dof_map_fun initialization in LCBCOperator.__init__()
+  - fix dof_map_fun assignment in AverageForceOperator.__init__()
+  - update docstring of AverageForceOperator, add comments to .__init__()
+  - support weigths in no rotation DOFs mode in AverageForceOperator.__init__()
+  - multi_point_constraints.py: demonstrate using weights of average_force
+    LCBCs
+
+    - new get_weights()
+    - update docstring, define()
+
+- merge pull request #1132 from rc/contacts-ipctk
+
+  - new ContactIPCTerm (dw_contact_ipc) - new .__init__(), .call_function(),
+    .eval_real(), .function_weak(), .function(), .get_contact_info(),
+    .get_fargs()
+  - make two_bodies_contact.py time-dependent, new define() with options -
+    contact option to test dw_contact_ipc term
+  - new line_search_fun parameter of Newton solver, new
+    apply_line_search_bt() - move line search code from Newton.__call__() to
+    apply_line_search_bt()
+  - store collision mesh in contact info of ContactIPCTerm - update
+    .get_contact_info(), .get_fargs()
+  - new apply_line_search() in two_bodies_contact.py example, update define()
+  - adapt barrier stiffness in ContactIPCTerm.get_fargs() (WIP)
+
+    - add average mass, stiffness material parameters
+    - update .get_contact_info()
+
+  - test adaptive barrier stiffness in two_bodies_contact.py example
+
+    - log min. distance, barrier stiffness
+    - update apply_line_search(), define()
+
+  - control adaptivity by adapt_stiffness flag in ContactIPCTerm.get_fargs() -
+    update .get_contact_info()
+  - do not adapt stiffness during line search in two_bodies_contact.py
+    example - update apply_line_search()
+  - new select_term argument of Equation.evaluate() - update
+    Equations.evaluate(), .eval_residuals(), .eval_tangent_matrices()
+  - new select_term argument of Evaluator.eval_residual(),
+    .eval_tangent_matrix()
+  - new e_grad_full argument of ContactIPCTerm.get_fargs()
+  - new find_contact_ipc_term() in two_bodies_contact.py example - update
+    apply_line_search()
+  - compute energy gradient for adaptive stiffness in two_bodies_contact.py
+    example
+
+    - log magnitudes of energy and barrier potential gradients
+    - update apply_line_search()
+
+  - fix ContactIPCTerm.get_fargs() for no e_grad_full
+  - limit ContactIPCTerm to 2D surface regions, update .get_contact_info()
+  - update test_term_call_modes() for no ipctk
+  - setup.py: report ipctk version in check_versions()
+  - fix Newton doctring
+  - new log_vlines parameter of Newton solver, update .__call__()
+  - new Term.verbosity attribute
+  - fix ContactIPCTerm.get_fargs() for constant stiffness, reduce verbosity -
+    update .get_contact_info() - store barrier_potential
+  - support Hessian projection in ContactIPCTerm.get_fargs()
+
+    - add spd_projection material parameter
+    - update define() in two_bodies_contact.py example
+
+  - fix region definitions in define() of two_bodies_contact.py for small
+    values
+  - use true mass as parameter of dw_contact_ipc in two_bodies_contact.py -
+    update define()
+  - update define() defaults in two_bodies_contact.py example
+
+    - small 3D geometry
+    - new young, poisson, rho, t1, cm, ck, dhat, pspd parameters
+
+  - tweak Newton solver parameters in define() of two_bodies_contact.py
+    example - contact='ipc' converges with the defaults
+  - two_bodies_contact.py: slice vector define() parameters by length of dims0
+  - update ContactIPCTerm.get_fargs() for 2D - re-allow 1D surface regions
+  - pass contact parameters via new ci argument of ContactIPCTerm.get_fargs()
+
+    - remove e_grad_full argument
+    - update .get_contact_info()
+    - update apply_line_search() in two_bodies_contact.py example
+
+  - two_bodies_contact.py: save options to markdown file, new verbose parameter
+
+    - new markdown_table_from_dict()
+    - update define()
+
+  - two_bodies_contact.py: update docstring, tweak Newton parameters in
+    define()
+  - warn about missing ci argument in ContactIPCTerm.get_fargs()
+  - update _test_single_term() for dw_contact_ipc string argument
+  - two_bodies_contact.py: do not plot logs in define()
+
+- merge pull request #1166 from rc/update-gen-gallery
+
+  - fix generate_images()
+  - gen_gallery.py: add __pycache__ to omit_dirs
+  - gen_gallery.py: add custom view for two_bodies_contact.py example
+
+- merge pull request #1167 from rc/site-config-singleton
+
+  - split get_basic_info() -> new get_version(), get_top_dir()
+
+    - top_dir, in_source_tree moved to sfepy/config.py
+    - get_top_dir() does not raise error when top_dir cannot be determined,
+    only   prints warning
+    - update sfepy/__init__.py
+
+  - update  Config.__init__() to copy template into ~/.sfepy/
+
+    - no more new site_cfg.py files wherever sfepy-run etc. are run
+    - if site_cfg.py exists in cwd, it has precedence
+    - fix circular import by using SourceFileLoader
+
+  - install site_cfg_template.py along LICENSE and VERSION - update
+    compose_data_files()
+  - replace separate Config instances by sfepy.site_config singleton
+
+    - new sfepy.config.site_config
+    - update doc/conf.py, sfepy/__init__.py
+    - update get_version()
+    - update setup.py, compose_cmake_args()
+    - update FEMapping.get_mapping(), HyperElasticFamilyData.__init__(),
+      .__call__()
+
+- merge pull request #1168 from rc/remove-pexpect-dependency
+
+  - replace pexpect by subprocess in gen_mesh_from_geom()
+  - docs: remove pexpect mentions
+
 .. _2024.2-2024.3:
 
 from 2024.2 to 2024.3
