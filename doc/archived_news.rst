@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **29.09.2023** Version 2023.3 released (example demonstrating nonlinear
+  diffusion and volume forces terms, new sensitivity term, proof-of-concept
+  JAX-based auto-differentiable terms (elasticity, mass) + elastodynamics
+  parameter identification example, etc.), see :ref:`release notes
+  <2023.2-2023.3>`.
+
 * **29.06.2023** Version 2023.2 released (replace numpy.distutils by
   scikit-build (cmake), interface for the PRIMME eigenvalue problem solver, new
   declarative modal analysis example, new terms: nonlinear diffusion and

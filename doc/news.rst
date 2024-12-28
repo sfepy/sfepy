@@ -1,6 +1,10 @@
 News
 ====
 
+* **29.12.2024** Version 2024.4 released (MUMPS solver interface moved to new
+  mumpspy package, python-mumps support, new contact term based on IPC toolkit,
+  etc.), see :ref:`release notes <2024.3-2024.4>`.
+
 * **30.09.2024** Version 2024.3 released (updated installation instructions,
   new Stokes traction term, etc.), see :ref:`release notes <2024.2-2024.3>`.
 
@@ -21,11 +25,5 @@ News
   eigenvalue convergence, beam consisting of hexa and tetra elements, many more
   examples included in gallery, etc.), see :ref:`release notes
   <2023.3-2023.4>`.
-
-* **29.09.2023** Version 2023.3 released (example demonstrating nonlinear
-  diffusion and volume forces terms, new sensitivity term, proof-of-concept
-  JAX-based auto-differentiable terms (elasticity, mass) + elastodynamics
-  parameter identification example, etc.), see :ref:`release notes
-  <2023.2-2023.3>`.
 
 For historians: see :ref:`archived_news`.
