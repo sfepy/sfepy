@@ -705,7 +705,7 @@ def gen_mesh_from_geom(geo, a=None, verbose=False, refine=False):
     """
 
     import os.path as op
-    import pexpect
+    import subprocess
     import tempfile
     import shutil
 
@@ -727,7 +727,7 @@ def gen_mesh_from_geom(geo, a=None, verbose=False, refine=False):
     cmd = "%s %s" % (meshgen_call[geo.dim][0], params)
     if verbose: print("Generating mesh using", cmd)
 
-    p=pexpect.run(cmd, timeout=None)
+    subprocess.run(cmd.split(), timeout=None)
     bname, ext = op.splitext(polyfilename)
     if geo.dim == 2:
         mesh = Mesh.from_file(bname + '.1.node')

@@ -44,7 +44,7 @@ scikit-umfpack does not work without UMFPACK, petsc4py without PETSc, etc.
 Other dependencies:
 
 - To be able to (re)generate the documentation: Sphinx, numpydoc, LaTeX.
-- Mesh generation tools use pexpect and gmsh or tetgen.
+- Mesh generation tools use gmsh or tetgen.
 - IPython is preferred over the regular Python shell for following some
   parts of primer/tutorial.
 - MUMPS library for using MUMPS linear direct solver (real and complex
