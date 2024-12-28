@@ -151,7 +151,7 @@ Other dependencies/suggestions:
 
    python setup.py doxygendocs
 
-- Mesh generation tools use `pexpect` and `gmsh` or `tetgen`.
+- Mesh generation tools use `gmsh` or `tetgen`.
 - `IPython`_ is recommended over the regular Python shell to fluently follow
   some parts of primer/tutorial.
 
