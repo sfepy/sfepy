@@ -613,6 +613,8 @@ class PETScKrylovSolver(LinearSolver):
          'The preconditioner for matrix blocks (in parallel runs).'),
         ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
          'The preconditioner side.'),
+        ('block_size', 'int', None, False,
+         'The number of degrees of freedom per node.'),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
         ('eps_a', 'float', 1e-8, False,
@@ -725,10 +727,10 @@ class PETScKrylovSolver(LinearSolver):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, comm=None, context=None,
                  **kwargs):
-        eps_a = get_default(eps_a, self.conf.eps_a)
-        eps_r = get_default(eps_r, self.conf.eps_r)
-        i_max = get_default(i_max, self.conf.i_max)
-        eps_d = self.conf.eps_d
+        eps_a = get_default(eps_a, conf.eps_a)
+        eps_r = get_default(eps_r, conf.eps_r)
+        i_max = get_default(i_max, conf.i_max)
+        eps_d = conf.eps_d
 
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest,
                                             force_reuse=conf.force_reuse)
@@ -737,6 +739,8 @@ class PETScKrylovSolver(LinearSolver):
         else:
             is_new = True
             pmtx = self.create_petsc_matrix(mtx, comm=comm)
+            if conf.block_size is not None:
+                pmtx.setBlockSize(conf.block_size)
 
             self.mtx_digest = mtx_digest
             self.pmtx = pmtx
@@ -753,9 +757,8 @@ class PETScKrylovSolver(LinearSolver):
         ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
                           max_it=i_max)
 
-        setup_precond = self.conf.setup_precond
-        if setup_precond is not None:
-            ksp.pc.setPythonContext(setup_precond(mtx, context))
+        if conf.setup_precond is not None:
+            ksp.pc.setPythonContext(conf.setup_precond(mtx, context))
 
         self.ksp.setFromOptions()
 
@@ -783,7 +786,7 @@ class PETScKrylovSolver(LinearSolver):
 
         ksp.solve(prhs, psol)
         output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
-               % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
+               % (ksp.getType(), ksp.getPC().getType(), conf.sub_precond,
                   ksp.reason, self.converged_reasons[ksp.reason],
                   ksp.getIterationNumber()),
                verbose=conf.verbose)
