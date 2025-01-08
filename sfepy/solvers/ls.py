@@ -613,6 +613,8 @@ class PETScKrylovSolver(LinearSolver):
          'The preconditioner for matrix blocks (in parallel runs).'),
         ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
          'The preconditioner side.'),
+        ('block_size', 'int', None, False,
+         'The number of degrees of freedom per node.'),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
         ('eps_a', 'float', 1e-8, False,
@@ -737,6 +739,8 @@ class PETScKrylovSolver(LinearSolver):
         else:
             is_new = True
             pmtx = self.create_petsc_matrix(mtx, comm=comm)
+            if conf.block_size is not None:
+                pmtx.setBlockSize(conf.block_size)
 
             self.mtx_digest = mtx_digest
             self.pmtx = pmtx
