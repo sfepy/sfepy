@@ -280,10 +280,10 @@ def main():
     out, err = check_output('python3 sfepy/examples/dg/imperative_burgers_1D.py -o output')
     eok += report(out, '...', -3, 3, 'moment_1D_limiter')
 
-    out, err = check_output('mpiexec -n 2 python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
+    out, err = check_output('mpiexec -n 2 python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor -options_left 0')
     eok += report(out, '...', -2, 4, '8.021313824020e-07', eps=1e-6)
 
-    out, err = check_output('mpiexec -n 2 python3 sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
+    out, err = check_output('mpiexec -n 2 python3 sfepy/examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor -options_left 0')
     eok += report(out, '...', -2, 4, '3.787214380277e-09', eps=1e-7)
 
     t1 = time.time()
