@@ -725,10 +725,10 @@ class PETScKrylovSolver(LinearSolver):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, comm=None, context=None,
                  **kwargs):
-        eps_a = get_default(eps_a, self.conf.eps_a)
-        eps_r = get_default(eps_r, self.conf.eps_r)
-        i_max = get_default(i_max, self.conf.i_max)
-        eps_d = self.conf.eps_d
+        eps_a = get_default(eps_a, conf.eps_a)
+        eps_r = get_default(eps_r, conf.eps_r)
+        i_max = get_default(i_max, conf.i_max)
+        eps_d = conf.eps_d
 
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest,
                                             force_reuse=conf.force_reuse)
@@ -753,9 +753,8 @@ class PETScKrylovSolver(LinearSolver):
         ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
                           max_it=i_max)
 
-        setup_precond = self.conf.setup_precond
-        if setup_precond is not None:
-            ksp.pc.setPythonContext(setup_precond(mtx, context))
+        if conf.setup_precond is not None:
+            ksp.pc.setPythonContext(conf.setup_precond(mtx, context))
 
         self.ksp.setFromOptions()
 
@@ -783,7 +782,7 @@ class PETScKrylovSolver(LinearSolver):
 
         ksp.solve(prhs, psol)
         output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
-               % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
+               % (ksp.getType(), ksp.getPC().getType(), conf.sub_precond,
                   ksp.reason, self.converged_reasons[ksp.reason],
                   ksp.getIterationNumber()),
                verbose=conf.verbose)
