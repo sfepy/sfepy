@@ -613,6 +613,14 @@ class PETScKrylovSolver(LinearSolver):
          'The preconditioner for matrix blocks (in parallel runs).'),
         ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
          'The preconditioner side.'),
+        ('create_matrix', 'callable', None, False,
+         """User-defined function returning the linear system matrix in.
+            a PETSc format. It is called as
+            create_matrix(self, mtx, context, comm),
+            where self is the solver instance, mtx is the matrix passed
+            to self.__call__(), context is a user-supplied context and comm
+            the PETSc communicator.
+         """),
         ('block_size', 'int', None, False,
          'The number of degrees of freedom per node.'),
         ('i_max', 'int', 100, False,
@@ -738,7 +746,13 @@ class PETScKrylovSolver(LinearSolver):
             pmtx = self.pmtx
         else:
             is_new = True
-            pmtx = self.create_petsc_matrix(mtx, comm=comm)
+
+            if conf.create_matrix is None:
+                pmtx = self.create_petsc_matrix(mtx, comm=comm)
+
+            else:
+                pmtx = conf.create_matrix(self, mtx, context, comm)
+
             if conf.block_size is not None:
                 pmtx.setBlockSize(conf.block_size)
 
