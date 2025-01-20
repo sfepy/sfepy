@@ -677,7 +677,9 @@ class PETScKrylovSolver(LinearSolver):
     def create_ksp(self, options=None, comm=None):
         optDB = self.petsc.Options()
 
-        optDB['sub_pc_type'] = self.conf.sub_precond
+        if self.conf.sub_precond != 'none':
+            optDB['sub_pc_type'] = self.conf.sub_precond
+
         if options is not None:
             for key, val in options.items():
                 optDB[key] = val
