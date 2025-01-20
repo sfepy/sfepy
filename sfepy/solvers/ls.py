@@ -5,8 +5,6 @@ import numpy as nm
 import warnings
 
 import scipy.sparse as sps
-import six
-from six.moves import range
 
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
@@ -463,13 +461,13 @@ class PyAMGSolver(LinearSolver):
                                             force_reuse=conf.force_reuse)
         if is_new or (self.mg is None):
             _kwargs = {key[7:] : val
-                       for key, val in six.iteritems(solver_kwargs)
+                       for key, val in solver_kwargs.items()
                        if key.startswith('method:')}
             self.mg = self.solver(mtx, **_kwargs)
             self.mtx_digest = mtx_digest
 
         _kwargs = {key[6:] : val
-                   for key, val in six.iteritems(solver_kwargs)
+                   for key, val in solver_kwargs.items()
                    if key.startswith('solve:')}
         sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=eps_r,
                             maxiter=i_max, callback=iter_callback,
@@ -648,7 +646,7 @@ class PETScKrylovSolver(LinearSolver):
         from petsc4py import PETSc as petsc
 
         converged_reasons = {}
-        for key, val in six.iteritems(petsc.KSP.ConvergedReason.__dict__):
+        for key, val in petsc.KSP.ConvergedReason.__dict__.items():
             if isinstance(val, int):
                 converged_reasons[val] = key
 
@@ -667,7 +665,7 @@ class PETScKrylovSolver(LinearSolver):
         comm = get_default(comm, self.comm)
 
         self.fields = []
-        for key, rng in six.iteritems(field_ranges):
+        for key, rng in field_ranges.items():
             if isinstance(rng, slice):
                 rng = rng.start, rng.stop
 
@@ -681,7 +679,7 @@ class PETScKrylovSolver(LinearSolver):
 
         optDB['sub_pc_type'] = self.conf.sub_precond
         if options is not None:
-            for key, val in six.iteritems(options):
+            for key, val in options.items():
                 optDB[key] = val
 
         ksp = self.petsc.KSP()
