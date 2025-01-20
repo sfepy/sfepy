@@ -721,6 +721,7 @@ class Region(Struct):
                 mirror_parent = regions.find(reg.parent)
                 if mirror_parent is None: continue
                 if ((reg is not self)
+		    and (len(self.vertices)) == len(reg.vertices)
                     and nm.all(self.vertices == reg.vertices)):
                     mreg = reg
                     mirror_map = mirror_map_i = None
