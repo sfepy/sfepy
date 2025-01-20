@@ -774,7 +774,7 @@ class PETScKrylovSolver(LinearSolver):
         if conf.setup_precond is not None:
             ksp.pc.setPythonContext(conf.setup_precond(mtx, context))
 
-        self.ksp.setFromOptions()
+        ksp.setFromOptions()
 
         if isinstance(rhs, self.petsc.Vec):
             prhs = rhs
