@@ -1030,7 +1030,7 @@ class MultiProblem(ScipyDirect):
         pb_adi_indx = problem.equations.variables.adi.indx
         self.adi_indx = pb_adi_indx.copy()
         last_indx = -1
-        for ii in six.itervalues(self.adi_indx):
+        for ii in self.adi_indx.values():
             last_indx = nm.max([last_indx, ii.stop])
 
         # coupling variables
@@ -1094,7 +1094,7 @@ class MultiProblem(ScipyDirect):
         self.subpb.append([problem, None, None])
 
         self.cvars_to_pb_map = {}
-        for varname, pbs in six.iteritems(self.cvars_to_pb):
+        for varname, pbs in self.cvars_to_pb.items():
             # match field nodes
             coors = []
             for ii in pbs:
@@ -1160,7 +1160,7 @@ class MultiProblem(ScipyDirect):
 
         max_indx = 0
         hst = nm.hstack
-        for ii in six.itervalues(self.adi_indx):
+        for ii in self.adi_indx.values():
             max_indx = nm.max([max_indx, ii.stop])
 
         new_rhs = nm.zeros((max_indx,), dtype=rhs.dtype)
@@ -1174,7 +1174,7 @@ class MultiProblem(ScipyDirect):
         aux_rows = nm.array([], dtype=nm.int32)
         aux_cols = nm.array([], dtype=nm.int32)
 
-        for jk, jv in six.iteritems(adi_indxi):
+        for jk, jv in adi_indxi.items():
             if jk in self.cvars_to_pb:
                 if not(self.cvars_to_pb[jk][0] == -1):
                     continue
@@ -1200,13 +1200,13 @@ class MultiProblem(ScipyDirect):
             mtxs.append(mtxi)
 
             adi_indxi = pbi.equations.variables.adi.indx
-            for ik, iv in six.iteritems(adi_indxi):
+            for ik, iv in adi_indxi.items():
                 if ik in self.cvars_to_pb:
                     if not(self.cvars_to_pb[ik][0] == kk):
                         continue
 
                 giv = self.adi_indx[ik]
-                for jk, jv in six.iteritems(adi_indxi):
+                for jk, jv in adi_indxi.items():
                     gjv = self.adi_indx[jk]
                     if jk in self.cvars_to_pb:
                         if not(self.cvars_to_pb[jk][0] == kk):
@@ -1220,14 +1220,14 @@ class MultiProblem(ScipyDirect):
 
         mtxs.append(mtx)
         # copy "coupling" (sub)matricies
-        for varname, pbs in six.iteritems(self.cvars_to_pb):
+        for varname, pbs in self.cvars_to_pb.items():
             idx = pbs[1]
             pbi = self.subpb[idx][0]
             mtxi = mtxs[idx]
             gjv = self.adi_indx[varname]
             jv = pbi.equations.variables.adi.indx[varname]
             adi_indxi = pbi.equations.variables.adi.indx
-            for ik, iv in six.iteritems(adi_indxi):
+            for ik, iv in adi_indxi.items():
                 if ik == varname:
                     continue
 
@@ -1254,11 +1254,11 @@ class MultiProblem(ScipyDirect):
         for kk, (pbi, sti0, _) in enumerate(self.subpb):
             adi_indxi = pbi.equations.variables.adi.indx
             max_indx = 0
-            for ii in six.itervalues(adi_indxi):
+            for ii in adi_indxi.values():
                 max_indx = nm.max([max_indx, ii.stop])
 
             resi = nm.zeros((max_indx,), dtype=res0.dtype)
-            for ik, iv in six.iteritems(adi_indxi):
+            for ik, iv in adi_indxi.items():
                 giv = self.adi_indx[ik]
                 if ik in self.cvars_to_pb:
                     if pbi is self.subpb[self.cvars_to_pb[ik][1]][0]:
