@@ -5,8 +5,6 @@ import numpy as nm
 import warnings
 
 import scipy.sparse as sps
-import six
-from six.moves import range
 
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
@@ -463,13 +461,13 @@ class PyAMGSolver(LinearSolver):
                                             force_reuse=conf.force_reuse)
         if is_new or (self.mg is None):
             _kwargs = {key[7:] : val
-                       for key, val in six.iteritems(solver_kwargs)
+                       for key, val in solver_kwargs.items()
                        if key.startswith('method:')}
             self.mg = self.solver(mtx, **_kwargs)
             self.mtx_digest = mtx_digest
 
         _kwargs = {key[6:] : val
-                   for key, val in six.iteritems(solver_kwargs)
+                   for key, val in solver_kwargs.items()
                    if key.startswith('solve:')}
         sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=eps_r,
                             maxiter=i_max, callback=iter_callback,
@@ -614,13 +612,12 @@ class PETScKrylovSolver(LinearSolver):
         ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
          'The preconditioner side.'),
         ('create_matrix', 'callable', None, False,
-         """User-defined function returning the linear system matrix in.
-            a PETSc format. It is called as
-            create_matrix(self, mtx, context, comm),
-            where self is the solver instance, mtx is the matrix passed
-            to self.__call__(), context is a user-supplied context and comm
-            the PETSc communicator.
-         """),
+         """User-defined function returning the linear system matrix and
+            optionally a precoditioning matrix in a PETSc format. It is called
+            as create_matrix(self, mtx, context, comm), where self is the
+            solver instance, mtx is the matrix passed to self.__call__(),
+            context is a user-supplied context and comm the PETSc communicator.
+            """),
         ('block_size', 'int', None, False,
          'The number of degrees of freedom per node.'),
         ('i_max', 'int', 100, False,
@@ -648,7 +645,7 @@ class PETScKrylovSolver(LinearSolver):
         from petsc4py import PETSc as petsc
 
         converged_reasons = {}
-        for key, val in six.iteritems(petsc.KSP.ConvergedReason.__dict__):
+        for key, val in petsc.KSP.ConvergedReason.__dict__.items():
             if isinstance(val, int):
                 converged_reasons[val] = key
 
@@ -667,7 +664,7 @@ class PETScKrylovSolver(LinearSolver):
         comm = get_default(comm, self.comm)
 
         self.fields = []
-        for key, rng in six.iteritems(field_ranges):
+        for key, rng in field_ranges.items():
             if isinstance(rng, slice):
                 rng = rng.start, rng.stop
 
@@ -679,9 +676,11 @@ class PETScKrylovSolver(LinearSolver):
     def create_ksp(self, options=None, comm=None):
         optDB = self.petsc.Options()
 
-        optDB['sub_pc_type'] = self.conf.sub_precond
+        if self.conf.sub_precond != 'none':
+            optDB['sub_pc_type'] = self.conf.sub_precond
+
         if options is not None:
-            for key, val in six.iteritems(options):
+            for key, val in options.items():
                 optDB[key] = val
 
         ksp = self.petsc.KSP()
@@ -742,6 +741,7 @@ class PETScKrylovSolver(LinearSolver):
 
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest,
                                             force_reuse=conf.force_reuse)
+        ppmtx = None
         if (not is_new) and (self.pmtx is not None):
             pmtx = self.pmtx
         else:
@@ -752,6 +752,13 @@ class PETScKrylovSolver(LinearSolver):
 
             else:
                 pmtx = conf.create_matrix(self, mtx, context, comm)
+                if not isinstance(pmtx, self.petsc.Mat):
+                    pmtx, ppmtx = pmtx # matrix and preconditioning matrix.
+
+                # Convert to Mat if necessary.
+                pmtx = self.create_petsc_matrix(pmtx, comm=comm)
+                if ppmtx is not None:
+                    ppmtx = self.create_petsc_matrix(ppmtx, comm=comm)
 
             if conf.block_size is not None:
                 pmtx.setBlockSize(conf.block_size)
@@ -762,11 +769,11 @@ class PETScKrylovSolver(LinearSolver):
         if self.ksp is not None:
             ksp = self.ksp
             if is_new:
-                ksp.setOperators(pmtx)
+                ksp.setOperators(A=pmtx, P=ppmtx)
 
         else:
             ksp = self.init_ksp(conf=conf, comm=comm)
-            ksp.setOperators(pmtx)
+            ksp.setOperators(A=pmtx, P=ppmtx)
 
         ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
                           max_it=i_max)
@@ -774,7 +781,7 @@ class PETScKrylovSolver(LinearSolver):
         if conf.setup_precond is not None:
             ksp.pc.setPythonContext(conf.setup_precond(mtx, context))
 
-        self.ksp.setFromOptions()
+        ksp.setFromOptions()
 
         if isinstance(rhs, self.petsc.Vec):
             prhs = rhs
@@ -1030,7 +1037,7 @@ class MultiProblem(ScipyDirect):
         pb_adi_indx = problem.equations.variables.adi.indx
         self.adi_indx = pb_adi_indx.copy()
         last_indx = -1
-        for ii in six.itervalues(self.adi_indx):
+        for ii in self.adi_indx.values():
             last_indx = nm.max([last_indx, ii.stop])
 
         # coupling variables
@@ -1094,7 +1101,7 @@ class MultiProblem(ScipyDirect):
         self.subpb.append([problem, None, None])
 
         self.cvars_to_pb_map = {}
-        for varname, pbs in six.iteritems(self.cvars_to_pb):
+        for varname, pbs in self.cvars_to_pb.items():
             # match field nodes
             coors = []
             for ii in pbs:
@@ -1160,7 +1167,7 @@ class MultiProblem(ScipyDirect):
 
         max_indx = 0
         hst = nm.hstack
-        for ii in six.itervalues(self.adi_indx):
+        for ii in self.adi_indx.values():
             max_indx = nm.max([max_indx, ii.stop])
 
         new_rhs = nm.zeros((max_indx,), dtype=rhs.dtype)
@@ -1174,7 +1181,7 @@ class MultiProblem(ScipyDirect):
         aux_rows = nm.array([], dtype=nm.int32)
         aux_cols = nm.array([], dtype=nm.int32)
 
-        for jk, jv in six.iteritems(adi_indxi):
+        for jk, jv in adi_indxi.items():
             if jk in self.cvars_to_pb:
                 if not(self.cvars_to_pb[jk][0] == -1):
                     continue
@@ -1200,13 +1207,13 @@ class MultiProblem(ScipyDirect):
             mtxs.append(mtxi)
 
             adi_indxi = pbi.equations.variables.adi.indx
-            for ik, iv in six.iteritems(adi_indxi):
+            for ik, iv in adi_indxi.items():
                 if ik in self.cvars_to_pb:
                     if not(self.cvars_to_pb[ik][0] == kk):
                         continue
 
                 giv = self.adi_indx[ik]
-                for jk, jv in six.iteritems(adi_indxi):
+                for jk, jv in adi_indxi.items():
                     gjv = self.adi_indx[jk]
                     if jk in self.cvars_to_pb:
                         if not(self.cvars_to_pb[jk][0] == kk):
@@ -1220,14 +1227,14 @@ class MultiProblem(ScipyDirect):
 
         mtxs.append(mtx)
         # copy "coupling" (sub)matricies
-        for varname, pbs in six.iteritems(self.cvars_to_pb):
+        for varname, pbs in self.cvars_to_pb.items():
             idx = pbs[1]
             pbi = self.subpb[idx][0]
             mtxi = mtxs[idx]
             gjv = self.adi_indx[varname]
             jv = pbi.equations.variables.adi.indx[varname]
             adi_indxi = pbi.equations.variables.adi.indx
-            for ik, iv in six.iteritems(adi_indxi):
+            for ik, iv in adi_indxi.items():
                 if ik == varname:
                     continue
 
@@ -1254,11 +1261,11 @@ class MultiProblem(ScipyDirect):
         for kk, (pbi, sti0, _) in enumerate(self.subpb):
             adi_indxi = pbi.equations.variables.adi.indx
             max_indx = 0
-            for ii in six.itervalues(adi_indxi):
+            for ii in adi_indxi.values():
                 max_indx = nm.max([max_indx, ii.stop])
 
             resi = nm.zeros((max_indx,), dtype=res0.dtype)
-            for ik, iv in six.iteritems(adi_indxi):
+            for ik, iv in adi_indxi.items():
                 giv = self.adi_indx[ik]
                 if ik in self.cvars_to_pb:
                     if pbi is self.subpb[self.cvars_to_pb[ik][1]][0]:
