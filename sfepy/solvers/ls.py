@@ -612,13 +612,12 @@ class PETScKrylovSolver(LinearSolver):
         ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
          'The preconditioner side.'),
         ('create_matrix', 'callable', None, False,
-         """User-defined function returning the linear system matrix in.
-            a PETSc format. It is called as
-            create_matrix(self, mtx, context, comm),
-            where self is the solver instance, mtx is the matrix passed
-            to self.__call__(), context is a user-supplied context and comm
-            the PETSc communicator.
-         """),
+         """User-defined function returning the linear system matrix and
+            optionally a precoditioning matrix in a PETSc format. It is called
+            as create_matrix(self, mtx, context, comm), where self is the
+            solver instance, mtx is the matrix passed to self.__call__(),
+            context is a user-supplied context and comm the PETSc communicator.
+            """),
         ('block_size', 'int', None, False,
          'The number of degrees of freedom per node.'),
         ('i_max', 'int', 100, False,
@@ -742,6 +741,7 @@ class PETScKrylovSolver(LinearSolver):
 
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest,
                                             force_reuse=conf.force_reuse)
+        ppmtx = None
         if (not is_new) and (self.pmtx is not None):
             pmtx = self.pmtx
         else:
@@ -752,6 +752,13 @@ class PETScKrylovSolver(LinearSolver):
 
             else:
                 pmtx = conf.create_matrix(self, mtx, context, comm)
+                if not isinstance(pmtx, self.petsc.Mat):
+                    pmtx, ppmtx = pmtx # matrix and preconditioning matrix.
+
+                # Convert to Mat if necessary.
+                pmtx = self.create_petsc_matrix(pmtx, comm=comm)
+                if ppmtx is not None:
+                    ppmtx = self.create_petsc_matrix(ppmtx, comm=comm)
 
             if conf.block_size is not None:
                 pmtx.setBlockSize(conf.block_size)
@@ -762,11 +769,11 @@ class PETScKrylovSolver(LinearSolver):
         if self.ksp is not None:
             ksp = self.ksp
             if is_new:
-                ksp.setOperators(pmtx)
+                ksp.setOperators(A=pmtx, P=ppmtx)
 
         else:
             ksp = self.init_ksp(conf=conf, comm=comm)
-            ksp.setOperators(pmtx)
+            ksp.setOperators(A=pmtx, P=ppmtx)
 
         ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
                           max_it=i_max)
