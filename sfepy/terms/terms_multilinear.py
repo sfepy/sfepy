@@ -25,6 +25,7 @@ except ImportError:
 from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
                        Combine, alphas, alphanums, Literal)
 from functools import partial
+from copy import copy
 
 from sfepy.base.base import output, Struct
 from sfepy.base.timing import Timer
@@ -78,10 +79,10 @@ def parse_term_expression(texpr):
 def append_all(seqs, item, ii=None):
     if ii is None:
         for seq in seqs:
-            seq.append(item)
+            seq.append(copy(item))
 
     else:
-        seqs[ii].append(item)
+        seqs[ii].append(copy(item))
 
 def get_sizes(indices, operands):
     sizes = {}
