@@ -1499,24 +1499,35 @@ class EConvectTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
+        \int_{\Omega} c ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
 
     :Arguments:
+        - material: :math:`c` (optional)
         - virtual/parameter_1: :math:`\ul{v}`
         - state/parameter_2: :math:`\ul{u}`
     """
     name = 'de_convect'
-    arg_types = (('virtual', 'state'),
-                 ('parameter_1', 'parameter_2'))
-    arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D',
-                  'parameter_1' : 'D', 'parameter_2' : 'D'}
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'opt_material' : '1, 1',
+                   'virtual' : ('D', 'state'), 'state' : 'D',
+                   'parameter_1' : 'D', 'parameter_2' : 'D'},
+                  {'opt_material' : None}]
     modes = ('weak', 'eval')
 
-    def get_function(self, virtual, state, mode=None, term_mode=None,
+    def get_function(self, coef, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
-        return self.make_function(
-            'i,i.j,j', virtual, state, state, mode=mode, diff_var=diff_var,
-        )
+        if coef is None:
+            return self.make_function(
+                'i,i.j,j', virtual, state, state,
+                mode=mode, diff_var=diff_var,
+            )
+
+        else:
+            return self.make_function(
+                '00,i,i.j,j', coef, virtual, state, state,
+                mode=mode, diff_var=diff_var,
+            )
 
 class ELinearConvectTerm(ETermBase):
     r"""
