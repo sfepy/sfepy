@@ -969,6 +969,13 @@ Additional options (including solver selection)::
         # conditions.
         'active_only' : False,
 
+        # If active_only is False, i.e. all DOFs are included in tangent
+        # matrices, the E(P)BC rows and columns are by default set to zeros
+        # everywhere except the diagonal, which is set to one. Set this to
+        # False to do nothing instead, for example when manually scaling matrix
+        # blocks in a multi-physical problem by their largest value magnitude.
+        'not_active_only_modify_matrix' : True,
+
         # bool, default: False. If True, all DOF connectivities are used to
         # pre-allocate the matrix graph. If False, only cell region
         # connectivities are used.
