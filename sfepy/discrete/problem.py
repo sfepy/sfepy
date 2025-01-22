@@ -276,9 +276,11 @@ class Problem(Struct):
             self.set_ics(self.conf.ics)
 
         self.setup_output()
-        self.not_active_only_modify_matrix = self.conf.options.get(
-            'not_active_only_modify_matrix', True,
-        )
+        self.not_active_only_modify_matrix = True
+        if self.conf is not None:
+            self.not_active_only_modify_matrix = self.conf.options.get(
+                'not_active_only_modify_matrix', True,
+            )
 
     def reset(self):
         if hasattr(self.conf, 'options'):
