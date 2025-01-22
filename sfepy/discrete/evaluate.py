@@ -118,7 +118,7 @@ class Evaluator(Struct):
             vec, mtx, select_term=select_term,
         )
 
-        if not pb.active_only:
+        if (not pb.active_only) and pb.not_active_only_modify_matrix:
             apply_ebc_to_matrix(mtx, *pb.get_ebc_indices())
 
         if self.matrix_hook is not None:
