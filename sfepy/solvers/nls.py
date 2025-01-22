@@ -214,6 +214,11 @@ class Newton(NonlinearSolver):
             tolerances."""),
         ('macheps', 'float', nm.finfo(nm.float64).eps, False,
          'The float considered to be machine "zero".'),
+        ('scale_system_fun', 'function(mtx, rhs, x0, context)', None, False,
+         """User-defined function for scaling the linear system and initial
+            guess in each iteration."""),
+        ('scale_solution_fun', 'function(x, context)', None, False,
+         """User-defined function for scaling the solution in each iteration."""),
         ('lin_red', 'float or None', 1.0, False,
          """The linear system solution error should be smaller than (`eps_a` *
             `lin_red`), otherwise a warning is printed. If None, the check is
@@ -322,6 +327,10 @@ class Newton(NonlinearSolver):
         lin_solver = get_default(lin_solver, self.lin_solver)
         iter_hook = get_default(iter_hook, self.iter_hook)
         status = get_default(status, self.status)
+        scale_system = get_default(conf.scale_system_fun,
+                                   lambda mtx, rhs, x0, context: (mtx, rhs, x0))
+        scale_solution = get_default(conf.scale_solution_fun,
+                                   lambda x, context: x)
         apply_line_search = get_default(conf.line_search_fun,
                                         apply_line_search_bt)
 
@@ -404,10 +413,15 @@ class Newton(NonlinearSolver):
                 output('solving linear system...')
 
             timers.solve.start()
-            vec_dx = lin_solver(vec_r, x0=vec_x,
-                                eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
-                                status=ls_status)
+            smtx_a, svec_r, svec_x = scale_system(mtx_a, vec_r, vec_x,
+                                                  self.context)
+
+            svec_dx = lin_solver(svec_r, x0=svec_x,
+                                 eps_a=eps_a, eps_r=eps_r, mtx=smtx_a,
+                                 status=ls_status)
             ls_n_iter += ls_status['n_iter']
+
+            vec_dx = scale_solution(svec_dx, self.context)
             timers.solve.stop()
 
             if conf.verbose:
