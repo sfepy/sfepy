@@ -830,7 +830,8 @@ class Equation(Struct):
             conn_info[key] = term.get_conn_info()
 
     def evaluate(self, mode='eval', dw_mode='vector', term_mode=None,
-                 diff_vars=None, asm_obj=None, select_term=None):
+                 diff_vars=None, asm_obj=None, select_term=None,
+                 assemble=None):
         """
         Evaluate the equation.
 
@@ -851,6 +852,12 @@ class Equation(Struct):
         select_term : function(term)
             Optional boolean function returning True for terms that should be
             evaluated.
+        assemble : function(*args, **kwargs)
+            Optional alternative FE assembling function with arguments:
+            (equation, it, term, asm_obj, vals, iels, mode=, diff_var=), where
+            `term` is the evaluated term, `it` is the term's order in the
+            `equation` and (asm_obj, vals, iels, mode=, diff_var=) are the
+            Term.assemble_to() arguments.
 
         Returns
         -------
@@ -861,6 +868,10 @@ class Equation(Struct):
         terms = self.terms
         if select_term is not None:
             terms = [term for term in self.terms if select_term(term)]
+
+        if assemble is None:
+            assemble = (lambda name, it, term, *args, **kwargs:
+                        term.assemble_to(*args, **kwargs))
 
         if mode in ('eval', 'el_eval', 'el_avg', 'qp'):
             val = 0.0
@@ -877,19 +888,19 @@ class Equation(Struct):
 
             if dw_mode == 'vector':
 
-                for term in terms:
+                for it, term in enumerate(terms):
                     val, iels, status = term.evaluate(mode=mode,
                                                       term_mode=term_mode,
                                                       standalone=False,
                                                       ret_status=True)
-                    term.assemble_to(asm_obj, val, iels, mode=dw_mode)
+                    assemble(self, it, term, asm_obj, val, iels, mode=dw_mode)
 
                 out = asm_obj
 
             elif dw_mode == 'matrix':
 
                 extras = []
-                for term in terms:
+                for it, term in enumerate(terms):
                     svars = term.get_state_variables(unknown_only=True)
 
                     for svar in svars:
@@ -898,8 +909,8 @@ class Equation(Struct):
                                                           diff_var=svar.name,
                                                           standalone=False,
                                                           ret_status=True)
-                        extra = term.assemble_to(asm_obj, val, iels,
-                                                 mode=dw_mode, diff_var=svar)
+                        extra = assemble(self, it, term, asm_obj, val, iels,
+                                         mode=dw_mode, diff_var=svar)
                         if extra is not None: extras.append(extra)
 
                 out = (asm_obj, extras) if len(extras) else asm_obj
@@ -909,7 +920,7 @@ class Equation(Struct):
                 if diff_vars is None: diff_vars = ()
 
                 for ic, diff_var in enumerate(diff_vars):
-                    for term in terms:
+                    for it, term in enumerate(terms):
                         if not (term.diff_info and
                                 (diff_var in term.get_material_names(part=1))):
                             continue
@@ -918,7 +929,7 @@ class Equation(Struct):
                                                           diff_var=diff_var,
                                                           standalone=False,
                                                           ret_status=True)
-                        term.assemble_to(asm_obj[:, ic], val, iels)
+                        assemble(self, it, term, asm_obj[:, ic], val, iels)
 
                 out = asm_obj
 
