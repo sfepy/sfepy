@@ -1187,6 +1187,8 @@ class LinearDSpringTerm(LinearTrussTerm):
 
 
 class LinearDRotSpringTerm(LinearDSpringTerm):
+    __doc__ = LinearDSpringTerm.__doc__
+
     name = 'dw_lin_dspring_rot'
     arg_types = ('opt_material', 'material', 'virtual', 'state')
     arg_shapes = [{'opt_material': 'D, 1', 'material': 'S, 1',

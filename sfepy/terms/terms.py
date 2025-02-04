@@ -1177,6 +1177,9 @@ class Term(Struct):
                 elif sh == 'D2':
                     return dim**2
 
+                elif sh == 'D3':
+                    return dim**3
+
                 elif sh == 'S':
                     return sym
 
