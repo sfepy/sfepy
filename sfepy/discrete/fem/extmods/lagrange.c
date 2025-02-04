@@ -267,7 +267,7 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
   ctx->bc = bc;
 
   ii = 0;
-  fmf_fillC(xi, 0.5 * (vmin + vmax));
+  fmf_fillC(xi, 0.2 * (vmin + vmax));
   while (ii < i_max) {
     // Base(xi).
     for (idim = 0; idim < dim; idim++) {
