@@ -36,6 +36,9 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
             elif sh == 'D2':
                 return dim**2
 
+            elif sh == 'D3':
+                return dim**3
+
             elif sh == 'S':
                 return sym
 
