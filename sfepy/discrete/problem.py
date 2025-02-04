@@ -1,6 +1,7 @@
 import os
 import os.path as op
 from copy import copy
+from functools import partial
 
 import numpy as nm
 
@@ -1021,9 +1022,14 @@ class Problem(Struct):
                 raise AttributeError('call Problem.init_solvers() or'\
                                      ' set reuse to False!')
         else:
+            assemble = self.conf.options.get('assemble_equations_fun', None)
+            if assemble is not None:
+                assemble = partial(assemble, self)
+
             UserEvaluator = self.conf.options.get('user_evaluator', None)
             Eval = UserEvaluator if UserEvaluator is not None else Evaluator
-            ev = self.evaluator = Eval(self, matrix_hook=self.matrix_hook)
+            ev = self.evaluator = Eval(self, matrix_hook=self.matrix_hook,
+                                       assemble=assemble)
 
         return ev
 
