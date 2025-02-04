@@ -48,8 +48,9 @@ class Evaluator(Struct):
     given problem.
     """
 
-    def __init__(self, problem, matrix_hook=None):
-        Struct.__init__(self, problem=problem, matrix_hook=matrix_hook)
+    def __init__(self, problem, matrix_hook=None, assemble=None):
+        Struct.__init__(self, problem=problem, matrix_hook=matrix_hook,
+                        assemble=assemble)
 
     @staticmethod
     def new_ulf_iteration(problem, nls, vec, it, err, err0):
@@ -84,7 +85,7 @@ class Evaluator(Struct):
             self.problem.equations.variables.apply_ebc(vec)
 
         vec_r = self.problem.equations.eval_residuals(
-            vec, select_term=select_term,
+            vec, select_term=select_term, assemble=self.assemble,
         )
         if self.matrix_hook is not None:
             vec_r = self.matrix_hook(vec_r, self.problem, call_mode='residual')
@@ -115,7 +116,7 @@ class Evaluator(Struct):
         if mtx is None:
             mtx = pb.mtx_a
         mtx = pb.equations.eval_tangent_matrices(
-            vec, mtx, select_term=select_term,
+            vec, mtx, select_term=select_term, assemble=self.assemble,
         )
 
         if (not pb.active_only) and pb.not_active_only_modify_matrix:
