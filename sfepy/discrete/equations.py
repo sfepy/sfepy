@@ -570,7 +570,8 @@ class Equations(Container):
 
     def evaluate(self, names=None, mode='eval', dw_mode='vector',
                  term_mode=None, diff_vars=None, asm_obj=None,
-                 select_term=None):
+                 select_term=None,
+                 assemble=None):
         """
         Evaluate the equations.
 
@@ -593,6 +594,12 @@ class Equations(Container):
         select_term : function(term)
             Optional boolean function returning True for terms that should be
             evaluated.
+        assemble : function(*args, **kwargs)
+            Optional alternative FE assembling function with arguments:
+            (equation, it, term, asm_obj, vals, iels, mode=, diff_var=), where
+            `term` is the evaluated term, `it` is the term's order in the
+            `equation` and (asm_obj, vals, iels, mode=, diff_var=) are the
+            Term.assemble_to() arguments.
 
         Returns
         -------
@@ -618,7 +625,8 @@ class Equations(Container):
                 out = eq.evaluate(mode=mode, dw_mode=dw_mode,
                                   term_mode=term_mode, diff_vars=diff_vars,
                                   asm_obj=asm_obj,
-                                  select_term=select_term)
+                                  select_term=select_term,
+                                  assemble=assemble)
                 if isinstance(out, tuple): extras.extend(out[1])
 
             out = asm_obj
@@ -630,7 +638,8 @@ class Equations(Container):
             for eq in eqs:
                 eout = eq.evaluate(mode=mode, dw_mode=dw_mode,
                                    term_mode=term_mode,
-                                   select_term=select_term)
+                                   select_term=select_term,
+                                   assemble=assemble)
                 out[eq.name] = eout
 
             if single:
@@ -639,7 +648,8 @@ class Equations(Container):
         return out
 
     def eval_residuals(self, state, by_blocks=False, names=None,
-                       select_term=None):
+                       select_term=None,
+                       assemble=None):
         """
         Evaluate (assemble) residual vectors.
 
@@ -659,6 +669,12 @@ class Equations(Container):
         select_term : function(term)
             Optional boolean function returning True for terms that should be
             evaluated.
+        assemble : function(*args, **kwargs)
+            Optional alternative FE assembling function with arguments:
+            (equation, it, term, asm_obj, vals, iels, mode=, diff_var=), where
+            `term` is the evaluated term, `it` is the term's order in the
+            `equation` and (asm_obj, vals, iels, mode=, diff_var=) are the
+            Term.assemble_to() arguments.
 
         Returns
         -------
@@ -684,7 +700,7 @@ class Equations(Container):
 
                 residual = self.create_reduced_vec()
                 eq.evaluate(mode='weak', dw_mode='vector', asm_obj=residual,
-                            select_term=select_term)
+                            select_term=select_term, assemble=assemble)
 
                 out[key] = residual[ir]
 
@@ -692,12 +708,13 @@ class Equations(Container):
             out = self.create_reduced_vec()
 
             self.evaluate(mode='weak', dw_mode='vector', asm_obj=out,
-                          select_term=select_term)
+                          select_term=select_term, assemble=assemble)
 
         return out
 
     def eval_tangent_matrices(self, state, tangent_matrix,
-                              by_blocks=False, names=None, select_term=None):
+                              by_blocks=False, names=None, select_term=None,
+                              assemble=None):
         """
         Evaluate (assemble) tangent matrices.
 
@@ -719,6 +736,12 @@ class Equations(Container):
         select_term : function(term)
             Optional boolean function returning True for terms that should be
             evaluated.
+        assemble : function(*args, **kwargs)
+            Optional alternative FE assembling function with arguments:
+            (equation, it, term, asm_obj, vals, iels, mode=, diff_var=), where
+            `term` is the evaluated term, `it` is the term's order in the
+            `equation` and (asm_obj, vals, iels, mode=, diff_var=) are the
+            Term.assemble_to() arguments.
 
         Returns
         -------
@@ -746,7 +769,8 @@ class Equations(Container):
                 tangent_matrix.data[:] = 0.0
                 aux = eq.evaluate(mode='weak', dw_mode='matrix',
                                   asm_obj=tangent_matrix,
-                                  select_term=select_term)
+                                  select_term=select_term,
+                                  assemble=assemble)
 
                 out[key] = aux[ir, ic]
 
@@ -755,7 +779,8 @@ class Equations(Container):
 
             out = self.evaluate(mode='weak', dw_mode='matrix',
                                 asm_obj=tangent_matrix,
-                                select_term=select_term)
+                                select_term=select_term,
+                                assemble=assemble)
 
         return out
 
