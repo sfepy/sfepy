@@ -738,7 +738,8 @@ class Equations(Container):
         return out
 
     def eval_tangent_matrices(self, state, tangent_matrix,
-                              by_blocks=False, names=None, select_term=None,
+                              by_blocks=False, names=None,
+                              by_terms=False, select_term=None,
                               assemble=None):
         """
         Evaluate (assemble) tangent matrices.
@@ -758,6 +759,9 @@ class Equations(Container):
         names : list of str, optional
             Optionally, select only blocks with the given `names`, if
             `by_blocks` is True.
+        by_terms : bool
+            If True, return a dict of the individual term matrices indexed by
+            (<equation name>, <term index>).
         select_term : function(term)
             Optional boolean function returning True for terms that should be
             evaluated.
@@ -798,6 +802,32 @@ class Equations(Container):
                                   assemble=assemble)
 
                 out[key] = aux[ir, ic]
+
+        elif by_terms:
+            out = {}
+
+            get_indx = self.variables.get_indx
+            for eq in self:
+                for it, term in enumerate(eq.terms):
+                    if select_term:
+                        _select_term = (lambda x: select_term(x)
+                                        and (x.name == term.name))
+
+                    else:
+                        _select_term = lambda x: x.name == term.name
+
+                    ir = get_indx(term.get_virtual_name(),
+                                  reduced=True, allow_dual=True)
+
+                    tangent_matrix.data[:] = 0.0
+                    eq.evaluate(mode='weak', dw_mode='matrix',
+                                asm_obj=tangent_matrix,
+                                select_term=select_term,
+                                assemble=assemble)
+
+                    # All columns (possibly related to several variables) are
+                    # included.
+                    out[(eq.name, it)] = tangent_matrix[ir]
 
         else:
             tangent_matrix.data[:] = 0.0
