@@ -648,7 +648,7 @@ class Equations(Container):
         return out
 
     def eval_residuals(self, state, by_blocks=False, names=None,
-                       select_term=None,
+                       by_terms=False, select_term=None,
                        assemble=None):
         """
         Evaluate (assemble) residual vectors.
@@ -666,6 +666,9 @@ class Equations(Container):
         names : list of str, optional
             Optionally, select only blocks with the given `names`, if
             `by_blocks` is True.
+        by_terms : bool
+            If True, return a dict of the individual term residuals indexed by
+            (<equation name>, <term index>).
         select_term : function(term)
             Optional boolean function returning True for terms that should be
             evaluated.
@@ -703,6 +706,28 @@ class Equations(Container):
                             select_term=select_term, assemble=assemble)
 
                 out[key] = residual[ir]
+
+        elif by_terms:
+            out = {}
+
+            get_indx = self.variables.get_indx
+            for eq in self:
+                for it, term in enumerate(eq.terms):
+                    if select_term:
+                        _select_term = (lambda x: select_term(x)
+                                        and (x.name == term.name))
+
+                    else:
+                        _select_term = lambda x: x.name == term.name
+
+                    ir = get_indx(term.get_virtual_name(),
+                                  reduced=True, allow_dual=True)
+
+                    residual = self.create_reduced_vec()
+                    eq.evaluate(mode='weak', dw_mode='vector', asm_obj=residual,
+                                select_term=_select_term, assemble=assemble)
+
+                    out[(eq.name, it)] = residual[ir]
 
         else:
             out = self.create_reduced_vec()
