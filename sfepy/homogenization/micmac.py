@@ -77,7 +77,7 @@ def get_homog_coefs_linear(ts, coor, mode,
 def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
                               term=None, problem=None,
                               iteration=None, define_args=None,
-                              output_dir=None, **kwargs):
+                              output_dir=None, ret_corrs=False, **kwargs):
     if not (mode == 'qp'):
         return
 
@@ -141,7 +141,10 @@ def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
 
     output.prefix = oprefix
 
-    return out
+    if ret_corrs:
+        return out, deps
+    else:
+        return out
 
 def get_correctors_from_file_hdf5(coefs_filename='coefs.h5',
                                   dump_names=None):
