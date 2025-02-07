@@ -13,8 +13,7 @@ from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
 from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis,\
     rm_multi
-import six
-from six.moves import range
+
 
 class MiniAppBase(Struct):
     def any_from_conf(name, problem, kwargs):
@@ -114,8 +113,7 @@ class CorrSolution(Struct):
         if hasattr(self, 'states'):
             states = nm.zeros(self.states.shape, dtype=object)
             for idx in self.components:
-                state = {k: v[step] for k, v in\
-                         six.iteritems(self.states[idx])}
+                state = {k: v[step] for k, v in self.states[idx].items()}
                 states[idx] = state
 
             out = CorrSolution(name=self.name,
@@ -123,7 +121,7 @@ class CorrSolution(Struct):
                                components=self.components)
 
         else:
-            state = {k: v[step] for k, v in six.iteritems(self.state)}
+            state = {k: v[step] for k, v in self.state.items()}
             out = CorrSolution(name=self.name,
                                state=state)
 
@@ -193,7 +191,7 @@ class CorrMiniApp(MiniAppBase):
 
         out = {}
         for key, sol in corr_sol.iter_solutions():
-            for var_name in six.iterkeys(sol):
+            for var_name in sol.keys():
                 if var_name not in variables.ordered_state\
                     and var_map is not None\
                     and var_name in var_map:
@@ -223,7 +221,7 @@ class CorrMiniApp(MiniAppBase):
                                                      None,
                                                      extend=extend)
 
-                    for _key, val in six.iteritems(aux):
+                    for _key, val in aux.items():
                         if key:
                             new_key = _key + '_' + key
 
@@ -394,6 +392,7 @@ class CorrNN(CorrMiniApp):
                 else:
                     self.set_variables(variables, ir, ic, **data)
 
+                problem.homogen_corr_id = (self.name, (ir, ic))
                 state = problem.solve(update_materials=False,
                                       save_results=False)
                 assert_(state.has_ebc())
@@ -444,6 +443,8 @@ class CorrN(CorrMiniApp):
                                            self.set_variables, data)
             else:
                 self.set_variables(variables, ir, **data)
+
+            problem.homogen_corr_id = (self.name, (ir,))
             state = problem.solve(update_materials=False,
                                   save_results=False)
             assert_(state.has_ebc())
@@ -494,6 +495,7 @@ class CorrOne(CorrMiniApp):
             else:
                 self.set_variables(variables, **data)
 
+        problem.homogen_corr_id = (self.name, None)
         state = problem.solve(update_materials=False,
                               save_results=False)
         assert_(state.has_ebc())
@@ -560,7 +562,7 @@ class CorrEqPar(CorrOne):
 
         eqns ={}
         for ir in range(self.dim):
-            for key_eq, val_eq in six.iteritems(self.equations):
+            for key_eq, val_eq in self.equations.items():
                 eqns[key_eq] = val_eq % self.eq_pars[ir]
 
             problem.set_equations(eqns)
@@ -581,6 +583,7 @@ class CorrEqPar(CorrOne):
                 else:
                     self.set_variables(variables, **data)
 
+            problem.homogen_corr_id = (self.name, (ir,))
             state = problem.solve(update_materials=False,
                                   save_results=False)
             assert_(state.has_ebc())
@@ -803,7 +806,7 @@ def create_ts_coef(cls):
             ts_keys = []
             ts_data = {}
             n_step = None
-            for key, val in six.iteritems(data):
+            for key, val in data.items():
                 if isinstance(val, CorrSolution) and hasattr(val, 'n_step'):
                     if n_step is None:
                         n_step = val.n_step
