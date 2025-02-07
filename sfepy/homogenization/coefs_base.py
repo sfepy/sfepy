@@ -394,6 +394,7 @@ class CorrNN(CorrMiniApp):
                 else:
                     self.set_variables(variables, ir, ic, **data)
 
+                problem.homogen_corr_id = (self.name, (ir, ic))
                 state = problem.solve(update_materials=False,
                                       save_results=False)
                 assert_(state.has_ebc())
@@ -444,6 +445,8 @@ class CorrN(CorrMiniApp):
                                            self.set_variables, data)
             else:
                 self.set_variables(variables, ir, **data)
+
+            problem.homogen_corr_id = (self.name, (ir,))
             state = problem.solve(update_materials=False,
                                   save_results=False)
             assert_(state.has_ebc())
@@ -494,6 +497,7 @@ class CorrOne(CorrMiniApp):
             else:
                 self.set_variables(variables, **data)
 
+        problem.homogen_corr_id = (self.name, None)
         state = problem.solve(update_materials=False,
                               save_results=False)
         assert_(state.has_ebc())
@@ -581,6 +585,7 @@ class CorrEqPar(CorrOne):
                 else:
                     self.set_variables(variables, **data)
 
+            problem.homogen_corr_id = (self.name, (ir,))
             state = problem.solve(update_materials=False,
                                   save_results=False)
             assert_(state.has_ebc())
