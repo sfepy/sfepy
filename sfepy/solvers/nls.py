@@ -264,6 +264,9 @@ class Newton(NonlinearSolver):
             solve."""),
         ('is_linear', 'bool', False, False,
          'If True, the problem is considered to be linear.'),
+        ('scaled_error', 'bool', False, False,
+         """If True, the error of the linear solver is calculated using
+            the scaled values."""),
     ]
 
     def __init__(self, conf, **kwargs):
@@ -331,6 +334,7 @@ class Newton(NonlinearSolver):
                                    lambda mtx, rhs, x0, context: (mtx, rhs, x0))
         scale_solution = get_default(conf.scale_solution_fun,
                                    lambda x, context: x)
+        scaled_error = get_default(conf.scaled_error, False)
         apply_line_search = get_default(conf.line_search_fun,
                                         apply_line_search_bt)
 
@@ -431,7 +435,10 @@ class Newton(NonlinearSolver):
                 output('%10s: %7.2f [s]' % (key, val))
 
             if lin_red is not None:
-                vec_e = mtx_a @ vec_dx - vec_r
+                if scaled_error:
+                    vec_e = smtx_a @ svec_dx - svec_r
+                else:
+                    vec_e = mtx_a @ vec_dx - vec_r
                 lerr = nla.norm(vec_e)
                 if lerr > lin_red:
                     output('warning: linear system solution precision is lower'
