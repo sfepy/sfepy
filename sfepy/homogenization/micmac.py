@@ -10,7 +10,7 @@ from sfepy.discrete.fem.meshio import HDF5MeshIO
 import sfepy.linalg as la
 import sfepy.base.multiproc as multi
 import os.path as op
-import six
+
 
 def get_homog_coefs_linear(ts, coor, mode,
                            micro_filename=None, regenerate=False,
@@ -54,15 +54,15 @@ def get_homog_coefs_linear(ts, coor, mode,
 
     out = {}
     if mode == None:
-        for key, val in six.iteritems(coefs.__dict__):
+        for key, val in coefs.__dict__.items():
             out[key] = val
 
     elif mode == 'qp':
-        for key, val in six.iteritems(coefs.__dict__):
+        for key, val in coefs.__dict__.items():
             if type( val ) == nm.ndarray or type(val) == nm.float64:
                 out[key] = nm.tile( val, (coor.shape[0], 1, 1) )
             elif type(val) == dict:
-                for key2, val2 in six.iteritems(val):
+                for key2, val2 in val.items():
                     if type(val2) == nm.ndarray or type(val2) == nm.float64:
                         out[key+'_'+key2] = \
                                           nm.tile(val2, (coor.shape[0], 1, 1))
@@ -125,14 +125,14 @@ def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
         coefs = coefs[0]
 
     out = {}
-    for key, val in six.iteritems(coefs.__dict__):
+    for key, val in coefs.__dict__.items():
         if isinstance(val, list):
             out[key] = nm.array(val)
         elif isinstance(val, dict):
-            for key2, val2 in six.iteritems(val):
+            for key2, val2 in val.items():
                 out[key+'_'+key2] = nm.array(val2)
 
-    for key in six.iterkeys(out):
+    for key in out.keys():
         shape = out[key].shape
         if len(shape) == 1:
             out[key] = out[key].reshape(shape + (1, 1))
@@ -158,7 +158,7 @@ def get_correctors_from_file_hdf5(coefs_filename='coefs.h5',
 
     out = {}
 
-    for key, val in six.iteritems(dump_names):
+    for key, val in dump_names.items():
         if type(val) in [tuple, list]:
             h5name, corr_name = val
         else:
