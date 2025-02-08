@@ -218,7 +218,10 @@ class Newton(NonlinearSolver):
          """User-defined function for scaling the linear system and initial
             guess in each iteration."""),
         ('scale_solution_fun', 'function(x, context)', None, False,
-         """User-defined function for scaling the solution in each iteration."""),
+         'User-defined function for scaling the solution in each iteration.'),
+        ('scaled_error', 'bool', False, False,
+         """If True, the error of the linear solver is calculated using
+            the scaled values."""),
         ('lin_red', 'float or None', 1.0, False,
          """The linear system solution error should be smaller than (`eps_a` *
             `lin_red`), otherwise a warning is printed. If None, the check is
@@ -264,9 +267,6 @@ class Newton(NonlinearSolver):
             solve."""),
         ('is_linear', 'bool', False, False,
          'If True, the problem is considered to be linear.'),
-        ('scaled_error', 'bool', False, False,
-         """If True, the error of the linear solver is calculated using
-            the scaled values."""),
     ]
 
     def __init__(self, conf, **kwargs):
