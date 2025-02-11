@@ -79,6 +79,7 @@ solvers = {
               'warn' : True,}
     ),
     'd10' : ('ls.mumps', {}),
+    'd20' : ('ls.pypardiso', {}),
     'i00' : ('ls.pyamg',
              {'method' : 'ruge_stuben_solver',
               'accel' : 'cg',
@@ -156,7 +157,7 @@ options = {
 }
 
 can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc', 'ls.mumps',
-            'ls.scipy_direct']
+            'ls.scipy_direct', 'ls.pypardiso']
 
 @pytest.fixture(scope='module')
 def problem():
