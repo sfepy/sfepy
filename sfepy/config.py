@@ -87,13 +87,7 @@ class Config(object):
             self.site_cfg = None
 
     def python_version(self):
-        if has_attr(self.site_cfg, 'python_version'):
-            if '*' in self.site_cfg.python_version:
-                return "%d.%d" % tuple(sys.version_info[:2])
-            else:
-                return self.site_cfg.python_version
-        else:
-            return "%d.%d" % tuple(sys.version_info[:2])
+        return "%d.%d" % tuple(sys.version_info[:2])
 
     def python_include(self):
         if (has_attr(self.site_cfg, 'python_include')
@@ -155,12 +149,6 @@ class Config(object):
             return self.site_cfg.is_release
         else:
             return ''
-
-    def tetgen_path(self):
-        if has_attr(self.site_cfg, 'tetgen_path'):
-            return self.site_cfg.tetgen_path
-        else:
-            return '/usr/bin/tetgen'
 
     def refmap_memory_factor(self):
         if has_attr(self.site_cfg, 'refmap_memory_factor'):
