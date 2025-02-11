@@ -22,9 +22,6 @@ numpydoc_path = None
 # is appended to version string, if the sources are in a repository.
 is_release = False
 
-# Tetgen executable path.
-tetgen_path = '/usr/bin/tetgen'
-
 # Reference mapping memory allocation safety factor (float), requires psutil
 # installed. Use None for skipping the memory check.
 refmap_memory_factor = None
