@@ -373,6 +373,37 @@ class ScipyIterative(LinearSolver):
 
         return sol, self.iter
 
+class PyPardisoSolver(LinearSolver):
+    """
+    PyPardiso direct solver.
+
+    PyPardiso (https://github.com/haasad/PyPardiso) is a python package to
+    solve large sparse linear systems of equations with the Intel oneAPI Math
+    Kernel Library PARDISO solver, a shared-memory multiprocessing parallel
+    direct sparse solver.
+    """
+    name = 'ls.pypardiso'
+
+    _parameters = [
+        ('use_presolve', 'bool', False, False,
+         """If True, pre-factorize the matrix. It is not needed for performance
+            here, as it just calls pypardiso.spsolve() on zeros."""),
+    ]
+
+    def __init__(self, conf, method=None, **kwargs):
+        aux = try_imports(['import pypardiso as pp'],
+                          'cannot import PyPardiso!')
+        LinearSolver.__init__(self, conf, pp=aux['pp'], **kwargs)
+
+    @standard_call
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+        return self.pp.spsolve(mtx, rhs)
+
+    def presolve(self, mtx, use_mtx_digest=True):
+        # PyPardiso does its own digest.
+        self.pp.spsolve(mtx, nm.zeros(mtx.shape[0], dtype=mtx.dtype))
+
 class PyAMGSolver(LinearSolver):
     """
     Interface to PyAMG solvers.
