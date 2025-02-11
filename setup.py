@@ -136,6 +136,8 @@ def check_versions(show_only=False):
                   show_only=show_only)
     package_check('ipctk', INFO.IPCTK_MIN_VERSION, optional=True,
                   show_only=show_only)
+    package_check('pypardiso', INFO.PYPARDISO_MIN_VERSION, optional=True,
+                  show_only=show_only)
 
 
 def data_dir_walk(dir_name: str, prefix: str) -> list:
