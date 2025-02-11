@@ -380,7 +380,8 @@ class PyPardisoSolver(LinearSolver):
     PyPardiso (https://github.com/haasad/PyPardiso) is a python package to
     solve large sparse linear systems of equations with the Intel oneAPI Math
     Kernel Library PARDISO solver, a shared-memory multiprocessing parallel
-    direct sparse solver.
+    direct sparse solver. PyPardiso is not a python interface to the PARDISO
+    Solver Project (https://panua.ch/pardiso).
     """
     name = 'ls.pypardiso'
 
