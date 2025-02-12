@@ -4,7 +4,6 @@ Compressible Neo-Hookean hyperelastic material model. The tangent modulus
 and the stress tensor are calculated by a user defined function.
 """
 import numpy as nm
-from sfepy import data_dir
 from hyperelastic_ul import (filename_mesh, options, regions, fields,
     variables, ebcs, functions)
 
@@ -93,10 +92,10 @@ solvers = {
         'i_max': 20,
         'eps_a': 1e-5,
         'eps_r': 1e-3,
-        }),
+    }),
     'ts': ('ts.simple', {
         't0': 0,
         't1': 1,
         'n_step': 11,
-        }),
-    }
+    }),
+}
