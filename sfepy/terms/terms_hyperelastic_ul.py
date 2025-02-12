@@ -321,3 +321,64 @@ class CompressibilityULTerm(HyperElasticULBase):
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
+
+
+class HyperelasticByFunULTerm(HyperElasticULBase):
+    r"""
+    General hyperelastic term: the tangent modulus and the stress tensor
+    are calculated by a user defined function :math:`fun`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+
+    :Arguments:
+        - material : :math:`fun`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+    name = 'dw_ul_he_by_fun'
+    family_data_names = ['mtx_f', 'det_f', 'sym_b', 'tr_b', 'in2_b',
+                         'green_strain']
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = [{'material': '1', 'virtual': ('D', 'state'), 'state': 'D'}]
+
+    def get_fargs(self, mat_fun, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
+
+        name = state.name
+        fd = self.get_family_data(state, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
+
+        if mode == 'weak':
+            if diff_var is None:
+                stress = mat_fun(fd, mode='stress')
+                return terms.dw_lin_prestress, stress / fd.det_f, vg
+            else:
+                tan_mod = mat_fun(fd, mode='tan_mod')
+                grad = nm.array([0], ndmin=4, dtype=nm.float64)
+                return terms.dw_nonsym_elastic, grad, tan_mod / fd.det_f, vg, 1
+
+        elif mode in ('el_avg', 'qp'):
+            if term_mode == 'strain':
+                out_qp = fd.green_strain
+
+            elif term_mode == 'stress':
+                stress = mat_fun(fd, mode='stress')
+                out_qp = stress
+
+            else:
+                raise ValueError('unsupported term mode in %s! (%s)'
+                                 % (self.name, term_mode))
+
+            fmode = {'el_avg' : 1, 'qp' : 2}[mode]
+
+            return self.integrate, out_qp, vg, fmode
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
