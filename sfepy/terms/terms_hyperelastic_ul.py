@@ -323,6 +323,11 @@ class CompressibilityULTerm(HyperElasticULBase):
                              % (self.name, mode))
 
 
+def _get_fun_mat_shape(fd, mode):
+    n_el, n_qp, dim, dim = fd.mtx_f.shape
+    return ((n_el, n_qp, dim**2, 1) if mode == 'stress' else
+            (n_el, n_qp, dim**2, dim**2))
+
 class HyperelasticByFunULTerm(HyperElasticULBase):
     r"""
     General hyperelastic term: the tangent modulus and the stress tensor
@@ -341,8 +346,10 @@ class HyperelasticByFunULTerm(HyperElasticULBase):
     name = 'dw_ul_he_by_fun'
     family_data_names = ['mtx_f', 'det_f', 'sym_b', 'tr_b', 'in2_b',
                          'green_strain']
-    arg_types = ('material', 'virtual', 'state')
-    arg_shapes = [{'material': '1', 'virtual': ('D', 'state'), 'state': 'D'}]
+    arg_types = ('fun', 'virtual', 'state')
+    arg_shapes = [{'fun':
+                   lambda fd, mode: nm.ones(_get_fun_mat_shape(fd, mode)),
+                   'virtual': ('D', 'state'), 'state': 'D'}]
 
     def get_fargs(self, mat_fun, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
