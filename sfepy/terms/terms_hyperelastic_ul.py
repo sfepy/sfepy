@@ -362,11 +362,26 @@ class HyperelasticByFunULTerm(HyperElasticULBase):
                                   self.arg_derivatives[name])
 
         if mode == 'weak':
+            nel, nqp, dim = fd.mtx_f.shape[:3]
+            sym = fd.sym_b.shape[2]
             if diff_var is None:
                 stress = mat_fun(fd, mode='stress')
+                allowed_shape = [(nel, nqp, dim**2, 1), (nel, nqp, sym, 1)]
+                if stress.shape not in allowed_shape:
+                    allowed_shape = " or ".join(str(k) for k in allowed_shape)
+                    msg = (f'wrong stress shape in {self.name} term! '
+                           f'(expected {allowed_shape}, got {stress.shape})')
+                    raise ValueError(msg)
+
                 return terms.dw_lin_prestress, stress / fd.det_f, vg
             else:
                 tan_mod = mat_fun(fd, mode='tan_mod')
+                allowed_shape = (nel, nqp, dim**2, dim**2)
+                if tan_mod.shape != allowed_shape:
+                    msg = (f'wrong tangent modulus shape in {self.name} term! '
+                           f'(expected {allowed_shape}, got {tan_mod.shape})')
+                    raise ValueError(msg)
+
                 grad = nm.array([0], ndmin=4, dtype=nm.float64)
                 return terms.dw_nonsym_elastic, grad, tan_mod / fd.det_f, vg, 1
 
