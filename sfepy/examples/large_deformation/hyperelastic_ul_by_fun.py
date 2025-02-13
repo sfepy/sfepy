@@ -3,6 +3,8 @@ r"""
 Compressible Neo-Hookean hyperelastic material model. The tangent modulus
 and the stress tensor are calculated by a user defined function.
 """
+from functools import partial
+
 import numpy as nm
 from hyperelastic_ul import (filename_mesh, options, regions, fields,
     variables, ebcs, functions)
@@ -62,15 +64,16 @@ def get_hyperelastic_mat(family_data, mode):
 def stress_strain(out, problem, state, extend = False):
     from sfepy.base.base import Struct
 
-    ev = problem.evaluate
-    stress = ev('dw_ul_he_by_fun.i.Omega(solid.fun, v, u)',
-                mode='el_avg', term_mode='stress')
+    ev = partial(problem.evaluate, mode='el_avg',
+                 get_hyperelastic_mat=get_hyperelastic_mat)
+    stress = ev('dw_ul_he_by_fun.i.Omega(get_hyperelastic_mat, v, u)',
+                term_mode='stress')
     out['cauchy_stress'] = Struct(name='output_data',
-                                  mode='cell', data=stress, dofs=None)
-    strain = ev('dw_ul_he_by_fun.i.Omega(solid.fun, v, u)',
-                mode='el_avg', term_mode='strain')
+                                  mode='cell', data=stress)
+    strain = ev('dw_ul_he_by_fun.i.Omega(get_hyperelastic_mat, v, u)',
+                term_mode='strain')
     out['green_strain'] = Struct(name='output_data',
-                                 mode='cell', data=strain, dofs=None)
+                                 mode='cell', data=strain)
     return out
 
 
@@ -79,11 +82,10 @@ integrals = {
 }
 
 materials = {
-    'solid': ({'.fun': get_hyperelastic_mat},),
 }
 
 equations = {
-    'balance': 'dw_ul_he_by_fun.i.Omega(solid.fun, v, u) = 0',
+    'balance': 'dw_ul_he_by_fun.i.Omega(get_hyperelastic_mat, v, u) = 0',
 }
 
 solvers = {
