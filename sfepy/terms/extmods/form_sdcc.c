@@ -351,6 +351,19 @@ int32 build_nonsym_grad(FMField *out, FMField *gc)
 
   fmf_fillC(out, 0.0);
   switch (dim) {
+  case 1:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pg = FMF_PtrLevel(gc, iqp);
+      pout1 = FMF_PtrLevel(out, iqp);
+      for (idim = 0; idim < dim; idim++) {
+        for (ic = 0; ic < nEP; ic++) {
+          pout1[ic] = pg[ic];
+        } /* for (ic) */
+	pout1 += nEP;
+	pg += nEP;
+      } /* for (idim) */
+    } /* for (iqp) */
+    break;
   case 2:
     for (iqp = 0; iqp < nQP; iqp++) {
       pg = FMF_PtrLevel(gc, iqp);
