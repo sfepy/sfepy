@@ -8,7 +8,7 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-from sfepy.discrete.common.extmods.types cimport int32, float64, complex128
+from sfepy.discrete.common.extmods.types cimport int32, uint32, float64, complex128
 
 @cython.boundscheck(False)
 def assemble_vector(np.ndarray[float64, mode='c', ndim=1] vec not None,
@@ -195,7 +195,7 @@ cdef inline int32 bsearch(int32 *cols,
     cdef int32 im
 
     while i0 <= i1:
-        im = (i0 + i1) // 2
+        im = <int32> ((<uint32> i0 + <uint32> i1) >> 1)
 
         if cols[im] == ii:
             return im
