@@ -1629,13 +1629,6 @@ class Term(Struct):
                 asm_obj[rows] += vals
 
         elif mode == 'matrix':
-            if asm_obj.dtype == nm.float64:
-                assemble = asm.assemble_matrix
-
-            else:
-                assert_(asm_obj.dtype == nm.complex128)
-                assemble = asm.assemble_matrix_complex
-
             svar = diff_var
             tmd = (asm_obj.data, asm_obj.indptr, asm_obj.indices)
 
@@ -1658,6 +1651,35 @@ class Term(Struct):
                 cdct = self.get_dof_conn_type(svar.name)
                 cdc = svar.get_dof_conn(rname, cdct, trace_region)
                 assert_(val.shape[2:] == (rdc.shape[1], cdc.shape[1]))
+
+                max_in_rows = getattr(asm_obj, '_sfepy_max_in_rows', None)
+                if max_in_rows is None:
+                    max_in_rows = asm_obj._sfepy_max_in_rows = {}
+
+                if vvar.name not in max_in_rows:
+                    if vvar._variables is None:
+                        irs = slice(0, None)
+
+                    else:
+                        aux = vvar._variables.adi.indx[vvar.get_primary_name()]
+                        irs = slice(aux.start, aux.stop + 1)
+
+                    max_in_rows[vvar.name] = nm.diff(asm_obj.indptr[irs]).max()
+
+                max_in_row = max_in_rows[vvar.name]
+
+                use_bsearch = max_in_row >= 100
+                if use_bsearch:
+                    assert_(asm_obj.has_sorted_indices)
+
+                if asm_obj.dtype == nm.float64:
+                    assemble = (asm.assemble_matrix_b if use_bsearch else
+                                asm.assemble_matrix)
+
+                else:
+                    assert_(asm_obj.dtype == nm.complex128)
+                    assemble = (asm.assemble_matrix_complex_b if use_bsearch else
+                                asm.assemble_matrix_complex)
 
                 assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)
 
