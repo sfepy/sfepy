@@ -990,6 +990,14 @@ class CoefDimSym(CoefMN):
 
         return self.get_coef(row, col, volume, problem, data)
 
+class CoefSymDim(CoefMN):
+    def __call__(self, volume, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        dim = problem.get_dim()
+        row = [ii for ii in iter_sym(dim)]
+        col = [(ii, None) for ii in range(dim)]
+
+        return self.get_coef(row, col, volume, problem, data)
 
 class CoefN(CoefMN):
     @staticmethod
