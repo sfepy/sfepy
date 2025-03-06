@@ -75,8 +75,8 @@ lkji ( 0), ljki ( 4), klji ( 1)
 klij (33), lkij (32), jlik (41)
 jilk (30), kilj (22), jikl (62)
 """
-from __future__ import print_function
-from __future__ import absolute_import
+from itertools import permutations
+
 import numpy as nm
 import six
 from six.moves import range
@@ -117,8 +117,6 @@ def build_orientation_map(n_fp):
     used to sort facet vertices lexicographically. Hence `permuted_facet =
     facet[permutation]`.
     """
-    from sfepy.linalg import permutations
-
     indices = list(range(n_fp))
 
     cmps = [(i1, i2) for i2 in indices for i1 in indices[:i2]]
