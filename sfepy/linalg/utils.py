@@ -255,7 +255,7 @@ def permutations( seq ):
 
 ##
 # 14.12.2005, c
-def cycle( bounds ):
+def cycle(bounds):
     """
     Cycles through all combinations of bounds, returns a generator.
 
@@ -271,15 +271,7 @@ def cycle( bounds ):
     [2, 1], [2, 2], [2, 3]]
 
     """
-
-    nb  = len( bounds )
-    if nb == 1:
-        for ii in range( bounds[0] ):
-            yield [ii]
-    else:
-        for ii in range( bounds[0] ):
-            for perm in cycle( bounds[1:] ):
-                yield [ii] + perm
+    yield from product(*map(range, bounds))
 
 def combine( seqs ):
     """Same as cycle, but with general sequences.
