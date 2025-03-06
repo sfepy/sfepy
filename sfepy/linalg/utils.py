@@ -229,31 +229,6 @@ def max_diff_csr(mtx1, mtx2):
     return aux.max() if len(aux) else 0.0
 
 ##
-# 21.11.2005, c
-def split_range( n_item, step ):
-    num = n_item / step
-    out = [step] * num
-    aux = sum( out )
-    if aux < n_item:
-        out.append( n_item - aux )
-
-    return out
-
-##
-# Inspired on net (ASPN Recipec).
-# 14.12.2005, c
-def permutations( seq ):
-
-    ls = len( seq )
-
-    if ls <= 1:
-        yield seq
-    else:
-        for ii in range( ls ):
-            for perm in permutations( seq[:ii] + seq[ii+1:] ):
-                yield [seq[ii]] + perm
-
-##
 # 14.12.2005, c
 def cycle(bounds):
     """
