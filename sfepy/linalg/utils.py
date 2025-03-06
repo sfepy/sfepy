@@ -248,26 +248,6 @@ def cycle(bounds):
     """
     yield from product(*map(range, bounds))
 
-def combine( seqs ):
-    """Same as cycle, but with general sequences.
-
-    Example:
-
-    In [19]: c = combine( [['a', 'x'], ['b', 'c'], ['dd']] )
-
-    In [20]: list(c)
-    Out[20]: [['a', 'b', 'dd'], ['a', 'c', 'dd'], ['x', 'b', 'dd'],
-    ['x', 'c', 'dd']]
-    """
-    nb  = len( seqs )
-    if nb == 1:
-        for ii in seqs[0]:
-            yield [ii]
-    else:
-        for ii in seqs[0]:
-            for perm in combine( seqs[1:] ):
-                yield [ii] + perm
-
 def assemble1d(ar_out, indx, ar_in):
     """
     Perform `ar_out[indx] += ar_in`, where items of `ar_in`

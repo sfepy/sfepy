@@ -30,7 +30,6 @@ must not change during the test. This can be ensured by a sufficient initial
 penetration and large enough contact boundary polygons (hard!), or by tweaking
 the dw_contact_plane term to mask points only by undeformed coordinates.
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 from six.moves import range
@@ -135,6 +134,7 @@ solvers = {
 
 def main():
     import os
+    from itertools import product
 
     import numpy as nm
     import matplotlib.pyplot as plt
@@ -147,7 +147,7 @@ def main():
     conf_dir = os.path.dirname(__file__)
     io = MeshIO.any_from_filename(filename_mesh, prefix_dir=conf_dir)
     bb = io.read_bounding_box()
-    outline = [vv for vv in la.combine(zip(*bb))]
+    outline = [vv for vv in product(*bb.T)]
 
     ax = plot_points(None, nm.array(outline), 'r*')
     for name in ['cp%d' % ii for ii in range(4)]:

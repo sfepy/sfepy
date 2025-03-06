@@ -83,16 +83,15 @@ def _get_possible_oris(geom):
 def _gen_common_data(orders, gels):
     import sfepy
     from sfepy.base.base import Struct
-    from sfepy.linalg import combine
     from sfepy.discrete import FieldVariable, Integral
     from sfepy.discrete.fem import Mesh, FEDomain, Field
     from sfepy.discrete.common.global_interp import get_ref_coors
 
-    bases = ([ii for ii in combine([['2_4', '3_8'],
-                                    ['lagrange', 'serendipity', 'bernstein',
-                                     'lobatto', 'sem']])]
-             + [ii for ii in combine([['2_3', '3_4'],
-                                      ['lagrange', 'bernstein']])])
+    bases = ([ii for ii in product(['2_4', '3_8'],
+                                   ['lagrange', 'serendipity', 'bernstein',
+                                    'lobatto', 'sem'])]
+             + [ii for ii in product(['2_3', '3_4'],
+                                     ['lagrange', 'bernstein'])])
     for geom, poly_space_basis in bases:
         order = orders[geom]
         if (geom == '3_8') and (poly_space_basis == 'serendipity'):
@@ -194,17 +193,16 @@ def gels():
     return gels
 
 def test_partition_of_unity(gels):
-    from sfepy.linalg import combine
     from sfepy.discrete import Integral, PolySpace
 
     ok = True
     orders = {'2_3' : 5, '2_4' : 5, '3_4' : 5, '3_8' : 5}
     bases = (
-        [ii for ii in combine([['2_4', '3_8'],
-                               ['lagrange', 'serendipity', 'bernstein', 'sem']]
+        [ii for ii in product(['2_4', '3_8'],
+                              ['lagrange', 'serendipity', 'bernstein', 'sem']
         )]
-        + [ii for ii in combine([['2_3', '3_4'],
-                                 ['lagrange', 'bernstein']])]
+        + [ii for ii in product(['2_3', '3_4'],
+                                ['lagrange', 'bernstein'])]
     )
 
     for geom, poly_space_basis in bases:
@@ -356,13 +354,12 @@ def test_hessians(gels):
     Test the second partial derivatives of basis functions using finite
     differences.
     """
-    from sfepy.linalg import combine
     from sfepy.discrete import Integral, PolySpace
 
     ok = True
     orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
-    bases = ([ii for ii in combine([['2_3', '2_4', '3_4', '3_8'],
-                                    ['lagrange']])])
+    bases = ([ii for ii in product(['2_3', '2_4', '3_4', '3_8'],
+                                   ['lagrange'])])
 
     for geom, poly_space_basis in bases:
         tst.report('geometry: %s, base: %s' % (geom, poly_space_basis))
