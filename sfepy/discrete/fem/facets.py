@@ -78,8 +78,6 @@ jilk (30), kilj (22), jikl (62)
 from itertools import permutations
 
 import numpy as nm
-import six
-from six.moves import range
 
 _quad_ori_groups = {
     0 : 0,
@@ -288,7 +286,7 @@ def get_facet_dof_permutations(n_fp, order):
     elif n_fp == 4:
         mtx = make_square_matrix(order)
         ori_map = {}
-        for key, val in six.iteritems(_quad_ori_groups):
+        for key, val in _quad_ori_groups.items():
             ori_map[key] = ori_square_to_iter[val]
         fo = order - 1
 
@@ -296,7 +294,7 @@ def get_facet_dof_permutations(n_fp, order):
         raise ValueError('unsupported number of facet points! (%d)' % n_fp)
 
     dof_perms = {}
-    for key, itfun in six.iteritems(ori_map):
+    for key, itfun in ori_map.items():
         dof_perms[key] = [mtx[ii] for ii in itfun(fo)]
 
     dof_perms = dict_to_array(dof_perms)
