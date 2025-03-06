@@ -75,11 +75,9 @@ lkji ( 0), ljki ( 4), klji ( 1)
 klij (33), lkij (32), jlik (41)
 jilk (30), kilj (22), jikl (62)
 """
-from __future__ import print_function
-from __future__ import absolute_import
+from itertools import permutations
+
 import numpy as nm
-import six
-from six.moves import range
 
 _quad_ori_groups = {
     0 : 0,
@@ -117,8 +115,6 @@ def build_orientation_map(n_fp):
     used to sort facet vertices lexicographically. Hence `permuted_facet =
     facet[permutation]`.
     """
-    from sfepy.linalg import permutations
-
     indices = list(range(n_fp))
 
     cmps = [(i1, i2) for i2 in indices for i1 in indices[:i2]]
@@ -290,7 +286,7 @@ def get_facet_dof_permutations(n_fp, order):
     elif n_fp == 4:
         mtx = make_square_matrix(order)
         ori_map = {}
-        for key, val in six.iteritems(_quad_ori_groups):
+        for key, val in _quad_ori_groups.items():
             ori_map[key] = ori_square_to_iter[val]
         fo = order - 1
 
@@ -298,7 +294,7 @@ def get_facet_dof_permutations(n_fp, order):
         raise ValueError('unsupported number of facet points! (%d)' % n_fp)
 
     dof_perms = {}
-    for key, itfun in six.iteritems(ori_map):
+    for key, itfun in ori_map.items():
         dof_perms[key] = [mtx[ii] for ii in itfun(fo)]
 
     dof_perms = dict_to_array(dof_perms)

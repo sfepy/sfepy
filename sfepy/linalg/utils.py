@@ -229,33 +229,8 @@ def max_diff_csr(mtx1, mtx2):
     return aux.max() if len(aux) else 0.0
 
 ##
-# 21.11.2005, c
-def split_range( n_item, step ):
-    num = n_item / step
-    out = [step] * num
-    aux = sum( out )
-    if aux < n_item:
-        out.append( n_item - aux )
-
-    return out
-
-##
-# Inspired on net (ASPN Recipec).
 # 14.12.2005, c
-def permutations( seq ):
-
-    ls = len( seq )
-
-    if ls <= 1:
-        yield seq
-    else:
-        for ii in range( ls ):
-            for perm in permutations( seq[:ii] + seq[ii+1:] ):
-                yield [seq[ii]] + perm
-
-##
-# 14.12.2005, c
-def cycle( bounds ):
+def cycle(bounds):
     """
     Cycles through all combinations of bounds, returns a generator.
 
@@ -271,35 +246,7 @@ def cycle( bounds ):
     [2, 1], [2, 2], [2, 3]]
 
     """
-
-    nb  = len( bounds )
-    if nb == 1:
-        for ii in range( bounds[0] ):
-            yield [ii]
-    else:
-        for ii in range( bounds[0] ):
-            for perm in cycle( bounds[1:] ):
-                yield [ii] + perm
-
-def combine( seqs ):
-    """Same as cycle, but with general sequences.
-
-    Example:
-
-    In [19]: c = combine( [['a', 'x'], ['b', 'c'], ['dd']] )
-
-    In [20]: list(c)
-    Out[20]: [['a', 'b', 'dd'], ['a', 'c', 'dd'], ['x', 'b', 'dd'],
-    ['x', 'c', 'dd']]
-    """
-    nb  = len( seqs )
-    if nb == 1:
-        for ii in seqs[0]:
-            yield [ii]
-    else:
-        for ii in seqs[0]:
-            for perm in combine( seqs[1:] ):
-                yield [ii] + perm
+    yield from product(*map(range, bounds))
 
 def assemble1d(ar_out, indx, ar_in):
     """

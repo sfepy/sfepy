@@ -88,18 +88,18 @@ solvers = {
 
 def main():
     import os
+    from itertools import product
 
     import numpy as nm
     import matplotlib.pyplot as plt
 
     from sfepy.discrete.fem import MeshIO
-    import sfepy.linalg as la
     from sfepy.mechanics.contact_bodies import ContactSphere, plot_points
 
     conf_dir = os.path.dirname(__file__)
     io = MeshIO.any_from_filename(filename_mesh, prefix_dir=conf_dir)
     bb = io.read_bounding_box()
-    outline = [vv for vv in la.combine(zip(*bb))]
+    outline = [vv for vv in product(*bb.T)]
 
     ax = plot_points(None, nm.array(outline), 'r*')
     csc = materials['cs'][0]

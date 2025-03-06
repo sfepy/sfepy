@@ -1,10 +1,11 @@
-from __future__ import absolute_import
+from itertools import product
+
 import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import assert_, Struct
 from sfepy.discrete import PolySpace
-from sfepy.linalg import combine, insert_strided_axis
+from sfepy.linalg import insert_strided_axis
 from six.moves import range
 from functools import reduce
 
@@ -1007,7 +1008,7 @@ class LobattoTensorProductPolySpace(FEPolySpace):
         # Bubble nodes.
         if n_bubble > 0:
             ik = nm.arange(2, order + 1, dtype=nm.int32)
-            nodes[ii:] = nm.array([aux for aux in combine([ik] * dim)])
+            nodes[ii:] = nm.array([aux for aux in product(*([ik] * dim))])
             nts[ii:ii + n_bubble] = [[3, 0]]
             ii += n_bubble
 
