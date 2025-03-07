@@ -5,7 +5,7 @@ from numpy.lib.stride_tricks import as_strided
 import numpy.linalg as nla
 import scipy as sc
 
-from sfepy.base.base import assert_, insert_method, output, Struct
+from sfepy.base.base import assert_, output
 
 def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
     """Compute l2 norm of rows (axis=1) or columns (axis=0) of a 2D array.
@@ -494,48 +494,3 @@ def apply_to_sequence(seq, fun, ndim, out_item_shape):
     out = nm.reshape(out, seq.shape[0:-ndim] + out_item_shape)
 
     return out
-
-##
-# 30.08.2007, c
-class MatrixAction( Struct ):
-
-    ##
-    # 30.08.2007, c
-    def from_function( fun, expected_shape, dtype ):
-        def call( self, vec ):
-            aux = fun( vec )
-            assert_( aux.shape[0] == self.shape[0] )
-            return nm.asanyarray( aux, dtype = self.dtype )
-        obj = MatrixAction( shape = expected_shape,
-                            dtype = dtype,
-                            kind = 'function' )
-        insert_method( obj, call )
-        return obj
-    from_function = staticmethod( from_function )
-
-    ##
-    # 30.08.2007, c
-    def from_array( arr ):
-        def call( self, vec ):
-            return nm.asarray( sc.dot( self.arr, vec ) )
-        obj = MatrixAction( shape = arr.shape,
-                            dtype = arr.dtype,
-                            arr = arr,
-                            kind = 'array' )
-        insert_method( obj, call )
-        return obj
-    from_array = staticmethod( from_array )
-
-    ##
-    # 30.08.2007, c
-    def __call__( self, vec ):
-        return self.call( vec )
-
-    ##
-    # 30.08.2007, c
-    def to_array( self ):
-        if self.kind == 'array':
-            return self.arr
-        else:
-            print('cannot make array from MatrixAction of kind %s!' % self.kind)
-            raise ValueError
