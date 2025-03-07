@@ -1211,8 +1211,6 @@ sfepy.homogenization package
    src/sfepy/homogenization/band_gaps_app
    src/sfepy/homogenization/coefficients
    src/sfepy/homogenization/coefs_base
-   src/sfepy/homogenization/coefs_elastic
-   src/sfepy/homogenization/coefs_perfusion
    src/sfepy/homogenization/coefs_phononic
    src/sfepy/homogenization/convolutions
    src/sfepy/homogenization/engine
