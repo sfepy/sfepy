@@ -24,7 +24,7 @@ def refine_1_2(mesh_in):
 
     n_nod = len(new_coors)
 
-    new_conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
+    new_conn = nm.arange(n_nod, dtype=nm.uint32).repeat(2)[1:-1].reshape((-1, 2))
 
     new_mat_id = cmesh.cell_groups.repeat(2)
 
@@ -54,12 +54,12 @@ def refine_2_3(mesh_in):
 
     e_nodes = cc.indices.reshape((n_el, 3)) + o1
 
-    c = nm.c_[conn, e_nodes].T
+    c, e = conn.T.astype(nm.uint32), e_nodes.T
 
-    new_conn = nm.vstack([c[0], c[3], c[5],
-                          c[3], c[4], c[5],
-                          c[1], c[4], c[3],
-                          c[2], c[5], c[4]]).T
+    new_conn = nm.vstack([c[0], e[0], e[2],
+                          e[0], e[1], e[2],
+                          c[1], e[1], e[0],
+                          c[2], e[2], e[1]]).T
     new_conn = new_conn.reshape((4 * n_el, 3))
 
     new_mat_id = cmesh.cell_groups.repeat(4)
@@ -94,14 +94,14 @@ def refine_2_4(mesh_in):
     n_el = conn.shape[0]
 
     e_nodes = cc.indices.reshape((n_el, 4)) + o1
-    nodes = nm.arange(n_el) + o2
+    nodes = nm.arange(n_el, dtype=nm.uint32) + o2
 
-    c = nm.c_[conn, e_nodes, nodes].T
+    c, e, b = conn.T.astype(nm.uint32), e_nodes.T, nodes.T
 
-    new_conn = nm.vstack([c[0], c[4], c[8], c[7],
-                          c[1], c[5], c[8], c[4],
-                          c[2], c[6], c[8], c[5],
-                          c[3], c[7], c[8], c[6]]).T
+    new_conn = nm.vstack([c[0], e[0], b, e[3],
+                          c[1], e[1], b, e[0],
+                          c[2], e[2], b, e[1],
+                          c[3], e[3], b, e[2]]).T
     new_conn = new_conn.reshape((4 * n_el, 4))
 
     new_mat_id = cmesh.cell_groups.repeat(4)
@@ -148,16 +148,17 @@ def refine_3_4(mesh_in):
 
     e_nodes = cc.indices.reshape((n_el, 6)) + o1
 
-    c = nm.c_[conn, e_nodes].T
+    c, e = conn.T.astype(nm.uint32), e_nodes.T
 
-    new_conn = nm.vstack([c[0], c[4], c[6], c[7],
-                          c[4], c[1], c[5], c[8],
-                          c[6], c[5], c[2], c[9],
-                          c[7], c[8], c[9], c[3],
-                          c[4], c[6], c[7], c[8],
-                          c[4], c[6], c[8], c[5],
-                          c[6], c[7], c[8], c[9],
-                          c[6], c[5], c[9], c[8]]).T
+    new_conn = nm.vstack([c[0], e[0], e[2], e[3],
+                          e[0], c[1], e[1], e[4],
+                          e[2], e[1], c[2], e[5],
+                          e[3], e[4], e[5], c[3],
+                          e[0], e[2], e[3], e[4],
+                          e[0], e[2], e[4], e[1],
+                          e[2], e[3], e[4], e[5],
+                          e[2], e[1], e[5], e[4]]).T
+
     new_conn = new_conn.reshape((8 * n_el, 4))
 
     new_mat_id = cmesh.cell_groups.repeat(8)
@@ -200,18 +201,18 @@ def refine_3_8(mesh_in):
 
     e_nodes = ecc.indices.reshape((n_el, 12)) + o1
     f_nodes = fcc.indices.reshape((n_el, 6)) + o2
-    nodes = nm.arange(n_el) + o3
+    nodes = nm.arange(n_el, dtype=nm.uint32) + o3
 
-    c = nm.c_[conn, e_nodes, f_nodes, nodes].T
+    c, e, f, b = conn.T.astype(nm.uint32), e_nodes.T, f_nodes.T, nodes.T
 
-    new_conn = st([c[0], c[8], c[20], c[11], c[16], c[22], c[26], c[21],
-                   c[1], c[9], c[20], c[8], c[17], c[24], c[26], c[22],
-                   c[2], c[10], c[20], c[9], c[18], c[25], c[26], c[24],
-                   c[3], c[11], c[20], c[10], c[19], c[21], c[26], c[25],
-                   c[4], c[15], c[23], c[12], c[16], c[21], c[26], c[22],
-                   c[5], c[12], c[23], c[13], c[17], c[22], c[26], c[24],
-                   c[6], c[13], c[23], c[14], c[18], c[24], c[26], c[25],
-                   c[7], c[14], c[23], c[15], c[19], c[25], c[26], c[21]]).T
+    new_conn = st([c[0], e[0], f[0], e[3], e[8], f[2], b, f[1],
+                   c[1], e[1], f[0], e[0], e[9], f[4], b, f[2],
+                   c[2], e[2], f[0], e[1], e[10], f[5], b, f[4],
+                   c[3], e[3], f[0], e[2], e[11], f[1], b, f[5],
+                   c[4], e[7], f[3], e[4], e[8], f[1], b, f[2],
+                   c[5], e[4], f[3], e[5], e[9], f[2], b, f[4],
+                   c[6], e[5], f[3], e[6], e[10], f[4], b, f[5],
+                   c[7], e[6], f[3], e[7], e[11], f[5], b, f[1]]).T
     new_conn = new_conn.reshape((8 * n_el, 8))
 
     new_mat_id = cmesh.cell_groups.repeat(8)
