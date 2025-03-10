@@ -389,7 +389,7 @@ class Mesh(Struct):
             conns_, mat_ids_, descs_ = [], [], []
             for k, dsc in enumerate(descs):
                 if int(dsc[0]) == idim:
-                    conns_.append(ac(conns[k], dtype=nm.int32))
+                    conns_.append(ac(conns[k], dtype=nm.uint32))
                     mat_ids_.append(mat_ids[k])
                     descs_.append(dsc)
 
