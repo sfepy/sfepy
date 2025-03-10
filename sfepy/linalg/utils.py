@@ -345,6 +345,17 @@ def mini_newton( fun, x0, dfun, i_max = 100, eps = 1e-8 ):
         ii += 1
     return x
 
+def chunk_arrays(arrs, chunk_size):
+    """
+    Yield consecutive views into arrays `arrs` of the same lengths and most
+    `chunk_size` long.
+    """
+    ii = 0
+    while ii < len(arrs[0]):
+        yield [arr[ii:ii+chunk_size] for arr in arrs]
+
+        ii += chunk_size
+
 def insert_strided_axis(ar, axis, length):
     """
     Insert a new axis of given length into an array using numpy stride
