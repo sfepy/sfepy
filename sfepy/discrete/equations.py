@@ -432,7 +432,9 @@ class Equations(Container):
     def setup_initial_conditions(self, ics, functions=None):
         self.variables.setup_initial_conditions(ics, functions)
 
-    def get_graph_conns(self, any_dof_conn=False, rdcs=None, cdcs=None,
+    def get_graph_conns(self, any_dof_conn=False,
+                        rdcs=None, cdcs=None,
+                        irs=None, ics=None,
                         active_only=True):
         """
         Get DOF connectivities needed for creating tangent matrix graph.
@@ -443,32 +445,47 @@ class Equations(Container):
             By default, only cell DOF connectivities are used, with
             the exception of trace facet DOF connectivities. If True,
             any kind of DOF connectivities is allowed.
-        rdcs, cdcs : arrays, optional
+        rdcs, cdcs : list of arrays, optional
             Additional row and column DOF connectivities, corresponding
             to the variables used in the equations.
+        irs, ics: list of ints, optional
+            Additional row and column block indices for each row and column
+            connectivity pair.
         active_only : bool
             If True, the active DOF connectivities have reduced size and are
             created with the reduced (active DOFs only) numbering.
 
         Returns
         -------
-        rdcs, cdcs : arrays
+        rdcs, cdcs : list of arrays
             The row and column DOF connectivities defining the matrix
             graph blocks.
+        irs, ics : list of ints
+            Row and column block indices for each row and column connectivity
+            pair.
         """
         if rdcs is None:
             rdcs = []
             cdcs = []
+            irs = []
+            ics = []
 
         elif cdcs is None:
             cdcs = copy(rdcs)
+            ics = copy(irs)
 
         else:
             assert_(len(rdcs) == len(cdcs))
             if rdcs is cdcs: # Make sure the lists are not the same object.
                 rdcs = copy(rdcs)
 
+            assert_(len(irs) == len(ics))
+            if irs is ics:
+                irs = copy(ics)
+
         adcs = self.variables.adof_conns
+        rdi = self.variables.avdi
+        cdi = self.variables.adi
 
         # Only cell dof connectivities are used, with the exception of trace
         # facet dof connectivities.
@@ -478,8 +495,6 @@ class Equations(Container):
             rvar, cvar = info.virtual, info.state
             if (rvar is None) or (cvar is None):
                 continue
-
-            is_surface = rvar.is_surface or cvar.is_surface
 
             rreg_name = info.get_region_name(can_trace=False)
             creg_name = info.get_region_name()
@@ -508,9 +523,16 @@ class Equations(Container):
                 rdcs.append(rdc)
                 cdcs.append(cdc)
 
+                irs.append(rdi.indx[rvar.get_primary_name()].start)
+                ics.append(cdi.indx[cvar.get_primary_name()].start)
+
                 shared.add(dc_key)
 
-        return rdcs, cdcs
+        # Replace offsets by their orders.
+        _, irs = nm.unique(irs, return_inverse=True)
+        _, ics = nm.unique(ics, return_inverse=True)
+
+        return rdcs, cdcs, irs, ics
 
     def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None,
                             shape=None, active_only=True, verbose=True):
