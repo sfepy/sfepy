@@ -9,6 +9,7 @@ import scipy.sparse as sp
 from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
 from sfepy.base.base import OneTypeList, Container, Struct
 from sfepy.base.timing import Timer
+from sfepy.linalg.utils import chunk_arrays, cycle
 from sfepy.discrete import Materials, Variables, create_adof_conns
 from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
@@ -45,6 +46,93 @@ def get_expression_arg_names(expression, strip_dots=True):
                 args[ii] = aux[0]
 
     return set(args)
+
+def create_dof_graph(rdc, cdc, shape):
+    """
+    Create the DOF graph corresponding to a row and column DOF connectivity.
+    """
+    n_c, n_rd = rdc.shape
+    n_c, n_cd = cdc.shape
+
+    rows = nm.broadcast_to(rdc[..., None], (n_c, n_rd, n_cd)).ravel()
+    cols = nm.broadcast_to(cdc[:, None, :], (n_c, n_rd, n_cd)).ravel()
+    vals = nm.broadcast_to(nm.ones(1, dtype=bool), rows.shape)
+
+    graph = sp.coo_matrix((vals, (rows, cols)), shape=shape)
+    return graph
+
+def create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi, active_only=True,
+                        chunk_size=200000):
+    """
+    Created the matrix graph using (active) DOF connectivities.
+
+    Parameters
+    ----------
+    rdcs, cdcs : list of arrays
+        Row and column DOF connectivities, corresponding to the variables used
+        in the equations.
+    irs, ics : list of ints
+        Row and column block indices for each row and column connectivity pair.
+    rdi, cdi : DofInfo
+        Row and column DOF info.
+    active_only : bool
+        If True, the matrix graph has reduced size and is created with the
+        reduced (active DOFs only) numbering.
+    chunk_size : int
+        The number of cells added to to graph in one :func:`create_dof_graph()`
+        call.
+
+    Returns
+    -------
+    graph : boolean csr_matrix
+        The matrix graph.
+    """
+    blocks = []
+    roffs = [ii.start for ii in rdi.indx.values()]
+    coffs = [ii.start for ii in cdi.indx.values()]
+    nrs = [ii.stop - ii.start for ii in rdi.indx.values()]
+    ncs = [ii.stop - ii.start for ii in cdi.indx.values()]
+
+    nbr, nbc = max(irs) + 1, max(ics) + 1
+    blocks = [[0] * nbc for ir in range(nbr)]
+    for ii, rdc in enumerate(rdcs):
+        cdc = cdcs[ii]
+
+        ir = irs[ii]
+        ic = ics[ii]
+
+        # Offset back row, column connectivities to start from 0 - sp.bmat()
+        # takes care of the offsets then.
+        if active_only:
+            srdc = nm.where(rdc >= 0, rdc - roffs[ir], 0)
+            scdc = nm.where(cdc >= 0, cdc - coffs[ic], 0)
+
+        else:
+            srdc = rdc - roffs[ir]
+            scdc = cdc - coffs[ic]
+
+        shape = (nrs[ir], ncs[ic])
+        for ichunk, (_rdc, _cdc) in enumerate(chunk_arrays((srdc, scdc),
+                                                           chunk_size)):
+            if ichunk == 0:
+                block = create_dof_graph(_rdc, _cdc, shape).tocsr()
+
+            else:
+                block += create_dof_graph(_rdc, _cdc, shape).tocsr()
+
+        if isinstance(blocks[ir][ic], int):
+            blocks[ir][ic] = block
+
+        else:
+            blocks[ir][ic] += block
+
+    for ir, ic in cycle((nbr, nbc)):
+        if isinstance(blocks[ir][ic], int):
+            blocks[ir][ic] = None
+
+    graph = sp.bmat(blocks, format='csr')
+
+    return graph
 
 class Equations(Container):
 
