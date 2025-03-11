@@ -47,7 +47,7 @@ def get_expression_arg_names(expression, strip_dots=True):
 
     return set(args)
 
-def create_dof_graph(rdc, cdc, shape):
+def create_dof_graph(rdc, cdc, shape, active_only):
     """
     Create the DOF graph corresponding to a row and column DOF connectivity.
     """
@@ -56,9 +56,14 @@ def create_dof_graph(rdc, cdc, shape):
 
     rows = nm.broadcast_to(rdc[..., None], (n_c, n_rd, n_cd)).ravel()
     cols = nm.broadcast_to(cdc[:, None, :], (n_c, n_rd, n_cd)).ravel()
-    vals = nm.broadcast_to(nm.ones(1, dtype=bool), rows.shape)
+    if active_only:
+        mask = (rows >= 0) & (cols >= 0)
+        rows = rows[mask]
+        cols = cols[mask]
 
+    vals = nm.broadcast_to(nm.ones(1, dtype=bool), rows.shape)
     graph = sp.coo_matrix((vals, (rows, cols)), shape=shape)
+
     return graph
 
 def create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi, active_only=True,
@@ -103,22 +108,17 @@ def create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi, active_only=True,
 
         # Offset back row, column connectivities to start from 0 - sp.bmat()
         # takes care of the offsets then.
-        if active_only:
-            srdc = nm.where(rdc >= 0, rdc - roffs[ir], 0)
-            scdc = nm.where(cdc >= 0, cdc - coffs[ic], 0)
-
-        else:
-            srdc = rdc - roffs[ir]
-            scdc = cdc - coffs[ic]
+        srdc = rdc - roffs[ir]
+        scdc = cdc - coffs[ic]
 
         shape = (nrs[ir], ncs[ic])
         for ichunk, (_rdc, _cdc) in enumerate(chunk_arrays((srdc, scdc),
                                                            chunk_size)):
             if ichunk == 0:
-                block = create_dof_graph(_rdc, _cdc, shape).tocsr()
+                block = create_dof_graph(_rdc, _cdc, shape, active_only)
 
             else:
-                block += create_dof_graph(_rdc, _cdc, shape).tocsr()
+                block += create_dof_graph(_rdc, _cdc, shape, active_only)
 
         if isinstance(blocks[ir][ic], int):
             blocks[ir][ic] = block
