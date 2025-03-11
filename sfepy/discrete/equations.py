@@ -46,7 +46,7 @@ def get_expression_arg_names(expression, strip_dots=True):
 
     return set(args)
 
-def create_dof_graph(rdc, cdc, shape, active_only):
+def create_dof_graph(rdc, cdc, shape, active_only=False):
     """
     Create the DOF graph corresponding to a row and column DOF connectivity.
     """
