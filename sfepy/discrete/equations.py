@@ -537,7 +537,8 @@ class Equations(Container):
         return rdcs, cdcs, irs, ics
 
     def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None,
-                            shape=None, active_only=True, verbose=True):
+                            shape=None, active_only=True, chunk_size=200000,
+                            verbose=True):
         """
         Create tangent matrix graph, i.e. preallocate and initialize the
         sparse storage needed for the tangent matrix. Order of DOF
@@ -559,6 +560,9 @@ class Equations(Container):
         active_only : bool
             If True, the matrix graph has reduced size and is created with the
             reduced (active DOFs only) numbering.
+        chunk_size : int
+            The maximum number of cells added to the graph in one
+            :func:`create_dof_graph()` call.
         verbose : bool
             If False, reduce verbosity.
 
@@ -595,7 +599,7 @@ class Equations(Container):
         cdi = self.variables.adi
         gr = create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi,
                                  active_only=active_only,
-                                 chunk_size=200000)
+                                 chunk_size=chunk_size)
         nnz, prow, icol = gr.nnz, gr.indptr, gr.indices
 
         output('...done in %.2f s' % timer.stop(), verbose=verbose)
