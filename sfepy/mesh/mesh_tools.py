@@ -3,8 +3,8 @@ import scipy.sparse as sps
 import numpy as nm
 from sfepy.base.compat import factorial
 from sfepy.base.base import output
-from sfepy.discrete.common.extmods.cmesh import (create_mesh_graph,
-                                                 graph_components)
+from sfepy.discrete.common.extmods.cmesh import graph_components
+from sfepy.discrete.equations import create_dof_graph
 
 def elems_q2t(el):
 
@@ -490,11 +490,11 @@ def get_surface_faces(domain):
     return lst, surf_faces
 
 def surface_graph(surf_faces, n_nod):
-    nnz, prow, icol = create_mesh_graph(n_nod, n_nod, len(surf_faces),
-                                        surf_faces, surf_faces)
-    data = nm.empty((nnz,), dtype=nm.int32)
-    data.fill(2)
-    return sps.csr_matrix((data, icol, prow), (n_nod, n_nod))
+    graph = 0
+    for conn in surf_faces:
+        graph += create_dof_graph(conn, conn, (n_nod, n_nod)).tocsr()
+
+    return graph
 
 def surface_components(gr_s, surf_faces):
     """
