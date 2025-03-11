@@ -83,8 +83,8 @@ def create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi, active_only=True,
         If True, the matrix graph has reduced size and is created with the
         reduced (active DOFs only) numbering.
     chunk_size : int
-        The number of cells added to to graph in one :func:`create_dof_graph()`
-        call.
+        The maximum number of cells added to the graph in one
+        :func:`create_dof_graph()` call.
 
     Returns
     -------
@@ -111,8 +111,11 @@ def create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi, active_only=True,
         scdc = cdc - coffs[ic]
 
         shape = (nrs[ir], ncs[ic])
-        for ichunk, (_rdc, _cdc) in enumerate(chunk_arrays((srdc, scdc),
-                                                           chunk_size)):
+
+        # N - k C >= 0.5 C, k = N // Cmax, compute C.
+        n_cell = srdc.shape[0]
+        cs = int(n_cell / (n_cell // chunk_size + 0.5))
+        for ichunk, (_rdc, _cdc) in enumerate(chunk_arrays((srdc, scdc), cs)):
             if ichunk == 0:
                 block = create_dof_graph(_rdc, _cdc, shape, active_only)
 
