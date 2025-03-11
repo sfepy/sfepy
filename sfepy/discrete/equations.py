@@ -11,7 +11,6 @@ from sfepy.base.base import OneTypeList, Container, Struct
 from sfepy.base.timing import Timer
 from sfepy.linalg.utils import chunk_arrays, cycle
 from sfepy.discrete import Materials, Variables, create_adof_conns
-from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
 from sfepy.terms.terms_multilinear import ETermBase
 
@@ -578,9 +577,9 @@ class Equations(Container):
             output('no matrix (zero size)!')
             return None
 
-        rdcs, cdcs = self.get_graph_conns(any_dof_conn=any_dof_conn,
-                                          rdcs=rdcs, cdcs=cdcs,
-                                          active_only=active_only)
+        rdcs, cdcs, irs, ics = self.get_graph_conns(any_dof_conn=any_dof_conn,
+                                                    rdcs=rdcs, cdcs=cdcs,
+                                                    active_only=active_only)
 
         if not len(rdcs):
             output('no matrix (empty dof connectivities)!')
@@ -589,8 +588,12 @@ class Equations(Container):
         output('assembling matrix graph...', verbose=verbose)
         timer = Timer(start=True)
 
-        nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
-                                            len(rdcs), rdcs, cdcs)
+        rdi = self.variables.avdi
+        cdi = self.variables.adi
+        gr = create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi,
+                                 active_only=active_only,
+                                 chunk_size=200000)
+        nnz, prow, icol = gr.nnz, gr.indptr, gr.indices
 
         output('...done in %.2f s' % timer.stop(), verbose=verbose)
         output('matrix structural nonzeros: %d (%.2e%% fill)' \
