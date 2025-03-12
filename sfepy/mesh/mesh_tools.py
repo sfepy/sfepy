@@ -1,10 +1,11 @@
-from sfepy.discrete.fem import Mesh, FEDomain
-import scipy.sparse as sps
 import numpy as nm
+import scipy.sparse as sps
+from scipy.sparse.csgraph import connected_components
+
 from sfepy.base.compat import factorial
 from sfepy.base.base import output
-from sfepy.discrete.common.extmods.cmesh import graph_components
 from sfepy.discrete.equations import create_dof_graph
+from sfepy.discrete.fem import Mesh, FEDomain
 
 def elems_q2t(el):
 
@@ -500,8 +501,7 @@ def surface_components(gr_s, surf_faces):
     """
     Determine surface components given surface mesh connectivity graph.
     """
-    n_nod = gr_s.shape[0]
-    n_comp, flag = graph_components(n_nod, gr_s.indptr, gr_s.indices)
+    n_comp, flag = connected_components(gr_s)
 
     comps = []
     for ii, face in enumerate(surf_faces):
