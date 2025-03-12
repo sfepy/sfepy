@@ -657,9 +657,11 @@ class Problem(Struct):
             any_dof_conn = get_default(any_dof_conn,
                                        self.conf.options.get('any_dof_conn',
                                                              False))
+            chunk_size = self.conf.options.get('graph_cell_chunk_size', 200000)
             self.mtx_a = self.equations.create_matrix_graph(
                 any_dof_conn=any_dof_conn,
                 active_only=self.active_only,
+                chunk_size=chunk_size,
             )
             ## import sfepy.base.plotutils as plu
             ## plu.spy(self.mtx_a)

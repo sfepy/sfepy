@@ -525,7 +525,7 @@ class Mesh(Struct):
         graph : csr_matrix
             The mesh connectivity graph as a SciPy CSR matrix.
         """
-        from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
+        from sfepy.discrete.equations import create_dof_graph
 
         shape = (self.n_nod, self.n_nod)
         output('graph shape:', shape, verbose=verbose)
@@ -536,14 +536,14 @@ class Mesh(Struct):
         output('assembling mesh graph...', verbose=verbose)
         timer = Timer(start=True)
 
-        conn = [self.get_conn(self.descs[0], tdim=k) for k in self.dims]
-        nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
-                                            1, conn, conn)
-        output('...done in %.2f s' % timer.stop(), verbose=verbose)
-        output('graph nonzeros: %d (%.2e%% fill)' \
-               % (nnz, 100.0 * float(nnz) / nm.prod(shape)), verbose=verbose)
+        graph = 0
+        for tdim in self.dims:
+            conn = self.get_conn(self.descs[0], tdim=tdim)
+            graph += create_dof_graph(conn, conn, shape).tocsr()
 
-        data = nm.ones((nnz,), dtype=bool)
-        graph = sp.csr_matrix((data, icol, prow), shape)
+        output('...done in %.2f s' % timer.stop(), verbose=verbose)
+        output('graph nonzeros: %d (%.2e%% fill)'
+               % (graph.nnz, 100.0 * float(graph.nnz) / nm.prod(shape)),
+               verbose=verbose)
 
         return graph

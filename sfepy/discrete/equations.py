@@ -9,8 +9,8 @@ import scipy.sparse as sp
 from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
 from sfepy.base.base import OneTypeList, Container, Struct
 from sfepy.base.timing import Timer
+from sfepy.linalg.utils import chunk_arrays, cycle
 from sfepy.discrete import Materials, Variables, create_adof_conns
-from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
 from sfepy.terms.terms_multilinear import ETermBase
 
@@ -45,6 +45,96 @@ def get_expression_arg_names(expression, strip_dots=True):
                 args[ii] = aux[0]
 
     return set(args)
+
+def create_dof_graph(rdc, cdc, shape, active_only=False):
+    """
+    Create the DOF graph corresponding to a row and column DOF connectivity.
+    """
+    n_c, n_rd = rdc.shape
+    n_c, n_cd = cdc.shape
+
+    rows = nm.broadcast_to(rdc[..., None], (n_c, n_rd, n_cd)).ravel()
+    cols = nm.broadcast_to(cdc[:, None, :], (n_c, n_rd, n_cd)).ravel()
+    if active_only:
+        mask = (rows >= 0) & (cols >= 0)
+        rows = rows[mask]
+        cols = cols[mask]
+
+    vals = nm.broadcast_to(nm.ones(1, dtype=bool), rows.shape)
+    graph = sp.coo_matrix((vals, (rows, cols)), shape=shape)
+
+    return graph
+
+def create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi, active_only=True,
+                        chunk_size=200000):
+    """
+    Created the matrix graph using (active) DOF connectivities.
+
+    Parameters
+    ----------
+    rdcs, cdcs : list of arrays
+        Row and column DOF connectivities, corresponding to the variables used
+        in the equations.
+    irs, ics : list of ints
+        Row and column block indices for each row and column connectivity pair.
+    rdi, cdi : DofInfo
+        Row and column DOF info.
+    active_only : bool
+        If True, the matrix graph has reduced size and is created with the
+        reduced (active DOFs only) numbering.
+    chunk_size : int
+        The maximum number of cells added to the graph in one
+        :func:`create_dof_graph()` call.
+
+    Returns
+    -------
+    graph : boolean csr_matrix
+        The matrix graph.
+    """
+    blocks = []
+    roffs = [ii.start for ii in rdi.indx.values()]
+    coffs = [ii.start for ii in cdi.indx.values()]
+    nrs = [ii.stop - ii.start for ii in rdi.indx.values()]
+    ncs = [ii.stop - ii.start for ii in cdi.indx.values()]
+
+    nbr, nbc = max(irs) + 1, max(ics) + 1
+    blocks = [[0] * nbc for ir in range(nbr)]
+    for ii, rdc in enumerate(rdcs):
+        cdc = cdcs[ii]
+
+        ir = irs[ii]
+        ic = ics[ii]
+
+        # Offset back row, column connectivities to start from 0 - sp.bmat()
+        # takes care of the offsets then.
+        srdc = rdc - roffs[ir]
+        scdc = cdc - coffs[ic]
+
+        shape = (nrs[ir], ncs[ic])
+
+        # N - k C >= 0.5 C, k = N // Cmax, compute C.
+        n_cell = srdc.shape[0]
+        cs = int(n_cell / (n_cell // chunk_size + 0.5))
+        for ichunk, (_rdc, _cdc) in enumerate(chunk_arrays((srdc, scdc), cs)):
+            if ichunk == 0:
+                block = create_dof_graph(_rdc, _cdc, shape, active_only)
+
+            else:
+                block += create_dof_graph(_rdc, _cdc, shape, active_only)
+
+        if isinstance(blocks[ir][ic], int):
+            blocks[ir][ic] = block
+
+        else:
+            blocks[ir][ic] += block
+
+    for ir, ic in cycle((nbr, nbc)):
+        if isinstance(blocks[ir][ic], int):
+            blocks[ir][ic] = None
+
+    graph = sp.bmat(blocks, format='csr')
+
+    return graph
 
 class Equations(Container):
 
@@ -344,7 +434,9 @@ class Equations(Container):
     def setup_initial_conditions(self, ics, functions=None):
         self.variables.setup_initial_conditions(ics, functions)
 
-    def get_graph_conns(self, any_dof_conn=False, rdcs=None, cdcs=None,
+    def get_graph_conns(self, any_dof_conn=False,
+                        rdcs=None, cdcs=None,
+                        irs=None, ics=None,
                         active_only=True):
         """
         Get DOF connectivities needed for creating tangent matrix graph.
@@ -355,32 +447,47 @@ class Equations(Container):
             By default, only cell DOF connectivities are used, with
             the exception of trace facet DOF connectivities. If True,
             any kind of DOF connectivities is allowed.
-        rdcs, cdcs : arrays, optional
+        rdcs, cdcs : list of arrays, optional
             Additional row and column DOF connectivities, corresponding
             to the variables used in the equations.
+        irs, ics: list of ints, optional
+            Additional row and column block indices for each row and column
+            connectivity pair.
         active_only : bool
             If True, the active DOF connectivities have reduced size and are
             created with the reduced (active DOFs only) numbering.
 
         Returns
         -------
-        rdcs, cdcs : arrays
+        rdcs, cdcs : list of arrays
             The row and column DOF connectivities defining the matrix
             graph blocks.
+        irs, ics : list of ints
+            Row and column block indices for each row and column connectivity
+            pair.
         """
         if rdcs is None:
             rdcs = []
             cdcs = []
+            irs = []
+            ics = []
 
         elif cdcs is None:
             cdcs = copy(rdcs)
+            ics = copy(irs)
 
         else:
             assert_(len(rdcs) == len(cdcs))
             if rdcs is cdcs: # Make sure the lists are not the same object.
                 rdcs = copy(rdcs)
 
+            assert_(len(irs) == len(ics))
+            if irs is ics:
+                irs = copy(ics)
+
         adcs = self.variables.adof_conns
+        rdi = self.variables.avdi
+        cdi = self.variables.adi
 
         # Only cell dof connectivities are used, with the exception of trace
         # facet dof connectivities.
@@ -390,8 +497,6 @@ class Equations(Container):
             rvar, cvar = info.virtual, info.state
             if (rvar is None) or (cvar is None):
                 continue
-
-            is_surface = rvar.is_surface or cvar.is_surface
 
             rreg_name = info.get_region_name(can_trace=False)
             creg_name = info.get_region_name()
@@ -420,12 +525,20 @@ class Equations(Container):
                 rdcs.append(rdc)
                 cdcs.append(cdc)
 
+                irs.append(rdi.indx[rvar.get_primary_name()].start)
+                ics.append(cdi.indx[cvar.get_primary_name()].start)
+
                 shared.add(dc_key)
 
-        return rdcs, cdcs
+        # Replace offsets by their orders.
+        _, irs = nm.unique(irs, return_inverse=True)
+        _, ics = nm.unique(ics, return_inverse=True)
+
+        return rdcs, cdcs, irs, ics
 
     def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None,
-                            shape=None, active_only=True, verbose=True):
+                            shape=None, active_only=True, chunk_size=200000,
+                            verbose=True):
         """
         Create tangent matrix graph, i.e. preallocate and initialize the
         sparse storage needed for the tangent matrix. Order of DOF
@@ -447,6 +560,9 @@ class Equations(Container):
         active_only : bool
             If True, the matrix graph has reduced size and is created with the
             reduced (active DOFs only) numbering.
+        chunk_size : int
+            The maximum number of cells added to the graph in one
+            :func:`create_dof_graph()` call.
         verbose : bool
             If False, reduce verbosity.
 
@@ -468,9 +584,9 @@ class Equations(Container):
             output('no matrix (zero size)!')
             return None
 
-        rdcs, cdcs = self.get_graph_conns(any_dof_conn=any_dof_conn,
-                                          rdcs=rdcs, cdcs=cdcs,
-                                          active_only=active_only)
+        rdcs, cdcs, irs, ics = self.get_graph_conns(any_dof_conn=any_dof_conn,
+                                                    rdcs=rdcs, cdcs=cdcs,
+                                                    active_only=active_only)
 
         if not len(rdcs):
             output('no matrix (empty dof connectivities)!')
@@ -479,8 +595,12 @@ class Equations(Container):
         output('assembling matrix graph...', verbose=verbose)
         timer = Timer(start=True)
 
-        nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
-                                            len(rdcs), rdcs, cdcs)
+        rdi = self.variables.avdi
+        cdi = self.variables.adi
+        gr = create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi,
+                                 active_only=active_only,
+                                 chunk_size=chunk_size)
+        nnz, prow, icol = gr.nnz, gr.indptr, gr.indices
 
         output('...done in %.2f s' % timer.stop(), verbose=verbose)
         output('matrix structural nonzeros: %d (%.2e%% fill)' \

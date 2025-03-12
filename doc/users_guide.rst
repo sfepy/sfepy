@@ -985,6 +985,9 @@ Additional options (including solver selection)::
         # form suitable for the given solver. Implemented for
         # ElastodynamicsBaseTS-based solvers
         'auto_transform_equations' : True,
+
+        # The maximum number of cells added to the matrix graph together.
+        'graph_cell_chunk_size' : 1000000,
     }
 
 * ``post_process_hook`` enables computing derived quantities, like
