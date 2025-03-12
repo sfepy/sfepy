@@ -7,10 +7,10 @@ sys.path.append('.')
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
 import numpy as nm
+from scipy.sparse.csgraph import connected_components
 
 from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh, MeshIO, FEDomain
-from sfepy.discrete.common.extmods.cmesh import graph_components
 
 def show_mesh_info(options):
     mesh = Mesh.from_file(options.filename)
@@ -64,7 +64,7 @@ def show_mesh_info(options):
     output('Euler characteristic:', ec)
 
     graph = mesh.create_conn_graph(verbose=False)
-    n_comp, _ = graph_components(graph.shape[0], graph.indptr, graph.indices)
+    n_comp = connected_components(graph, return_labels=False)
     output('number of connected components:', n_comp)
 
     if mesh.dim > 1:
@@ -79,8 +79,7 @@ def show_mesh_info(options):
             output('surface genus:', (2.0 - sec) / 2.0)
 
         surf_graph = surf_mesh.create_conn_graph(verbose=False)
-        n_comp, _ = graph_components(surf_graph.shape[0],
-                                     surf_graph.indptr, surf_graph.indices)
+        n_comp = connected_components(surf_graph, return_labels=False)
         output('number of connected surface components:', n_comp)
 
 helps = {
