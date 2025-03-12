@@ -942,7 +942,7 @@ class Equations(Container):
                     tangent_matrix.data[:] = 0.0
                     eq.evaluate(mode='weak', dw_mode='matrix',
                                 asm_obj=tangent_matrix,
-                                select_term=select_term,
+                                select_term=_select_term,
                                 assemble=assemble)
 
                     # All columns (possibly related to several variables) are
