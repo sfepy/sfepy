@@ -471,78 +471,78 @@ class Newton(NonlinearSolver):
 
         return vec_x
 
-class ScipyBroyden(NonlinearSolver):
+class ScipyRoot(NonlinearSolver):
     """
-    Interface to Broyden and Anderson solvers from ``scipy.optimize``.
+    Interface to ``scipy.optimize.root()``.
     """
-    name = 'nls.scipy_broyden_like'
+    name = 'nls.scipy_root'
+
+    methods = ['hybr', 'lm', 'broyden1', 'broyden2', 'anderson', 'linearmixing',
+               'diagbroyden', 'excitingmixing', 'krylov', 'df-sane']
 
     _parameters = [
         ('method', 'str', 'anderson', False,
-         'The name of the solver in ``scipy.optimize``.'),
-        ('i_max', 'int', 10, False,
-         'The maximum number of iterations.'),
-        ('alpha', 'float', 0.9, False,
-         'See ``scipy.optimize``.'),
-        ('M', 'float', 5, False,
-         'See ``scipy.optimize``.'),
-        ('f_tol', 'float', 1e-6, False,
-         'See ``scipy.optimize``.'),
-        ('w0', 'float', 0.1, False,
-         'See ``scipy.optimize``.'),
+         f"""Type of solver supported in ``scipy.optimize.root()``, one of:
+             {methods}"""),
+        ('use_jacobian', 'bool', False, False,
+         'If True, use the exact Jacobian.'),
+        ('tol', 'float', None, False,
+         """Tolerance for termination. For detailed control, use solver-specific
+            options."""),
+        ('callback', 'callback(x, f)', None, False,
+         """Optional callback function. It is called on every iteration as
+            with x the current solution and f the corresponding residual.
+            For all methods but ‘hybr’ and ‘lm’."""),
+        ('options', 'dict', None, False,
+         """A dictionary of solver options. E.g., `xtol` or `maxiter`, see
+            ``scipy.optimize.show_options('root')`` for details."""),
     ]
 
     def __init__(self, conf, **kwargs):
-        NonlinearSolver.__init__(self, conf, **kwargs)
-        self.set_method(self.conf)
+        from scipy.optimize import root
 
-    def set_method(self, conf):
-        import scipy.optimize as so
-
-        try:
-            solver = getattr(so, conf.method)
-        except AttributeError:
-            output('scipy solver %s does not exist!' % conf.method)
-            output('using broyden3 instead')
-            solver = so.broyden3
-        self.solver = solver
+        NonlinearSolver.__init__(self, conf, root=root, **kwargs)
+        if self.conf.method not in self.methods:
+            raise ValueError(f"'method' option must be on of {self.methods}!")
 
     @standard_nls_call
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None):
-        if conf is not None:
-            self.set_method(conf)
-        else:
-            conf = self.conf
+        conf = get_default(conf, self.conf)
         fun = get_default(fun, self.fun)
+        fun_grad = get_default(fun_grad, self.fun_grad)
         status = get_default(status, self.status)
+
+        if self.conf.method not in self.methods:
+            raise ValueError(f"'method' option must be on of {self.methods}!")
 
         timer = Timer(start=True)
 
-        kwargs = {'iter' : conf.i_max,
-                  'alpha' : conf.alpha,
-                  'verbose' : conf.verbose}
+        options = conf.options.copy() if conf.options is not None else {}
+        options['disp'] = conf.verbose
 
-        if conf.method == 'broyden_generalized':
-            kwargs.update({'M' : conf.M})
-
-        elif conf.method in ['anderson', 'anderson2']:
-            kwargs.update({'M' : conf.M, 'w0' : conf.w0})
-
-        if conf.method in ['anderson', 'anderson2',
-                           'broyden', 'broyden2' , 'newton_krylov']:
-            kwargs.update({'f_tol' : conf.f_tol })
-
-        vec_x = self.solver(fun, vec_x0, **kwargs)
-        vec_x = nm.asarray(vec_x)
+        sol = self.root(fun, vec_x0,
+                        method=conf.method,
+                        jac=fun_grad if conf.use_jacobian else None,
+                        tol=conf.tol,
+                        callback=conf.callback,
+                        options=options)
+        err = nla.norm(sol.fun)
 
         if status is not None:
             status['time_stats'] = {'solver' : timer.stop()}
+            status['err'] = err
+            status['n_iter'] = sol.nit
+            status['n_fev'] = sol.nfev
+            status['condition'] = sol.status
 
         if conf.report_status:
+            output(sol.message)
+            output(f'status: {sol.status}, iter: {sol.nit},'
+                   f' nfev: {sol.nfev}, err: {err:.8e}')
             output('solver: %.8f [s]' % status['time_stats']['solver'])
 
-        return vec_x
+        return sol.x
 
 class PETScNonlinearSolver(NonlinearSolver):
     """
