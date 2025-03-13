@@ -529,16 +529,17 @@ class ScipyRoot(NonlinearSolver):
                         options=options)
         err = nla.norm(sol.fun)
 
+        nit = sol.get('nit', -1)
         if status is not None:
             status['time_stats'] = {'solver' : timer.stop()}
             status['err'] = err
-            status['n_iter'] = sol.nit
+            status['n_iter'] = nit
             status['n_fev'] = sol.nfev
             status['condition'] = sol.status
 
         if conf.report_status:
             output(sol.message)
-            output(f'status: {sol.status}, iter: {sol.nit},'
+            output(f'status: {sol.status}, iter: {nit},'
                    f' nfev: {sol.nfev}, err: {err:.8e}')
             output('solver: %.8f [s]' % status['time_stats']['solver'])
 
