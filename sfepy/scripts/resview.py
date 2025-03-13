@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 This is a script for quick VTK-based visualizations of finite element
 computations results.
@@ -546,18 +545,24 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
         if opts.get('l', options.outline):  # outline
             plotter.add_mesh(pipe[-1].outline(), color='k')
 
-        scalar = field
-        scalar_label = scalar
         is_vector_field = ((field is not None)
                            and (len(pipe[-1][field].shape) > 1)
                            and (pipe[-1][field].shape[1] == dim))
         is_point_field = (field is not None and
                           pipe[-1][field].shape[0] == pipe[-1].n_points)
-        if is_vector_field:
+
+        has_components = ((field is not None)
+                          and (len(pipe[-1][field].shape) > 1)
+                          and (pipe[-1][field].shape[1] > 1))
+        if has_components:
             field_data = pipe[-1][field]
             scalar = field + '_magnitude'
-            scalar_label = f'|{field}|'
+            scalar_label = f'{field}:mag'
             pipe[-1][scalar] = nm.linalg.norm(field_data, axis=1)
+
+        else:
+            scalar = field
+            scalar_label = scalar
 
         if 'g' in opts and is_point_field:  # glyphs
             gfield = opts['g']
@@ -586,7 +591,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                 plot_info.append('glyphs=grad(%s), factor=%.2e'
                                  % (field, factor))
 
-        elif 'c' in opts and is_vector_field:  # select field component
+        elif 'c' in opts and has_components:  # select field component
             comp = opts['c']
             scalar = field + '_%d' % comp
             pipe[-1][scalar] = field_data[:, comp]
