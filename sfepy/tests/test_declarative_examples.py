@@ -90,8 +90,13 @@ else:
 
 @pytest.mark.parametrize('ex_filename', examples)
 def test_examples(ex_filename, output_dir):
+    define_args = None
+    if ex_filename == 'large_deformation/active_fibres.py':
+        define_args = dict(n_step=5) # Decrease number of time steps.
+
     conditions = run_declaratice_example(
         ex_filename=inedir(ex_filename),
+        define_args=define_args,
         output_dir=output_dir,
         remove_prefix=examples_dir,
     )
