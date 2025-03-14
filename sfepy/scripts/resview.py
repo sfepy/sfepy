@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 This is a script for quick VTK-based visualizations of finite element
 computations results.
@@ -326,6 +325,13 @@ def ensure3d(arr):
     arr = nm.asanyarray(arr)
     return nm.pad(arr, (arr.ndim - 1) * [(0, 0)] + [(0, 3 - arr.shape[-1])])
 
+def get_nonzero_norm(arr, **kwargs):
+    norm = nm.linalg.norm(arr, **kwargs)
+    if isinstance(norm, nm.ndarray):
+        norm = norm.max()
+
+    return norm if norm != 0 else 1.0
+
 def read_probes_as_annotations(filenames, add_label=True):
     from sfepy.discrete.probes import read_results
     from sfepy.linalg.geometry import get_perpendiculars
@@ -437,7 +443,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             is_vector_field = (len(fval.shape) == 2) and (fval.shape[1] == dim)
             is_point_field = fval.shape[0] == steps[fstep].n_points
             if is_vector_field and is_point_field:
-                scale = mesh_size * 0.15 / nm.linalg.norm(fval, axis=1).max()
+                scale = mesh_size * 0.15 / get_nonzero_norm(fval, axis=1)
                 if not nm.isfinite(scale):
                     scale = 1.0
                 fields.append((field, 'vs:o.4:p%d' % position))
@@ -511,7 +517,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             ws = nm.diff(nm.reshape(pipe[-1].bounds, (-1, 2)), axis=1)
             size = ws[ws > 0.0].min()
             factor_field = warp if warp is not None else field
-            fmax = nm.abs(pipe[-1][factor_field]).max()
+            fmax = get_nonzero_norm(pipe[-1][factor_field], ord=nm.inf)
             factor = 0.01 * float(factor[1]) * size / fmax
 
         if warp:
@@ -546,18 +552,24 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
         if opts.get('l', options.outline):  # outline
             plotter.add_mesh(pipe[-1].outline(), color='k')
 
-        scalar = field
-        scalar_label = scalar
         is_vector_field = ((field is not None)
                            and (len(pipe[-1][field].shape) > 1)
                            and (pipe[-1][field].shape[1] == dim))
         is_point_field = (field is not None and
                           pipe[-1][field].shape[0] == pipe[-1].n_points)
-        if is_vector_field:
+
+        has_components = ((field is not None)
+                          and (len(pipe[-1][field].shape) > 1)
+                          and (pipe[-1][field].shape[1] > 1))
+        if has_components:
             field_data = pipe[-1][field]
             scalar = field + '_magnitude'
-            scalar_label = f'|{field}|'
+            scalar_label = f'{field}:mag'
             pipe[-1][scalar] = nm.linalg.norm(field_data, axis=1)
+
+        else:
+            scalar = field
+            scalar_label = scalar
 
         if 'g' in opts and is_point_field:  # glyphs
             gfield = opts['g']
@@ -586,7 +598,10 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                 plot_info.append('glyphs=grad(%s), factor=%.2e'
                                  % (field, factor))
 
-        elif 'c' in opts and is_vector_field:  # select field component
+                scalar = 'gradient Magnitude'
+                scalar_label = f'grad({field}):mag'
+
+        elif 'c' in opts and has_components:  # select field component
             comp = opts['c']
             scalar = field + '_%d' % comp
             pipe[-1][scalar] = field_data[:, comp]
@@ -699,7 +714,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                 # Scale arrows by bbox.
                 vec = data[1]
                 maxs = bbox_sizes.max()
-                vec *= 0.1 * maxs / nm.linalg.norm(vec)
+                vec *= 0.1 * maxs / get_nonzero_norm(vec)
                 pdata = pv.Arrow(data[0], vec, scale='auto')
 
             elif kind == 'disc':
