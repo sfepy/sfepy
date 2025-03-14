@@ -90,17 +90,17 @@ else:
 
 @pytest.mark.parametrize('ex_filename', examples)
 def test_examples(ex_filename, output_dir):
+    define_args = None
+    if ex_filename == 'large_deformation/active_fibres.py':
+        define_args = dict(n_step=5) # Decrease number of time steps.
+
     conditions = run_declaratice_example(
         ex_filename=inedir(ex_filename),
+        define_args=define_args,
         output_dir=output_dir,
         remove_prefix=examples_dir,
     )
-    if ex_filename == 'large_deformation/active_fibres.py':
-        # Special-case the first iteration, as the solver converges slowly.
-        ok = (conditions[1:] == 0).all()
-        ok = ok and (conditions[0] == 1)
-
-    elif ex_filename == 'large_deformation/balloon.py':
+    if ex_filename == 'large_deformation/balloon.py':
         # Special-case the steps with a time-step reduction.
         ok = (conditions[1] == 1)
         ok = ok and (conditions[0] == 0) and (conditions[2:] == 0).all()

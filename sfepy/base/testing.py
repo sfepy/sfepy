@@ -115,7 +115,8 @@ def check_conditions(conditions):
         report(conditions)
     return ok
 
-def run_declaratice_example(ex_filename, output_dir, ext='.vtk',
+def run_declaratice_example(ex_filename, define_args=None,
+                            output_dir='', ext='.vtk',
                             remove_prefix=''):
     """
     Run a declarative example in `ex_filename` given relatively to
@@ -144,7 +145,8 @@ def run_declaratice_example(ex_filename, output_dir, ext='.vtk',
                      solve_not=False)
     status = IndexedStruct(nls_status=NLSStatus(conditions=[]))
 
-    solve_pde(filename, options=options, status=status, output_dir=output_dir)
+    solve_pde(filename, define_args=define_args, options=options, status=status,
+              output_dir=output_dir)
     report('%s solved' % ex_filename)
 
     return nm.array(status.nls_status.conditions)

@@ -329,6 +329,24 @@ custom = {
             },
         },
     },
+    'large_deformation/active_fibres.py': {
+        'command_0': 'sfepy-run sfepy/examples/large_deformation/active_fibres.py',
+        'command_1': 'sfepy-view output/hsphere8_fibres.vtk -f fdir0:t2000:p0 1:vs:o0.1:p0 --no-step-time --no-scalar-bars --no-axes --camera-position=-0.0337972,-0.0337972,0.0147184,0.0125,0.0125,0.0129782,0,0,1 --off-screen -o output/hsphere8-fdir0.png',
+        'image_1': 'output/hsphere8-fdir0.png',
+        'command_2': 'sfepy-view output/hsphere8_fibres.vtk -f fdir1:t2000:p0 1:vs:o0.1:p0 --no-step-time --no-scalar-bars --no-axes --camera-position=-0.0337972,-0.0337972,0.0147184,0.0125,0.0125,0.0129782,0,0,1 --off-screen -o output/hsphere8-fdir1.png',
+        'image_2': 'output/hsphere8-fdir1.png',
+        'result': 'output/hsphere8.h5',
+        'result_before_images' : True,
+        'sfepy-view-options': {
+            '': {
+                'fields': ['green_strain:wu:f1:p0', '1:vw:o0.3:p0'],
+                'step' : 10,
+                'camera_position': [-0.0337972,-0.0337972,0.0147184,
+                                    0.0125,0.0125,0.0129782,
+                                    0,0,1],
+            },
+        },
+    },
     'large_deformation/compare_elastic_materials.py': {
         'command': 'python3 sfepy/examples/large_deformation/compare_elastic_materials.py -n',
         'image': 'pressure_displacement.png',
@@ -768,13 +786,25 @@ def _get_image_names(custom_options):
         if key.startswith('image'):
                 yield val
 
+def _get_result_fig_filenames(fig_base, images_dir, custom_view_options):
+    suffixes = sorted(custom_view_options.keys())
+    for suffix in suffixes:
+        yield os.path.join(images_dir, fig_base + suffix + '.png')
+
 def _get_fig_filenames(ebase, images_dir):
     fig_base = ebase2fbase(ebase)
 
+    result_done = False
     if ebase in custom:
         custom_options = custom.get(ebase)
+        result_first = custom_options.get('result_before_images', False)
         if 'sfepy-view-options' in custom_options:
             custom_view_options = custom_options['sfepy-view-options']
+
+            if result_first:
+                yield from _get_result_fig_filenames(fig_base, images_dir,
+                                                     custom_view_options)
+                result_done = True
 
             for fig_filename in _get_image_names(custom_options):
                 yield os.path.join(images_dir,
@@ -783,10 +813,9 @@ def _get_fig_filenames(ebase, images_dir):
         else:
             custom_view_options = custom_options
 
-        if custom_view_options:
-            suffixes = sorted(custom_view_options.keys())
-            for suffix in suffixes:
-                yield os.path.join(images_dir, fig_base + suffix + '.png')
+        if custom_view_options and not result_done:
+            yield from _get_result_fig_filenames(fig_base, images_dir,
+                                                 custom_view_options)
 
     else:
         yield os.path.join(images_dir, fig_base + '.png')
