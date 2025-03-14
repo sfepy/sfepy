@@ -329,6 +329,24 @@ custom = {
             },
         },
     },
+    'large_deformation/active_fibres.py': {
+        'command_0': 'sfepy-run sfepy/examples/large_deformation/active_fibres.py',
+        'command_1': 'sfepy-view output/hsphere8_fibres.vtk -f fdir0:t2000:p0 1:vs:o0.1:p0 --no-step-time --no-scalar-bars --no-axes --camera-position=-0.0337972,-0.0337972,0.0147184,0.0125,0.0125,0.0129782,0,0,1 --off-screen -o output/hsphere8-fdir0.png',
+        'image_1': 'output/hsphere8-fdir0.png',
+        'command_2': 'sfepy-view output/hsphere8_fibres.vtk -f fdir1:t2000:p0 1:vs:o0.1:p0 --no-step-time --no-scalar-bars --no-axes --camera-position=-0.0337972,-0.0337972,0.0147184,0.0125,0.0125,0.0129782,0,0,1 --off-screen -o output/hsphere8-fdir1.png',
+        'image_2': 'output/hsphere8-fdir1.png',
+        'result': 'output/hsphere8.h5',
+        'result_before_images' : True,
+        'sfepy-view-options': {
+            '': {
+                'fields': ['green_strain:wu:f1:p0', '1:vw:o0.3:p0'],
+                'step' : 10,
+                'camera_position': [-0.0337972,-0.0337972,0.0147184,
+                                    0.0125,0.0125,0.0129782,
+                                    0,0,1],
+            },
+        },
+    },
     'large_deformation/compare_elastic_materials.py': {
         'command': 'python3 sfepy/examples/large_deformation/compare_elastic_materials.py -n',
         'image': 'pressure_displacement.png',
