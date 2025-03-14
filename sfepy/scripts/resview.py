@@ -591,6 +591,9 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                 plot_info.append('glyphs=grad(%s), factor=%.2e'
                                  % (field, factor))
 
+                scalar = 'gradient Magnitude'
+                scalar_label = f'grad({field}):mag'
+
         elif 'c' in opts and has_components:  # select field component
             comp = opts['c']
             scalar = field + '_%d' % comp
