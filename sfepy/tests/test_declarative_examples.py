@@ -95,12 +95,7 @@ def test_examples(ex_filename, output_dir):
         output_dir=output_dir,
         remove_prefix=examples_dir,
     )
-    if ex_filename == 'large_deformation/active_fibres.py':
-        # Special-case the first iteration, as the solver converges slowly.
-        ok = (conditions[1:] == 0).all()
-        ok = ok and (conditions[0] == 1)
-
-    elif ex_filename == 'large_deformation/balloon.py':
+    if ex_filename == 'large_deformation/balloon.py':
         # Special-case the steps with a time-step reduction.
         ok = (conditions[1] == 1)
         ok = ok and (conditions[0] == 0) and (conditions[2:] == 0).all()
