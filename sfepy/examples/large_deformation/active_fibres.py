@@ -105,7 +105,7 @@ def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0, **kwargs):
     eps_opt = 0.01
     s = 1.0
 
-    tt = ts.nt * 2.0 * nm.pi
+    tt = ts.time * 2.0 * nm.pi
 
     x, y, z = coors[:,0], coors[:,1], coors[:,2]
     # Spherical coordinates.
@@ -178,7 +178,7 @@ def stress_strain(out, pb, state, extend=False):
 
     return out
 
-def define(solver='newton', refine=0, output_dir='output'):
+def define(solver='newton', refine=0, n_step=21, output_dir='output'):
     filename_mesh = data_dir + '/meshes/3d/hsphere8.vtk'
 
     vf_matrix = 0.5
@@ -278,11 +278,11 @@ def define(solver='newton', refine=0, output_dir='output'):
             },
         }),
         'ts' : ('ts.simple', {
-            't0' : 0,
-            't1' : 1,
+            't0' : 0.0,
+            't1' : 1.0 * n_step / 21.0,
             'dt' : None,
             'quasistatic' : True,
-            'n_step' : 21, # has precedence over dt.
+            'n_step' : n_step, # has precedence over dt.
             'verbose' : 1,
         }),
     }
