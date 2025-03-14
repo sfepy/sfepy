@@ -325,6 +325,13 @@ def ensure3d(arr):
     arr = nm.asanyarray(arr)
     return nm.pad(arr, (arr.ndim - 1) * [(0, 0)] + [(0, 3 - arr.shape[-1])])
 
+def get_nonzero_norm(arr, **kwargs):
+    norm = nm.linalg.norm(arr, **kwargs)
+    if isinstance(norm, nm.ndarray):
+        norm = norm.max()
+
+    return norm if norm != 0 else 1.0
+
 def read_probes_as_annotations(filenames, add_label=True):
     from sfepy.discrete.probes import read_results
     from sfepy.linalg.geometry import get_perpendiculars
@@ -436,7 +443,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             is_vector_field = (len(fval.shape) == 2) and (fval.shape[1] == dim)
             is_point_field = fval.shape[0] == steps[fstep].n_points
             if is_vector_field and is_point_field:
-                scale = mesh_size * 0.15 / nm.linalg.norm(fval, axis=1).max()
+                scale = mesh_size * 0.15 / get_nonzero_norm(fval, axis=1)
                 if not nm.isfinite(scale):
                     scale = 1.0
                 fields.append((field, 'vs:o.4:p%d' % position))
@@ -510,7 +517,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             ws = nm.diff(nm.reshape(pipe[-1].bounds, (-1, 2)), axis=1)
             size = ws[ws > 0.0].min()
             factor_field = warp if warp is not None else field
-            fmax = nm.abs(pipe[-1][factor_field]).max()
+            fmax = get_nonzero_norm(pipe[-1][factor_field], ord=nm.inf)
             factor = 0.01 * float(factor[1]) * size / fmax
 
         if warp:
@@ -707,7 +714,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                 # Scale arrows by bbox.
                 vec = data[1]
                 maxs = bbox_sizes.max()
-                vec *= 0.1 * maxs / nm.linalg.norm(vec)
+                vec *= 0.1 * maxs / get_nonzero_norm(vec)
                 pdata = pv.Arrow(data[0], vec, scale='auto')
 
             elif kind == 'disc':
