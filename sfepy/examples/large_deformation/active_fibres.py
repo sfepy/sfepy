@@ -75,10 +75,13 @@ Usage Examples
 
     sfepy-view output/hsphere8.h5 -f f1_stress:wu:f1:p0 1:vw:o0.3:p0 f2_stress:wu:f1:p1 1:vw:o0.3:p1 --grid-vector1="1.2,-1.2,0" --color-limits=0,30
 """
+from functools import partial
+
 import numpy as nm
 
 from sfepy import data_dir
 from sfepy.base.base import Struct
+from sfepy.base.ioutils import edit_filename
 from sfepy.homogenization.utils import define_box_regions
 
 def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0, **kwargs):
@@ -136,32 +139,42 @@ def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0, **kwargs):
 
     return out
 
-def stress_strain(out, problem, state, extend=False):
-    ev = problem.evaluate
-    strain = ev('dw_tl_he_neohook.i.Omega(solid.mu, v, u)',
-                mode='el_avg', term_mode='strain')
-    out['green_strain'] = Struct(name='output_data', mode='cell', data=strain)
+def stress_strain(out, pb, state, extend=False):
+    ev = partial(pb.evaluate, mode='el_avg', verbose=False)
 
-    stress = ev('dw_tl_he_neohook.i.Omega(solid.mu, v, u)',
-                mode='el_avg', term_mode='stress')
-    out['neohook_stress'] = Struct(name='output_data',
-                                   mode='cell', data=stress)
+    strain = ev('dw_tl_he_neohook.i.Omega(solid.mu, v, u)', term_mode='strain')
+    out['green_strain'] = Struct(name='result', mode='cell', data=strain)
 
-    stress = ev('dw_tl_bulk_penalty.i.Omega(solid.K, v, u)',
-                mode='el_avg', term_mode= 'stress')
+    stress = ev('dw_tl_he_neohook.i.Omega(solid.mu, v, u)', term_mode='stress')
+    out['neohook_stress'] = Struct(name='result', mode='cell', data=stress)
+
+    stress = ev('dw_tl_bulk_penalty.i.Omega(solid.K, v, u)', term_mode= 'stress')
     out['bulk_stress'] = Struct(name='output_data', mode='cell', data=stress)
 
     stress = ev(
         'dw_tl_fib_a.i.Omega(f1.fmax, f1.eps_opt, f1.s, f1.fdir, f1.act, v, u)',
-        mode='el_avg', term_mode= 'stress',
+        term_mode= 'stress',
     )
-    out['f1_stress'] = Struct(name='output_data', mode='cell', data=stress)
+    out['f1_stress'] = Struct(name='result', mode='cell', data=stress)
 
     stress = ev(
         'dw_tl_fib_a.i.Omega(f2.fmax, f2.eps_opt, f2.s, f2.fdir, f2.act, v, u)',
-        mode='el_avg', term_mode= 'stress',
+        term_mode= 'stress',
     )
-    out['f2_stress'] = Struct(name='output_data', mode='cell', data=stress)
+    out['f2_stress'] = Struct(name='result', mode='cell', data=stress)
+
+    ts = pb.get_timestepper()
+    if ts.step == 0:
+        coors = pb.domain.get_mesh_coors()
+        fout = {}
+        for ii in range(2):
+            aux = get_pars_fibres(ts, coors, mode='qp', which=ii, vf=1.0)
+            fout[f'fdir{ii}'] = Struct(name='result', mode='vertex',
+                                       data=aux['fdir'])
+
+        filename = edit_filename(pb.get_output_name(),
+                                 suffix='_fibres', new_ext='.vtk')
+        pb.save_state(filename, out=fout)
 
     return out
 
