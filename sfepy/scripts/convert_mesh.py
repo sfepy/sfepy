@@ -35,6 +35,7 @@ helps = {
     '3d' : 'force a 3D mesh by adding zero (y,) z coordinates',
     'cell-dim' : 'write only cells of a given dimension,'
     ' use a comma-separated list for several values',
+    'cell-vertices-only': 'remove vertices not used in any cell',
     'save-per-mat': 'extract cells by material id and save them into'
     ' separate mesh files with a name based on filename_out and the id'
     ' numbers (preserves original mesh vertices)',
@@ -125,6 +126,9 @@ def main():
     parser.add_argument('-d', '--cell-dim', metavar='cell_dim',
                         action='store', dest='cell_dim',
                         default=None, help=helps['cell-dim'])
+    parser.add_argument('--cell-vertices-only', action='store_true',
+                        dest='cell_vertices_only',
+                        help=helps['cell-vertices-only'])
     parser.add_argument('--save-per-mat', action='store_true',
                         dest='save_per_mat', help=helps['save-per-mat'])
     parser.add_argument('--remap-vertex-groups', action='store_true',
@@ -270,6 +274,20 @@ def main():
         mesh = Mesh.from_data(mesh.name + '_merged',
                               coor, ngroups,
                               [conns], [mesh.cmesh.cell_groups], [desc])
+
+    if options.cell_vertices_only:
+        data = list(mesh._get_io_data())
+        vertices = nm.unique([nm.unique(conn.ravel()) for conn in data[2]])
+
+        remap = prepare_translate(vertices, nm.arange(len(vertices)))
+
+        coors = data[0][vertices]
+        ngroups = data[1][vertices]
+        conns = [remap[conn] for conn in data[2]]
+
+        mesh = Mesh.from_data(mesh.name + '_cleaned',
+                              coors, ngroups,
+                              conns, data[3], data[4])
 
     if options.save_per_mat:
         desc = mesh.descs[0]
