@@ -768,13 +768,25 @@ def _get_image_names(custom_options):
         if key.startswith('image'):
                 yield val
 
+def _get_result_fig_filenames(fig_base, images_dir, custom_view_options):
+    suffixes = sorted(custom_view_options.keys())
+    for suffix in suffixes:
+        yield os.path.join(images_dir, fig_base + suffix + '.png')
+
 def _get_fig_filenames(ebase, images_dir):
     fig_base = ebase2fbase(ebase)
 
+    result_done = False
     if ebase in custom:
         custom_options = custom.get(ebase)
+        result_first = custom_options.get('result_before_images', False)
         if 'sfepy-view-options' in custom_options:
             custom_view_options = custom_options['sfepy-view-options']
+
+            if result_first:
+                yield from _get_result_fig_filenames(fig_base, images_dir,
+                                                     custom_view_options)
+                result_done = True
 
             for fig_filename in _get_image_names(custom_options):
                 yield os.path.join(images_dir,
@@ -783,10 +795,9 @@ def _get_fig_filenames(ebase, images_dir):
         else:
             custom_view_options = custom_options
 
-        if custom_view_options:
-            suffixes = sorted(custom_view_options.keys())
-            for suffix in suffixes:
-                yield os.path.join(images_dir, fig_base + suffix + '.png')
+        if custom_view_options and not result_done:
+            yield from _get_result_fig_filenames(fig_base, images_dir,
+                                                 custom_view_options)
 
     else:
         yield os.path.join(images_dir, fig_base + '.png')
