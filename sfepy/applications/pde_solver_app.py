@@ -8,7 +8,7 @@ from sfepy.discrete import Problem
 from sfepy.discrete.fem import MeshIO, Mesh
 from .application import Application
 
-def solve_pde(conf, options=None, status=None, **app_options):
+def solve_pde(conf, define_args=None, options=None, status=None, **app_options):
     """
     Solve a system of partial differential equations (PDEs).
 
@@ -20,6 +20,9 @@ def solve_pde(conf, options=None, status=None, **app_options):
     conf : str or ProblemConf instance
         Either the name of the problem description file defining the PDEs,
         or directly the ProblemConf instance.
+    define_args : dict, optional
+        Keyword arguments for ``define()`` function of the problem description
+        file.
     options : options
         The command-line options.
     status : dict-like
@@ -29,7 +32,8 @@ def solve_pde(conf, options=None, status=None, **app_options):
     """
     if not isinstance(conf, ProblemConf):
         required, other = get_standard_keywords()
-        conf = ProblemConf.from_file(conf, required, other)
+        conf = ProblemConf.from_file(conf, required, other,
+                                     define_args=define_args)
 
     opts = conf.options = (dict_to_struct(app_options, flag=(1,),
                                           constructor=type(conf.options))
