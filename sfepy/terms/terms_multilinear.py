@@ -120,7 +120,8 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
                 op = arg.get_dofs(cache, expr_cache, oname)
 
             elif val_name == 'bf':
-                op = arg.get_bf(expr_cache)
+                cell_dep = len(ebuilder.subscripts[ia][io]) == 3
+                op = arg.get_bf(expr_cache, cell_dependent=cell_dep)
 
             elif val_name == 'bfg':
                 ag, _ = arg.term.get_mapping(arg.arg)
@@ -235,20 +236,16 @@ class ExpressionArg(Struct):
 
         return dofs
 
-    def get_bf(self, expr_cache):
+    def get_bf(self, expr_cache, cell_dependent=False):
         ag, _ = self.term.get_mapping(self.arg)
-        cell_dependent = False
         if self.term.integration == 'facet_extra':
             if 'L2_constant' in self.arg.field.family_name:
-                # It goes through non-cell-depending basis branch below, so fix
-                # the number of axes.
-                bf = ag.bf[None, ...]
+                bf = ag.bf[:, :1]
 
             else:
                 sd = self.arg.field.extra_data[f'sd_{self.term.region.name}']
                 _bf = self.arg.field.eval_basis(sd.bkey, 0, self.term.integral)
                 bf = _bf[sd.fis[:, 1], ...]
-                cell_dependent = True
 
         else:
             bf = ag.bf
@@ -256,10 +253,7 @@ class ExpressionArg(Struct):
         key = 'bf{}'.format(id(bf))
         _bf  = expr_cache.get(key)
 
-        is_surface = 'facet' in self.term.act_integration
-        n_cells = self.term.region.get_n_cells(is_surface=is_surface)
-        if (bf.ndim == 4) and (cell_dependent or (bf.shape[0] == n_cells)):
-            # cell-depending basis.
+        if cell_dependent:
             if _bf is None:
                 _bf = bf[:, :, 0]
                 expr_cache[key] = _bf
