@@ -804,7 +804,8 @@ description file demonstrating how to use different kinds of functions.
   in the boundary condition definition. For example, with `'u.[0, 1]'`,
   `n_components` is 2.
 
-- function for defining usual material parameters::
+- function for defining usual material parameters, using `mode=='qp'` seen above
+  in `Defining Material Parameters by Functions`_::
 
     def get_pars(ts, coors, mode=None, **kwargs):
         if mode == 'qp':
