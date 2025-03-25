@@ -1,5 +1,4 @@
-
-PYTHON=python$(shell grep python_version site_cfg.py | cut -c 19)
+PYTHON := $(shell command -v python3 || command -v python)
 
 all clean: site_cfg.py
 site_cfg.py:
