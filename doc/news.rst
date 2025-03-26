@@ -1,6 +1,13 @@
 News
 ====
 
+* **26.03.2025** Version 2025.1 released (improved block preconditioning
+  support in PETSc-based linear solvers, user functions for assembling and
+  linear system scaling, pypardiso based linear solver, general hyperelastic
+  term for the UL formulation, speed-up of sparse matrix graph allocation and
+  assembling of matrices with many nonzeros in a row, etc.), see :ref:`release
+  notes <2024.4-2025.1>`.
+
 * **29.12.2024** Version 2024.4 released (MUMPS solver interface moved to new
   mumpspy package, python-mumps support, new contact term based on IPC toolkit,
   etc.), see :ref:`release notes <2024.3-2024.4>`.
@@ -17,13 +24,5 @@ News
   elastic response, improved solver status reporting, wedge elements + example,
   multi-node linear combination (boundary) conditions + example, etc.), see
   :ref:`release notes <2023.4-2024.1>`.
-
-* **29.12.2023** Version 2023.4 released (new structural elements (linear
-  spring, linear truss), spectral element method (LGL quadrature and nodes with
-  Lagrange basis), initial support for meshes with elements of different
-  topological dimensions, new examples: 2D and 3D truss bridge, h-refinement
-  eigenvalue convergence, beam consisting of hexa and tetra elements, many more
-  examples included in gallery, etc.), see :ref:`release notes
-  <2023.3-2023.4>`.
 
 For historians: see :ref:`archived_news`.
