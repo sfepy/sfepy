@@ -2,6 +2,232 @@
 
 .. _2024.3-2024.4:
 
+from 2024.4 to 2025.1
+=====================
+.. _2024.4-2025.1:
+
+- merge pull request #1170 from rc/petsc-block-size-option
+
+  - use conf from argument in PETScKrylovSolver.__call__() - it is never None
+    as ensured by @petsc_call
+  - new block_size option of PETScKrylovSolver, update .__call__()
+
+- merge pull request #1171 from rc/fix-test-install-petsc-warnings
+
+  - disable PETSc unused options warnings in main() of test_install.py
+
+- merge pull request #1172 from rc/petsc-ks-create-matrix
+
+  - new create_matrix option of PETScKrylovSolver, update .__call__()
+
+- merge pull request #1173 from vlukes/fix-setup-mirror-region
+
+  - fix miror search in Region.setup_mirror_region()
+
+- merge pull request #1174 from rc/petsc-precond-matrix
+
+  - ls.py: remove six
+  - set sub_pc_type in PETScKrylovSolver.create_ksp() only if changed
+  - work with ksp variable only in PETScKrylovSolver.__call__()
+  - ls.py: remove six 2
+  - allow create_matrix() in PETScKrylovSolver to return also preconditioning
+    matrix - update .__call__()
+
+- merge pull request #1175 from rc/newton-ls-scaling
+
+  - new scale_system_fun. scale_solution_fun parameters of Newton solver -
+    update Newton.__call__()
+  - new not_active_only_modify_matrix option set in Problem.__init__() - update
+    Evaluator.eval_tangent_matrix()
+  - docs: update users guide
+  - fix Problem.__init__() for no conf
+
+- merge pull request #1176 from rc/add-coef-to-de-convect
+
+  - fix append_all()
+  - update EConvectTerm for optional scalar material parameter - update
+    .get_function()
+
+- merge pull request #1177 from rc/misc-updates
+
+  - document components in make_grad2strain()
+  - add D3 shape to _parse_scalar_shape() of Term.check_shapes(),
+    make_term_args()
+  - shift initial guess in get_xi_tensor() for better convergence - TODO make
+    it robust by trying several?
+  - reuse docstring of LinearDSpringTerm in LinearDRotSpringTerm
+
+- merge pull request #1178 from rc/assemble-user-function
+
+  - new assemble argument of Equation.evaluate()
+  - new assemble argument in Equations evaluation functions - update
+    .evaluate() .eval_residuals(), .eval_tangent_matrices()
+  - new assemble argument of Evaluator.__init__() - update .eval_residual(),
+    .eval_tangent_matrix()
+  - new assemble_equations_fun option used in Problem.get_evaluator()
+
+- merge pull request #1179 from rc/return-residuals-matrices-by-terms
+
+  - new by_terms argument of Equations.eval_residuals()
+  - new by_terms argument of Equations.eval_tangent_matrices()
+
+- merge pull request #1181 from vlukes/update_homog_correctors
+
+  - dump actual corr. name and component to problem.homogen_corr_id
+  - coefs_base.py: remove dependency on six
+  - update get_homog_coefs_nonlinear(): return correctors if required
+  - micmac.py: remove dependency on six
+
+- merge pull request #1182 from vlukes/new-newton-solver-option
+
+  - new option "scaled_error" of Newton solver
+  - rearrange order of parameters in Newton._parameters
+
+- merge pull request #1183 from rc/update-site-cfg
+
+  - remove python_version from site_cfg_template.py
+  - remove unused tetgen_path from site_cfg_template.py
+  - update Config.python_version(), remove .tetgen_path()
+
+- merge pull request #1184 from rc/pypardiso-solver
+
+  - new PyPardisoSolver - new .__init__(), __call__(), .presolve()
+  - update tests/test_linear_solvers.py to test ls.pypardiso
+  - setup.py: report pypardiso version in check_versions()
+  - update docstring of PyPardisoSolver
+
+- merge pull request #1185 from vlukes/new-general-hyperelastic-term
+
+  - new HyperelasticByFunULTerm: tan. mod. and stress evaluated by user
+  - new example using HyperelasticByFunULTerm
+  - fix indentation style, remove unused import
+  - update build_nonsym_grad() for 1D
+  - update HyperelasticByFunULTerm.arg_types, .arg_shapes - new
+    _get_fun_mat_shape()
+  - new check of the shape of mat_fun() output
+  - update hyperelastic_ul_by_fun.py example for changed term signature
+
+- merge pull request #1186 from rc/assemble-wide-matrix-binary-search
+
+  - new bsearch(), assemble_matrix_b(), assemble_matrix_complex_b()
+  - use binary search in Term.assemble_to() when matrix has long rows
+  - update bsearch()
+
+- merge pull request #1187 from rc/coef-sym-dim
+
+  - new CoefSymDim
+
+- merge pull request #1188 from rc/clean-up-linalg-utils
+
+  - simplify cycle()
+  - remove unused split_range(), permutations()
+  - remove combine(), replace it by itertools.product()
+  - use itertools.permutations() in build_orientation_map()
+  - remove six in get_facet_dof_permutations()
+
+- merge pull request #1189 from rc/clean-up-hom-coefs
+
+  - remove sfepy/homogenization/coefs_elastic.py - remove PressureRHSVector,
+    TCorrectorsRSViaPressureEVP, TCorrectorsPressureViaPressureEVP
+  - remove PressureEigenvalueProblem, TCorrectorsViaPressureEVP,
+    create_ts_coef()
+  - remove MatrixAction
+  - remove sfepy/homogenization/coefs_perfusion.py - remove CorrRegion,
+    CoefRegion
+  - docs: sync module index of developer guide with current sources
+
+- merge pull request #1190 from rc/speed-up-uniform-refine
+
+  - speed-up refine_1_2(), refine_2_3(), refine_2_4(), refine_3_4(),
+    refine_3_8()
+  - retype connectivity to uint32 already in Mesh._set_io_data()
+
+- merge pull request #1191 from rc/create-matrix-graph-via-coo
+
+  - new chunk_arrays()
+  - new create_dof_graph(), create_matrix_graph()
+  - return row/column DOF block indices from Equations.get_graph_conns()
+  - treat active_only in create_dof_graph() to fix create_matrix_graph()
+  - use create_matrix_graph() in Equations.create_matrix_graph()
+  - provide default active_only=False in create_dof_graph()
+  - use create_dof_graph() in surface_graph()
+  - use create_dof_graph() in Mesh.create_conn_graph()
+  - remove compare_i32(), mesh_nod_in_el_count(), mesh_graph(),
+    create_mesh_graph()
+  - adjust chunk_size in create_matrix_graph()
+  - new chunk_size argument of Equations.create_matrix_graph()
+  - new graph_cell_chunk_size option used in Problem.update_equations()
+  - docs: update users guide
+
+- merge pull request #1192 from rc/fix-matrices-by-terms
+
+  - fix Equations.eval_tangent_matrices() for by_terms + select_term
+
+- merge pull request #1193 from rc/use-scipy-connected-components
+
+  - replace graph_components() by connected_components() in show_mesh_info()
+  - replace graph_components() by connected_components() in
+    surface_components()
+  - remove graph_components() from cmesh.pyx, meshutils.[ch]
+
+- merge pull request #1194 from rc/scipy-root-nls-solver
+
+  - update and rename ScipyBroyden -> ScipyRoot
+
+- merge pull request #1195 from rc/fix-scipy-root-nls-solver
+
+  - fix ScipyRoot.__call__() for no nit in result
+
+- merge pull request #1196 from rc/fix-resview-scalar-range
+
+  - fix scalar range in pv_plot() for non-vectors - fix scalar bar label, as in
+    '|text|' the vertical bars are ignored by pyvista
+  - update pv_plot() to use scalar gradient magnitude in scalar bar
+  - fix potential divides by zero in pv_plot(), new get_nonzero_norm()
+
+- merge pull request #1197 from rc/update-active-fibres-example
+
+  - update large_deformation/active_fibres.py example
+
+    - new define() - new solver, refine, output_dir options
+    - update get_pars_fibres(), stress_strain()
+
+  - active_fibres.py: update stress_strain() to save fibre directions, silence
+  - new meshes/3d/hsphere8.vtk
+  - remove active_fibres.py special case from test_examples()
+  - gen_gallery.py: new result_before_images custom option
+
+    - new _get_result_fig_filenames()
+    - update _get_fig_filenames()
+
+  - gen_gallery.py: add custom view for active_fibres.py example
+  - active_fibres.py: new n_step define() option, update get_pars_fibres()
+  - new define_args argument of solve_pde()
+  - new define_args argument of run_declaratice_example()
+  - speed up active_fibres.py example in test_examples() by lowering n_step
+
+- merge pull request #1199 from rc/fix-eterm-get-bf
+
+  - simplify ExpressionArg.get_bf(), update get_einsum_ops() - fixes .get_bf()
+    for single cell meshes (refine_evp.py example)
+
+- merge pull request #1198 from rc/convert-mesh-cell-vertices-only
+
+  - convert_mesh.py: new --cell-vertices-only option in main()
+
+- merge pull request #1200 from jidhub/master
+
+  - Update users_guide.rst I had problem remembering what `qp` meant, so I feel
+    it is useful to recall where it was first seen in that users guide.
+  - Update users_guide.rst Broke the modified line in two so that each is at
+    most 80 characters. It helps reading the plain-text (rst) version. It is a
+    [Recommended
+    change](https://github.com/sfepy/sfepy/pull/1200#issuecomment-2735954550)
+
+- merge pull request #1201 from rc/fix-makefile
+
+  - fix PYTHON variable setting in Makefile
+
 from 2024.3 to 2024.4
 =====================
 
