@@ -29,6 +29,10 @@ jobs:
       if: matrix.os == 'macOS-latest'
       run: |
          brew install hdf5 c-blosc
+    - name: Set OSX architecture
+      if: matrix.os == 'macOS-latest'
+      run: |
+         echo "CMAKE_OSX_ARCHITECTURES=arm64;x86_64" >> $GITHUB_ENV
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
