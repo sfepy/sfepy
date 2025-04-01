@@ -66,15 +66,15 @@ cdef class CBasisContext:
 
 @cython.boundscheck(False)
 def find_ref_coors_convex(
-        np.ndarray[float64, mode='c', ndim=2] ref_coors not None,
-        np.ndarray[int32, mode='c', ndim=1] cells not None,
-        np.ndarray[int32, mode='c', ndim=1] status not None,
-        np.ndarray[float64, mode='c', ndim=2] coors not None,
+        float64[:, ::1] ref_coors not None,
+        int32[::1] cells not None,
+        int32[::1] status not None,
+        float64[:, ::1] coors not None,
         cm.CMesh cmesh not None,
-        np.ndarray[float64, mode='c', ndim=2] centroids not None,
-        np.ndarray[float64, mode='c', ndim=2] normals0 not None,
-        np.ndarray[float64, mode='c', ndim=2] normals1,
-        np.ndarray[int32, mode='c', ndim=1] ics,
+        float64[:, ::1] centroids not None,
+        float64[:, ::1] normals0 not None,
+        float64[:, ::1] normals1,
+        int32[::1] ics,
         int allow_extrapolation,
         float64 qp_eps,
         float64 close_limit,
@@ -110,13 +110,13 @@ def find_ref_coors_convex(
 
 @cython.boundscheck(False)
 def find_ref_coors(
-        np.ndarray[float64, mode='c', ndim=2] ref_coors not None,
-        np.ndarray[int32, mode='c', ndim=1] cells not None,
-        np.ndarray[int32, mode='c', ndim=1] status not None,
-        np.ndarray[float64, mode='c', ndim=2] coors not None,
+        float64[:, ::1] ref_coors not None,
+        int32[::1] cells not None,
+        int32[::1] status not None,
+        float64[:, ::1] coors not None,
         cm.CMesh cmesh not None,
-        np.ndarray[int32, mode='c', ndim=1] candidates,
-        np.ndarray[int32, mode='c', ndim=1] offsets,
+        int32[::1] candidates,
+        int32[::1] offsets,
         int allow_extrapolation,
         float64 qp_eps,
         float64 close_limit,
@@ -146,12 +146,12 @@ def find_ref_coors(
                          ctx.ctx)
 
 @cython.boundscheck(False)
-cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
-                     np.ndarray[float64, mode='c', ndim=2] ref_coors,
-                     np.ndarray[int32, mode='c', ndim=1] cells,
-                     np.ndarray[int32, mode='c', ndim=1] status,
-                     np.ndarray[float64, mode='c', ndim=2] source_vals,
-                     np.ndarray[int32, mode='c', ndim=2] conn,
+cpdef evaluate_in_rc(float64[:, :, ::1] out,
+                     float64[:, ::1] ref_coors,
+                     int32[::1] cells,
+                     int32[::1] status,
+                     float64[:, ::1] source_vals,
+                     int32[:, ::1] conn,
                      int32 diff, _ctx):
     """
     Evaluate source field DOF values or gradients in the given reference

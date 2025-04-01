@@ -26,7 +26,7 @@ cdef extern from 'lobatto.h':
     int32 max_order
 
 @cython.boundscheck(False)
-def eval_lobatto1d(np.ndarray[float64, mode='c', ndim=1] coors not None,
+def eval_lobatto1d(float64[::1] coors not None,
                    int32 order):
     """
     Evaluate 1D Lobatto functions of the given order in given points.
@@ -43,9 +43,9 @@ def eval_lobatto1d(np.ndarray[float64, mode='c', ndim=1] coors not None,
     return out
 
 @cython.boundscheck(False)
-def eval_lobatto_tensor_product(np.ndarray[float64, mode='c', ndim=2]
+def eval_lobatto_tensor_product(float64[:, ::1]
                                 coors not None,
-                                np.ndarray[int32, mode='c', ndim=2]
+                                int32[:, ::1]
                                 nodes not None,
                                 float64 cmin, float64 cmax, int32 order,
                                 int32 diff=False):

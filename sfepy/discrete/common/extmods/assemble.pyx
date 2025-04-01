@@ -11,11 +11,11 @@ cimport numpy as np
 from sfepy.discrete.common.extmods.types cimport int32, uint32, float64, complex128
 
 @cython.boundscheck(False)
-def assemble_vector(np.ndarray[float64, mode='c', ndim=1] vec not None,
-                    np.ndarray[float64, mode='c', ndim=4] vec_in_els not None,
-                    np.ndarray[int32, mode='c', ndim=1] iels not None,
+def assemble_vector(float64[::1] vec not None,
+                    float64[:, :, :, ::1] vec_in_els not None,
+                    int32[::1] iels not None,
                     float64 sign,
-                    np.ndarray[int32, mode='c', ndim=2] conn not None):
+                    int32[:, ::1] conn not None):
     cdef int32 ii, iel, ir, irg
     cdef int32 num = iels.shape[0]
     cdef int32 n_ep = conn.shape[1]
@@ -44,13 +44,11 @@ def assemble_vector(np.ndarray[float64, mode='c', ndim=1] vec not None,
             val[irg] += sign * vec_in_el[ir]
 
 @cython.boundscheck(False)
-def assemble_vector_complex(np.ndarray[complex128, mode='c', ndim=1]
-                            vec not None,
-                            np.ndarray[complex128, mode='c', ndim=4]
-                            vec_in_els not None,
-                            np.ndarray[int32, mode='c', ndim=1] iels not None,
+def assemble_vector_complex(complex128[::1] vec not None,
+                            complex128[:, :, :, ::1] vec_in_els not None,
+                            int32[::1] iels not None,
                             complex128 sign,
-                            np.ndarray[int32, mode='c', ndim=2] conn not None):
+                            int32[:, ::1] conn not None):
     cdef int32 ii, iel, ir, irg
     cdef int32 num = iels.shape[0]
     cdef int32 n_ep = conn.shape[1]
@@ -79,14 +77,14 @@ def assemble_vector_complex(np.ndarray[complex128, mode='c', ndim=1]
             val[irg] += sign * vec_in_el[ir]
 
 @cython.boundscheck(False)
-def assemble_matrix(np.ndarray[float64, mode='c', ndim=1] mtx not None,
-                    np.ndarray[int32, mode='c', ndim=1] prows not None,
-                    np.ndarray[int32, mode='c', ndim=1] cols not None,
-                    np.ndarray[float64, mode='c', ndim=4] mtx_in_els not None,
-                    np.ndarray[int32, mode='c', ndim=1] iels not None,
+def assemble_matrix(float64[::1] mtx not None,
+                    int32[::1] prows not None,
+                    int32[::1] cols not None,
+                    float64[:, :, :, ::1] mtx_in_els not None,
+                    int32[::1] iels not None,
                     float64 sign,
-                    np.ndarray[int32, mode='c', ndim=2] row_conn not None,
-                    np.ndarray[int32, mode='c', ndim=2] col_conn not None):
+                    int32[:, ::1] row_conn not None,
+                    int32[:, ::1] col_conn not None):
     cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc
     cdef int32 num = iels.shape[0]
     cdef int32 n_epr = row_conn.shape[1]
@@ -132,17 +130,15 @@ def assemble_matrix(np.ndarray[float64, mode='c', ndim=1] mtx not None,
                     raise IndexError(msg)
 
 @cython.boundscheck(False)
-def assemble_matrix_complex(np.ndarray[complex128, mode='c', ndim=1]
-                            mtx not None,
-                            np.ndarray[int32, mode='c', ndim=1] prows not None,
-                            np.ndarray[int32, mode='c', ndim=1] cols not None,
-                            np.ndarray[complex128, mode='c', ndim=4]
-                            mtx_in_els not None,
-                            np.ndarray[int32, mode='c', ndim=1] iels not None,
+def assemble_matrix_complex(complex128[::1] mtx not None,
+                            int32[::1] prows not None,
+                            int32[::1] cols not None,
+                            complex128[:, :, :, ::1] mtx_in_els not None,
+                            int32[::1] iels not None,
                             complex128 sign,
-                            np.ndarray[int32, mode='c', ndim=2]
+                            int32[:, ::1]
                             row_conn not None,
-                            np.ndarray[int32, mode='c', ndim=2]
+                            int32[:, ::1]
                             col_conn not None):
     cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc
     cdef int32 num = iels.shape[0]
@@ -209,14 +205,14 @@ cdef inline int32 bsearch(int32 *cols,
     return -1
 
 @cython.boundscheck(False)
-def assemble_matrix_b(np.ndarray[float64, mode='c', ndim=1] mtx not None,
-                      np.ndarray[int32, mode='c', ndim=1] prows not None,
-                      np.ndarray[int32, mode='c', ndim=1] cols not None,
-                      np.ndarray[float64, mode='c', ndim=4] mtx_in_els not None,
-                      np.ndarray[int32, mode='c', ndim=1] iels not None,
+def assemble_matrix_b(float64[::1] mtx not None,
+                      int32[::1] prows not None,
+                      int32[::1] cols not None,
+                      float64[:, :, :, ::1] mtx_in_els not None,
+                      int32[::1] iels not None,
                       float64 sign,
-                      np.ndarray[int32, mode='c', ndim=2] row_conn not None,
-                      np.ndarray[int32, mode='c', ndim=2] col_conn not None):
+                      int32[:, ::1] row_conn not None,
+                      int32[:, ::1] col_conn not None):
     cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc
     cdef int32 num = iels.shape[0]
     cdef int32 n_epr = row_conn.shape[1]
@@ -261,17 +257,15 @@ def assemble_matrix_b(np.ndarray[float64, mode='c', ndim=1] mtx not None,
                     raise IndexError(msg)
 
 @cython.boundscheck(False)
-def assemble_matrix_complex_b(np.ndarray[complex128, mode='c', ndim=1]
-                              mtx not None,
-                              np.ndarray[int32, mode='c', ndim=1] prows not None,
-                              np.ndarray[int32, mode='c', ndim=1] cols not None,
-                              np.ndarray[complex128, mode='c', ndim=4]
-                              mtx_in_els not None,
-                              np.ndarray[int32, mode='c', ndim=1] iels not None,
+def assemble_matrix_complex_b(complex128[::1] mtx not None,
+                              int32[::1] prows not None,
+                              int32[::1] cols not None,
+                              complex128[:, :, :, ::1] mtx_in_els not None,
+                              int32[::1] iels not None,
                               complex128 sign,
-                              np.ndarray[int32, mode='c', ndim=2]
+                              int32[:, ::1]
                               row_conn not None,
-                              np.ndarray[int32, mode='c', ndim=2]
+                              int32[:, ::1]
                               col_conn not None):
     cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc
     cdef int32 num = iels.shape[0]
