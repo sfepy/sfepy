@@ -22,6 +22,8 @@ if(DEBUG_FMF)
     add_compile_definitions(DEBUG_FMF)
 endif()
 
+add_compile_definitions(NPY_NO_DEPRECATED_API=NPY_2_0_API_VERSION)
+
 add_subdirectory(sfepy/discrete/common/extmods)
 add_subdirectory(sfepy/discrete/fem/extmods)
 add_subdirectory(sfepy/discrete/iga/extmods)
