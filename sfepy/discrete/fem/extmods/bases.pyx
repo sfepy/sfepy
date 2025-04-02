@@ -111,21 +111,21 @@ cdef class CLagrangeContext:
                   int32 order=1,
                   int32 is_bubble=0,
                   int32 tdim=0,
-                  np.ndarray[int32, mode='c', ndim=2] nodes=None,
-                  np.ndarray[float64, mode='c', ndim=2] ref_coors=None,
+                  int32[:, ::1] nodes=None,
+                  float64[:, ::1] ref_coors=None,
                   np.ndarray mesh_coors=None,
                   np.ndarray mesh_conn=None,
-                  np.ndarray[float64, mode='c', ndim=2] mtx_i=None,
+                  float64[:, ::1] mtx_i=None,
                   float64 eps=1e-15,
                   int32 check_errors=0,
                   int32 i_max=100,
                   float64 newton_eps=1e-8):
         cdef LagrangeContext *ctx
-        cdef np.ndarray[float64, mode='c', ndim=2] _mesh_coors
-        cdef np.ndarray[int32, mode='c', ndim=2] _mesh_conn
-        cdef np.ndarray[float64, mode='c', ndim=2] _e_coors_max
-        cdef np.ndarray[float64, mode='c', ndim=1] _base1d
-        cdef np.ndarray[float64, mode='c', ndim=2] _mbfg
+        cdef float64[:, ::1] _mesh_coors
+        cdef int32[:, ::1] _mesh_conn
+        cdef float64[:, ::1] _e_coors_max
+        cdef float64[::1] _base1d
+        cdef float64[:, ::1] _mbfg
 
         ctx = self.ctx = <LagrangeContext *> pyalloc(sizeof(LagrangeContext))
 
@@ -208,7 +208,7 @@ cdef class CLagrangeContext:
     def cprint(self):
         _print_context_lagrange(self.ctx)
 
-    def evaluate(self, np.ndarray[float64, mode='c', ndim=2] coors not None,
+    def evaluate(self, float64[:, ::1] coors not None,
                  int32 diff=False,
                  float64 eps=1e-15,
                  int32 check_errors=True):

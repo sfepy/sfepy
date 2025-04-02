@@ -63,8 +63,8 @@ cdef class CMesh:
         Fill CMesh data using Python data.
         """
         cdef uint32 tdim
-        cdef np.ndarray[float64, mode='c', ndim=2] _coors
-        cdef np.ndarray[uint32, mode='c', ndim=1] _cell_types
+        cdef float64[:, ::1] _coors
+        cdef uint32[::1] _cell_types
         cdef MeshConnectivity *pconn
 
         self = CMesh()
@@ -156,7 +156,7 @@ cdef class CMesh:
         mesh_free(self.mesh)
 
     def create_new(self,
-                   np.ndarray[uint32, mode='c', ndim=1] entities=None,
+                   uint32[::1] entities=None,
                    int32 dent=0, localize=False):
         """
         Create a new CMesh instance, with cells corresponding to the given
@@ -181,12 +181,12 @@ cdef class CMesh:
             connectivities have to be created and local entities need to be set
             manually.
         """
-        cdef np.ndarray[float64, mode='c', ndim=2] _coors
-        cdef np.ndarray[uint32, mode='c', ndim=1] _ct
+        cdef float64[:, ::1] _coors
+        cdef uint32[::1] _ct
         cdef uint32 ii, tdim, n_v, num
         cdef (uint32 *) pct, poffsets
-        cdef np.ndarray[uint32, mode='c', ndim=1] indices
-        cdef np.ndarray[uint32, mode='c', ndim=1] offsets
+        cdef uint32[::1] indices
+        cdef uint32[::1] offsets
         cdef Indices _entities[1]
         cdef MeshConnectivity _incident[1]
         cdef CMesh cmesh
@@ -508,7 +508,7 @@ cdef class CMesh:
         return ii.astype(np.uint32)
 
     def get_incident(self, int32 dim,
-                     np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                     uint32[::1] entities not None,
                      int32 dent, ret_offsets=False):
         """
         Get non-unique entities `indices` of dimension `dim` that are contained
@@ -555,10 +555,10 @@ cdef class CMesh:
             return indices
 
     def get_local_ids(self,
-                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                      uint32[::1] entities not None,
                       int32 dent,
-                      np.ndarray[uint32, mode='c', ndim=1] incident not None,
-                      np.ndarray[uint32, mode='c', ndim=1] offsets not None,
+                      uint32[::1] incident not None,
+                      uint32[::1] offsets not None,
                       int32 dim):
         """
         Get local ids of `entities` of dimension `dent` in non-unique entities
@@ -591,7 +591,7 @@ cdef class CMesh:
         return out
 
     def get_complete(self, int32 dim,
-                     np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                     uint32[::1] entities not None,
                      int32 dent):
         """
         Get entities of dimension `dim` that are completely given by entities
@@ -727,14 +727,14 @@ cdef extern from 'meshutils.h':
                             int32 swap_to_n_row, int32 swap_to_n_col)
 
 @cython.boundscheck(False)
-def orient_elements(np.ndarray[int32, mode='c', ndim=1] flag not None,
+def orient_elements(int32[::1] flag not None,
                     CMesh cmesh not None,
-                    np.ndarray[uint32, mode='c', ndim=1] cells not None,
+                    uint32[::1] cells not None,
                     int32 dcells,
-                    np.ndarray[int32, mode='c', ndim=1] v_roots not None,
-                    np.ndarray[int32, mode='c', ndim=2] v_vecs not None,
-                    np.ndarray[int32, mode='c', ndim=2] swap_from not None,
-                    np.ndarray[int32, mode='c', ndim=2] swap_to not None):
+                    int32[::1] v_roots not None,
+                    int32[:, ::1] v_vecs not None,
+                    int32[:, ::1] swap_from not None,
+                    int32[:, ::1] swap_to not None):
     """
     Swap element nodes so that its volume is positive.
     """

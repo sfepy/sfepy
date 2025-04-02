@@ -135,23 +135,23 @@ cdef class CNURBSContext:
             self.ctx.iel = iel
 
     def __cinit__(self,
-                  np.ndarray[float64, mode='c', ndim=2] control_points not None,
-                  np.ndarray[float64, mode='c', ndim=1] weights not None,
-                  np.ndarray[int32, mode='c', ndim=1] degrees not None,
+                  float64[:, ::1] control_points not None,
+                  float64[::1] weights not None,
+                  int32[::1] degrees not None,
                   cs not None,
-                  np.ndarray[int32, mode='c', ndim=2] conn not None,
+                  int32[:, ::1] conn not None,
                   int32 i_max=100,
                   float64 newton_eps=1e-8):
         cdef NURBSContext *ctx
         cdef int32 ii, num
         cdef float64 *buf
-        cdef np.ndarray[float64, mode='c', ndim=2] _e_coors_max
-        cdef np.ndarray[float64, mode='c', ndim=1] _bf
-        cdef np.ndarray[float64, mode='c', ndim=2] _bfg
-        cdef np.ndarray[float64, mode='c', ndim=1] _R
-        cdef np.ndarray[float64, mode='c', ndim=2] _dR_dxi
-        cdef np.ndarray[float64, mode='c', ndim=2] _dR_dx
-        cdef np.ndarray[float64, mode='c', ndim=1] _bufBN
+        cdef float64[:, ::1] _e_coors_max
+        cdef float64[::1] _bf
+        cdef float64[:, ::1] _bfg
+        cdef float64[::1] _R
+        cdef float64[:, ::1] _dR_dxi
+        cdef float64[:, ::1] _dR_dx
+        cdef float64[::1] _bufBN
 
         ctx = self.ctx = <NURBSContext *> pyalloc(sizeof(NURBSContext))
 
@@ -195,7 +195,7 @@ cdef class CNURBSContext:
                                        dtype=np.float64)
         array2fmfield2(ctx.dR_dx, _dR_dx)
 
-        n_efuns = degrees + 1
+        n_efuns = np.asarray(degrees) + 1
 
         _bufBN = self.bufBN = np.zeros((4 * n_efuns.sum(),), dtype=np.float64)
         buf = &_bufBN[0]
@@ -226,7 +226,7 @@ cdef class CNURBSContext:
     def cprint(self):
         _print_context_nurbs(self.ctx)
 
-    def evaluate(self, np.ndarray[float64, mode='c', ndim=2] coors not None,
+    def evaluate(self, float64[:, ::1] coors not None,
                  int32 diff=False, **kwargs):
         cdef int32 n_coor = coors.shape[0]
         cdef int32 n_efun = self.ctx.n_efun
@@ -252,11 +252,11 @@ cdef class CNURBSContext:
 
         return out
 
-def is_nurbs(np.ndarray[float64, mode='c', ndim=1] weights not None):
+def is_nurbs(float64[::1] weights not None):
     """
     Return True if some weights are not one.
     """
-    return np.any(weights != 1.0)
+    return np.any(np.asarray(weights) != 1.0)
 
 def eval_bernstein_basis(np.ndarray funs not None,
                          np.ndarray ders not None,
@@ -271,16 +271,13 @@ def eval_bernstein_basis(np.ndarray funs not None,
     ret = _eval_bernstein_basis(_funs, _ders, x, degree)
     return ret
 
-def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
-                            np.ndarray[float64, mode='c', ndim=2]
-                            control_points not None,
-                            np.ndarray[float64, mode='c', ndim=1]
-                            weights not None,
-                            np.ndarray[int32, mode='c', ndim=1]
-                            degrees not None,
+def eval_mapping_data_in_qp(float64[:, ::1] qps not None,
+                            float64[:, ::1] control_points not None,
+                            float64[::1] weights not None,
+                            int32[::1] degrees not None,
                             cs not None,
-                            np.ndarray[int32, mode='c', ndim=2] conn not None,
-                            np.ndarray[uint32, mode='c', ndim=1] cells=None):
+                            int32[:, ::1] conn not None,
+                            uint32[::1] cells=None):
     """
     Evaluate data required for the isogeometric domain reference mapping in the
     given quadrature points. The quadrature points are the same for all Bezier
@@ -335,7 +332,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     n_el = len(cells)
     n_qp = qps.shape[0]
     dim = control_points.shape[1]
-    n_efuns = degrees + 1
+    n_efuns = np.asarray(degrees) + 1
     n_efun = np.prod(n_efuns)
 
     # Output Jacobians.
@@ -463,15 +460,14 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
 
     return bfs, bfgs, dets
 
-def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
-                        np.ndarray[float64, mode='c', ndim=2] qps not None,
-                        np.ndarray[float64, mode='c', ndim=2]
-                        control_points not None,
-                        np.ndarray[float64, mode='c', ndim=1] weights not None,
-                        np.ndarray[int32, mode='c', ndim=1] degrees not None,
+def eval_variable_in_qp(float64[:, ::1] variable not None,
+                        float64[:, ::1] qps not None,
+                        float64[:, ::1] control_points not None,
+                        float64[::1] weights not None,
+                        int32[::1] degrees not None,
                         cs not None,
-                        np.ndarray[int32, mode='c', ndim=2] conn not None,
-                        np.ndarray[uint32, mode='c', ndim=1] cells=None):
+                        int32[:, ::1] conn not None,
+                        uint32[::1] cells=None):
     """
     Evaluate a field variable in the given quadrature points. The quadrature
     points are the same for all Bezier elements and should correspond to the
@@ -526,7 +522,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     n_el = len(cells)
     n_qp = qps.shape[0]
     dim = control_points.shape[1]
-    n_efuns = degrees + 1
+    n_efuns = np.asarray(degrees) + 1
     n_efun = np.prod(n_efuns)
     nc = variable.shape[1]
 
@@ -692,15 +688,14 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
 
     return coors, vals, dets
 
-def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
+def eval_in_tp_coors(float64[:, ::1] variable,
                      indices not None,
                      ref_coors not None,
-                     np.ndarray[float64, mode='c', ndim=2]
-                     control_points not None,
-                     np.ndarray[float64, mode='c', ndim=1] weights not None,
-                     np.ndarray[int32, mode='c', ndim=1] degrees not None,
+                     float64[:, ::1] control_points not None,
+                     float64[::1] weights not None,
+                     int32[::1] degrees not None,
                      cs not None,
-                     np.ndarray[int32, mode='c', ndim=2] conn not None):
+                     int32[:, ::1] conn not None):
     """
     Evaluate a field variable (if given) or the NURBS geometry in the given
     tensor-product reference coordinates. The field variable is defined by its
@@ -744,11 +739,12 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
     cdef FMField[1] _bfg_dxi, _dx_dxi, _dxi_dx
     cdef FMField[1] _rc, _control_points, _weights
     cdef FMField[3] _cs, _ref_coors
-    cdef np.ndarray[float64, mode='c', ndim=2] _evals, out
+    cdef float64[:, ::1] _evals
+    cdef np.ndarray[float64, mode='c', ndim=2] out
     cdef FMField[3] _B, _dB_dxi, _N, _dN_dxi
 
     dim = control_points.shape[1]
-    n_efuns = degrees + 1
+    n_efuns = np.asarray(degrees) + 1
     n_efun = np.prod(n_efuns)
 
     n_vals = 1
