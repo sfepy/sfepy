@@ -8,10 +8,14 @@ import scipy as sc
 __all__ = ['in1d', 'unique']
 
 try:
-    in1d = nm.in1d
+    in1d = nm.isin
 
 except AttributeError:
-    in1d = nm.setmember1d
+    try:
+        in1d = nm.in1d
+
+    except AttributeError:
+        in1d = nm.setmember1d
 
 unique = nm.unique
 try:
