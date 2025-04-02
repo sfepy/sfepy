@@ -10,7 +10,6 @@ requires = [
     "matplotlib",
     "meshio",
     "numpy==1.20.*; python_version <= '3.9'", # meshio undeclared constraint.
-    "numpy<2; python_version > '3.9'",
     "pyparsing",
     "scipy",
     "tables",
