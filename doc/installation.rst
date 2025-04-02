@@ -123,7 +123,7 @@ Python packages required for using *SfePy*:
 - `Matplotlib`_ for various plots,
 - `PyTables`_ for storing results in HDF5 files,
 - `SymPy`_ for some tests and functions,
-- `igakit`_ for generating IGA domains,
+- `igakit`_ for generating IGA domains, NumPy < 2.0 only,
 - `petsc4py`_ and `mpi4py`_ for running parallel examples and using parallel
   solvers from `PETSc`_,
 - `slepc4py`_ for eigenvalue problem solvers from `SLEPc`_,
