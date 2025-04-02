@@ -41,7 +41,7 @@ from sfepy import data_dir
 def common(fun_v, get_exact=None, n_eigs=5, tau=0.0):
 
     def report_eigs(pb, evp):
-        from numpy import NaN
+        from numpy import nan
 
         bounding_box = pb.domain.mesh.get_bounding_box()
         box_size = bounding_box[1][0] - bounding_box[0][0]
@@ -57,8 +57,8 @@ def common(fun_v, get_exact=None, n_eigs=5, tau=0.0):
                     exact = eeigs[ie]
                     err = 100*abs((exact - eig)/exact)
                 else:
-                    exact = NaN
-                    err = NaN
+                    exact = nan
+                    err = nan
                 output('%d:  %.8f   %.8f  %7.4f%%' % (ie, exact, eig, err))
 
         else:
