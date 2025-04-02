@@ -4,6 +4,7 @@ import re
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
+from sfepy.base.compat import in1d
 
 _depends = re.compile(r'r\.([a-zA-Z_\-0-9.]+)').findall
 
@@ -611,7 +612,7 @@ class Region(Struct):
 
                 if self.parent is not None:
                     pcells = self.domain.regions[self.parent].cells
-                    ip = nm.in1d(out, pcells, assume_unique=False)
+                    ip = in1d(out, pcells, assume_unique=False)
                     out = out[ip]
 
         else:
@@ -655,7 +656,7 @@ class Region(Struct):
 
         if self.parent is not None:
             pcells = self.domain.regions[self.parent].cells
-            ip = nm.in1d(cells, pcells, assume_unique=False)
+            ip = in1d(cells, pcells, assume_unique=False)
             cells = cells[ip]
 
             counts = nm.diff(offs).astype(nm.int32)

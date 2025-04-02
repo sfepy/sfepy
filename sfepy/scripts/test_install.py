@@ -75,7 +75,7 @@ def report(out, name, line, item, value, eps=None, return_item=False,
     else:
         try:
             if match_numbers:
-                pat = '([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?[jJ]?)'
+                pat = r'([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?[jJ]?)'
                 matches = re.findall(pat, status)
                 status_item = matches[item]
 

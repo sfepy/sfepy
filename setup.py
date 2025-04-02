@@ -208,7 +208,7 @@ def setup_package():
     install_requires = [
         'matplotlib',
         'meshio',
-        'numpy<2',
+        'numpy',
         'pyparsing',
         'pyvista',
         'scipy',

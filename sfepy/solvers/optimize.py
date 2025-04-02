@@ -73,7 +73,7 @@ def check_gradient(xit, aofg, fn_of, delta, check):
     aux = nm.concatenate((aofg[:,nm.newaxis], dofg[:,nm.newaxis],
                           diff[:,nm.newaxis]), 1)
     output(aux)
-    output(nla.norm(diff, nm.Inf))
+    output(nla.norm(diff, nm.inf))
     aofg.tofile('aofg.txt', ' ')
     dofg.tofile('dofg.txt', ' ')
     diff.tofile('diff.txt', ' ')
@@ -100,7 +100,7 @@ class FMinSteepestDescent(OptimizationSolver):
          'The tolerance for the objective function.'),
         ('eps_ofg', 'float', 1e-8, False,
          'The tolerance for the objective function gradient.'),
-        ('norm', 'numpy norm', nm.Inf, False,
+        ('norm', 'numpy norm', nm.inf, False,
          'The norm to be used.'),
         ('ls', 'bool', True, False,
          'If True, use a line-search.'),

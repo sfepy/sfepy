@@ -306,13 +306,13 @@ def get_face_areas(faces, coors):
 
     if n_v == 3:
         aux = coors[faces]
+        if aux.shape[-1] == 2:
+            zz = nm.zeros(aux.shape[:-1] + (1,))
+            aux = nm.concatenate((aux, zz), axis=-1)
+
         v1 = aux[:, 1, :] - aux[:, 0, :]
         v2 = aux[:, 2, :] - aux[:, 0, :]
-        if coors.shape[1] == 3:
-            areas = 0.5 * norm(nm.cross(v1, v2))
-
-        else:
-            areas = 0.5 * nm.abs(nm.cross(v1, v2))
+        areas = 0.5 * norm(nm.cross(v1, v2))
 
     elif n_v == 4:
         areas1 = get_face_areas(faces[:, [0, 1, 2]], coors)

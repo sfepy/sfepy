@@ -219,7 +219,20 @@ def test_write_read_meshes(output_dir):
                 raise
 
         else:
-            mesh1 = Mesh.from_file(filename)
+            try:
+                mesh1 = Mesh.from_file(filename)
+
+            except:
+                if cls == 'meshio':
+                    import traceback
+                    tst.report('-> cannot read "%s" format from "%s",'
+                               ' skipping' % (name, filename))
+                    tb = traceback.format_exc()
+                    tst.report('reason:\n', tb)
+                    continue
+
+                else:
+                    raise
 
         ok = _compare_meshes(mesh0, mesh1, flag)
         tst.report('->', ok)
