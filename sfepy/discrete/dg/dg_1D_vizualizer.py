@@ -392,11 +392,11 @@ def load_state_1D_vtk(name):
 def load_1D_vtks(fold, name):
     """Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol.
-    
+
     Attempts to read modal cell data for variable mod_data. i.e.
-    
+
     ``?_modal{i}``, where i is number of modal DOF
-    
+
     Resulting solution data have shape:
     ``(order, nspace_steps, ntime_steps, 1)``
 
@@ -482,7 +482,7 @@ def animate_1D_DG_sol(coors, t0, t1, u,
     exact :
          (Default value = lambda x)
     t: 0 :
-        
+
     delay :
          (Default value = None)
     polar :
@@ -641,12 +641,12 @@ def plot1D_legendre_dofs(coors, dofss, fun=None):
 
 def reconstruct_legendre_dofs(coors, tn, u):
     """Creates solution and coordinates vector which when plotted as
-    
+
         plot(xx, ww)
-    
+
     represent solution reconstructed from DOFs in Legendre poly space at
     cell borders.
-    
+
     Works only as linear interpolation between cell boundary points
 
     Parameters
@@ -680,8 +680,8 @@ def reconstruct_legendre_dofs(coors, tn, u):
     for i in range(n_el_nod):
         ww[0:-1:3] = ww[0:-1:3] + (-1)**i * u[i, :, :]  # left edges of elements
         ww[1::3] = ww[1::3] + u[i, :, :]  # right edges of elements
-    # NaNs ensure plotting of discontinuities at element borders
-    ww[2::3, :] = nm.NaN
+    # Nans ensure plotting of discontinuities at element borders
+    ww[2::3, :] = nm.nan
 
     # nodes for plotting reconstructed solution
     xx = nm.zeros((3 * n_nod - 1, 1))
