@@ -109,8 +109,8 @@ def find_contact_ipc_term(equations):
 
     return term
 
-def apply_line_search(vec_x0, vec_dx0, it, err_last, conf, fun,
-                      timers, log=None, context=None, clog=None):
+def apply_line_search(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
+                      lin_solver, timers, log=None, context=None, clog=None):
     """
     Apply a backtracking line-search with continuous collision detection from
     IPC toolkit.
