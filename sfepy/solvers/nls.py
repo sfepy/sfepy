@@ -130,8 +130,8 @@ def conv_test(conf, it, err, err0):
 
     return status
 
-def apply_line_search_bt(vec_x0, vec_dx0, it, err_last, conf, fun,
-                         timers, log=None, context=None):
+def apply_line_search_bt(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
+                         lin_solver, timers, log=None, context=None):
     """
     Apply a backtracking line-search.
     """
@@ -234,9 +234,9 @@ class Newton(NonlinearSolver):
          """Step reduction factor. Equivalent to the mixing parameter :math:`a`:
             :math:`(1 - a) x + a (x + dx) = x + a dx`"""),
         ('line_search_fun',
-         'function(it, vec_x0, vec_dx0, err_last, conf, fun, timers, log=None)',
-         apply_line_search_bt, False,
-         """The line search function."""),
+         """function(it, vec_x0, vec_r0, vec_dx0, err_last, conf, fun,
+                     lin_solver, timers, log=None)""",
+         apply_line_search_bt, False, 'The line search function.'),
         ('ls_on', 'float', 0.99999, False,
          """Start the backtracking line-search by reducing the step, if
             :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
@@ -353,6 +353,7 @@ class Newton(NonlinearSolver):
 
         vec_x = vec_x0.copy()
         vec_x_last = vec_x0.copy()
+        vec_r_last = 0.0
         vec_dx = 0.0
 
         if (self.log is not None) and ('solve' in conf.log_vlines):
@@ -368,8 +369,8 @@ class Newton(NonlinearSolver):
                 iter_hook(self.context, self, vec_x, it, err, err0)
 
             vec_x, vec_r, err, ok = apply_line_search(
-                vec_x_last, vec_dx, it, err_last, conf, fun, timers,
-                log=self.log, context=self.context,
+                vec_x_last, vec_r_last, vec_dx, it, err_last, conf, fun,
+                lin_solver, timers, log=self.log, context=self.context,
             )
             if it == 0:
                 err0 = err
