@@ -216,6 +216,38 @@ def apply_line_search_bt(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
 
     return vec_x, vec_r, err, ok
 
+def apply_line_search_ainc(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
+                           apply_lin_solver, timers, log=None, context=None):
+    r"""
+    Apply an initial step size given by Affine-Invariant Cubic Newton [1]_,
+    then continue with :func:`apply_line_search_bt()`.
+
+    .. [1] S. Hanzely, D. Kamzolov, D. Pasechnyuk, A. Gasnikov, P. Richtarik,
+           and M. Takac, A Damped Newton Method Achieves Global :math:`\mathcal
+           O \left(\frac{1}{k^2}\right)` and Local Quadratic Convergence Rate,
+           Advances in Neural Information Processing Systems 35, 25320 (2022).
+    """
+    if it > 0:
+        lest = conf.ls_red
+        gnorm = lest * nm.sqrt(vec_r0 @ vec_dx0)
+        if gnorm == 0.0:
+            vec_dx = vec_dx0
+
+        else:
+            alpha = (-1.0 + nm.sqrt(1.0 + 2.0 * gnorm)) / gnorm
+
+        vec_dx = alpha * vec_dx0
+
+        output(f'alpha: {alpha:.16f}')
+
+    else:
+        vec_dx = vec_dx0
+
+    out = apply_line_search_bt(vec_x0, vec_r0, vec_dx, it, err_last, conf, fun,
+                               apply_lin_solver, timers, log=log,
+                               context=context)
+    return out
+
 class Newton(NonlinearSolver):
     r"""
     Solves a nonlinear system :math:`f(x) = 0` using the Newton method.
