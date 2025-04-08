@@ -134,7 +134,13 @@ def conv_test(conf, it, err, err0):
 def apply_line_search_bt(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
                          apply_lin_solver, timers, log=None, context=None):
     """
-    Apply a backtracking line-search.
+    Apply a backtracking line-search on iteration residuals or error estimates
+    depending on `conf.ls_mode` parameter. The error mode corresponds to the
+    damped Newton method [1]_.
+
+    .. [1] P. Deuflhard, A modified Newton method for the solution of
+           ill-conditioned systems of nonlinear equations with application to
+           multiple shooting, Numer. Math. 22, 289 (1974).
     """
     ls = 1.0
     vec_dx = vec_dx0
@@ -169,8 +175,24 @@ def apply_line_search_bt(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
             if log is not None:
                 log(err, it)
 
-            if (it == 0) or (err < (err_last * conf.ls_on)):
+            if (it == 0):
                 break
+
+            if conf.ls_mode == 'residual':
+                if (err < (err_last * conf.ls_on)):
+                    break
+
+            elif conf.ls_mode == 'error':
+                vec_dx = apply_lin_solver(vec_r, resolve=True)
+
+                edx0 = nla.norm(vec_dx0)
+                edx = nla.norm(vec_dx)
+                if edx < (edx0 * conf.ls_on):
+                    break
+
+            else:
+                raise ValueError("ls_mode can be 'residual' or 'error',"
+                                 f" not '{conf.ls_mode}'!")
 
             red = conf.ls_red
             output('linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'
@@ -238,9 +260,15 @@ class Newton(NonlinearSolver):
          'function(it, vec_x0, vec_r0, vec_dx0, err_last, conf, fun,'
          ' apply_lin_solver, timers, log=None)',
          apply_line_search_bt, False, 'The line search function.'),
+        ('ls_mode', "'residual' or 'error'", 'residual', False,
+         """The line search mode: when it is 'residual', the solver tries to
+            make the iteration residuals decreasing while for 'error'
+            the solution error estimates should decrease."""),
         ('ls_on', 'float', 0.99999, False,
          """Start the backtracking line-search by reducing the step, if
-            :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
+            :math:`||d(x^i)|| / ||d(x^{i-1})||` is larger than `ls_on`,
+            where :math:`d` is either :math:`f` or :math:`\Delta x`
+            depending on `ls_mode`."""),
         ('ls_red', '0.0 < float < 1.0', 0.1, False,
          'The step reduction factor in case of correct residual assembling.'),
         ('ls_red_warp', '0.0 < float < 1.0', 0.001, False,
