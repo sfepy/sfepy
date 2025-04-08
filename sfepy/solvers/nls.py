@@ -1,7 +1,6 @@
 """
 Nonlinear solvers.
 """
-from __future__ import absolute_import
 from functools import partial
 
 import numpy as nm
@@ -11,8 +10,6 @@ from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.base.timing import Timer, Timers
 from sfepy.solvers.solvers import NonlinearSolver
-import six
-from six.moves import range
 
 def standard_nls_call(call):
     """
@@ -677,12 +674,12 @@ class PETScNonlinearSolver(NonlinearSolver):
         from petsc4py import PETSc as petsc
 
         converged_reasons = {}
-        for key, val in six.iteritems(petsc.SNES.ConvergedReason.__dict__):
+        for key, val in petsc.SNES.ConvergedReason.__dict__.items():
             if isinstance(val, int):
                 converged_reasons[val] = key
 
         ksp_converged_reasons = {}
-        for key, val in six.iteritems(petsc.KSP.ConvergedReason.__dict__):
+        for key, val in petsc.KSP.ConvergedReason.__dict__.items():
             if isinstance(val, int):
                 ksp_converged_reasons[val] = key
 
