@@ -226,12 +226,20 @@ def apply_line_search_ainc(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
     """
     if it > 0:
         lest = conf.ls_red
-        gnorm = lest * nm.sqrt(vec_r0 @ vec_dx0)
-        if gnorm == 0.0:
-            vec_dx = vec_dx0
+        gnorm = lest * nm.sqrt(vec_r0 @ vec_dx0, dtype=nm.complex128)
+        if gnorm.imag != 0.0:
+            output('warning: matrix is not s.p.d!'
+                   f' (r^T inv(A) r: {vec_r0 @ vec_dx0})')
+            alpha = 1.0
 
         else:
-            alpha = (-1.0 + nm.sqrt(1.0 + 2.0 * gnorm)) / gnorm
+            gnorm = gnorm.real
+
+            if gnorm == 0.0:
+                alpha = 0.0
+
+            else:
+                alpha = (-1.0 + nm.sqrt(1.0 + 2.0 * gnorm)) / gnorm
 
         vec_dx = alpha * vec_dx0
 
