@@ -1,7 +1,7 @@
 """
 Nonlinear solvers.
 """
-from __future__ import absolute_import
+from functools import partial
 
 import numpy as nm
 import numpy.linalg as nla
@@ -10,8 +10,6 @@ from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.base.timing import Timer, Timers
 from sfepy.solvers.solvers import NonlinearSolver
-import six
-from six.moves import range
 
 def standard_nls_call(call):
     """
@@ -130,10 +128,16 @@ def conv_test(conf, it, err, err0):
 
     return status
 
-def apply_line_search_bt(vec_x0, vec_dx0, it, err_last, conf, fun,
-                         timers, log=None, context=None):
+def apply_line_search_bt(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
+                         apply_lin_solver, timers, log=None, context=None):
     """
-    Apply a backtracking line-search.
+    Apply a backtracking line-search on iteration residuals or error estimates
+    depending on `conf.ls_mode` parameter. The error mode corresponds to the
+    damped Newton method [1]_.
+
+    .. [1] P. Deuflhard, A modified Newton method for the solution of
+           ill-conditioned systems of nonlinear equations with application to
+           multiple shooting, Numer. Math. 22, 289 (1974).
     """
     ls = 1.0
     vec_dx = vec_dx0
@@ -168,8 +172,24 @@ def apply_line_search_bt(vec_x0, vec_dx0, it, err_last, conf, fun,
             if log is not None:
                 log(err, it)
 
-            if (it == 0) or (err < (err_last * conf.ls_on)):
+            if (it == 0):
                 break
+
+            if conf.ls_mode == 'residual':
+                if (err < (err_last * conf.ls_on)):
+                    break
+
+            elif conf.ls_mode == 'error':
+                vec_dx = apply_lin_solver(vec_r, resolve=True)
+
+                edx0 = nla.norm(vec_dx0)
+                edx = nla.norm(vec_dx)
+                if edx < (edx0 * conf.ls_on):
+                    break
+
+            else:
+                raise ValueError("ls_mode can be 'residual' or 'error',"
+                                 f" not '{conf.ls_mode}'!")
 
             red = conf.ls_red
             output('linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'
@@ -192,6 +212,38 @@ def apply_line_search_bt(vec_x0, vec_dx0, it, err_last, conf, fun,
         vec_dx = ls * vec_dx0
 
     return vec_x, vec_r, err, ok
+
+def apply_line_search_ainc(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
+                           apply_lin_solver, timers, log=None, context=None):
+    r"""
+    Apply an initial step size given by Affine-Invariant Cubic Newton [1]_,
+    then continue with :func:`apply_line_search_bt()`.
+
+    .. [1] S. Hanzely, D. Kamzolov, D. Pasechnyuk, A. Gasnikov, P. Richtarik,
+           and M. Takac, A Damped Newton Method Achieves Global :math:`\mathcal
+           O \left(\frac{1}{k^2}\right)` and Local Quadratic Convergence Rate,
+           Advances in Neural Information Processing Systems 35, 25320 (2022).
+    """
+    if it > 0:
+        lest = conf.ls_red
+        gnorm = lest * nm.sqrt(vec_r0 @ vec_dx0)
+        if gnorm == 0.0:
+            vec_dx = vec_dx0
+
+        else:
+            alpha = (-1.0 + nm.sqrt(1.0 + 2.0 * gnorm)) / gnorm
+
+        vec_dx = alpha * vec_dx0
+
+        output(f'alpha: {alpha:.16f}')
+
+    else:
+        vec_dx = vec_dx0
+
+    out = apply_line_search_bt(vec_x0, vec_r0, vec_dx, it, err_last, conf, fun,
+                               apply_lin_solver, timers, log=log,
+                               context=context)
+    return out
 
 class Newton(NonlinearSolver):
     r"""
@@ -234,12 +286,18 @@ class Newton(NonlinearSolver):
          """Step reduction factor. Equivalent to the mixing parameter :math:`a`:
             :math:`(1 - a) x + a (x + dx) = x + a dx`"""),
         ('line_search_fun',
-         'function(it, vec_x0, vec_dx0, err_last, conf, fun, timers, log=None)',
-         apply_line_search_bt, False,
-         """The line search function."""),
+         'function(it, vec_x0, vec_r0, vec_dx0, err_last, conf, fun,'
+         ' apply_lin_solver, timers, log=None)',
+         apply_line_search_bt, False, 'The line search function.'),
+        ('ls_mode', "'residual' or 'error'", 'residual', False,
+         """The line search mode: when it is 'residual', the solver tries to
+            make the iteration residuals decreasing while for 'error'
+            the solution error estimates should decrease."""),
         ('ls_on', 'float', 0.99999, False,
          """Start the backtracking line-search by reducing the step, if
-            :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
+            :math:`||d(x^i)|| / ||d(x^{i-1})||` is larger than `ls_on`,
+            where :math:`d` is either :math:`f` or :math:`\Delta x`
+            depending on `ls_mode`."""),
         ('ls_red', '0.0 < float < 1.0', 0.1, False,
          'The step reduction factor in case of correct residual assembling.'),
         ('ls_red_warp', '0.0 < float < 1.0', 0.001, False,
@@ -290,6 +348,72 @@ class Newton(NonlinearSolver):
         else:
             self.log = None
 
+    def _apply_lin_solver(self, vec_r, mtx_a, vec_x, lin_solver, ls_status,
+                          err, conf, timers, resolve=False):
+        scale_system = get_default(conf.scale_system_fun,
+                                   lambda mtx, rhs, x0, context: (mtx, rhs, x0))
+        scale_solution = get_default(conf.scale_solution_fun,
+                                   lambda x, context: x)
+        scaled_error = get_default(conf.scaled_error, False)
+        if conf.lin_red is not None:
+            lin_red = conf.eps_a * conf.lin_red
+
+        else:
+            lin_red = None
+
+        ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
+        eps_a = get_default(ls_eps_a, 1.0)
+        eps_r = get_default(ls_eps_r, 1.0)
+
+        if conf.lin_precision is not None:
+            if ls_eps_a is not None:
+                eps_a = max(err * conf.lin_precision, ls_eps_a)
+
+            elif ls_eps_r is not None:
+                eps_r = max(conf.lin_precision, ls_eps_r)
+
+            if lin_red is not None:
+                lin_red = max(eps_a, err * eps_r)
+
+        if conf.verbose:
+            aux = 'modified ' if resolve else ''
+            output(f'solving {aux}linear system...')
+
+        timers.solve.start()
+        if not resolve:
+            smtx_a, svec_r, svec_x = scale_system(mtx_a, vec_r, vec_x,
+                                                  self.context)
+            svec_dx = lin_solver(svec_r, x0=svec_x,
+                                 eps_a=eps_a, eps_r=eps_r, mtx=smtx_a,
+                                 status=ls_status)
+            lin_solver.mtx = smtx_a
+
+        else:
+            _, svec_r, svec_x = scale_system(None, vec_r, vec_x,
+                                             self.context)
+            svec_dx = lin_solver(svec_r, x0=svec_x,
+                                 eps_a=eps_a, eps_r=eps_r,
+                                 status=ls_status)
+
+        vec_dx = scale_solution(svec_dx, self.context)
+        timers.solve.stop()
+
+        if conf.verbose:
+            output('...done')
+
+        if lin_red is not None:
+            if scaled_error:
+                vec_e = smtx_a @ svec_dx - svec_r
+            else:
+                vec_e = mtx_a @ vec_dx - vec_r
+            lerr = nla.norm(vec_e)
+            if lerr > lin_red:
+                output('warning: linear system solution precision is lower'
+                       ' then the value set in solver options!'
+                       ' (err = %e < %e)' % (lerr, lin_red))
+
+        return vec_dx
+
     @standard_nls_call
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None):
@@ -330,22 +454,8 @@ class Newton(NonlinearSolver):
         lin_solver = get_default(lin_solver, self.lin_solver)
         iter_hook = get_default(iter_hook, self.iter_hook)
         status = get_default(status, self.status)
-        scale_system = get_default(conf.scale_system_fun,
-                                   lambda mtx, rhs, x0, context: (mtx, rhs, x0))
-        scale_solution = get_default(conf.scale_solution_fun,
-                                   lambda x, context: x)
-        scaled_error = get_default(conf.scaled_error, False)
         apply_line_search = get_default(conf.line_search_fun,
                                         apply_line_search_bt)
-
-        ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
-        eps_a = get_default(ls_eps_a, 1.0)
-        eps_r = get_default(ls_eps_r, 1.0)
-        if conf.lin_red is not None:
-            lin_red = conf.eps_a * conf.lin_red
-
-        else:
-            lin_red = None
 
         timers = Timers(['residual', 'matrix', 'solve'])
         if conf.check:
@@ -353,7 +463,9 @@ class Newton(NonlinearSolver):
 
         vec_x = vec_x0.copy()
         vec_x_last = vec_x0.copy()
+        vec_r_last = 0.0
         vec_dx = 0.0
+        mtx_a = None
 
         if (self.log is not None) and ('solve' in conf.log_vlines):
             self.log.plot_vlines(color='r', linewidth=1.0)
@@ -367,9 +479,14 @@ class Newton(NonlinearSolver):
             if iter_hook is not None:
                 iter_hook(self.context, self, vec_x, it, err, err0)
 
+            apply_lin_solver = partial(self._apply_lin_solver,
+                                       mtx_a=mtx_a, vec_x=vec_x,
+                                       lin_solver=lin_solver,
+                                       ls_status=ls_status,
+                                       err=err, conf=conf, timers=timers)
             vec_x, vec_r, err, ok = apply_line_search(
-                vec_x_last, vec_dx, it, err_last, conf, fun, timers,
-                log=self.log, context=self.context,
+                vec_x_last, vec_r_last, vec_dx, it, err_last, conf, fun,
+                apply_lin_solver, timers, log=self.log, context=self.context,
             )
             if it == 0:
                 err0 = err
@@ -379,6 +496,7 @@ class Newton(NonlinearSolver):
 
             err_last = err
             vec_x_last = vec_x.copy()
+            vec_r_last = vec_r.copy()
 
             condition = conv_test(conf, it, err, err0)
             if condition >= 0:
@@ -403,47 +521,13 @@ class Newton(NonlinearSolver):
                 timers.check.stop()
                 timers.check.add(-wt)
 
-            if conf.lin_precision is not None:
-                if ls_eps_a is not None:
-                    eps_a = max(err * conf.lin_precision, ls_eps_a)
-
-                elif ls_eps_r is not None:
-                    eps_r = max(conf.lin_precision, ls_eps_r)
-
-                if lin_red is not None:
-                    lin_red = max(eps_a, err * eps_r)
-
-            if conf.verbose:
-                output('solving linear system...')
-
-            timers.solve.start()
-            smtx_a, svec_r, svec_x = scale_system(mtx_a, vec_r, vec_x,
-                                                  self.context)
-
-            svec_dx = lin_solver(svec_r, x0=svec_x,
-                                 eps_a=eps_a, eps_r=eps_r, mtx=smtx_a,
-                                 status=ls_status)
+            vec_dx = self._apply_lin_solver(
+                vec_r, mtx_a, vec_x, lin_solver, ls_status, err, conf, timers,
+            )
             ls_n_iter += ls_status['n_iter']
-
-            vec_dx = scale_solution(svec_dx, self.context)
-            timers.solve.stop()
-
-            if conf.verbose:
-                output('...done')
 
             for key, val in timers.get_dts().items():
                 output('%10s: %7.2f [s]' % (key, val))
-
-            if lin_red is not None:
-                if scaled_error:
-                    vec_e = smtx_a @ svec_dx - svec_r
-                else:
-                    vec_e = mtx_a @ vec_dx - vec_r
-                lerr = nla.norm(vec_e)
-                if lerr > lin_red:
-                    output('warning: linear system solution precision is lower'
-                           ' then the value set in solver options!'
-                           ' (err = %e < %e)' % (lerr, lin_red))
 
             vec_dx *= conf.step_red
             it += 1
@@ -590,12 +674,12 @@ class PETScNonlinearSolver(NonlinearSolver):
         from petsc4py import PETSc as petsc
 
         converged_reasons = {}
-        for key, val in six.iteritems(petsc.SNES.ConvergedReason.__dict__):
+        for key, val in petsc.SNES.ConvergedReason.__dict__.items():
             if isinstance(val, int):
                 converged_reasons[val] = key
 
         ksp_converged_reasons = {}
-        for key, val in six.iteritems(petsc.KSP.ConvergedReason.__dict__):
+        for key, val in petsc.KSP.ConvergedReason.__dict__.items():
             if isinstance(val, int):
                 ksp_converged_reasons[val] = key
 
