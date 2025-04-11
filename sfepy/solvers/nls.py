@@ -274,6 +274,14 @@ class Newton(NonlinearSolver):
             tolerances."""),
         ('macheps', 'float', nm.finfo(nm.float64).eps, False,
          'The float considered to be machine "zero".'),
+        ('is_new_jacobian_fun',
+         'function(it, it_jac, rhs1, rhs0, x1, x0, context)', None, False,
+         """If given, the Jacobian (tangent) matrix is updated only when it
+            returns True. `it` is the current iteration, `it_jac` the last
+            iteration when the Jacobian was updated, `rhs1`, `x1` are the
+            current iteration residual, solution and `rhs0`, `x0` are from the
+            previous iteration.
+            Can be used to implement the modified Newton method."""),
         ('scale_system_fun', 'function(mtx, rhs, x0, context)', None, False,
          """User-defined function for scaling the linear system and initial
             guess in each iteration."""),
@@ -462,6 +470,8 @@ class Newton(NonlinearSolver):
         lin_solver = get_default(lin_solver, self.lin_solver)
         iter_hook = get_default(iter_hook, self.iter_hook)
         status = get_default(status, self.status)
+        is_new_jacobian = get_default(conf.is_new_jacobian_fun,
+                                      lambda *args, **kwargs: True)
         apply_line_search = get_default(conf.line_search_fun,
                                         apply_line_search_bt)
 
@@ -481,6 +491,7 @@ class Newton(NonlinearSolver):
         err = err0 = -1.0
         err_last = -1.0
         it = 0
+        it_jac = 0
         ls_status = {}
         ls_n_iter = 0
         while 1:
@@ -502,10 +513,6 @@ class Newton(NonlinearSolver):
             if (self.log is not None) and ('iteration' in conf.log_vlines):
                 self.log.plot_vlines([1], color='g', linewidth=0.5)
 
-            err_last = err
-            vec_x_last = vec_x.copy()
-            vec_r_last = vec_r.copy()
-
             condition = conv_test(conf, it, err, err0)
             if condition >= 0:
                 break
@@ -516,7 +523,11 @@ class Newton(NonlinearSolver):
 
             timers.matrix.start()
             if not conf.is_linear:
-                mtx_a = fun_grad(vec_x)
+                if (is_new_jacobian(it, it_jac, vec_r, vec_r_last, vec_x,
+                                    vec_x_last, context=self.context)
+                    or (mtx_a is None)):
+                    mtx_a = fun_grad(vec_x)
+                    it_jac = it
 
             else:
                 mtx_a = fun_grad('linear')
@@ -539,6 +550,10 @@ class Newton(NonlinearSolver):
 
             vec_dx *= conf.step_red
             it += 1
+
+            err_last = err
+            vec_x_last = vec_x.copy()
+            vec_r_last = vec_r.copy()
 
         time_stats = timers.get_totals()
         ls_n_iter = ls_n_iter if ls_n_iter >= 0 else -1
