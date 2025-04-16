@@ -228,3 +228,100 @@ class FibresExponentialTLTerm(HyperElasticTLBase):
             n_qp = 1
 
         return (n_el, n_qp, sym, 1), state.dtype
+
+class FibresSoftPlusExponentialTLTerm(HyperElasticTLBase):
+    r"""
+    Hyperelastic fibres term with an exponential response. Effective stress
+    :math:`S_{ij} = \max\left(0, \sigma \left[ e^{k (\epsilon - \epsilon_0)} -
+    1 \right]\right) d_i d_j`, where :math:`\epsilon = E_{ij} d_i d_j` is the
+    Green strain :math:`\ull{E}` projected to the fibre direction
+    :math:`\ul{d}`. The :math:`\max` is approximated by the softplus function
+    scaled by :math:`\alpha`, i.e. :math:`\frac{1}{\alpha} \log\left(1 +
+    e^{\alpha x}\right)`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material_0 : :math:`\alpha` (default: 50)
+        - material_1 : :math:`\sigma`
+        - material_3 : :math:`k`
+        - material_3 : :math:`\epsilon_{0}`
+        - material_4 : :math:`\ul{d}`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+    """
+    name = 'dw_tl_fib_spe'
+    arg_types = ('opt_material_0', 'material_1', 'material_2', 'material_3',
+                 'material_4', 'virtual', 'state')
+    arg_shapes = [{'opt_material_0' : '.: 1',
+                   'material_1' : '1, 1', 'material_2' : '1, 1',
+                   'material_3' : '1, 1', 'material_4' : 'D, 1',
+                   'virtual' : ('D', 'state'), 'state' : 'D'},
+                  {'opt_material_0' : None}]
+    family_data_names = ['green_strain']
+
+    def get_fargs(self, mat0, mat1, mat2, mat3, mat4, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        fibre_data = _setdefault_fibre_data(self, state)
+
+        mat0 = 50.0 if mat0 is None else mat0
+
+        n_el, _, _, _, _ = self.get_data_shape(state)
+        mat1 = HyperElasticTLBase.tile_mat(mat1, n_el)
+        mat2 = HyperElasticTLBase.tile_mat(mat2, n_el)
+        mat3 = HyperElasticTLBase.tile_mat(mat3, n_el)
+        mat4 = HyperElasticTLBase.tile_mat(mat4, n_el)
+
+        fargs = HyperElasticTLBase.get_fargs(self,
+                                             (mat0, mat1, mat2, mat3, mat4),
+                                             virtual, state,
+                                             mode, term_mode, diff_var,
+                                             fibre_data=fibre_data,
+                                             **kwargs)
+        return fargs
+
+    @staticmethod
+    def stress_function(out, pars, green_strain,
+                        fibre_data=None):
+        alpha, sigma, k, eps0, fdir = pars
+
+        omega = fibre_data.get('omega', None)
+        if omega is None:
+            omega = fibre_data.omega = create_omega(fdir)
+
+        eps = compute_fibre_strain(green_strain, omega)
+
+        tau0 = fibre_data.tau0 = sigma * nm.exp(k * (eps - eps0)) - 1.0
+        tau = (1.0 / alpha) * nm.log(1.0 + nm.exp(alpha * tau0))
+
+        out[:] = omega * tau
+
+    @staticmethod
+    def tan_mod_function(out, pars, green_strain,
+                         fibre_data=None):
+        alpha, sigma, k, eps0, fdir = pars
+
+        omega, tau0 = fibre_data.omega, fibre_data.tau0
+
+        for ir in range(omega.shape[2]):
+            for ic in range(omega.shape[2]):
+                out[..., ir, ic] = omega[..., ir, 0] * omega[..., ic, 0]
+
+        aux = nm.exp(alpha * tau0)
+        sigmoid = aux / (1.0 + aux)
+        tan_mod = sigmoid * k * (tau0 + sigma)
+
+        out[:] *= tan_mod
+
+    def get_eval_shape(self, mat1, mat2, mat3, mat4, mat5, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        sym = dim2sym(dim)
+
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, sym, 1), state.dtype
