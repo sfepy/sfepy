@@ -414,7 +414,9 @@ def distribute_field_dofs(field, gfd, use_expand_dofs=False,
             global_dofs = expand_dofs(global_dofs, field.n_components)
 
         dof_map = dof_maps[0]
-        petsc_dofs_range = (gfd.coffsets[0], gfd.coffsets[0] + dof_map[3])
+
+        petsc_dofs_range = (int(gfd.coffsets[0]),
+                            int(gfd.coffsets[0]) + dof_map[3])
         petsc_dofs_conn = id_map[global_dofs]
 
     else:
