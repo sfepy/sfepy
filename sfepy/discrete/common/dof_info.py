@@ -163,30 +163,6 @@ class DofInfo(Struct):
         self.n_dof[name], self.details[name] = n_dof, None
         self._update_after_append(name)
 
-    # # probably unused - not tested!
-    # def update(self, name, n_dof):
-    #     """
-    #     Set the number of DOFs of the given variable.
-
-    #     Parameters
-    #     ----------
-    #     name : str
-    #         The name of variable the DOFs correspond to.
-    #     n_dof : int
-    #         The number of DOFs.
-    #     """
-    #     if not name in self.var_names:
-    #         raise ValueError('variable %s is not present!' % name)
-
-    #     ii = self.var_names.index(name)
-    #     delta = n_dof - self.n_dof[name]
-
-    #     self.n_dof[name] = n_dof
-
-    #     for iv, nn in enumerate(self.var_names[ii:]):
-    #         self.ptr[ii+iv+1] += delta
-    #         self.indx[nn] = slice(self.ptr[ii+iv], self.ptr[ii+iv+1])
-
     def get_info(self, var_name):
         """
         Return information on DOFs of the given variable.
