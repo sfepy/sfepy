@@ -64,11 +64,11 @@ def group_chains(chain_list):
     chains = []
     while len(chain_list):
         chain = set(chain_list.pop(0))
-        ## print ':', chain
+        ## print(':', chain)
         ii = 0
         while ii < len(chain_list):
             c1 = sorted(chain_list[ii])
-            ## print '--', ii, c1, chain
+            ## print('--', ii, c1, chain)
             is0 = c1[0] in chain
             is1 = c1[1] in chain
 
@@ -80,17 +80,17 @@ def group_chains(chain_list):
                 ii = 0
             else:
                 ii += 1
-            ## print ii, chain, chain_list
-        ## print '->', chain
-        ## print chain_list
+            ## print(ii, chain, chain_list)
+        ## print('->', chain)
+        ## print(chain_list)
 
         chains.append(list(chain))
 
-    ## print 'EPBC chain groups:', chains
+    ## print('EPBC chain groups:', chains)
     aux = {}
     for chain in chains:
         aux.setdefault(len(chain), [0])[0] += 1
-    ## print 'EPBC chain counts:', aux
+    ## print('EPBC chain counts:', aux)
 
     return chains
 
@@ -427,8 +427,8 @@ class EquationMap(Struct):
                 if nslave[0] == -1:
                     nslave = nslave[1:]
 
-                ## print nmaster + 1
-                ## print nslave + 1
+                ## print(nmaster + 1)
+                ## print(nslave + 1)
                 if nmaster.shape != nslave.shape:
                     msg = 'EPBC list lengths do not match!\n(%s,\n %s)' %\
                           (nmaster, nslave)
@@ -447,8 +447,8 @@ class EquationMap(Struct):
                 else:
                     i1, i2 = fun
 
-                ## print nm.c_[mcoor[i1], scoor[i2]]
-                ## print nm.c_[nmaster[i1], nslave[i2]] + 1
+                ## print(nm.c_[mcoor[i1], scoor[i2]])
+                ## print(nm.c_[nmaster[i1], nslave[i2]] + 1)
 
                 meq = expand_nodes_to_equations(nmaster[i1], bc.dofs[0],
                                                 self.dof_names)
