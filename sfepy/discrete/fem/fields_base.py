@@ -1448,5 +1448,5 @@ class H1Mixin(Struct):
         """
         Setup the field's shape-related attributes, see :class:`Field`.
         """
-        self.n_components = nm.prod(self.shape)
+        self.n_components = int(nm.prod(self.shape))
         self.val_shape = self.shape
