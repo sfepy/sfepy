@@ -546,7 +546,7 @@ def get_sizes(petsc_dofs_range, n_dof, n_components):
     """
     Get (local, total) sizes of a vector and local equation range.
     """
-    drange = tuple(n_components * nm.asarray(petsc_dofs_range))
+    drange = tuple([n_components * ii for ii in petsc_dofs_range])
     n_loc = drange[1] - drange[0]
     n_all_dof = n_dof * n_components
     sizes = (n_loc, n_all_dof)
