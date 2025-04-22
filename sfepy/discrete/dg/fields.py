@@ -282,7 +282,7 @@ class DGField(FEField):
         """What is shape used for and what it really means.
         Does it represent shape of the problem?
         """
-        self.n_components = nm.prod(self.shape)
+        self.n_components = int(nm.prod(self.shape))
         self.val_shape = self.shape
 
     def _setup_geometry(self):

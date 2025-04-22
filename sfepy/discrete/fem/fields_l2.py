@@ -52,7 +52,7 @@ class L2ConstantVolumeField(Field):
 
         self.domain = self.region.domain
 
-        self.n_components = nm.prod(self.shape)
+        self.n_components = int(nm.prod(self.shape))
         self.val_shape = self.shape
         self.n_nod = 1
 

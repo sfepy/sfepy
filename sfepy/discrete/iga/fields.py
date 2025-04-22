@@ -74,7 +74,7 @@ class IGField(Field):
 
         self._setup_kind()
 
-        self.n_components = nm.prod(self.shape)
+        self.n_components = int(nm.prod(self.shape))
         self.val_shape = self.shape
         self.n_nod = self.nurbs.weights.shape[0]
         self.n_efun = nm.prod(self.nurbs.degrees + 1)
