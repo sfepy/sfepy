@@ -14,13 +14,12 @@ from sfepy.linalg import dot_sequences
 
 def tranform_coors_to_lower_dim(coors, to_dim):
     """
-    Transform element coordinates into XY plane.
-
-    See:
-      https://math.stackexchange.com/questions/1167717/transform-a-plane-to-the-xy-plane
-      https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
+    Transform element coordinates into XY plane or to X axis.
     """
     if coors.shape[-1] == 3 and to_dim == 2:
+        # See:
+        # https://math.stackexchange.com/questions/1167717/transform-a-plane-to-the-xy-plane
+        # https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
         bv = nm.cross(coors[:, 1, :] - coors[:, 0, :],
                       coors[:, -1, :] - coors[:, 0, :])
 
@@ -43,16 +42,30 @@ def tranform_coors_to_lower_dim(coors, to_dim):
                 [u1 * u2 * cphi1, u2**2 * cphi1, -u1 * sphi],
                 [-u2 * sphi, u1 * sphi, 0]
             ]).transpose(2, 0, 1)
-
             mtxR[idxs, ...] += R0
 
-        out = nm.einsum('qij,qkj->qki', mtxR, coors, optimize=True)
+    elif coors.shape[-1] == 2 and to_dim == 1:
+        bv = coors[:, -1, :] - coors[:, 0, :]
+        b = nm.linalg.norm(bv, axis=1)
 
-        return out[:, :, :to_dim]
+        mtxR = nm.tile(nm.eye(2, 2), (len(b), 1, 1))
+        idxs = nm.where(nm.abs(b) > 1e-16)[0]
+
+        if len(idxs) > 0:
+            cphi = bv[idxs, 0] / b[idxs]
+            sphi = bv[idxs, 1] / b[idxs]
+
+            mtxR[idxs, ...] = nm.array([[cphi, sphi],
+                                        [-sphi, cphi]]).transpose(2, 0, 1)
+
     else:
         msg = (f'Coordinate transformation from dimension {coors.shape[-1]}'
                f' to dimension {to_dim} is not supported!')
-        raise NotImplemented(msg)
+        raise NotImplementedError(msg)
+
+    out = nm.einsum('qij,qkj->qki', mtxR, coors, optimize=True)
+
+    return out[:, :, :to_dim]
 
 
 def eval_mapping_data_in_qp(coors, conn, bf_g, weights,
