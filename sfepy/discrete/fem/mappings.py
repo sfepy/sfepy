@@ -14,13 +14,12 @@ from sfepy.linalg import dot_sequences
 
 def tranform_coors_to_lower_dim(coors, to_dim):
     """
-    Transform element coordinates into XY plane.
-
-    See:
-      https://math.stackexchange.com/questions/1167717/transform-a-plane-to-the-xy-plane
-      https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
+    Transform element coordinates into XY plane or to X axis.
     """
     if coors.shape[-1] == 3 and to_dim == 2:
+        # See:
+        # https://math.stackexchange.com/questions/1167717/transform-a-plane-to-the-xy-plane
+        # https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
         bv = nm.cross(coors[:, 1, :] - coors[:, 0, :],
                       coors[:, -1, :] - coors[:, 0, :])
 
