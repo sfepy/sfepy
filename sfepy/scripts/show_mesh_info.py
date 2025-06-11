@@ -58,6 +58,7 @@ def show_mesh_info(options):
                ' %.7e max: %.7e'
                % (mesh.cmesh.num[dim], dim, volumes.min(), volumes.mean(),
                   nm.median(volumes), volumes.max()))
+        output('total: %.7e' % nm.sum(volumes))
 
     euler = lambda mesh: nm.dot(mesh.cmesh.num, [1, -1, 1, -1])
     ec = euler(mesh)
