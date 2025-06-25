@@ -29,7 +29,6 @@ Things to check before a release
 
 #. check that documentation can be built::
 
-     $ # copy site_cfg.py
      $ python3 setup.py htmldocs
      $ firefox doc/_build/html/index.html
 
@@ -61,7 +60,7 @@ Things to check before a release
    * update doc/news.rst, doc/archived_news.rst
    * change version number (sfepy/version.py) so that previous release
      tarball is not overwritten!
-   * set ``is_release = True`` in site_cfg.py
+   * set ``is_release = True`` in site_cfg.py ~/.sfepy/site_cfg.py
    * update pdfdocs::
 
      $ python3 setup.py pdfdocs
@@ -103,7 +102,7 @@ Web update and file uploading
   - bump version number as needed when testing
   - upload commands::
 
-      python3 setup.py sdist # set ``is_release = True`` in site_cfg.py
+      python3 setup.py sdist # set ``is_release = True`` in ~/.sfepy/site_cfg.py
       python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/sfepy-2022.3[.-]*
 
   - testing::
@@ -120,7 +119,7 @@ Web update and file uploading
 
   - upload commands::
 
-      python3 setup.py sdist # set ``is_release = True`` in site_cfg.py
+      python3 setup.py sdist # set ``is_release = True`` in ~/.sfepy/site_cfg.py
       python3 -m twine upload dist/sfepy-2022.3[.-]*
 
   - testing::
@@ -137,6 +136,7 @@ Web update and file uploading
   ``sfepy-feedstock/recipe/meta.yaml`` from a fork
   (e.g. https://github.com/rc/sfepy-feedstock) of
   https://github.com/conda-forge/sfepy-feedstock.
+  Or wait for a PR by regro-cf-autotick-bot.
 
 * publish development docs also as new release docs
 
