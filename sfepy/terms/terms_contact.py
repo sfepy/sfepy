@@ -382,7 +382,12 @@ class ContactIPCTerm(Term):
         uvec = state().reshape((-1, ci.dim))[ci.nods]
 
         vertices = collision_mesh.rest_positions + uvec
-        collisions = self.ipc.Collisions()
+        try:
+            collisions = self.ipc.NormalCollisions()
+
+        except AttributeError:
+            collisions = self.ipc.Collisions()
+
         collisions.build(collision_mesh, vertices, dhat)
 
         ci.min_distance = collisions.compute_minimum_distance(
