@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **29.03.2024** Version 2024.1 released (new constant-in-a-region field
+  approximation, new term: passive large deformation fibres with exponential
+  elastic response, improved solver status reporting, wedge elements + example,
+  multi-node linear combination (boundary) conditions + example, etc.), see
+  :ref:`release notes <2023.4-2024.1>`.
+
 * **29.12.2023** Version 2023.4 released (new structural elements (linear
   spring, linear truss), spectral element method (LGL quadrature and nodes with
   Lagrange basis), initial support for meshes with elements of different
