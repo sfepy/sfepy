@@ -1,10 +1,89 @@
 # created: 20.07.2007 (-1)
 
-.. _2024.3-2024.4:
+.. _2025.1-2025.2:
+
+from 2025.1 to 2025.2
+=====================
+
+- merge pull request #1203 from rc/use-cython-memoryviews
+
+  - do not use deprecated NumPy API
+  - use typed memoryviews in sfepy/discrete/ extension modules
+  - CI: fix OSX C compiler targets architectures error
+  - do not use deprecated NumPy API, try 2
+
+- merge pull request #1204 from rc/update-for-numpy-2.0
+
+  - fix check_gradient(), FMinSteepestDescent for NumPy 2.0
+  - fix reconstruct_legendre_dofs() for NumPy 2.0, clean up whitespace
+  - fix common() in quantum_common.py example for NumPy 2.0
+  - resolve NumPy 2.0 warning in Region.get_cells(), .get_facet_indices() - try
+    isin() as in1d() in compat.py
+  - resolve NumPy 2.0 warning in get_face_areas() - no 2D cross()
+  - test_install.py: fix report() for Python 3.12
+  - allow meshio failures also on mesh write in test_write_read_meshes()
+  - remove NumPy version constraints in setup.py, pyproject.toml
+  - docs: update installation
+  - CI: remove NumPy version constraint
+  - remove unused unique() from compat.py
+
+- merge pull request #1205 from rc/newton-variants
+
+  - change arguments of apply_line_search_bt(), update Newton.__call__() - add
+    vec_r0, lin_solver
+  - update apply_line_search() in two_bodies_contact.py example
+  - new Newton._apply_lin_solver(), update .__call__(), apply_line_search_bt()
+  - new ls_mode option of Newton solver, update apply_line_search_bt()
+  - new apply_line_search_ainc()
+  - do not use six in nls.py
+
+- merge pull request #1206 from rc/fix-ainc-line-search
+
+  - fix apply_line_search_ainc() for non-s.p.d matrix and zero gnorm
+
+- merge pull request #1207 from rc/newton-is-new-jacobian-fun
+
+  - new is_new_jacobian_fun parameter of Newton solver, update .__call__()
+
+- merge pull request #1208 from rc/softplus-exp-tl-fibres-term
+
+  - new FibresSoftPlusExponentialTLTerm (dw_tl_fib_spe) - new .get_fargs(),
+    .stress_function(), .tan_mod_function(), .get_eval_shape()
+
+- merge pull request #1209 from rc/clean-up-dof-info
+
+  - remove commented out DofInfo.update()
+  - update debug prints in group_chains(), EquationMap.map_equations()
+
+- merge pull request #1210 from rc/fix-int-types-numpy-2
+
+  - fix data type of Field.n_components for NumPy 2.0 - update
+    DGField._setup_shape(), H1Mixin._setup_shape(),
+    L2ConstantVolumeField.__init__(), IGField.__init__()
+  - fix data type of petsc_dofs_range in distribute_field_dofs() for NumPy 2.0
+  - fix data type of drange in get_sizes() for NumPy 2.0
+
+- merge pull request #1211 from vlukes/update-transform_coor_to_lower_dim
+
+  - update tranform_coors_to_lower_dim(): transformation 2->1
+  - update docstring
+
+- merge pull request #1213 from rc/fix-int-types-numpy-3
+
+  - fix data type of H1DiscontinuousField.n_nod for NumPy 2.0
+
+- merge pull request #1214 from rc/show-total-volumes
+
+  - print total volumes in show_mesh_info()
+
+- merge pull request #1216 from rc/maintenance-contact-ipc-term
+
+  - update ContactIPCTerm.get_fargs() for ipctk 1.4.0
+
+.. _2024.4-2025.1:
 
 from 2024.4 to 2025.1
 =====================
-.. _2024.4-2025.1:
 
 - merge pull request #1170 from rc/petsc-block-size-option
 
@@ -227,6 +306,8 @@ from 2024.4 to 2025.1
 - merge pull request #1201 from rc/fix-makefile
 
   - fix PYTHON variable setting in Makefile
+
+.. _2024.3-2024.4:
 
 from 2024.3 to 2024.4
 =====================
