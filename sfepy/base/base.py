@@ -182,9 +182,10 @@ def try_imports(imports, fail_msg=None):
         The dictionary of imported modules.
     """
     msgs = []
+    locals = {}
     for imp in imports:
         try:
-            exec(imp)
+            exec(imp, locals=locals)
             break
 
         except Exception as inst:
@@ -194,8 +195,7 @@ def try_imports(imports, fail_msg=None):
         if fail_msg is not None:
             msgs.append(fail_msg)
             raise ValueError('\n'.join(msgs))
-
-    return locals()
+    return locals
 
 def python_shell(frame=0):
     import code
