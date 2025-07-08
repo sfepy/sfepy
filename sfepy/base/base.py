@@ -178,14 +178,18 @@ def try_imports(imports, fail_msg=None):
 
     Returns
     -------
-    locals : dict
+    imported : dict
         The dictionary of imported modules.
     """
     msgs = []
-    locals = {}
+    imported = {}
     for imp in imports:
         try:
-            exec(imp, locals=locals)
+            if (sys.version_info.major, sys.version_info.minor) > (3, 12):
+                exec(imp, locals=imported)
+            else:
+                exec(imp)
+                imported = locals()
             break
 
         except Exception as inst:
@@ -195,7 +199,8 @@ def try_imports(imports, fail_msg=None):
         if fail_msg is not None:
             msgs.append(fail_msg)
             raise ValueError('\n'.join(msgs))
-    return locals
+
+    return imported
 
 def python_shell(frame=0):
     import code
