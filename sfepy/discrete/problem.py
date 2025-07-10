@@ -276,7 +276,7 @@ class Problem(Struct):
         if auto_conf:
             self.set_ics(self.conf.ics)
 
-        self.setup_output()
+        self.setup_default_output(conf=self.conf)
         self.not_active_only_modify_matrix = True
         if self.conf is not None:
             self.not_active_only_modify_matrix = self.conf.options.get(
