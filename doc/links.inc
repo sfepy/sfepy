@@ -109,9 +109,9 @@
 .. _salome download: http://www.salome-platform.org/downloads/current-version
 .. _salome: http://www.salome-platform.org
 .. _salome tutorial site: http://www.salome-platform.org/user-section/salome-tutorials
-.. _freecad: https://www.freecadweb.org
+.. _freecad: https://freecad.org
 .. _openscad: http://www.openscad.org
-.. _python scripting in freecad: https://www.freecadweb.org/wiki/Python_scripting_tutorial
+.. _python scripting in freecad: https://wiki.freecad.org/Python_scripting_tutorial
 .. _netgen: https://ngsolve.org
 
 .. _PyAMG Wiki: https://github.com/pyamg/pyamg/wiki
