@@ -243,9 +243,17 @@ class Problem(Struct):
     def __init__(self, name, conf=None, functions=None,
                  domain=None, fields=None, equations=None, auto_conf=True,
                  active_only=True):
+        if conf is None:
+            self.conf = Struct(options={}, ics={},
+                               ebcs={}, epbcs={}, lcbcs={}, materials={},
+                               solvers={})
+
+        else:
+            self.conf = conf.copy()
+            self.conf.set_default('options', {})
+
         self.active_only = active_only
         self.name = name
-        self.conf = conf
         self.functions = functions
 
         self.reset()
@@ -265,23 +273,17 @@ class Problem(Struct):
             if domain is None:
                 domain = list(fields.values())[0].domain
 
-            if conf is None:
-                self.conf = Struct(options={}, ics={},
-                                   ebcs={}, epbcs={}, lcbcs={}, materials={},
-                                   solvers={})
-
         self.equations = equations
         self.fields = fields
         self.domain = domain
         if auto_conf:
             self.set_ics(self.conf.ics)
 
-        self.setup_output()
+        self.setup_default_output(conf=self.conf)
         self.not_active_only_modify_matrix = True
-        if self.conf is not None:
-            self.not_active_only_modify_matrix = self.conf.options.get(
-                'not_active_only_modify_matrix', True,
-            )
+        self.not_active_only_modify_matrix = self.conf.options.get(
+            'not_active_only_modify_matrix', True,
+        )
 
     def reset(self):
         if hasattr(self.conf, 'options'):
