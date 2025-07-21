@@ -889,6 +889,9 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
                      save_regions=False,
                      save_regions_as_groups=False,
                      solve_not=False)
+    app_options = dict(
+        file_format='vtk',
+    )
 
     view_options = Struct(step=0,
                           fields=[], fields_map=[],
@@ -945,7 +948,8 @@ def generate_images(images_dir, examples_dir, pattern='*.py'):
             custom_view_options = custom_options
 
             try:
-                problem, state = solve_pde(ex_filename, options=options)
+                problem, state = solve_pde(ex_filename, options=options,
+                                           **app_options)
                 try:
                     tsolver = problem.get_solver()
 
