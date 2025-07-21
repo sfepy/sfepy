@@ -22,7 +22,12 @@ class ContactPlane(Struct):
             bounds2d = self.bounds[:, :2]
 
         else:
-            rot_axis = nm.cross([0.0, 0.0, 1.0], self.normal)
+            if nm.abs(rot_angle - nm.pi) < 1e-14:
+                rot_axis = [1.0, 0.0, 0.0]
+
+            else:
+                rot_axis = nm.cross([0.0, 0.0, 1.0], self.normal)
+
             mtx = la.make_axis_rotation_matrix(rot_axis, rot_angle)
 
             mm = la.insert_strided_axis(mtx, 0, self.bounds.shape[0])
