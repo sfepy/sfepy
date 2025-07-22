@@ -5,9 +5,10 @@ import sfepy.linalg as la
 
 class ContactPlane(Struct):
 
-    def __init__(self, anchor, normal, bounds):
+    def __init__(self, anchor, normal, bounds, eps=1e-14):
         Struct.__init__(self, anchor=nm.array(anchor, dtype=nm.float64),
-                        bounds=nm.asarray(bounds, dtype=nm.float64))
+                        bounds=nm.asarray(bounds, dtype=nm.float64),
+                        eps=eps)
         self.normal = nm.asarray(normal, dtype=nm.float64)
 
         norm = nm.linalg.norm
@@ -17,12 +18,17 @@ class ContactPlane(Struct):
         dd = nm.dot(e3, self.normal)
         rot_angle = nm.arccos(dd)
 
-        if nm.abs(rot_angle) < 1e-14:
+        if nm.abs(rot_angle) < eps:
             mtx = nm.eye(3, dtype=nm.float64)
             bounds2d = self.bounds[:, :2]
 
         else:
-            rot_axis = nm.cross([0.0, 0.0, 1.0], self.normal)
+            if nm.abs(rot_angle - nm.pi) < eps:
+                rot_axis = [1.0, 0.0, 0.0]
+
+            else:
+                rot_axis = nm.cross([0.0, 0.0, 1.0], self.normal)
+
             mtx = la.make_axis_rotation_matrix(rot_axis, rot_angle)
 
             mm = la.insert_strided_axis(mtx, 0, self.bounds.shape[0])
