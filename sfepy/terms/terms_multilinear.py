@@ -1397,10 +1397,13 @@ class ENonPenetrationPenaltyTerm(ETermBase):
         - state    : :math:`\ul{u}`
     """
     name = 'de_non_penetration_p'
-    arg_types = ('material', 'virtual', 'state')
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
     arg_shapes = {'material' : '1, 1',
-                  'virtual' : ('D', 'state'), 'state' : 'D'}
+                  'virtual' : ('D', 'state'), 'state' : 'D',
+                  'parameter_1' : 'D', 'parameter_2' : 'D'}
     integration = 'facet'
+    modes = ('weak', 'eval')
 
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
