@@ -508,32 +508,8 @@ class Variables(Container):
                 var.set_data(setter(*sargs, **skwargs))
                 output('IC data of %s set by %s()' % (var.name, setter.name))
 
-    def set_adof_conns(self, adof_conns, update=False):
-        """
-        Set all active DOF connectivities to `self` as well as relevant
-        sub-dicts to the individual variables.
-
-        Parameters
-        ----------
-        adof_conns: dict
-            Connectivity
-
-        update: bool
-            If True, update the existing old connectivities with
-            the given ones, discard the old ones otherwise.
-        """
-
-        if update:
-            self.adof_conns.update(adof_conns)
-            for var in self:
-                if not hasattr(var, 'adof_connfs'):
-                    var.adof_conns = {}
-        else:
-            self.adof_conns = adof_conns
-            for var in self:
-                var.adof_conns = {}
-
-        for key, val in six.iteritems(adof_conns):
+    def _set_var_adof_conns(self, adof_conns):
+        for key, val in adof_conns.items():
             if key[0] in self.names:
                 var = self[key[0]]
                 var.adof_conns[key] = val
@@ -541,6 +517,30 @@ class Variables(Container):
                 var = var.get_dual()
                 if var is not None:
                     var.adof_conns[key] = val
+
+    def set_adof_conns(self, adof_conns):
+        """
+        Set all active DOF connectivities to `self` as well as relevant
+        sub-dicts to the individual variables.
+        """
+        self.adof_conns = adof_conns
+
+        for var in self:
+            var.adof_conns = {}
+
+        self._set_var_adof_conns(self.adof_conns)
+
+    def update_adof_conns(self, adof_conns):
+        """
+        Update active DOF connectivities stored in `self` as well as relevant
+        sub-dicts to the individual variables.
+        """
+        self.adof_conns.update(adof_conns)
+
+        for var in self:
+            var.set_default('adof_connfs', {})
+
+        self._set_var_adof_conns(self.adof_conns)
 
     def create_vec(self):
         vec = nm.zeros((self.di.n_dof_total,), dtype=self.dtype)
