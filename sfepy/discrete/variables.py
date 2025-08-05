@@ -49,13 +49,12 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True,
     var_indx = get_default(var_indx, {})
 
     if regions_changed is None:
-         recompute = lambda x,y: True
+         recompute = lambda info: True
     elif isinstance(regions_changed, str):
-         recompute = lambda x,y: y.region.name == regions_changed
+         recompute = lambda info: info.region.name == regions_changed
     else:
          regions_changed = set(regions_changed)
-         recompute = lambda x,y: y.region in regions_changed
-
+         recompute = lambda info: info.region in regions_changed
 
     def _create(var, econn):
         offset = var_indx.get(var.name, slice(0, 0)).start
@@ -100,7 +99,7 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True,
     adof_conns = {}
 
     for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
-        if not recompute(key, info): continue
+        if not recompute(info): continue
 
         if info.primary is not None:
             var = info.primary
