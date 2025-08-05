@@ -295,13 +295,14 @@ class Equations(Container):
         """
         Collect connectivity information as defined by the equations.
 
-        Params
-        ------
-        regions_changed: str or iterable of str or None
+        If `regions_changed` argument is None, new data are collecterd.
+        Otherwise, update already collected data of terms that use the changed
+        regions.
+
+        Parameters
+        ----------
+        regions_changed : str or iterable of str or None
             Name(s) of changed regions.
-            If None, collect new conn_info.
-            Otherwise, update already collected info, replacing all info belonging to
-            the changed regions.
         """
         if regions_changed is None:
             self.conn_info = {}
@@ -313,7 +314,7 @@ class Equations(Container):
                 cond = lambda term: term.region.name in regions_changed
 
         for eq in self:
-            eq.collect_conn_info(self.conn_info, condition = cond)
+            eq.collect_conn_info(self.conn_info, condition=cond)
 
     def get_variable_names(self):
         """
@@ -394,8 +395,7 @@ class Equations(Container):
             reduced size and are created with the reduced (active DOFs only)
             numbering.
         regions_changed : str or iterable of str or None
-            Region name(s), that has been changed and needs its connectivity
-            to be recomputed.
+            Name(s) of changed regions that need new active connectivities.
         verbose : bool
             If False, reduce verbosity.
 
@@ -1044,7 +1044,7 @@ class Equation(Struct):
 
         return variables
 
-    def collect_conn_info(self, conn_info, condition = None):
+    def collect_conn_info(self, conn_info, condition=None):
 
         for term in self.terms:
             if condition and not condition(term):
