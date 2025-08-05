@@ -417,13 +417,16 @@ class Equations(Container):
         graph_changed = active_bcs != self.active_bcs
         self.active_bcs = active_bcs
 
-        if graph_changed or not self.variables.adof_conns or regions_changed:
-            if not self.variables.adof_conns:
-                regions_changed = None
+        if graph_changed or not self.variables.adof_conns:
+            adcs = create_adof_conns(self.conn_info, self.variables.adi.indx,
+                                     active_only=active_only)
+            self.variables.set_adof_conns(adcs)
+
+        elif regions_changed:
             adcs = create_adof_conns(self.conn_info, self.variables.adi.indx,
                                      active_only=active_only,
                                      regions_changed=regions_changed)
-            self.variables.set_adof_conns(adcs, regions_changed)
+            self.variables.update_adof_conns(adcs)
 
         self.variables.setup_lcbc_operators(lcbcs, ts, functions)
 
