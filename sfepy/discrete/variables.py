@@ -28,7 +28,8 @@ is_virtual = 1
 is_parameter = 2
 is_field = 10
 
-def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
+def create_adof_conns(conn_info, var_indx=None, active_only=True,
+                      regions_changed=None, verbose=True):
     """
     Create active DOF connectivities for all variables referenced in
     `conn_info`.
@@ -46,6 +47,14 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
     connectivities can be reconstructed for the matrix graph creation.
     """
     var_indx = get_default(var_indx, {})
+
+    if regions_changed is None:
+         recompute = lambda info: True
+    elif isinstance(regions_changed, str):
+         recompute = lambda info: info.region.name == regions_changed
+    else:
+         regions_changed = set(regions_changed)
+         recompute = lambda info: info.region in regions_changed
 
     def _create(var, econn):
         offset = var_indx.get(var.name, slice(0, 0)).start
@@ -90,6 +99,8 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
     adof_conns = {}
 
     for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
+        if not recompute(info): continue
+
         if info.primary is not None:
             var = info.primary
             field = var.get_field()
@@ -497,6 +508,16 @@ class Variables(Container):
                 var.set_data(setter(*sargs, **skwargs))
                 output('IC data of %s set by %s()' % (var.name, setter.name))
 
+    def _set_var_adof_conns(self, adof_conns):
+        for key, val in adof_conns.items():
+            if key[0] in self.names:
+                var = self[key[0]]
+                var.adof_conns[key] = val
+
+                var = var.get_dual()
+                if var is not None:
+                    var.adof_conns[key] = val
+
     def set_adof_conns(self, adof_conns):
         """
         Set all active DOF connectivities to `self` as well as relevant
@@ -507,14 +528,19 @@ class Variables(Container):
         for var in self:
             var.adof_conns = {}
 
-        for key, val in six.iteritems(adof_conns):
-            if key[0] in self.names:
-                var = self[key[0]]
-                var.adof_conns[key] = val
+        self._set_var_adof_conns(self.adof_conns)
 
-                var = var.get_dual()
-                if var is not None:
-                    var.adof_conns[key] = val
+    def update_adof_conns(self, adof_conns):
+        """
+        Update active DOF connectivities stored in `self` as well as relevant
+        sub-dicts to the individual variables.
+        """
+        self.adof_conns.update(adof_conns)
+
+        for var in self:
+            var.set_default('adof_connfs', {})
+
+        self._set_var_adof_conns(self.adof_conns)
 
     def create_vec(self):
         vec = nm.zeros((self.di.n_dof_total,), dtype=self.dtype)
@@ -1693,6 +1719,7 @@ class FieldVariable(Variable):
             `(n_el, n_qp, n_row, n_col)` with the requested data,
             where `n_row`, `n_col` depend on `mode`.
         """
+
         if integration == 'custom':
             msg = 'cannot use FieldVariable.evaluate() with custom integration!'
             raise ValueError(msg)
