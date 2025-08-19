@@ -127,7 +127,7 @@ class QuadraturePoints(Struct):
     """
 
     @staticmethod
-    def from_table(geometry, order):
+    def from_table(geometry, order, full_order=False):
         """
         Create a new :class:`QuadraturePoints` instance, given reference
         element geometry name and polynomial order. For tensor product
@@ -153,10 +153,11 @@ class QuadraturePoints(Struct):
             qp.order = order
 
         else:
-            order1d = order
-            dim = int(geometry[0])
+            if not full_order:
+                order1d = order
+                dim = int(geometry[0])
+                order = dim * order1d
 
-            order = dim * order1d
             if order <= max_orders[geometry]:
                 order = get_actual_order(geometry, order)
                 qp = table[order]
