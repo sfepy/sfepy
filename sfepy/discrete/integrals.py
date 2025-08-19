@@ -143,7 +143,6 @@ class Integral(Struct):
 
             self.qps[geometry] = qp
 
-        print('>>>>>>>>> qp.coors.shape', qp.coors.shape)
         return qp.coors, qp.weights
 
     def integrate(self, function, order=1, geometry='1_2'):
