@@ -25,8 +25,9 @@ class Integrals(Container):
                                weights=desc.weights)
 
             else:
+                full_order = getattr(desc, 'full_order', False)
                 aux = Integral(desc.name,
-                               order=desc.order)
+                               order=desc.order, full_order=full_order)
 
             objs.append(aux)
 
@@ -80,7 +81,8 @@ class Integral(Struct):
     """
 
     def __init__(self, name, order=1, coors=None, weights=None,
-                 bounds=None, tp_fix=1.0, weight_fix=1.0, symmetric=False):
+                 bounds=None, tp_fix=1.0, weight_fix=1.0, symmetric=False,
+                 full_order=False):
         self.name = name
         self.qps = {}
 
@@ -97,7 +99,7 @@ class Integral(Struct):
             self.symmetric = symmetric
 
         self.order = 0
-
+        self.full_order = full_order
         if order in ('auto', 'custom', 'a', 'c'):
             self.order = -1
 
@@ -129,7 +131,8 @@ class Integral(Struct):
 
         else:
             if self.mode == 'builtin':
-                qp = QuadraturePoints.from_table(geometry, self.order)
+                qp = QuadraturePoints.from_table(geometry, self.order,
+                                                 full_order=self.full_order)
 
             else:
                 qp = QuadraturePoints(None,
@@ -163,7 +166,8 @@ class Integral(Struct):
         val : float
             The value of the integral.
         """
-        qp = QuadraturePoints.from_table(geometry, order)
+        qp = QuadraturePoints.from_table(geometry, order,
+                                         full_order=self.full_order)
 
         fvals = function(qp.coors)
         val = nm.sum(fvals * qp.weights)
