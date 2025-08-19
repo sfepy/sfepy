@@ -198,6 +198,9 @@ class HomogenizationWorker(object):
 
                     val.append(mini_app(data=get_dict_idxval(data, im)))
 
+                    if len(val) == 1 and val[0].name == 'update_coors':
+                        local_coors[im] += val[0].state
+
         return val
 
     @staticmethod
