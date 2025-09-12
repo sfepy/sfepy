@@ -253,6 +253,135 @@ def apply_line_search_ainc(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
                                context=context)
     return out
 
+def find_contact_ipc_term(equations):
+    for eq in equations:
+        for term in eq.terms:
+            if term.name == 'dw_contact_ipc':
+                break
+
+        else:
+            continue
+
+        break
+
+    else:
+        raise ValueError('no dw_contact_ipc in equations!')
+
+    return term
+
+def apply_line_search_ipc(vec_x0, vec_r0, vec_dx0, it, err_last, conf, fun,
+                          apply_lin_solver, timers, log=None, context=None,
+                          clog=None):
+    """
+    Apply a backtracking line-search with continuous collision detection from
+    IPC toolkit.
+    """
+    pb = context
+    term = find_contact_ipc_term(pb.equations)
+
+    select_other = lambda term: term.name != 'dw_contact_ipc'
+
+    ls = 1.0
+    vec_dx = vec_dx0
+
+    variables = pb.get_variables()
+
+    ci = term.get_contact_info(variables['u'])
+    ci.it = it
+
+    ls_it = 0
+    while 1:
+        vec_x = vec_x0 - vec_dx
+        if it > 0:
+            # Determine max. step size using continuous collision detection.
+            u0 = variables.make_full_vec(vec_x0).reshape((-1, ci.dim))
+            u1 = variables.make_full_vec(vec_x).reshape((-1, ci.dim))
+            x0 = ci.smesh.coors + u0[ci.nods]
+            x1 = ci.smesh.coors + u1[ci.nods]
+
+            max_step_size = term.ipc.compute_collision_free_stepsize(
+                ci.collision_mesh, x0, x1,
+            )
+            if max_step_size < 1.0:
+                vec_x = vec_x0 - max_step_size * vec_dx
+
+            ls = min(ls, max_step_size)
+
+        timers.residual.start()
+
+        ci.ls_it = ls_it
+
+        try:
+            vec_r1 = fun(vec_x, select_term=select_other)
+
+            vec_r1_full = pb.equations.make_full_vec(vec_r1, force_value=0.0)
+            ci.e_grad_full = vec_r1_full
+
+            val, iels = term.evaluate(mode='weak', dw_mode='vector',
+                                      standalone=False, ci=ci)
+
+            vec_r2 = nm.zeros_like(vec_r1)
+            term.assemble_to(vec_r2, val, iels, mode='vector')
+
+            vec_r = vec_r1 + vec_r2
+
+        except ValueError:
+            if (it == 0) or (ls < conf.ls_min):
+                output('giving up!')
+                raise
+
+            else:
+                ok = False
+
+        else:
+            ok = True
+
+        timers.residual.stop()
+
+        if ok:
+            err = nm.linalg.norm(vec_r)
+            if not nm.isfinite(err):
+                output('residual:', vec_r)
+                output(nm.isfinite(vec_r).all())
+                raise ValueError('infs or nans in the residual')
+
+            if log is not None:
+                log(err, it)
+
+            if clog is not None:
+                if it > 0:
+                    clog(ci.min_distance, ci.barrier_stiffness,
+                         ci.bp_grad_norm, ci.e_grad_norm)
+
+                else:
+                    clog(nm.nan, nm.nan, nm.nan, nm.nan)
+
+            if (it == 0) or (err < (err_last * conf.ls_on)):
+                break
+
+            red = conf.ls_red
+            output('linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'
+                   % (it, err, err_last * conf.ls_on, red * ls))
+
+        else: # Failure.
+            if conf.give_up_warp:
+                output('giving up!')
+                break
+
+            red = conf.ls_red_warp
+            output('residual computation failed for iter %d'
+                   ' (new ls: %e)!' % (it, red * ls))
+
+        if ls < conf.ls_min:
+            output('linesearch failed, continuing anyway')
+            break
+
+        ls *= red
+        vec_dx = ls * vec_dx0
+        ls_it += 1
+
+    return vec_x, vec_r, err, ok
+
 class Newton(NonlinearSolver):
     r"""
     Solves a nonlinear system :math:`f(x) = 0` using the Newton method.
