@@ -26,9 +26,12 @@ def check_vec(vec, ii, ok, conds, variables):
             n_nod = len(nods)
             for cdof, dof_name in enumerate(cond.dofs[0]):
                 idof = var.dofs.index(dof_name)
-                eqs = eq[n_nod * cdof : n_nod * (cdof + 1)]
+                eqs = eq[idof::var.n_components]
+                val = cond.dofs[1]
+                if isinstance(val, nm.ndarray):
+                    val = val[cdof]
 
-                _ok = nm.allclose(vec[off + eqs], idof,
+                _ok = nm.allclose(vec[off + eqs], val,
                                   atol=1e-14, rtol=0.0)
                 if not _ok:
                     tst.report(' %s: failed! (all of %s == %f)'
