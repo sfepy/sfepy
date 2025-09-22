@@ -358,7 +358,7 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
                                  % ((len(coors), dpn), vals.shape))
 
         elif nm.isscalar(fun):
-            vals = nm.repeat([fun], nods.shape[0] * dpn)
+            vals = nm.full(nods.shape[0] * dpn, fun, dtype=nm.dtype(type(fun)))
 
         elif isinstance(fun, nm.ndarray):
             try:
