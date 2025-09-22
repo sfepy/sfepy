@@ -1249,7 +1249,7 @@ class DGField(FEField):
         elif isinstance(fun, nm.ndarray):
             assert_(len(fun) == dpn)
             vals = nm.zeros(aux.shape)
-            vals[:, 0] = nm.repeat(fun, vals.shape[0])
+            vals[:, 0] = nm.tile(fun, vals.shape[0])
 
         elif callable(fun):
             vals = nm.zeros(aux.shape)

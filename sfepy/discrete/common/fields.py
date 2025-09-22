@@ -323,7 +323,7 @@ class Field(Struct):
                        % (self.name, fun.shape, (dpn,)))
                 raise ValueError(msg)
 
-            vals = nm.repeat(fun, nods.shape[0])
+            vals = nm.tile(fun, nods.shape[0])
 
         elif callable(fun):
             from sfepy.discrete.projections import project_to_facets

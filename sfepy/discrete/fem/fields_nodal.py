@@ -371,7 +371,7 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
                        % (self.name, fun.shape, (dpn,)))
                 raise ValueError(msg)
 
-            vals = nm.repeat(fun, nods.shape[0])
+            vals = nm.tile(fun, nods.shape[0])
 
         else:
             raise ValueError('unknown function/value type! (%s)' % type(fun))
