@@ -1,5 +1,70 @@
 # created: 20.07.2007 (-1)
 
+.. _2025.2-2025.3:
+
+from 2025.2 to 2025.3
+=====================
+
+- merge pull request #1218 from kdmitrie/master
+
+  - Fix the issue with python3.13 exec() and locals() behaviour
+  - fix version compatibility with python3.12 in try_imports()
+
+- merge pull request #1220 from phonedroid/master
+
+  - Updated FreeCAD address.
+
+- merge pull request #1221 from rc/update-default-options-handling
+
+  - use .setup_default_output() in Problem.__init__()
+  - gen_gallery.py: set file format in generate_images()
+  - always provide default conf, conf.options in Problem.__init__()
+
+- merge pull request #1222 from rc/fix-contact-plane, closes #1219
+
+  - fix ContactPlane.__init__() for normal in -e3 direction
+  - new eps argument of ContactPlane.__init__() - zero angle tolerance
+
+- merge pull request #1223 from lokik/fix1
+
+  - Fix
+
+- merge pull request #1226 from vlukes/new-eval-mode-in-edivgradterm
+
+  - new eval mode in EDivGradTerm
+
+- merge pull request #1224 from lokik/region
+
+  - Recomputing connectivity for the given regions only.
+  - update docstrings of Equations.collect_conn_info(), .time_update() - clean up
+  - simplify recompute in create_adof_conns()
+  - split Variables.set_adof_conns() - new .update_adof_conns()- new
+    ._set_var_adof_conns()
+  - update Equations.time_update()
+
+- merge pull request #1227 from vlukes/new-homog-engine-updating-coors
+
+  - use corrector named 'update_coors' to update micro coordinates
+
+- merge pull request #1228 from vlukes/new-keyword-to-integrals
+
+  - new "full_order" keyword in integral configuration
+  - remove debug print
+
+- merge pull request #1229 from rc/update-two-bodies-example
+
+  - two_bodies_contact.py: move IPC related functions to nls.py
+
+    - move find_contact_ipc_term()
+    - rename apply_line_search() -> apply_line_search_ipc(), move
+    - rename argument lin_solver -> apply_lin_solver of apply_line_search_ipc()
+
+- merge pull request #1230 from rc/fix-array-set-dofs
+
+  - fix check_vec() - DOFs should be node-by-node
+  - fix {Field, DGField, H1NodalMixin}.set_dofs() for nonzero array values
+  - use numpy.full() for constant setting in {Field, H1NodalMixin}.set_dofs()
+
 .. _2025.1-2025.2:
 
 from 2025.1 to 2025.2

@@ -60,7 +60,7 @@ Things to check before a release
    * update doc/news.rst, doc/archived_news.rst
    * change version number (sfepy/version.py) so that previous release
      tarball is not overwritten!
-   * set ``is_release = True`` in site_cfg.py ~/.sfepy/site_cfg.py
+   * set ``is_release = True`` in site_cfg.py, ~/.sfepy/site_cfg.py
    * update pdfdocs::
 
      $ python3 setup.py pdfdocs

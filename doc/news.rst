@@ -1,6 +1,10 @@
 News
 ====
 
+* **29.09.2025** Version 2025.3 released (efficient region-only connectivity
+  updates, fixed Field.set_dofs() for nonzero arrays, etc.), see :ref:`release
+  notes <2025.2-2025.3>`.
+
 * **26.06.2025** Version 2025.2 released (NumPy 2.0 compatibility, line search
   variants of the Newton solver for nonlinear problems, new large deformation
   exponential fibres term with smooth response, etc.), see :ref:`release notes
@@ -19,9 +23,5 @@ News
 
 * **30.09.2024** Version 2024.3 released (updated installation instructions,
   new Stokes traction term, etc.), see :ref:`release notes <2024.2-2024.3>`.
-
-* **28.06.2024** Version 2024.2 released (multi-point constraints terms + new
-  example, mixed formulation flexoelecticity terms, improved and new eigenvalue
-  problem solvers, etc.), see :ref:`release notes <2024.1-2024.2>`.
 
 For historians: see :ref:`archived_news`.
