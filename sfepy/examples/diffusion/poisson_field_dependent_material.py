@@ -11,7 +11,6 @@ Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
 where :math:`c(T)` is the :math:`T` dependent diffusion coefficient.
 Each iteration calculates :math:`T` and adjusts :math:`c(T)`.
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.base.base import output
 

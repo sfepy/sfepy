@@ -1,7 +1,6 @@
 """
 Eigenvalue problem solver application.
 """
-from __future__ import absolute_import
 import os
 
 import numpy as nm
@@ -11,7 +10,6 @@ from sfepy.base.timing import Timer
 from sfepy.applications import PDESolverApp
 from sfepy.solvers import Solver
 from sfepy.discrete.fem.meshio import convert_complex_output
-from six.moves import range
 
 class EVPSolverApp(PDESolverApp):
     """

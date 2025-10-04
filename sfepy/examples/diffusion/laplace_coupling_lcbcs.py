@@ -41,7 +41,6 @@ View the results using::
 
   sfepy-view square_quad.vtk -f u1:wu1:p0 1:vw:p0 u2:wu2:p1 1:vw:p1
 """
-from __future__ import absolute_import
 import numpy as nm
 
 import sfepy.discrete.fem.periodic as per

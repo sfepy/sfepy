@@ -1,6 +1,4 @@
 
-from __future__ import division
-
 import sympy as sm
 
 names = ['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave']
@@ -68,4 +66,4 @@ relations = {
     ('bulk', 'p_wave', 'mu') : -3*bulk/4 + 3*p_wave/4,
     ('lam', 'young', 'bulk') : lam/2 + young/6 + (18*lam*young + 9*young**2 + 81*lam**2)**(1/2)/18
 }
-        
+

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.terms.terms import Term

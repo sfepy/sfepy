@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import numpy as nm
 import matplotlib.pyplot as plt
 
@@ -8,7 +7,6 @@ import sfepy.postprocess.plot_dofs as pd
 from sfepy.postprocess.plot_dofs import _get_axes
 
 from sfepy.discrete.iga.iga import _get_knots_tuple
-from six.moves import range
 
 def plot_parametric_mesh(ax, knots):
     """

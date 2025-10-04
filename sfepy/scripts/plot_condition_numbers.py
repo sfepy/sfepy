@@ -3,7 +3,6 @@
 Plot conditions numbers w.r.t. polynomial approximation order of reference
 element matrices for various FE polynomial spaces (bases).
 """
-from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser

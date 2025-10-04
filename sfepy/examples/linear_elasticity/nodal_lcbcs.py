@@ -53,7 +53,6 @@ View the 3D results using::
 
   sfepy-view cube_medium_tetra.vtk
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, assert_

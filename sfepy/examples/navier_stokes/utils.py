@@ -1,6 +1,5 @@
 ##
 # Functions.
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.linalg import get_coors_in_tube

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 try:
     from .extmods import *
 except (ImportError, AttributeError):

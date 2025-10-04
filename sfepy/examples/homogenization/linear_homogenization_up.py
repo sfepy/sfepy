@@ -21,7 +21,6 @@ Computational Materials Science 45(4), 2009, pages 1081-1096.
 http://dx.doi.org/10.1016/j.commatsci.2009.01.027
 """
 
-from __future__ import absolute_import
 import numpy as nm
 
 import sfepy.discrete.fem.periodic as per

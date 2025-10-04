@@ -3,7 +3,6 @@ Quantum potential well.
 
 See :ref:`quantum-quantum_common`.
 """
-from __future__ import absolute_import
 
 from sfepy.examples.quantum.quantum_common import common
 

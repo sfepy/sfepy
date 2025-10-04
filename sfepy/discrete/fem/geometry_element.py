@@ -8,11 +8,9 @@ Notes
 * the orientation is a tuple:
   (root1, vertices of direction vectors, swap from, swap to, root2, ...)
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
-from six.moves import range
 
 def _get_grid_0_1(n_nod):
     return nm.array([0.0])

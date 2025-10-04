@@ -59,7 +59,6 @@ only the mesh vertex separation parameter `mesh_eps` can be used::
 
   python sfepy/examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --define-kwargs="mesh_eps=1e-10" --save-regions
 """
-from __future__ import absolute_import
 import os
 import sys
 sys.path.append('.')

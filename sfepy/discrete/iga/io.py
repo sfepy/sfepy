@@ -1,10 +1,8 @@
 """
 IO for NURBS and Bezier extraction data.
 """
-from __future__ import absolute_import
 import numpy as nm
 import six
-from six.moves import range
 from sfepy.base.ioutils import HDF5ContextManager, enc, dec
 
 def write_iga_data(filename, group, knots, degrees, control_points, weights,

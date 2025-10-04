@@ -5,8 +5,6 @@ Notes
 -----
 Using LCBCs with hanging nodes is not supported.
 """
-from __future__ import absolute_import
-from six.moves import range, zip
 
 import numpy as nm
 

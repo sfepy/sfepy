@@ -33,7 +33,6 @@ Refine the mesh twice::
 
   sfepy-run sfepy/examples/diffusion/poisson_neumann.py -O "'refinement_level' : 2"
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, Struct

@@ -2,7 +2,6 @@
 """
 Generate available solvers table for ReST documentation.
 """
-from __future__ import absolute_import
 import os.path as op
 import sys
 

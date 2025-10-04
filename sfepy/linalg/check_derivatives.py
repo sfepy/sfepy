@@ -2,10 +2,7 @@
 Utilities for checking derivatives of functions.
 """
 
-from __future__ import print_function
-from __future__ import absolute_import
 import numpy as nm
-from six.moves import range
 
 def check_fx(x0, fx, fx_args, dfx, dfx_args=None, delta=1e-5):
     """

@@ -37,7 +37,6 @@ Find :math:`t` such that:
     = 0
     \;, \quad \forall s \;.
 """
-from __future__ import absolute_import
 import os
 import numpy as nm
 

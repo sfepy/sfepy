@@ -26,7 +26,6 @@ View the results using::
 
   sfepy-view shell10x.vtk -f u_disp:wu_disp 1:vw
 """
-from __future__ import absolute_import
 from sfepy.base.base import output
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.discrete import Integral

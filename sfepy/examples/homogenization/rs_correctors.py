@@ -2,8 +2,6 @@
 """
 Compute homogenized elastic coefficients for a given microstructure.
 """
-from __future__ import print_function
-from __future__ import absolute_import
 from argparse import ArgumentParser
 import sys
 import six

@@ -24,7 +24,6 @@ View the results using::
 
   sfepy-view block2d.vtk -2
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_domain = data_dir + '/meshes/iga/block2d.iga'

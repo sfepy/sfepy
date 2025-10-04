@@ -1,8 +1,6 @@
 """
 Classes of variables for equations/terms.
 """
-from __future__ import print_function
-from __future__ import absolute_import
 
 import numpy as nm
 
@@ -21,7 +19,6 @@ from sfepy.discrete.fem.lcbc_operators import LCBCOperators
 from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
 import six
-from six.moves import range
 
 is_state = 0
 is_virtual = 1

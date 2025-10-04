@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from sfepy.discrete.common.domain import Domain
 from sfepy.discrete.common.region import Region
 from sfepy.discrete.common.fields import Field

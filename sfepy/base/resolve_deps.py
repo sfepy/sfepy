@@ -1,12 +1,10 @@
 """
 Functions for resolving dependencies.
 """
-from __future__ import absolute_import
 import itertools as it
 
 from sfepy.base.base import basestr
 import six
-from six.moves import range
 
 def get_nums(deps):
     """

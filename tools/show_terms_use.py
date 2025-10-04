@@ -2,7 +2,6 @@
 """
 Show terms use in problem description files in the given directory.
 """
-from __future__ import absolute_import
 import sys
 import six
 sys.path.append('.')

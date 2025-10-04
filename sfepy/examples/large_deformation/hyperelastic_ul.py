@@ -6,8 +6,6 @@ Large deformation is described using the updated Lagrangian formulation.
 Models of this kind can be used to model e.g. rubber or some biological
 materials.
 """
-from __future__ import print_function
-from __future__ import absolute_import
 import numpy as nm
 from sfepy import data_dir
 

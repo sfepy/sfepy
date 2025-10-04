@@ -2,7 +2,6 @@
 The Dirichlet, periodic and linear combination boundary condition
 classes, as well as the initial condition class.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import basestr, Container, Struct, is_sequence

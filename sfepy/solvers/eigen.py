@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import numpy as nm
 import scipy.sparse as sps
@@ -7,7 +6,6 @@ from sfepy.base.base import get_default, try_imports, Struct
 from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import Solver, EigenvalueSolver
 import six
-from six.moves import range
 
 def eig(mtx_a, mtx_b=None, n_eigs=None, eigenvectors=True,
         return_time=None, solver_kind='eig.scipy', **ckwargs):

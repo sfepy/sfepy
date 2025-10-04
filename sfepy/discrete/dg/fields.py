@@ -5,7 +5,6 @@ Fields for Discontinous Galerkin method
 import numpy as nm
 import six
 from numpy.lib.stride_tricks import as_strided
-from six.moves import range
 
 from sfepy.base.base import (output, assert_, Struct)
 from sfepy.discrete import Integral, PolySpace

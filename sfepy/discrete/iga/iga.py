@@ -11,11 +11,9 @@ The functions :func:`compute_bezier_extraction_1d()` and
     NURBS, Institute for Computational Engineering and Sciences, The University
     of Texas at Austin, Austin, Texas, March 2010.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_
-from six.moves import range
 
 def _get_knots_tuple(knots):
     if isinstance(knots, nm.ndarray) and (knots.ndim == 1):

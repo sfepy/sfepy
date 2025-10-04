@@ -59,7 +59,6 @@ Bi-quadratic approximation, 2D, storing results in 'output' directory::
   # View full solution on a mesh adapted for visualization.
   sfepy-view output/hanging_u.vtk -2 -f u:wu 1:vw
 """
-from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
 import os

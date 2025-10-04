@@ -6,7 +6,6 @@ The standard geometry elements can be plotted by running::
 
   $ python sfepy/postprocess/plot_facets.py
 """
-from __future__ import absolute_import
 import numpy as nm
 import matplotlib.pyplot as plt
 
@@ -14,7 +13,6 @@ from sfepy.linalg import (get_perpendiculars, normalize_vectors,
                           make_axis_rotation_matrix)
 from sfepy.postprocess.plot_dofs import _get_axes, plot_mesh, plot_global_dofs
 import six
-from six.moves import range
 
 def plot_geometry(ax, gel):
     """

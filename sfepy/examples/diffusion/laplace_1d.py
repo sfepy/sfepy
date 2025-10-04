@@ -18,7 +18,6 @@ View the results using::
 
   sfepy-view laplace_1d.vtk -f t:wt 1:vw
 """
-from __future__ import absolute_import
 import numpy as nm
 from sfepy.discrete.fem import Mesh
 from sfepy.discrete.fem.meshio import UserMeshIO

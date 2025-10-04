@@ -1,5 +1,4 @@
 """Classes for probing values of Variables, for example, along a line."""
-from __future__ import absolute_import
 import hashlib
 
 from ast import literal_eval

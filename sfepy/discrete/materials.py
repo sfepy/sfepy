@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
                              output, get_default, basestr)

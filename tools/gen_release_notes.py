@@ -2,7 +2,6 @@
 """
 Generate release notes using git log starting from the given version.
 """
-from __future__ import print_function
 from argparse import ArgumentParser
 
 import sys

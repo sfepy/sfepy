@@ -1,7 +1,6 @@
 """
 Fields for isogeometric analysis.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import basestr, Struct

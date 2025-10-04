@@ -1,4 +1,3 @@
-from __future__ import print_function
 import numpy as nm
 
 from sfepy.base.base import pause, Struct

@@ -16,7 +16,6 @@ Find :math:`\ul{u}`, :math:`p` such that:
     = 0
     \;, \quad \forall q \;.
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.discrete.fem.periodic import match_y_line
 

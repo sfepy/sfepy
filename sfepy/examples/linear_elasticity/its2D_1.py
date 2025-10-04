@@ -15,7 +15,6 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from __future__ import absolute_import
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.utils import refine_mesh
 from sfepy import data_dir

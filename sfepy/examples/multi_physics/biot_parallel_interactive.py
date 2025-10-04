@@ -81,7 +81,6 @@ View the results using::
 
   sfepy-view output-parallel/sol.h5
 """
-from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import sys

@@ -6,7 +6,6 @@ Notes
 Inspired by rcParams of matplotlib.
 """
 
-from __future__ import absolute_import
 import six
 def validate_bool(val):
     """

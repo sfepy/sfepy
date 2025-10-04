@@ -6,7 +6,6 @@ import numpy.linalg as nla
 from sfepy.base.base import assert_, Struct
 from sfepy.discrete import PolySpace
 from sfepy.linalg import insert_strided_axis
-from six.moves import range
 from functools import reduce
 
 # Requires fixed vertex numbering!

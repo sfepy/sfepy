@@ -1,6 +1,4 @@
-from __future__ import absolute_import
 import numpy as nm
-from six.moves import range
 
 def build_op_pi(var, ir, ic):
     r"""\Pi_i^{rs} = y_s \delta_{ir} for r = `ir`, s = `ic`."""

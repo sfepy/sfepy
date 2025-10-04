@@ -15,7 +15,6 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.linalg import norm_l2_along_axis

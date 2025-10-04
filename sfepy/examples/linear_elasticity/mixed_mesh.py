@@ -13,7 +13,6 @@ Viewing the results::
 
     sfepy-view beam_h* -f u:s0:wu:e:p0 u:s1:wu:e:p0 --camera-position="1.2,-0.6,0.1,0.4,0.1,-0.1,-0.2,0.1,1"
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.base.base import Struct

@@ -9,7 +9,6 @@ Notes
 -----
 History: pre-git versions already from from 13.06.2006.
 """
-from __future__ import print_function
 from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
      Group, Optional, ZeroOrMore, nums, alphas, alphanums,\
      Combine, StringStart, StringEnd, Forward, oneOf, ParseException

@@ -19,9 +19,7 @@ information::
 
   python sfepy/examples/linear_elasticity/its2D_interactive.py -h
 """
-from __future__ import absolute_import
 import sys
-from six.moves import range
 sys.path.append('.')
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 

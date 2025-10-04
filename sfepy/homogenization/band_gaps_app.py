@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os.path as op
 import shutil
 
@@ -13,7 +12,6 @@ from sfepy.homogenization.coefs_base import CoefDummy
 from sfepy.applications import PDESolverApp
 from sfepy.base.plotutils import plt
 import six
-from six.moves import range
 
 def try_set_defaults(obj, attr, defaults, recur=False):
     try:

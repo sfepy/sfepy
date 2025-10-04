@@ -1,9 +1,7 @@
 """
 Some utilities for work with units of physical quantities.
 """
-from __future__ import absolute_import
 import six
-from six.moves import range
 try:
     import sympy as sm
 except ImportError:

@@ -40,10 +40,8 @@ Examples
 
   See :mod:`sfepy.solvers.eigen` for available solvers.
 """
-from __future__ import absolute_import
 import sys
 import six
-from six.moves import range
 sys.path.append('.')
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 

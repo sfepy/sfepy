@@ -60,7 +60,6 @@ View the results using::
 
   sfepy-view output-parallel/sol.h5 -f u:wu 1:vw
 """
-from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import sys
