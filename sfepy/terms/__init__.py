@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import sfepy
 from . import terms
 from . import extmods

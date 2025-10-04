@@ -1,9 +1,7 @@
 """
 Functions to visualize the CMesh geometry and topology.
 """
-from __future__ import absolute_import
 from sfepy.postprocess.plot_dofs import _get_axes, _to2d
-from six.moves import range
 
 def plot_wireframe(ax, cmesh, color='k', **kwargs):
     """

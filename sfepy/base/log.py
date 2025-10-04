@@ -1,9 +1,7 @@
-from __future__ import absolute_import
 import time
 import os
 import atexit
 import six
-from six.moves import range
 
 try:
     import multiprocessing as mp

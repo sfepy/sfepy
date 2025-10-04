@@ -34,7 +34,6 @@ The following examples are available and can be run using::
   sfepy-run sfepy/examples/quantum/oscillator.py
   sfepy-run sfepy/examples/quantum/well.py
 """
-from __future__ import absolute_import
 from sfepy.base.base import output
 from sfepy import data_dir
 

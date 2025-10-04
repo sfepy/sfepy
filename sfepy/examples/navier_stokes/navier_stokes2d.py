@@ -21,7 +21,6 @@ View the results using::
 
   sfepy-view user_block.vtk -2
 """
-from __future__ import absolute_import
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.mesh.mesh_generators import gen_block_mesh
 

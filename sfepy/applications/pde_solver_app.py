@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 
 from sfepy.base.base import output, dict_to_struct, Struct

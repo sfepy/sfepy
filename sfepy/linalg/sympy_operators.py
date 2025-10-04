@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sympy as sp
 from sympy import sin, cos, sympify, lambdify, Symbol
 

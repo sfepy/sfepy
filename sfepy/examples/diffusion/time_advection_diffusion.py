@@ -15,7 +15,6 @@ View the results using::
 
   sfepy-view square_tri2.*.vtk -f u:wu 1:vw
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/2d/square_tri2.mesh'

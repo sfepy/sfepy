@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division
 import gc
 from copy import copy
 
@@ -10,7 +9,6 @@ from sfepy.discrete.evaluate import eval_equations
 import sfepy.base.multiproc as multi
 import numpy as nm
 import six
-from six.moves import range
 
 
 def insert_sub_reqs(reqs, levels, req_info):

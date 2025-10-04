@@ -2,7 +2,6 @@
 """
 Plot quadrature points for the given geometry and integration order.
 """
-from __future__ import absolute_import, print_function
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser

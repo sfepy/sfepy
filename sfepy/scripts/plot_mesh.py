@@ -5,7 +5,6 @@ Plot mesh connectivities, facet orientations, global and local DOF ids etc.
 To switch off plotting some mesh entities, set the corresponding color to
 `None`.
 """
-from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser

@@ -6,7 +6,6 @@ A reference periodic cell contains three domains: the stiff matrix :math:`Y_m`
 and the soft inclusion :math:`Y_c` enclosing the rigid heavy sub-inclusion
 :math:`Y_r`.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy import data_dir

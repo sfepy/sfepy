@@ -3,9 +3,7 @@
 Save polynomial basis on reference elements or on a mesh for visualization into
 a given output directory.
 """
-from __future__ import absolute_import
 import sys
-from six.moves import range
 sys.path.append('.')
 import os
 from argparse import ArgumentParser

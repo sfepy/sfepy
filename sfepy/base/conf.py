@@ -7,7 +7,6 @@ Notes
 Short syntax: key is suffixed with '__<number>' to prevent collisions with long
 syntax keys -> both cases can be used in a single input.
 """
-from __future__ import absolute_import
 import re
 import numpy as nm
 

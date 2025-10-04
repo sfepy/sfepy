@@ -1,13 +1,11 @@
 """
 IGA domain generators.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, output, Struct
 import sfepy.discrete.iga as iga
 from sfepy.discrete.iga.domain import NurbsPatch
-from six.moves import range
 
 def create_from_igakit(inurbs, verbose=False):
     """

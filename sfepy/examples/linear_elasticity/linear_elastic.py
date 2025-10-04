@@ -37,7 +37,6 @@ cylinder.vtk. View the results using::
 
   sfepy-view cylinder.vtk -f u:wu 1:vw
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 

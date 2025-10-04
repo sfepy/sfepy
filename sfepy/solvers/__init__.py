@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 import sfepy
 from sfepy.base.base import load_classes, insert_static_method

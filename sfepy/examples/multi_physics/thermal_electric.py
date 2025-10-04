@@ -7,7 +7,6 @@ Run this example as on a command line::
 
     $ python <path_to_this_file>/thermal_electric.py
 """
-from __future__ import absolute_import
 import sys
 sys.path.append( '.' )
 import os

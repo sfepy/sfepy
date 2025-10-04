@@ -1,14 +1,12 @@
 """
 Utility functions based on igakit.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.discrete.fem import Mesh
 from sfepy.mesh.mesh_generators import get_tensor_product_conn
 import six
-from six.moves import range
 
 def create_linear_fe_mesh(nurbs, pars=None):
     """

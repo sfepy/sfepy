@@ -105,7 +105,6 @@ Change material parameters::
 
   $ python sfepy/examples/large_deformation/hyperelastic_tl_up_interactive.py -m 2,1
 """
-from __future__ import print_function, absolute_import
 import argparse
 import sys
 

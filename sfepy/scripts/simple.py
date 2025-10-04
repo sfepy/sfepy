@@ -40,8 +40,6 @@ Both normal and parametric study runs are supported. A parametric study allows
 repeated runs for varying some of the simulation parameters - see
 ``sfepy/examples/diffusion/poisson_parametric_study.py`` file.
 """
-from __future__ import print_function
-from __future__ import absolute_import
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import sfepy

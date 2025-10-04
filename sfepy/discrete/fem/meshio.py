@@ -16,7 +16,6 @@ from sfepy.base.ioutils import (skip_read_line, look_ahead_line, read_token,
 
 import os.path as op
 import six
-from six.moves import range
 import meshio as meshiolib
 try:
     from meshio import CellBlock as meshio_Cells  # for meshio >= 4.0.3

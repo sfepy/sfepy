@@ -11,7 +11,6 @@ Important attributes of continuous (order > 0) :class:`Field` and
 where `conn` is the mesh vertex connectivity, `econn` is the
 region-local field connectivity.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, get_default, assert_

@@ -129,7 +129,6 @@ Highly Filled Elastomers And Implementation With User-Defined Material
 Subroutines In Abaqus. Rubber Chemistry And Technology, Vol. 92, No. 4, Pp.
 653-686 (2019)
 """
-from __future__ import print_function, absolute_import
 import argparse
 import sys
 

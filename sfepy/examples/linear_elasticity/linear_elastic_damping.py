@@ -16,8 +16,6 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from __future__ import print_function
-from __future__ import absolute_import
 from copy import deepcopy
 
 import numpy as nm

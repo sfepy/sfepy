@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import os
 
 import numpy as nm
@@ -16,7 +14,6 @@ from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file_hdf5
 import os.path as op
 import six
-from six.moves import range
 import atexit
 
 shared = Struct()

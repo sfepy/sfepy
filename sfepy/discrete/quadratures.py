@@ -50,7 +50,6 @@ methods, SIAM J. Numer. Anal.  15 (1978), 282--290. The generating function was
 adapted from pytools/hegde codes (http://mathema.tician.de/software/hedge) by
 Andreas Kloeckner.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, assert_, Struct

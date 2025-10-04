@@ -35,7 +35,6 @@ surface. Try running the example with different approximation orders and/or unif
 
     sfepy-run sfepy/examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=0 -d approx_order=2
 """
-from __future__ import absolute_import
 import numpy as nm
 from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_lame

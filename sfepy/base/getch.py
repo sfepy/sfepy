@@ -4,8 +4,6 @@ getch()-like unbuffered character reading from stdin on both Windows and Unix
 _Getch classes inspired by Danny Yoo, iskeydown() based on code by Zachary
 Pincus.
 """
-from __future__ import absolute_import
-from __future__ import print_function
 import os, sys
 
 class _Getch:

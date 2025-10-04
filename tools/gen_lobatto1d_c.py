@@ -2,10 +2,7 @@
 """
 Generate lobatto1d.c and lobatto1h.c files.
 """
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
-from six.moves import range
 sys.path.append('.')
 import os
 from argparse import ArgumentParser

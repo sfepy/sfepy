@@ -34,7 +34,6 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from __future__ import absolute_import
 from sfepy.examples.multi_physics.biot_npbc import (cinc_simple,
                                                     define_regions, get_pars)
 

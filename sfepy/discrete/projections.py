@@ -1,7 +1,6 @@
 """
 Construct projections between FE spaces.
 """
-from __future__ import absolute_import
 import numpy as nm
 import scipy.sparse as sps
 

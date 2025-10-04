@@ -1,11 +1,9 @@
 """
 Functions for a high-level PETSc-based parallelization.
 """
-from __future__ import absolute_import
 import os
 
 import numpy as nm
-from six.moves import range
 
 def init_petsc_args():
     try:

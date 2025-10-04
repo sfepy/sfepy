@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, OneTypeList, Struct
@@ -7,7 +6,6 @@ from sfepy.discrete.fem.meshio import MeshIO
 from sfepy.solvers.ts import TimeStepper
 from sfepy.base.ioutils import get_trunk, write_dict_hdf5
 import six
-from six.moves import range
 
 def _linearize(out, fields, linearization):
     new = {}

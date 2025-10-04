@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import numpy as nm
 import numpy.linalg as nla
 
@@ -7,7 +6,6 @@ from scipy.special import factorial
 from sfepy.base.base import assert_, output
 from sfepy.linalg.utils import norm_l2_along_axis as norm
 from sfepy.linalg.utils import mini_newton, dets_fast
-from six.moves import range
 
 def transform_bar_to_space_coors(bar_coors, coors):
     """

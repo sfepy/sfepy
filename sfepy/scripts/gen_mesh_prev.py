@@ -8,8 +8,6 @@ Examples
 
 $ ./script/gen_mesh_prev.py meshes/2d/
 """
-from __future__ import print_function
-from __future__ import absolute_import
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 sys.path.append('.')

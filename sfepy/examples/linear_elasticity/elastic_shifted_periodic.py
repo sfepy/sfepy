@@ -40,7 +40,6 @@ View the results using::
 
   sfepy-view block.vtk -f u:wu:f2.0:p0 1:vw:p0 von_mises_stress:p1
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.mechanics.matcoefs import stiffness_from_lame

@@ -2,11 +2,9 @@
 """
 Convert a mesh file from one SfePy-supported format to another.
 """
-from __future__ import absolute_import
 import sys
 import os.path as op
 from ast import literal_eval
-from six.moves import range
 sys.path.append('.')
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter

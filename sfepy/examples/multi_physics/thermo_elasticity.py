@@ -23,7 +23,6 @@ where
 
 and :math:`\alpha` is the thermal expansion coefficient.
 """
-from __future__ import absolute_import
 import numpy as np
 
 from sfepy.base.base import Struct

@@ -4,7 +4,6 @@ Compare various elastic materials w.r.t. uniaxial tension/compression test.
 
 Requires Matplotlib.
 """
-from __future__ import absolute_import
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 import six

@@ -10,7 +10,6 @@ Find :math:`T` such that:
     = 0
     \;, \quad \forall s \;.
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 
 #filename_mesh = data_dir + '/meshes/3d/cube_big_tetra.mesh'

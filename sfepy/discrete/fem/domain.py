@@ -1,7 +1,6 @@
 """
 Computational domain, consisting of the mesh and regions.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, Struct

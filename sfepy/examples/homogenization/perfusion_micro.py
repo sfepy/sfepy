@@ -12,13 +12,11 @@ pages 1029-1034.
 https://doi.org/10.3182/20120215-3-AT-3016.00182
 """
 
-from __future__ import absolute_import
 from sfepy.discrete.fem.periodic import match_x_plane, match_y_plane
 import sfepy.homogenization.coefs_base as cb
 import numpy as nm
 from sfepy import data_dir
 import six
-from six.moves import range
 
 def get_mats(pk, ph, pe, dim):
     m1 = nm.eye(dim, dtype=nm.float64) * pk

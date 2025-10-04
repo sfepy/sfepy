@@ -15,7 +15,6 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from __future__ import absolute_import
 from sfepy.examples.linear_elasticity.linear_elastic import *
 import os
 import numpy as nm
@@ -27,7 +26,6 @@ try:
 except ImportError:
     Probe = None
 
-from six.moves import range
 
 # Define options.
 options = {

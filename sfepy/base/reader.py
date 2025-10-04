@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from .base import Struct
 import os.path as op
 import six

@@ -2,7 +2,6 @@
 Classes for accessing quadrature points and weights for various reference
 element geometries.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import OneTypeList, Container, Struct, basestr

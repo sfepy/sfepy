@@ -3,7 +3,6 @@ Quantum oscillator.
 
 See :ref:`quantum-quantum_common`.
 """
-from __future__ import absolute_import
 from sfepy.linalg import norm_l2_along_axis
 
 from sfepy.examples.quantum.quantum_common import common

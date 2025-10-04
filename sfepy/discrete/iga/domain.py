@@ -1,7 +1,6 @@
 """
 Computational domain for isogeometric analysis.
 """
-from __future__ import absolute_import
 import os.path as op
 
 import numpy as nm
@@ -12,7 +11,6 @@ from sfepy.discrete.iga import iga
 from sfepy.discrete.iga import io
 from sfepy.discrete.iga.extmods.igac import eval_in_tp_coors
 import six
-from six.moves import range
 
 class NurbsPatch(Struct):
     """

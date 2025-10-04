@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_
@@ -7,7 +6,6 @@ from sfepy.linalg import dot_sequences, insert_strided_axis
 from sfepy.discrete import PolySpace
 from sfepy.discrete.fem.mappings import FEMapping
 from sfepy.mechanics.tensors import dim2sym
-from six.moves import range
 
 def create_transformation_matrix(coors):
     """

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import numpy as nm
 import numpy.linalg as nla
@@ -11,7 +10,6 @@ from sfepy.solvers.solvers import OptimizationSolver
 import scipy.optimize as sopt
 import scipy.optimize.linesearch as linesearch
 import six
-from six.moves import range
 
 def conv_test(conf, it, of, of0, ofg_norm=None):
     """

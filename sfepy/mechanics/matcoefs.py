@@ -2,8 +2,6 @@
 """
 Conversion of material parameters and other utilities.
 """
-from __future__ import absolute_import
-from __future__ import print_function
 import os
 
 import numpy as nm
@@ -328,8 +326,6 @@ class ElasticConstants(Struct):
         fd = open(os.path.join(os.path.dirname(__file__),
                                'elastic_constants.py'), 'w')
         fd.write("""
-from __future__ import division
-
 import sympy as sm
 
 names = ['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave']

@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import os.path as op
 import shutil
 
@@ -13,7 +11,6 @@ import sfepy.discrete.fem.periodic as per
 import sfepy.linalg as la
 import sfepy.base.multiproc as multi
 import six
-from six.moves import range
 
 
 class HomogenizationApp(HomogenizationEngine):

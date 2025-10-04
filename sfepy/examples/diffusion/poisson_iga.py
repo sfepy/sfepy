@@ -16,7 +16,6 @@ View the results using::
 
   sfepy-view patch2d.vtk -f t:wt:f0.4 1:vw
 """
-from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_domain = data_dir + '/meshes/iga/patch2d.iga'

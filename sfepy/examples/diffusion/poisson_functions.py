@@ -25,7 +25,6 @@ the following:
 In order to define the load :math:`b(x)` directly, the term ``dw_dot``
 should be replaced by ``dw_integrate``.
 """
-from __future__ import absolute_import
 import numpy as nm
 from sfepy import data_dir
 

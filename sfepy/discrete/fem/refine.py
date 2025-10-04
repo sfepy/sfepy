@@ -1,11 +1,9 @@
 """
 Basic uniform mesh refinement functions.
 """
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.discrete.fem import Mesh
-from six.moves import range
 
 
 def refine_1_2(mesh_in):

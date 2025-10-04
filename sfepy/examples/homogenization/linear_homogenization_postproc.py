@@ -2,7 +2,6 @@
 This example shows how to use the VTK postprocessing functions.
 """
 
-from __future__ import absolute_import
 import os.path as osp
 from .linear_homogenization import *
 from sfepy.postprocess.utils_vtk import get_vtk_from_mesh,\

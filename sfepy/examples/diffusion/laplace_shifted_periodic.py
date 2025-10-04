@@ -6,7 +6,6 @@ Display using::
 
   sfepy-view laplace_shifted_periodic.vtk -f u:wu:f0.5 1:vw
 """
-from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser, RawDescriptionHelpFormatter

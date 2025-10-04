@@ -24,7 +24,6 @@ View the results using::
 
   sfepy-view block3d.vtk -f u:wu 1:vw
 """
-from __future__ import absolute_import
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 from sfepy import data_dir
 

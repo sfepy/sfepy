@@ -17,9 +17,7 @@ information::
 
   python sfepy/examples/diffusion/time_poisson_interactive.py -h
 """
-from __future__ import absolute_import
 import sys
-from six.moves import range
 sys.path.append('.')
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 

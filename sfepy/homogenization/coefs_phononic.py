@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 
 import numpy as nm
 import numpy.linalg as nla
@@ -12,7 +11,6 @@ from sfepy.discrete.evaluate import eval_equations
 from sfepy.homogenization.coefs_base import MiniAppBase, CorrMiniApp
 from sfepy.homogenization.utils import coor_to_sym
 import six
-from six.moves import range
 
 def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
                          transform=None):

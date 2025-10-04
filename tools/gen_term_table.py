@@ -2,7 +2,6 @@
 """
 Generate the table of all terms for the sphinx documentation.
 """
-from __future__ import absolute_import
 import os
 from sfepy.base.base import dict_from_keys_init
 from sfepy.discrete.equations import parse_definition
