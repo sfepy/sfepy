@@ -19,10 +19,6 @@ sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
 
-# is this part of some public API ?
-PY3 = True
-basestr = str
-
 
 def get_debug():
     """
