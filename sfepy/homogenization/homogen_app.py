@@ -10,7 +10,6 @@ from sfepy.applications import PDESolverApp
 import sfepy.discrete.fem.periodic as per
 import sfepy.linalg as la
 import sfepy.base.multiproc as multi
-import six
 
 
 class HomogenizationApp(HomogenizationEngine):
@@ -133,7 +132,7 @@ class HomogenizationApp(HomogenizationEngine):
             return state
 
         micro_update = self.app_options.micro_update
-        for key, upd_obj in six.iteritems(micro_update):
+        for key, upd_obj in micro_update.items():
             if '_prev' in key:
                 continue
 
@@ -239,7 +238,7 @@ class HomogenizationApp(HomogenizationEngine):
             coefs, dependencies = aux
             # store correctors for coors update
             self.updating_corrs = {}
-            for upd_obj in six.itervalues(opts.micro_update):
+            for upd_obj in opts.micro_update.values():
                 if upd_obj is not None and not hasattr(upd_obj, '__call__'):
                     for v in upd_obj:
                         cr = v[0]

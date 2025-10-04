@@ -1,7 +1,6 @@
 import time
 import os
 import atexit
-import six
 
 try:
     import multiprocessing as mp
@@ -143,7 +142,7 @@ def read_log(filename):
 
     fd.close()
 
-    for key, (xs, ys, vlines) in six.iteritems(log):
+    for key, (xs, ys, vlines) in log.items():
         log[key] = (nm.array(xs), nm.array(ys), nm.array(vlines))
 
     return log, info

@@ -1,14 +1,13 @@
 import numpy as nm
 
 from sfepy.base.base import assert_, OneTypeList, Container, Struct
-import six
 
 class Functions(Container):
     """Container to hold all user-defined functions."""
 
     def from_conf(conf):
         objs = OneTypeList(Function)
-        for key, fc in six.iteritems(conf):
+        for key, fc in conf.items():
             fun = Function(name = fc.name,
                            function = fc.function,
                            is_constant = False,
@@ -105,13 +104,13 @@ class ConstantFunction(Function):
         def get_constants(ts=None, coors=None, mode=None, **kwargs):
             out = {}
             if mode == 'special':
-                for key, val in six.iteritems(values):
+                for key, val in values.items():
                     if '.' in key:
                         vkey = key.split('.')[1]
                         out[vkey] = val
 
             elif (mode == 'qp'):
-                for key, val in six.iteritems(values):
+                for key, val in values.items():
                     if '.' in key: continue
 
                     dtype = nm.float64 if nm.isrealobj(val) else nm.complex128
@@ -120,7 +119,7 @@ class ConstantFunction(Function):
                     out[key] = nm.tile(val, (nc, 1, 1))
 
             elif (mode == 'special_constant') or (mode is None):
-                for key, val in six.iteritems(values):
+                for key, val in values.items():
                     if '.' in key: continue
 
                     out[key] = val
@@ -153,14 +152,14 @@ class ConstantFunctionByRegion(Function):
                 qps = term.get_physical_qps()
                 assert_(qps.num == coors.shape[0])
 
-                for key, val in six.iteritems(values):
+                for key, val in values.items():
                     if '.' in key: continue
                     rval = nm.array(val[list(val.keys())[0]], ndmin=3)
                     s0 = rval.shape[1:]
                     dtype = nm.float64 if nm.isrealobj(rval) else nm.complex128
                     matdata = nm.zeros(qps.shape[:2] + s0, dtype=dtype)
 
-                    for rkey, rval in six.iteritems(val):
+                    for rkey, rval in val.items():
                         region = problem.domain.regions[rkey]
                         rval = nm.array(rval, dtype=dtype, ndmin=3)
 

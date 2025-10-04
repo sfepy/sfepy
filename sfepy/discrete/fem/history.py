@@ -3,7 +3,6 @@ import numpy as nm
 from sfepy.base.base import get_default, OneTypeList, Container, Struct
 from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.fem.meshio import HDF5MeshIO
-import six
 
 ##
 # 14.06.2007, c
@@ -18,13 +17,13 @@ class Histories( Container ):
         ths = io.read_variables_time_history( var_names, ts )
 
         objs = OneTypeList( History )
-        for name, th in six.iteritems(ths):
+        for name, th in ths.items():
             hist = History( name,
                             steps = steps,
                             times = ts.times,
                             th = th )
             objs.append( hist )
-            
+
         obj = Histories( objs, dt = ts.dt,
                          name = ' '.join( var_names ) )
         return obj

@@ -4,7 +4,6 @@ Compute homogenized elastic coefficients for a given microstructure.
 """
 from argparse import ArgumentParser
 import sys
-import six
 sys.path.append('.')
 
 import numpy as nm
@@ -53,7 +52,7 @@ def get_pars(ts, coor, mode=None, term=None, **kwargs):
         oot = nm.outer(o, o)
         out['D'] = lam * oot + mu * nm.diag(o + 1.0)
 
-        for key, val in six.iteritems(out):
+        for key, val in out.items():
             out[key] = nm.tile(val, (coor.shape[0], 1, 1))
 
         channels_cells = term.region.domain.regions['Yc'].cells

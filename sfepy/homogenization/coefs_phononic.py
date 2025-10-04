@@ -10,7 +10,6 @@ from sfepy.linalg import norm_l2_along_axis
 from sfepy.discrete.evaluate import eval_equations
 from sfepy.homogenization.coefs_base import MiniAppBase, CorrMiniApp
 from sfepy.homogenization.utils import coor_to_sym
-import six
 
 def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
                          transform=None):
@@ -612,7 +611,7 @@ class SimpleEVP(CorrMiniApp):
             if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
             variables.set_state(mtx_phi[:,ii], force=True)
             aux = variables.create_output()
-            for name, val in six.iteritems(aux):
+            for name, val in aux.items():
                 out[name+'%03d' % ii] = val
 
         if self.post_process_hook is not None:
@@ -693,7 +692,7 @@ class DensityVolumeInfo(MiniAppBase):
         total_volume = 0.0
         volumes = {}
         densities = {}
-        for region_name, aux in six.iteritems(self.region_to_material):
+        for region_name, aux in self.region_to_material.items():
             vol = vf['volume_' + region_name]
 
             mat_name, item_name = aux
@@ -731,7 +730,7 @@ class DensityVolumeInfo(MiniAppBase):
         fd.write('average density:\n')
         fd.write(ff % dv_info.average_density)
 
-        for key, val in six.iteritems(dv_info.volumes):
+        for key, val in dv_info.volumes.items():
             fd.write('%s volume:\n' % key)
             fd.write(ff % val)
             fd.write('%s density:\n' % key)

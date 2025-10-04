@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from sfepy.linalg import (get_perpendiculars, normalize_vectors,
                           make_axis_rotation_matrix)
 from sfepy.postprocess.plot_dofs import _get_axes, plot_mesh, plot_global_dofs
-import six
 
 def plot_geometry(ax, gel):
     """
@@ -144,7 +143,7 @@ if __name__ == '__main__':
     from sfepy.discrete.fem.geometry_element import (GeometryElement,
                                                      geometry_data)
 
-    for key, gd in six.iteritems(geometry_data):
+    for key, gd in geometry_data.items():
         if key == '1_2' : continue
 
         gel = GeometryElement(key)

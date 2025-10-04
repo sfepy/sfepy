@@ -6,7 +6,6 @@ from .getch import getch
 
 import numpy as nm
 import scipy.sparse as sp
-import six
 
 real_types = [nm.float64]
 complex_types = [nm.complex128]
@@ -387,7 +386,7 @@ class Struct(object):
         attribute and its counterpart in other are both Structs - these are
         merged then."""
         new = copy(self)
-        for key, val in six.iteritems(other.__dict__):
+        for key, val in other.__dict__.items():
             if hasattr(new, key):
                 sval = getattr(self, key)
                 if issubclass(sval.__class__, Struct) and \
@@ -405,7 +404,7 @@ class Struct(object):
         """Merge Structs in place. Attributes of self are left unchanged
         unless an attribute and its counterpart in other are both Structs -
         these are merged then."""
-        for key, val in six.iteritems(other.__dict__):
+        for key, val in other.__dict__.items():
             if hasattr(self, key):
                 sval = getattr(self, key)
                 if issubclass(sval.__class__, Struct) and \
@@ -424,7 +423,7 @@ class Struct(object):
     # 08.03.2005, c
     def str_all(self):
         ss = "%s\n" % self.__class__
-        for key, val in six.iteritems(self.__dict__):
+        for key, val in self.__dict__.items():
             if issubclass(self.__dict__[key].__class__, Struct):
                 ss += "  %s:\n" % key
                 aux = "\n" + self.__dict__[key].str_all()
@@ -947,7 +946,7 @@ def print_structs(objs):
     """Print Struct instances in a container, works recursively. Debugging
     utility function."""
     if isinstance(objs, dict):
-        for key, vals in six.iteritems(objs):
+        for key, vals in objs.items():
             print(key)
             print_structs(vals)
     elif isinstance(objs, list):
@@ -957,7 +956,7 @@ def print_structs(objs):
         print(objs)
 
 def iter_dict_of_lists(dol, return_keys=False):
-    for key, vals in six.iteritems(dol):
+    for key, vals in dol.items():
         for ii, val in enumerate(vals):
             if return_keys:
                 yield key, ii, val
@@ -994,7 +993,7 @@ def dict_to_struct(*args, **kwargs):
             else:
                 aux = {}
 
-            for key, val in six.iteritems(arg):
+            for key, val in arg.items():
                 if type(val) == dict:
                     try:
                         flag[level + 1]
@@ -1232,7 +1231,7 @@ def edit_dict_strings(str_dict, old, new, recur=False):
     """
     if isinstance(old, str):
         new_dict = {}
-        for key, val in six.iteritems(str_dict):
+        for key, val in str_dict.items():
             if isinstance(val, str):
                 new_dict[key] = val.replace(old, new)
 
@@ -1274,7 +1273,7 @@ def invert_dict(d, is_val_tuple=False, unique=True):
     """
     di = {}
 
-    for key, val in six.iteritems(d):
+    for key, val in d.items():
         if unique:
             if is_val_tuple:
                 for v in val:
@@ -1299,7 +1298,7 @@ def remap_dict(d, map):
     Utility function to remap state dict keys according to var_map.
     """
     out = {}
-    for new_key, key in six.iteritems(map):
+    for new_key, key in map.items():
         out[new_key] = d[key]
 
     return out
@@ -1320,7 +1319,7 @@ def dict_from_keys_init(keys, seq_class=None):
 ##
 # 16.10.2006, c
 def dict_extend(d1, d2):
-    for key, val in six.iteritems(d1):
+    for key, val in d1.items():
         val.extend(d2[key])
 
 def get_subdict(adict, keys):
@@ -1330,7 +1329,7 @@ def get_subdict(adict, keys):
     return dict((key, adict[key]) for key in keys if key in adict)
 
 def set_defaults(dict_, defaults):
-    for key, val in six.iteritems(defaults):
+    for key, val in defaults.items():
         dict_.setdefault(key, val)
 
 ##
@@ -1394,7 +1393,7 @@ def check_names(names1, names2, msg):
 # c: 27.02.2008, r: 27.02.2008
 def select_by_names(objs_all, names, replace=None, simple=True):
     objs = {}
-    for key, val in six.iteritems(objs_all):
+    for key, val in objs_all.items():
         if val.name in names:
             if replace is None:
                 objs[key] = val
@@ -1432,7 +1431,7 @@ def dict_to_array(adict):
     aux = nm.asarray(adict[ik[0]])
     out = nm.empty((ik.max() + 1,) + aux.shape, dtype=aux.dtype)
     out.fill(-1)
-    for key, val in six.iteritems(adict):
+    for key, val in adict.items():
         out[key] = val
 
     return out

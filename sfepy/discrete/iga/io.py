@@ -2,7 +2,6 @@
 IO for NURBS and Bezier extraction data.
 """
 import numpy as nm
-import six
 from sfepy.base.ioutils import HDF5ContextManager, enc, dec
 
 def write_iga_data(filename, group, knots, degrees, control_points, weights,
@@ -58,7 +57,7 @@ def write_iga_data(filename, group, knots, degrees, control_points, weights,
                         'bezier_connectivity')
 
         regs = fd.create_group(group, 'regions', 'regions')
-        for key, val in six.iteritems(regions):
+        for key, val in regions.items():
             fd.create_array(regs, key, val, key)
 
         if name is not None:

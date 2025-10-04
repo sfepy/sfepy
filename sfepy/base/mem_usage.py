@@ -8,7 +8,6 @@ import numpy as nm
 import scipy.sparse as sp
 
 from sfepy.base.base import Struct, Output
-import six
 
 def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
     """
@@ -75,7 +74,7 @@ def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
         record.usage = len(obj)
 
     elif isinstance(obj, Struct):
-        for subname, sub in six.iteritems(obj.__dict__):
+        for subname, sub in obj.__dict__.items():
             to[0] += 1
             record.usage += get_mem_usage(sub, usage,
                                           name='attribute %s of %s'
@@ -85,7 +84,7 @@ def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
 
     elif isinstance(obj, collections.Mapping):
         try:
-            for subname, sub in six.iteritems(obj):
+            for subname, sub in obj.items():
                 to[0] += 1
                 record.usage += get_mem_usage(sub, usage,
                                               name='item %s of %s'
@@ -124,7 +123,7 @@ def print_mem_usage(usage, order_by='usage', direction='up', print_key=False):
     """
     keys = list(usage.keys())
     order_vals = nm.array([record.get(order_by)
-                           for record in six.itervalues(usage)])
+                           for record in usage.values()])
 
     order = nm.argsort(order_vals)
     if direction == 'down':

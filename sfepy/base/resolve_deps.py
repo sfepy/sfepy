@@ -3,14 +3,13 @@ Functions for resolving dependencies.
 """
 import itertools as it
 
-import six
 
 def get_nums(deps):
     """
     Get number of prerequisite names for each name in dependencies.
     """
     nums = {}
-    for key, val in six.iteritems(deps):
+    for key, val in deps.items():
         nums[key] = len(val)
 
     return nums
@@ -34,7 +33,7 @@ def remove_known(deps, known):
     """
     if isinstance(known, str):
         out = {}
-        for key, val in six.iteritems(deps):
+        for key, val in deps.items():
             if key == known: continue
             out[key] = [ii for ii in val if ii != known]
 

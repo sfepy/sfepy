@@ -7,7 +7,6 @@ from sfepy.base.base import output, get_default, debug
 from sfepy.base.timing import Timer
 from sfepy.solvers.nls import Newton, conv_test
 from sfepy.linalg import compose_sparse
-import six
 
 class SemismoothNewton(Newton):
     r"""
@@ -241,7 +240,7 @@ class SemismoothNewton(Newton):
 
             time_stats['solve'] = timer.stop()
 
-            for kv in six.iteritems(time_stats):
+            for kv in time_stats.items():
                 output('%10s: %7.2f [s]' % kv)
 
             vec_x -= vec_dx

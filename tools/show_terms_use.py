@@ -3,7 +3,6 @@
 Show terms use in problem description files in the given directory.
 """
 import sys
-import six
 sys.path.append('.')
 import os
 from argparse import ArgumentParser
@@ -51,7 +50,7 @@ def main():
 
         use = conf.options.get('use_equations', 'equations')
         eqs_conf = getattr(conf, use)
-        for key, eq_conf in six.iteritems(eqs_conf):
+        for key, eq_conf in eqs_conf.items():
             term_descs = parse_definition(eq_conf)
             for td in term_descs:
                 terms_use[td.name].add(base)

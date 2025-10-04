@@ -5,7 +5,6 @@ import scipy.sparse as sps
 from sfepy.base.base import get_default, try_imports, Struct
 from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import Solver, EigenvalueSolver
-import six
 
 def eig(mtx_a, mtx_b=None, n_eigs=None, eigenvectors=True,
         return_time=None, solver_kind='eig.scipy', **ckwargs):
@@ -332,7 +331,7 @@ class SLEPcEigenvalueSolver(EigenvalueSolver):
         optDB = self.petsc.Options()
 
         if options is not None:
-            for key, val in six.iteritems(options):
+            for key, val in options.items():
                 optDB[key] = val
 
         es = self.slepc.EPS()

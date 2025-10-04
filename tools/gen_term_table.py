@@ -13,7 +13,6 @@ from argparse import ArgumentParser
 import pyparsing as pp
 
 import numpy as nm
-import six
 
 sys.path.append('.')
 import sfepy.discrete.fem # Hack: fix circular dependency, as terms.pyx imports
@@ -185,7 +184,7 @@ def get_examples(table):
 
         use = conf.options.get('use_equations', 'equations')
         eqs_conf = getattr(conf, use)
-        for key, eq_conf in six.iteritems(eqs_conf):
+        for key, eq_conf in eqs_conf.items():
             term_descs = parse_definition(eq_conf)
             for td in term_descs:
                 term_use[td.name].add(label)
@@ -249,7 +248,7 @@ def typeset_term_tables(fd, table):
         ('de_', 3)]
 
     new_tabs = [[],[],[],[]]
-    for term_name in six.iterkeys(table):
+    for term_name in table.keys():
         for term_tag, tab_id in scattab:
             if term_tag in term_name:
                 new_tabs[tab_id].append(term_name)

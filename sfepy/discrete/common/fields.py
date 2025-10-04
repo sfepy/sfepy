@@ -3,7 +3,6 @@ import numpy as nm
 
 from sfepy.base.base import output, iter_dict_of_lists, Struct, assert_
 from sfepy.base.timing import Timer
-import six
 from sfepy.mechanics.tensors import get_cauchy_strain
 
 
@@ -54,7 +53,7 @@ def parse_shape(shape, dim):
         except KeyError:
             raise ValueError('unsupported field shape! (%s)', shape)
 
-    elif isinstance(shape, six.integer_types):
+    elif isinstance(shape, int):
         shape = (int(shape),)
 
     return shape
@@ -71,7 +70,7 @@ def setup_extra_data(conn_info):
 
 def fields_from_conf(conf, regions):
     fields = {}
-    for key, val in six.iteritems(conf):
+    for key, val in conf.items():
         field = Field.from_conf(val, regions)
         fields[field.name] = field
 
@@ -202,7 +201,7 @@ class Field(Struct):
         import sfepy.base.multiproc as multi
 
         if multi.is_remote_dict(self.mappings0):
-            for k, v in six.iteritems(self.mappings):
+            for k, v in self.mappings.items():
                 m, _ = self.mappings[k]
                 nv = (m.bf, m.bfg, m.det, m.volume, m.normal)
                 self.mappings0[k] = nv

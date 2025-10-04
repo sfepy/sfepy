@@ -15,7 +15,6 @@ from sfepy.base.ioutils import (skip_read_line, look_ahead_line, read_token,
                                 HDF5ContextManager, get_or_create_hdf5_group)
 
 import os.path as op
-import six
 import meshio as meshiolib
 try:
     from meshio import CellBlock as meshio_Cells  # for meshio >= 4.0.3
@@ -136,7 +135,7 @@ def convert_complex_output(out_in):
     real and imaginary parts.
     """
     out = {}
-    for key, val in six.iteritems(out_in):
+    for key, val in out_in.items():
 
         if val.data.dtype in complex_types:
             rval = copy(val)
@@ -787,7 +786,7 @@ class ComsolMeshIO(MeshIO):
         fd.close()
 
         if out is not None:
-            for key, val in six.iteritems(out):
+            for key, val in out.items():
                 raise NotImplementedError
 
 
@@ -908,7 +907,7 @@ class HDF5MeshIO(MeshIO):
             node_sets_groups = fd.create_group(group, 'node_sets',
                                                'node sets groups')
             ii = 0
-            for key, nods in six.iteritems(mesh.nodal_bcs):
+            for key, nods in mesh.nodal_bcs.items():
                 group = fd.create_group(node_sets_groups, 'group%d' % ii,
                                         'node sets group')
                 fd.create_array(group, 'key', enc(key), 'key')
@@ -1153,7 +1152,7 @@ class HDF5MeshIO(MeshIO):
             fd.create_array(ts_group, 'nt', nt, 'normalized time')
 
             name_dict = {}
-            for key, val in six.iteritems(out):
+            for key, val in out.items():
                 if xdmf and mesh.coors.shape[1] == 2:
                     data = expand_data_3d(val.data)
                 else:
@@ -1334,7 +1333,7 @@ class HDF5MeshIO(MeshIO):
             return None
 
         groups = step_group._v_groups
-        for name, data_group in six.iteritems(groups):
+        for name, data_group in groups.items():
             try:
                 key = dec(data_group.dname.read())
 
@@ -1363,7 +1362,7 @@ class HDF5MeshIO(MeshIO):
 
         fd.close()
 
-        for key, val in six.iteritems(th):
+        for key, val in th.items():
             aux = nm.array(val)
             if aux.ndim == 4: # cell data.
                 aux = aux[:,0,:,0]
@@ -1947,7 +1946,7 @@ class ANSYSCDBMeshIO(MeshIO):
                                 hexas, mat_ids_hexas, remap=remap)
 
         mesh.nodal_bcs = {}
-        for key, nods in six.iteritems(nodal_bcs):
+        for key, nods in nodal_bcs.items():
             nods = nods[nods < len(remap)]
             mesh.nodal_bcs[key] = remap[nods]
 

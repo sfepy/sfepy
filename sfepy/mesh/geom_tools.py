@@ -1,5 +1,4 @@
 import numpy as nm
-import six
 
 class geometry(object):
     """The geometry is given by a sets of points (d0), lines (d1), surfaces
@@ -80,15 +79,15 @@ class geometry(object):
         print("  dimension:", self.dim)
         print("  points:", len(self.d0))
         if verbose:
-            for k, v in six.iteritems(self.d0):
+            for k, v in self.d0.items():
                 print("    %d - %s" % (k, v.getstr()))
         print("  lines:", len(self.d1))
         if verbose:
-            for k, v in six.iteritems(self.d1):
+            for k, v in self.d1.items():
                 print("    %d - " % k, v.points)
         print("  surfaces:", len(self.d2))
         if verbose:
-            for k, v in six.iteritems(self.d2):
+            for k, v in self.d2.items():
                 if v.is_hole:
                     aux = '(hole)'
                 else:
@@ -96,7 +95,7 @@ class geometry(object):
                 print("    %d%s - " % (k, aux), v.lines)
         print("  volumes:", len(self.d3))
         if verbose:
-            for k, v in six.iteritems(self.d3):
+            for k, v in self.d3.items():
                 print("    %d - " % k, v.surfaces)
         print("Physical entities:")
         if self.dim == 2:
@@ -166,7 +165,7 @@ class geometry(object):
                 self.addline(lid, [points[ii], points[ii + 1]])
                 lines.append(lid)
 
-            for s in six.itervalues(self.d2):
+            for s in self.d2.values():
                 try:
                     idx = s.lines.index(l.n)
                 except ValueError:
