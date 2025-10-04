@@ -2,7 +2,7 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import output, get_default, OneTypeList, Struct, basestr
+from sfepy.base.base import output, get_default, OneTypeList, Struct
 from sfepy.discrete import Equations, Variables, Region, Integral, Integrals
 from sfepy.discrete.common.fields import setup_extra_data
 import six
@@ -102,7 +102,7 @@ class Evaluator(Struct):
 
     def eval_tangent_matrix(self, vec, mtx=None, is_full=False,
                             select_term=None):
-        if isinstance(vec, basestr) and vec == 'linear':
+        if isinstance(vec, str) and vec == 'linear':
             return get_default(mtx, self.problem.mtx_a)
 
         if not is_full and self.problem.active_only:

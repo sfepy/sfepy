@@ -19,12 +19,6 @@ sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
 
-if sys.version_info[0] < 3:
-    PY3 = False
-    basestr = basestring
-else:
-    PY3 = True
-    basestr = str
 
 def get_debug():
     """
@@ -150,12 +144,8 @@ def import_file(filename, package_name=None, can_reload=True):
         mod = __import__(name)
 
     if (name in sys.modules) and can_reload:
-        if PY3:
-            import importlib
-            importlib.reload(mod)
-
-        else:
-            reload(mod)
+        import importlib
+        importlib.reload(mod)
 
     if remove_path:
         sys.path.remove(path)
@@ -536,7 +526,7 @@ class Container(Struct):
 
     def __setitem__(self, ii, obj):
         try:
-            if isinstance(ii, basestr):
+            if isinstance(ii, str):
                 if ii in self.names:
                     ii = self.names.index(ii)
                 else:
@@ -558,7 +548,7 @@ class Container(Struct):
 
     def __getitem__(self, ii):
         try:
-            if isinstance(ii, basestr):
+            if isinstance(ii, str):
                 ii = self.names.index(ii)
             elif not isinstance(ii, int):
                 raise ValueError('bad index type! (%s)' % type(ii))
@@ -665,7 +655,7 @@ class Container(Struct):
                 return True
             else:
                 return False
-        elif isinstance(ii, basestr):
+        elif isinstance(ii, str):
             try:
                 self.names.index(ii)
                 return True
@@ -720,7 +710,7 @@ class OneTypeList(list):
     def __getitem__(self, ii):
         if isinstance(ii, int):
             return list.__getitem__(self, ii)
-        elif isinstance(ii, basestr):
+        elif isinstance(ii, str):
             ir = self.find(ii, ret_indx=True)
             if ir:
                 return list.__getitem__(self, ir[0])
@@ -823,7 +813,7 @@ class Output(Struct):
             Append to an existing file instead of overwriting it. Use with
             `filename`.
         """
-        if not isinstance(filename, basestr):
+        if not isinstance(filename, str):
             # filename is a file descriptor.
             append = True
 
@@ -845,7 +835,7 @@ class Output(Struct):
                 self.level += 1
 
         def print_to_file(filename, msg):
-            if isinstance(filename, basestr):
+            if isinstance(filename, str):
                 fd = open(filename, 'a')
 
             else:
@@ -853,7 +843,7 @@ class Output(Struct):
 
             print(self._prefix + ('  ' * self.level) + msg, file=fd)
 
-            if isinstance(filename, basestr):
+            if isinstance(filename, str):
                 fd.close()
 
             else:
@@ -886,7 +876,7 @@ class Output(Struct):
                 self.level += 1
 
         def reset_file(filename):
-            if isinstance(filename, basestr):
+            if isinstance(filename, str):
                 output_dir = os.path.dirname(filename)
                 if output_dir and not os.path.exists(output_dir):
                     os.makedirs(output_dir)
@@ -925,7 +915,7 @@ class Output(Struct):
         return self.output_function
 
     def set_output_prefix(self, prefix):
-        assert_(isinstance(prefix, basestr))
+        assert_(isinstance(prefix, str))
         if len(prefix) > 0:
             prefix += ' '
         self._prefix = prefix
@@ -1040,14 +1030,10 @@ def structify(obj):
     return out
 
 def is_string(var):
-    return isinstance(var, basestr)
+    return isinstance(var, str)
 
 def is_integer(var):
-    if PY3:
-        return isinstance(var, int)
-
-    else:
-        return isinstance(var, (int, long))
+    return isinstance(var, int)
 
 ##
 # 23.01.2006, c
@@ -1056,7 +1042,7 @@ def is_sequence(var):
         from collections.abc import Sequence
     except ImportError:
         from collections import Sequence
-    if isinstance(var, basestr):
+    if isinstance(var, str):
         return False
     return isinstance(var, Sequence)
 
@@ -1073,10 +1059,7 @@ def insert_static_method(cls, function):
 ##
 # 23.10.2007, c
 def insert_method(instance, function):
-    if PY3:
-        meth = MethodType(function, instance)
-    else:
-        meth = MethodType(function, instance, type(instance))
+    meth = MethodType(function, instance)
     setattr(instance, function.__name__, meth)
 
 def use_method_with_name(instance, method, new_name):
@@ -1215,7 +1198,7 @@ def edit_tuple_strings(str_tuple, old, new, recur=False):
     """
     new_tuple = []
     for item in str_tuple:
-        if isinstance(item, basestr):
+        if isinstance(item, str):
             item = item.replace(old, new)
 
         elif recur and isinstance(item, tuple):
@@ -1247,10 +1230,10 @@ def edit_dict_strings(str_dict, old, new, recur=False):
     new_dict : dict
         The dictionary with edited strings.
     """
-    if isinstance(old, basestr):
+    if isinstance(old, str):
         new_dict = {}
         for key, val in six.iteritems(str_dict):
-            if isinstance(val, basestr):
+            if isinstance(val, str):
                 new_dict[key] = val.replace(old, new)
 
             elif isinstance(val, tuple):

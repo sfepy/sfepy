@@ -7,7 +7,7 @@ import collections
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import basestr, Struct, Output
+from sfepy.base.base import Struct, Output
 import six
 
 def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
@@ -71,7 +71,7 @@ def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
                         + get_mem_usage(obj.indptr, usage, name='indptr',
                                         traversal_order=to, level=level))
 
-    elif isinstance(obj, basestr):
+    elif isinstance(obj, str):
         record.usage = len(obj)
 
     elif isinstance(obj, Struct):

@@ -6,7 +6,7 @@ from ast import literal_eval
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import assert_, basestr, Struct
+from sfepy.base.base import assert_, Struct
 from sfepy.linalg import make_axis_rotation_matrix, norm_l2_along_axis
 import six
 
@@ -24,7 +24,7 @@ def write_results(filename, probe, results):
         The dictionary of probing results. Keys are data names, values are
         the probed values.
     """
-    fd = open(filename, 'w') if isinstance(filename, basestr) else filename
+    fd = open(filename, 'w') if isinstance(filename, str) else filename
 
     fd.write('\n'.join(probe.report()) + '\n')
     for key, result in six.iteritems(results):
@@ -36,7 +36,7 @@ def write_results(filename, probe, results):
 
         nm.savetxt(fd, aux)
 
-    if isinstance(filename, basestr):
+    if isinstance(filename, str):
         fd.close()
 
 def read_results(filename, only_names=None):
@@ -60,7 +60,7 @@ def read_results(filename, only_names=None):
 
     is_only_names = only_names is not None
 
-    fd = open(filename, 'r') if isinstance(filename, basestr) else filename
+    fd = open(filename, 'r') if isinstance(filename, str) else filename
 
     header = read_header(fd)
     results = {}

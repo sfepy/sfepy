@@ -4,7 +4,7 @@ from copy import copy
 import numpy as nm
 
 from sfepy.base.base import (as_float_or_complex, get_default, assert_,
-                             Container, Struct, basestr, goptions)
+                             Container, Struct, goptions)
 from sfepy.base.compat import in1d
 
 # Used for imports in term files.
@@ -515,7 +515,7 @@ class Term(Struct):
 
         self.args = []
         for ia, arg_name in enumerate(self.arg_names):
-            if isinstance(arg_name, basestr):
+            if isinstance(arg_name, str):
                 name, append = arg_name, None
 
             else:
@@ -556,7 +556,7 @@ class Term(Struct):
 
         kwargs = {}
         for arg_name in self.arg_names:
-            if isinstance(arg_name, basestr):
+            if isinstance(arg_name, str):
                 if arg_name in variables.names:
                     kwargs[arg_name] = variables[arg_name]
 
@@ -877,7 +877,7 @@ class Term(Struct):
         for at in arg_types:
             ii = ats.index(at)
             arg_name = self.arg_names[ii]
-            if isinstance(arg_name, basestr):
+            if isinstance(arg_name, str):
                 if arg_name in kwargs:
                     args.append(kwargs[arg_name])
 
@@ -1170,7 +1170,7 @@ class Term(Struct):
         sym = dim2sym(dim)
 
         def _parse_scalar_shape(sh):
-            if isinstance(sh, basestr):
+            if isinstance(sh, str):
                 if sh == 'D':
                     return dim
 
@@ -1199,7 +1199,7 @@ class Term(Struct):
                 return sh
 
         def _parse_tuple_shape(sh):
-            if isinstance(sh, basestr):
+            if isinstance(sh, str):
                 return tuple((_parse_scalar_shape(ii.strip())
                               for ii in sh.split(',')))
 
@@ -1271,13 +1271,13 @@ class Term(Struct):
                         continue
 
                     prefix = ''
-                    if isinstance(sh, basestr):
+                    if isinstance(sh, str):
                         aux = tuple(ii.strip() for ii in sh.split(':'))
                         if len(aux) == 2:
                             prefix, sh = aux
 
                     if sh == 'str':
-                        n_ok += isinstance(arg, basestr)
+                        n_ok += isinstance(arg, str)
                         continue
 
                     shape = _parse_tuple_shape(sh)

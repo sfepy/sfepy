@@ -3,7 +3,6 @@ Functions for resolving dependencies.
 """
 import itertools as it
 
-from sfepy.base.base import basestr
 import six
 
 def get_nums(deps):
@@ -33,7 +32,7 @@ def remove_known(deps, known):
     """
     Remove known names from dependencies.
     """
-    if isinstance(known, basestr):
+    if isinstance(known, str):
         out = {}
         for key, val in six.iteritems(deps):
             if key == known: continue

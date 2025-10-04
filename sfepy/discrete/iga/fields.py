@@ -3,7 +3,7 @@ Fields for isogeometric analysis.
 """
 import numpy as nm
 
-from sfepy.base.base import basestr, Struct
+from sfepy.base.base import Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.iga.mappings import IGMapping
 from sfepy.discrete.iga.iga import get_bezier_element_entities
@@ -62,7 +62,7 @@ class IGField(Field):
             elevate_times = 0
 
         else:
-            if isinstance(approx_order, basestr): approx_order = (approx_order,)
+            if isinstance(approx_order, str): approx_order = (approx_order,)
             elevate_times = parse_approx_order(approx_order[0])
 
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,

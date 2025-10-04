@@ -4,7 +4,7 @@ classes, as well as the initial condition class.
 """
 import numpy as nm
 
-from sfepy.base.base import basestr, Container, Struct, is_sequence
+from sfepy.base.base import Container, Struct, is_sequence
 from sfepy.discrete.functions import Function
 import six
 
@@ -70,7 +70,7 @@ class Conditions(Container):
                                    times=times)
 
             elif key.startswith('lcbc'):
-                if isinstance(cc.region, basestr):
+                if isinstance(cc.region, str):
                     rs = [_get_region(cc.region, regions, cc.name), None]
 
                 else:

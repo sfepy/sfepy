@@ -4,7 +4,7 @@ element geometries.
 """
 import numpy as nm
 
-from sfepy.base.base import OneTypeList, Container, Struct, basestr
+from sfepy.base.base import OneTypeList, Container, Struct
 from .quadratures import QuadraturePoints
 import six
 
@@ -48,7 +48,7 @@ class Integrals(Container):
         if name == 'a':
             raise NotImplementedError
 
-        elif isinstance(name, basestr) and (name[0] == 'i'):
+        elif isinstance(name, str) and (name[0] == 'i'):
             try:
                 obj = self[name]
 

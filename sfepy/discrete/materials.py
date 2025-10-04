@@ -1,6 +1,6 @@
 
 from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
-                             output, get_default, basestr)
+                             output, get_default)
 from sfepy.base.timing import Timer
 from .functions import ConstantFunction, ConstantFunctionByRegion
 import six
@@ -82,7 +82,7 @@ class Material(Struct):
         function = conf.get('function', None)
         values = conf.get('values', None)
 
-        if isinstance(function, basestr):
+        if isinstance(function, str):
             function = functions[function]
 
         obj = Material(conf.name, kind, function, values, flags)
@@ -387,7 +387,7 @@ class Material(Struct):
         """`name` can be a dict - then a Struct instance with data as
         attributes named as the dict keys is returned."""
 
-        if isinstance(name, basestr):
+        if isinstance(name, str):
             return self._get_data(key, name)
         else:
             out = Struct()

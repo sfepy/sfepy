@@ -7,7 +7,7 @@ import numpy as nm
 from sfepy.base.base import (complex_types, dict_from_keys_init,
                              assert_, is_derived_class, ordered_iteritems,
                              insert_static_method, output, get_default,
-                             get_default_attr, Struct, basestr)
+                             get_default_attr, Struct)
 from sfepy.base.ioutils import (skip_read_line, look_ahead_line, read_token,
                                 read_array, pt, enc, dec,
                                 edit_filename,
@@ -215,7 +215,7 @@ class MeshIO(Struct):
         self.set_float_format()
 
     def get_filename_trunk(self):
-        if isinstance(self.filename, basestr):
+        if isinstance(self.filename, str):
             trunk = op.splitext(self.filename)[0]
         else:
             trunk = 'from_descriptor'
@@ -2418,7 +2418,7 @@ def any_from_filename(filename, prefix_dir=None, file_format=None, mode='r'):
     io : MeshIO subclass instance
         The MeshIO subclass instance corresponding to the kind of `filename`.
     """
-    if not isinstance(filename, basestr):
+    if not isinstance(filename, str):
         if isinstance(filename, MeshIO):
             return filename
 
