@@ -1,8 +1,7 @@
 
 import numpy as nm
 
-from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr,\
-    assert_
+from sfepy.base.base import output, iter_dict_of_lists, Struct, assert_
 from sfepy.base.timing import Timer
 import six
 from sfepy.mechanics.tensors import get_cauchy_strain
@@ -19,7 +18,7 @@ def parse_approx_order(approx_order):
     if approx_order is None:
         return 'iga', force_bubble, discontinuous
 
-    elif isinstance(approx_order, basestr):
+    elif isinstance(approx_order, str):
         if approx_order.startswith('iga'):
             return approx_order, force_bubble, discontinuous
 
@@ -48,7 +47,7 @@ def parse_approx_order(approx_order):
     return ao, force_bubble, discontinuous
 
 def parse_shape(shape, dim):
-    if isinstance(shape, basestr):
+    if isinstance(shape, str):
         try:
             shape = {'scalar' : (1,),
                      'vector' : (dim,)}[shape]

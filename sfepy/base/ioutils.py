@@ -5,7 +5,7 @@ import os.path as op
 import fnmatch
 import shutil
 import glob
-from .base import output, ordered_iteritems, Struct, basestr
+from .base import output, ordered_iteritems, Struct
 import six
 import pickle
 import warnings
@@ -312,7 +312,7 @@ def write_dict_hdf5(filename, adict, level=0, group=None, fd=None):
             group2 = fd.create_group(group, '_' + str(key), '%s group' % key)
             write_dict_hdf5(filename, val, level + 1, group2, fd)
         else:
-            if not isinstance(val, basestr):
+            if not isinstance(val, str):
                 fd.create_array(group, '_' + str(key), val, '%s data' % key)
 
             else:

@@ -5,7 +5,7 @@ setting.
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import (basestr, output, assert_, find_subclasses,
+from sfepy.base.base import (output, assert_, find_subclasses,
                              Container, Struct)
 from sfepy.discrete.common.dof_info import DofInfo, expand_nodes_to_equations
 from sfepy.discrete.fem.utils import (compute_nodal_normals,
@@ -537,7 +537,7 @@ class NodalLCOperator(MRLCBCOperator):
 
         assert_(dpn <= n_c)
 
-        if (isinstance(constraints, basestr)
+        if (isinstance(constraints, str)
             or isinstance(constraints, Function)):
             fun = get_condition_value(constraints, functions,
                                       'nodal', 'constraints')

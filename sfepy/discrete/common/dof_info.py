@@ -7,7 +7,7 @@ Helper functions for the equation mapping.
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import assert_, Struct, basestr
+from sfepy.base.base import assert_, Struct
 from sfepy.discrete.functions import Function
 from sfepy.discrete.conditions import get_condition_value, EssentialBC, \
     PeriodicBC, DGPeriodicBC, DGEssentialBC
@@ -227,7 +227,7 @@ def is_active_bc(bc, ts=None, functions=None):
             active = False
 
     else:
-        if isinstance(bc.times, basestr):
+        if isinstance(bc.times, str):
             if functions is not None:
                 fun = functions[bc.times]
 

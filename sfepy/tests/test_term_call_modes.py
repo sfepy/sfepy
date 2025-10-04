@@ -18,7 +18,6 @@ not_tested_terms = ['dw_ns_dot_grad_s',
 
 def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
                    material_value=None, poly_space_basis=None):
-    from sfepy.base.base import basestr
     from sfepy.discrete import FieldVariable, Material, Variables, Materials
     from sfepy.discrete.fem import Field
     from sfepy.solvers.ts import TimeStepper
@@ -29,7 +28,7 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
     sym = dim2sym(dim)
 
     def _parse_scalar_shape(sh):
-        if isinstance(sh, basestr):
+        if isinstance(sh, str):
             if sh == 'D':
                 return dim
 
@@ -58,7 +57,7 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
             return sh
 
     def _parse_tuple_shape(sh):
-        if isinstance(sh, basestr):
+        if isinstance(sh, str):
             return [_parse_scalar_shape(ii.strip()) for ii in sh.split(',')]
 
         else:
@@ -121,7 +120,7 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
                 continue
 
             prefix = ''
-            if isinstance(sh, basestr):
+            if isinstance(sh, str):
                 aux = sh.split(':')
                 if len(aux) == 2:
                     prefix, sh = aux
