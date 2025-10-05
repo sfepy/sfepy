@@ -7,7 +7,6 @@ import os
 import numpy as nm
 
 from sfepy.base.base import Struct
-import six
 
 def lame_from_youngpoisson(young, poisson, plane='strain'):
     r"""
@@ -262,7 +261,7 @@ class ElasticConstants(Struct):
         relations = {}
 
         def _expand_keys(sols):
-            for key, val in six.iteritems(sols):
+            for key, val in sols.items():
                 if len(val) == 2 and (key.name == 'poisson'):
                     val = val[0]
                 else:
@@ -335,7 +334,7 @@ relations = {
 %s
 }
         """ % ',\n'.join(['    %s : %s' % (key, val)
-                         for key, val in six.iteritems(relations)]))
+                         for key, val in relations.items()]))
         fd.close()
 
         return relations
@@ -350,7 +349,7 @@ relations = {
                         mu=mu, p_wave=p_wave)
 
         values = {}
-        for key, val in six.iteritems(self.__dict__):
+        for key, val in self.__dict__.items():
             if (key in self.names) and (val is not None):
                 sym = getattr(self.ec, key)
                 values[sym] = val

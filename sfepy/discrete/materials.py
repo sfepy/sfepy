@@ -3,7 +3,6 @@ from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
                              output, get_default)
 from sfepy.base.timing import Timer
 from .functions import ConstantFunction, ConstantFunctionByRegion
-import six
 import numpy as nm
 
 class Materials(Container):
@@ -17,7 +16,7 @@ class Materials(Container):
             wanted = list(conf.keys())
 
         objs = OneTypeList(Material)
-        for key, mc in six.iteritems(conf):
+        for key, mc in conf.items():
             if key not in wanted: continue
 
             mat = Material.from_conf(mc, functions)
@@ -212,7 +211,7 @@ class Material(Struct):
         # point values only.
         new_data = {}
         if data is not None:
-            for dkey, val in six.iteritems(data):
+            for dkey, val in data.items():
                 if val.ndim != 3:
                     raise ValueError('material parameter array must have'
                                      " three dimensions! ('%s' has %d)"
@@ -391,7 +390,7 @@ class Material(Struct):
             return self._get_data(key, name)
         else:
             out = Struct()
-            for key, item in six.iteritems(name):
+            for key, item in name.items():
                 setattr(out, key, self._get_data(key, item))
             return out
 
@@ -429,8 +428,8 @@ class Material(Struct):
     def reduce_on_datas(self, reduce_fun, init=0.0):
         """For non-special values only!"""
         out = {}.fromkeys(list(self.datas[list(self.datas.keys())[0]].keys()), init)
-        for data in six.itervalues(self.datas):
-            for key, val in six.iteritems(data):
+        for data in self.datas.values():
+            for key, val in data.items():
                 out[key] = reduce_fun(out[key], val)
 
         return out

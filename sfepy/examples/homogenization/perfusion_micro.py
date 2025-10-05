@@ -16,7 +16,6 @@ from sfepy.discrete.fem.periodic import match_x_plane, match_y_plane
 import sfepy.homogenization.coefs_base as cb
 import numpy as nm
 from sfepy import data_dir
-import six
 
 def get_mats(pk, ph, pe, dim):
     m1 = nm.eye(dim, dtype=nm.float64) * pk
@@ -39,7 +38,7 @@ def recovery_perf(pb, corrs, macro):
     nodes_Y = {}
 
     channels = {}
-    for k in six.iterkeys(macro):
+    for k in macro.keys():
         if 'press' in k:
             channels[k[-1]] = 1
 
@@ -69,11 +68,11 @@ def recovery_perf(pb, corrs, macro):
 
         press_mic = nm.zeros((nnod, 1))
         for key, val in \
-          six.iteritems(corrs['corrs_%s_pi%s' % (pb_def['name'], ch)]):
+          corrs['corrs_%s_pi%s' % (pb_def['name'], ch)].items():
             kk = int(key[-1])
             press_mic += val * press_mac_grad[kk, 0]
 
-        for key in six.iterkeys(corrs):
+        for key in corrs.keys():
             if ('_gamma_' + ch in key):
                 kk = int(key[-1]) - 1
                 press_mic += corrs[key]['p' + ch] * macro['g' + ch][kk]
@@ -172,7 +171,7 @@ functions = {
 }
 
 aux = []
-for ch, val in six.iteritems(pb_def['channels']):
+for ch, val in pb_def['channels'].items():
     aux.append('r.bYM' + ch)
 
 # basic regions
@@ -232,7 +231,7 @@ ebcs_eta = {}
 ebcs_gamma = {}
 
 # generate regions, ebcs, epbcs
-for ch, val in six.iteritems(pb_def['channels']):
+for ch, val in pb_def['channels'].items():
 
     all_periodicY[ch] = ['periodic_%sY%s' % (ii, ch)
                          for ii in ['x', 'y'][:pb_def['dim']-1]]
@@ -252,7 +251,7 @@ for ch, val in six.iteritems(pb_def['channels']):
         })
 
     ebcs_eta[ch] = []
-    for ch2, val2 in six.iteritems(pb_def['channels']):
+    for ch2, val2 in pb_def['channels'].items():
         aux = 'eta%s_bYM%s' % (ch, ch2)
         if ch2 == ch:
             ebcs.update({aux: ('bYM' + ch2, {'pM.0': 1.0})})
@@ -352,7 +351,7 @@ variables = {
 }
 
 # generate regions for channel inputs/outputs
-for ch, val in six.iteritems(pb_def['channels']):
+for ch, val in pb_def['channels'].items():
 
     matk1, matk2 = get_mats(val['param_kappa_ch'],  param_h,
                             eps0, pb_def['dim'])
@@ -411,7 +410,7 @@ for ipm in ['p', 'm']:
         }
     })
 
-for ch in six.iterkeys(reg_io):
+for ch in reg_io.keys():
     for ireg in reg_io[ch]:
         options['volumes'].update({
             ireg: {
@@ -514,7 +513,7 @@ def set_corr_cc(variables, ir, *args, **kwargs):
     variables['corr1_' + ch].set_data(val)
 
 
-for ch, val in six.iteritems(pb_def['channels']):
+for ch, val in pb_def['channels'].items():
     coefs.update({
         'G' + ch: {  # test+
             'requires': ['corrs_one' + ch, 'corrs_eta' + ch],

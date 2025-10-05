@@ -51,7 +51,6 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.discrete import Problem
 from sfepy.discrete.fem import MeshIO
 from sfepy.discrete.probes import write_results, read_results
-import six
 
 helps = {
     'debug':
@@ -107,7 +106,7 @@ def generate_probes(filename_input, filename_results, options,
         data = all_data
     else:
         data = {}
-        for key, val in six.iteritems(all_data):
+        for key, val in all_data.items():
             if key in options.only_names:
                 data[key] = val
 
@@ -138,7 +137,7 @@ def generate_probes(filename_input, filename_results, options,
 
         probe.set_options(close_limit=options.close_limit)
 
-        for key, probe_hook in six.iteritems(probe_hooks):
+        for key, probe_hook in probe_hooks.items():
 
             out = probe_hook(data, probe, labels[ip], problem)
             if out is None: continue
@@ -155,7 +154,7 @@ def generate_probes(filename_input, filename_results, options,
 
             if fig is not None:
                 if isinstance(fig, dict):
-                    for fig_name, fig_fig in six.iteritems(fig):
+                    for fig_name, fig_fig in fig.items():
                         fig_filename = edit_filename(filename,
                                                      suffix='_' + fig_name)
                         fig_fig.savefig(fig_filename)
@@ -201,7 +200,7 @@ def postprocess(filename_input, filename_results, options):
     output(header)
 
     fig = plt.figure()
-    for name, result in six.iteritems(results):
+    for name, result in results.items():
         pars, vals = result[:, 0], result[:, 1]
 
         ii = nm.where(nm.isfinite(vals))[0]

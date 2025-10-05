@@ -6,7 +6,6 @@ import numpy as nm
 
 from sfepy.base.base import Container, Struct, is_sequence
 from sfepy.discrete.functions import Function
-import six
 
 def get_condition_value(val, functions, kind, name):
     """
@@ -54,7 +53,7 @@ class Conditions(Container):
     @staticmethod
     def from_conf(conf, regions):
         conds = []
-        for key, cc in six.iteritems(conf):
+        for key, cc in conf.items():
             times = cc.get('times', None)
 
 
@@ -188,7 +187,7 @@ class Condition(Struct):
         Create a single condition instance for each item in self.dofs
         and yield it.
         """
-        for dofs, val in six.iteritems(self.dofs):
+        for dofs, val in self.dofs.items():
             single_cond = self.copy(name=self.name)
             single_cond.is_single = True
             if 'grad' in dofs:
@@ -241,7 +240,7 @@ class EssentialBC(Condition):
 
         else:
             new_dofs = {}
-            for key in six.iterkeys(self.dofs):
+            for key in self.dofs.keys():
                 new_dofs[key] = 0.0
 
             self.dofs = new_dofs

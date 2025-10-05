@@ -7,7 +7,6 @@ from sfepy.base.log import Log, get_logging_conf
 from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import NonlinearSolver
 from .nls import conv_test
-import six
 
 class StabilizationFunction(Struct):
     """
@@ -318,7 +317,7 @@ class Oseen(NonlinearSolver):
             dx_norm = nla.norm(vec_dx)
             output('||dx||: %.2e' % dx_norm)
 
-            for kv in six.iteritems(time_stats):
+            for kv in time_stats.items():
                 output('%10s: %7.2f [s]' % kv)
 
             vec_x_prev = vec_x.copy()

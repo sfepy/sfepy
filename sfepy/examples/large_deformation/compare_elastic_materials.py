@@ -6,7 +6,6 @@ Requires Matplotlib.
 """
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
-import six
 sys.path.append('.')
 
 import numpy as nm
@@ -139,7 +138,7 @@ def store_top_u(displacements):
 
 def solve_branch(problem, branch_function):
     displacements = {}
-    for key, eq in six.iteritems(problem.conf.equations):
+    for key, eq in problem.conf.equations.items():
         problem.set_equations({key : eq})
 
         load = problem.get_materials()['load']
@@ -203,7 +202,7 @@ def main():
         output(load)
     else:
         legend = []
-        for key, val in six.iteritems(displacements):
+        for key, val in displacements.items():
             plt.plot(load, val)
             legend.append(key)
 

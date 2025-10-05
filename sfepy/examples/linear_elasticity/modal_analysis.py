@@ -41,7 +41,6 @@ Examples
   See :mod:`sfepy.solvers.eigen` for available solvers.
 """
 import sys
-import six
 sys.path.append('.')
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
@@ -145,7 +144,7 @@ def main():
     output('requested %d eigenvalues' % options.n_eigs)
     output('using eigenvalue problem solver:', eig_conf.kind)
     output.level += 1
-    for key, val in six.iteritems(kwargs):
+    for key, val in kwargs.items():
         output('%s: %r' % (key, val))
     output.level -= 1
 

@@ -8,7 +8,6 @@ from .utils import rm_multi
 from sfepy.discrete.evaluate import eval_equations
 import sfepy.base.multiproc as multi
 import numpy as nm
-import six
 
 
 def insert_sub_reqs(reqs, levels, req_info):
@@ -41,7 +40,7 @@ def insert_sub_reqs(reqs, levels, req_info):
 
 
 def get_dict_idxval(dict_array, idx):
-    return {k: v[idx] for k, v in six.iteritems(dict_array)}
+    return {k: v[idx] for k, v in dict_array.items()}
 
 
 class CoefVolume(MiniAppBase):
@@ -157,7 +156,7 @@ class HomogenizationWorker(object):
                 chunk_tag = '-%d' % (chunk_id + 1)
                 local_state = \
                     {k: v[chunk_tab[chunk_id]] if v is not None else None
-                    for k, v in six.iteritems(micro_states)}
+                    for k, v in micro_states.items()}
             else:
                 chunk_tag = ''
                 local_state = micro_states
@@ -422,7 +421,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
     @staticmethod
     def process_reqs_coefs(old, num_workers, store_idxs=[]):
         new = {}
-        for k, v in six.iteritems(old):
+        for k, v in old.items():
             if k == 'filenames':
                 new[k] = v.copy()
                 continue
@@ -577,7 +576,7 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                         inverse_deps[req] = [name]
 
         if multiproc.mpi_rank == multiproc.mpi_master:  # master node
-            for k, v in six.iteritems(loc_numdeps):
+            for k, v in loc_numdeps.items():
                 numdeps[k] = v
 
             remaining.value = len(sorted_names)
@@ -675,7 +674,7 @@ class HomogenizationEngine(PDESolverApp):
         """
         vcfkeys = []
         cf_vols = {}
-        for vk, vv in six.iteritems(volumes):
+        for vk, vv in volumes.items():
             cfkey = 'Volume_%s' % vk
             vcfkeys.append('c.' + cfkey)
             if 'value' in vv:
@@ -685,7 +684,7 @@ class HomogenizationEngine(PDESolverApp):
                 cf_vols[cfkey] = {'expression': vv['expression'],
                                   'class': CoefVolume}
 
-        for cf in six.itervalues(coef_info):
+        for cf in coef_info.values():
             if 'requires' in cf:
                 cf['requires'] += vcfkeys
             else:

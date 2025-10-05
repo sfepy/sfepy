@@ -3,7 +3,6 @@
 Fields for Discontinous Galerkin method
 """
 import numpy as nm
-import six
 from numpy.lib.stride_tricks import as_strided
 
 from sfepy.base.base import (output, assert_, Struct)
@@ -121,7 +120,7 @@ def get_gel(region):
         base geometry element of the region
     """
     cmesh = region.cmesh
-    for key, gel in six.iteritems(region.domain.geom_els):
+    for key, gel in region.domain.geom_els.items():
         ct = cmesh.cell_types
         if (ct[region.cells] == cmesh.key_to_index[gel.name]).all():
             return gel

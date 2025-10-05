@@ -6,7 +6,6 @@ import fnmatch
 import shutil
 import glob
 from .base import output, ordered_iteritems, Struct
-import six
 import pickle
 import warnings
 import scipy.sparse as sp
@@ -307,7 +306,7 @@ def write_dict_hdf5(filename, adict, level=0, group=None, fd=None):
         fd = pt.open_file(filename, mode='w', title='Recursive dict dump')
         group = '/'
 
-    for key, val in six.iteritems(adict):
+    for key, val in adict.items():
         if isinstance(val, dict):
             group2 = fd.create_group(group, '_' + str(key), '%s group' % key)
             write_dict_hdf5(filename, val, level + 1, group2, fd)
@@ -329,11 +328,11 @@ def read_dict_hdf5(filename, level=0, group=None, fd=None):
         fd = pt.open_file(filename, mode='r')
         group = fd.root
 
-    for name, gr in six.iteritems(group._v_groups):
+    for name, gr in group._v_groups.items():
         name = name.replace('_', '', 1)
         out[name] = read_dict_hdf5(filename, level + 1, gr, fd)
 
-    for name, data in six.iteritems(group._v_leaves):
+    for name, data in group._v_leaves.items():
         name = name.replace('_', '', 1)
         val = data.read()
         if isinstance(val, bytes):

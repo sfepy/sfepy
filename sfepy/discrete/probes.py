@@ -8,7 +8,6 @@ import numpy.linalg as nla
 
 from sfepy.base.base import assert_, Struct
 from sfepy.linalg import make_axis_rotation_matrix, norm_l2_along_axis
-import six
 
 def write_results(filename, probe, results):
     """
@@ -27,7 +26,7 @@ def write_results(filename, probe, results):
     fd = open(filename, 'w') if isinstance(filename, str) else filename
 
     fd.write('\n'.join(probe.report()) + '\n')
-    for key, result in six.iteritems(results):
+    for key, result in results.items():
         pars, vals = result
         vals = vals.reshape(pars.shape[0], -1)
         fd.write('\n# %s %d\n' % (key, vals.shape[-1]))

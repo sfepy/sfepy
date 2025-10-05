@@ -6,7 +6,6 @@ import numpy as nm
 
 from sfepy.base.base import OneTypeList, Container, Struct
 from .quadratures import QuadraturePoints
-import six
 
 class Integrals(Container):
     """
@@ -17,7 +16,7 @@ class Integrals(Container):
     def from_conf(conf):
         objs = OneTypeList(Integral)
 
-        for desc in six.itervalues(conf):
+        for desc in conf.values():
             if hasattr(desc, 'vals'):
                 aux = Integral(desc.name,
                                coors=desc.vals,

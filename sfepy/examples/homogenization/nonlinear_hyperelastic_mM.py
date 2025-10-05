@@ -7,7 +7,6 @@ Run in parallel using::
   mpiexec -n 4 sfepy-run --app=bvp-mM --debug-mpi sfepy/examples/homogenization/nonlinear_hyperelastic_mM.py
 """
 import numpy as nm
-import six
 
 from sfepy import data_dir, base_dir
 from sfepy.base.base import Struct, output
@@ -70,7 +69,7 @@ def post_process(out, pb, state, extend=False):
 def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
     if problem.update_materials_flag == 2 and mode == 'qp':
         out = hyperelastic_data['homog_mat']
-        return {k: nm.array(v) for k, v in six.iteritems(out)}
+        return {k: nm.array(v) for k, v in out.items()}
     elif problem.update_materials_flag == 0 or not mode == 'qp':
         return
 
@@ -104,7 +103,7 @@ def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
     hyperelastic_data['time'] = ts.step
     hyperelastic_data['homog_mat_shape'] = family_data.det_f.shape[:2]
     hyperelastic_data['homog_mat'] = \
-        {k: nm.array(v) for k, v in six.iteritems(out)}
+        {k: nm.array(v) for k, v in out.items()}
 
     return out
 

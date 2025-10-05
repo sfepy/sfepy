@@ -5,7 +5,6 @@ import numpy as nm
 from sfepy.base.base import output, get_default, OneTypeList, Struct
 from sfepy.discrete import Equations, Variables, Region, Integral, Integrals
 from sfepy.discrete.common.fields import setup_extra_data
-import six
 
 def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
     """
@@ -386,7 +385,7 @@ def eval_in_els_and_qp(expression, iels, coors,
     region.update_shape()
     domain.regions.append(region)
 
-    for field in six.itervalues(fields):
+    for field in fields.values():
         field.clear_mappings(clear_all=True)
         field.clear_qp_basis()
 
@@ -428,7 +427,7 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         raise TypeError('bad BC!')
 
     matrices = {}
-    for key, mtx_term in six.iteritems(conf_equations):
+    for key, mtx_term in conf_equations.items():
         ks = key.split( ',' )
         mtx_name, var_names = ks[0], ks[1:]
         output( mtx_name, var_names )

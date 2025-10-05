@@ -29,7 +29,6 @@ import numpy as nm
 from sfepy import data_dir
 from sfepy.discrete.fem import MeshIO
 from sfepy.mechanics.matcoefs import stiffness_from_lame
-import six
 
 def post_process(out, pb, state, extend=False):
     """
@@ -131,7 +130,7 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
             'density' : nm.array([[0.1142]]), # in 1e4 kg/m3
         }
 
-        for key, val in six.iteritems(out):
+        for key, val in out.items():
             out[key] = val[None, ...]
 
         return out

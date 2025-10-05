@@ -5,11 +5,10 @@ from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import MeshIO
 from sfepy.solvers.ts import TimeStepper
 from sfepy.base.ioutils import get_trunk, write_dict_hdf5
-import six
 
 def _linearize(out, fields, linearization):
     new = {}
-    for key, val in six.iteritems(out):
+    for key, val in out.items():
         field = fields[val.field_name]
         new.update(field.create_output(val.data, var_name=key,
                                        dof_names=val.dofs, key=key,
@@ -26,7 +25,7 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None,
             output('linearizing...')
             out = _linearize(out, fields, linearization)
             output('...done')
-            for key, val in six.iteritems(out):
+            for key, val in out.items():
                 lmesh = val.get('mesh', mesh)
                 lmesh.write(output_filename_trunk + '_' + key + suffix,
                             io='auto', out={key : val})
@@ -196,11 +195,11 @@ def average_vertex_var_in_cells(ths_in):
     """Average histories in the element nodes for each nodal variable
         originally requested in elements."""
     ths = dict.fromkeys(list(ths_in.keys()))
-    for var, th in six.iteritems(ths_in):
+    for var, th in ths_in.items():
         aux = dict.fromkeys(list(th.keys()))
-        for ir, data in six.iteritems(th):
+        for ir, data in th.items():
             if isinstance(data, dict):
-                for ic, ndata in six.iteritems(data):
+                for ic, ndata in data.items():
                     if aux[ir] is None:
                         aux[ir] = ndata
                     else:

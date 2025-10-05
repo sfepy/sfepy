@@ -13,7 +13,6 @@ from sfepy.base.conf import ProblemConf
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file_hdf5
 import os.path as op
-import six
 import atexit
 
 shared = Struct()

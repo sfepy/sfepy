@@ -6,7 +6,6 @@ Notes
 Inspired by rcParams of matplotlib.
 """
 
-import six
 def validate_bool(val):
     """
     Convert b to a boolean or raise a ValueError.
@@ -33,7 +32,7 @@ class ValidatedDict(dict):
     A dictionary object including validation.
     """
     validate = dict([(key, validator) for key, (default, validator) in \
-                     six.iteritems(default_goptions)])
+                     default_goptions.items()])
 
     def __setitem__(self, key, val):
         try:
@@ -59,4 +58,4 @@ class ValidatedDict(dict):
         return [self[key] for key in self.keys()]
 
 goptions = ValidatedDict([(key, val[0])
-                          for key, val in six.iteritems(default_goptions)])
+                          for key, val in default_goptions.items()])

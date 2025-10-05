@@ -11,7 +11,6 @@ from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.coefs_base import CoefDummy
 from sfepy.applications import PDESolverApp
 from sfepy.base.plotutils import plt
-import six
 
 def try_set_defaults(obj, attr, defaults, recur=False):
     try:
@@ -22,7 +21,7 @@ def try_set_defaults(obj, attr, defaults, recur=False):
 
     else:
         if recur and isinstance(values, dict):
-            for key, val in six.iteritems(values):
+            for key, val in values.items():
                 set_defaults(val, defaults)
 
         else:
@@ -338,7 +337,7 @@ class AcousticBandGapsApp(HomogenizationApp):
         if options.analyze_dispersion or options.phase_velocity:
 
             # Insert incident wave direction to coefficients that need it.
-            for key, val in six.iteritems(coef_info):
+            for key, val in coef_info.items():
                 coef_opts = val.get('options', None)
                 if coef_opts is None: continue
 

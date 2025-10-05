@@ -3,7 +3,6 @@ Generate simplex quadrature points. Code taken and adapted from pytools/hedge
 by Andreas Kloeckner.
 """
 import numpy as nm
-import six
 from functools import reduce
 
 def generate_decreasing_nonnegative_tuples_summing_to(n, length, min=0,
@@ -142,7 +141,7 @@ def get_simplex_cubature(order, dimension):
     neg_weights = []
 
     dim_factor = 2**n
-    for p, w in six.iteritems(points_to_weights):
+    for p, w in points_to_weights.items():
         real_p = reduce(add, (a/b*v for (a,b),v in zip(p, vertices)))
         if w > 0:
             pos_points.append(real_p)

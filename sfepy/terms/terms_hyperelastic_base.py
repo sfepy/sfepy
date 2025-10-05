@@ -3,7 +3,6 @@ from sfepy.terms.terms import Term, terms
 from sfepy.base.base import Struct
 from sfepy import site_config
 
-import six
 
 _msg_missing_data = 'missing family data!'
 
@@ -37,7 +36,7 @@ class HyperElasticFamilyData(Struct):
         n_el, n_qp, dim, n_en, n_c = state_shape
         sym = dim2sym(dim); sym
 
-        shdict = dict(( (k, v) for k, v in six.iteritems(locals())\
+        shdict = dict(( (k, v) for k, v in locals().items()\
             if k in ['n_el', 'n_qp', 'dim', 'n_en', 'n_c', 'sym']))
 
         data = Struct(name=name)

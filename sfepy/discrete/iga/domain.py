@@ -10,7 +10,6 @@ from sfepy.discrete.common.domain import Domain
 from sfepy.discrete.iga import iga
 from sfepy.discrete.iga import io
 from sfepy.discrete.iga.extmods.igac import eval_in_tp_coors
-import six
 
 class NurbsPatch(Struct):
     """
@@ -232,7 +231,7 @@ class IGDomain(Domain):
 
         if regions is not None:
             self.vertex_set_bcs = {}
-            for key, val in six.iteritems(self.regions):
+            for key, val in self.regions.items():
                 self.vertex_set_bcs[key] = remap[val]
 
         self.reset_regions()

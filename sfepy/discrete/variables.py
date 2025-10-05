@@ -18,7 +18,6 @@ from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
 from sfepy.discrete.fem.lcbc_operators import LCBCOperators
 from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
-import six
 
 is_state = 0
 is_virtual = 1
@@ -176,7 +175,7 @@ class Variables(Container):
     @staticmethod
     def from_conf(conf, fields):
         obj = Variables()
-        for key, val in six.iteritems(conf):
+        for key, val in conf.items():
             var = Variable.from_conf(key, val, fields)
 
             obj[var.name] = var
@@ -735,7 +734,7 @@ class Variables(Container):
 
         if isinstance(data, dict):
 
-            for key, val in six.iteritems(data):
+            for key, val in data.items():
                 try:
                     var = self[key]
 
@@ -933,7 +932,7 @@ class Variables(Container):
                 var_info[name] = (False, name)
 
         out = {}
-        for key, indx in six.iteritems(di.indx):
+        for key, indx in di.indx.items():
             var = self[key]
 
             if key not in list(var_info.keys()): continue
@@ -1231,13 +1230,13 @@ class Variable(Struct):
                 self.data[ii][self.indx] = self.data[ii - 1][self.indx]
 
             # Advance evaluate cache.
-            for step_cache in six.itervalues(self.evaluate_cache):
+            for step_cache in self.evaluate_cache.values():
                 steps = sorted(step_cache.keys())
                 for step in steps:
                     if step is None:
                         # Special caches with possible custom advance()
                         # function.
-                        for key, val in six.iteritems(step_cache[step]):
+                        for key, val in step_cache[step].items():
                             if hasattr(val, '__advance__'):
                                 val.__advance__(ts, val)
 
@@ -1665,7 +1664,7 @@ class FieldVariable(Variable):
         This should be done, for example, prior to every nonlinear
         solver iteration.
         """
-        for step_cache in six.itervalues(self.evaluate_cache):
+        for step_cache in self.evaluate_cache.values():
             for key in list(step_cache.keys()):
                 if key == step: # Given time step to clear.
                     step_cache.pop(key)
