@@ -24,7 +24,7 @@ field_table = load_classes(field_files, [Field], ignore_errors=True,
                            name_attr='family_name')
 
 
-header = """
+header = r"""
 .. tabularcolumns:: |l|l|l|p{0.55\linewidth}|
 .. list-table:: Fields
    :widths: 5 15 15 65

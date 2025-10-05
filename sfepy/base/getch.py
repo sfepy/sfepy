@@ -26,7 +26,7 @@ class _GetchWindows:
 
     def __call__(self):
         msvcrt = self.msvcrt
-        
+
         c = msvcrt.getch()
         if c == '\x00' or c == '\xE0':    #functions keys
             msvcrt.getch()
@@ -38,7 +38,7 @@ class _GetchWindows:
 
 class _GetchUnix:
     def __init__(self):
-        import tty, sys, select
+        import tty, select
         self.mods = (tty, sys, select)
 
     def __call__(self):
@@ -68,7 +68,7 @@ class _GetchUnix:
 
 class _GetchDefault:
     def __call__(self):
-        return raw_input()[0]
+        return input()[0]
 
     def iskeydown(self):
         raise NotImplementedError
@@ -77,7 +77,7 @@ getch = _Getch()
 
 if __name__ == '__main__':
     from .base import pause, spause
-    
+
     pause('press a key anytime the script stops!')
     pause()
     spause('last time...')

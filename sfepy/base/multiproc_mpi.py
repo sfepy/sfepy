@@ -18,7 +18,7 @@ global_multiproc_dict = {}
 mpi_master = 0
 
 
-class MPILogFile(object):
+class MPILogFile:
     def __init__(self, comm, filename, mode):
         self._file = MPI.File.Open(comm, filename, mode)
         self._file.Set_atomicity(True)
@@ -157,9 +157,9 @@ def get_dict(name, mutable=False, clear=False, soft_set=False):
         return RemoteDict(name, mutable=mutable)
 
 
-class RemoteInt(object):
+class RemoteInt:
     """Remote intiger class, data saved in RemoteDict."""
-    class IntDesc(object):
+    class IntDesc:
         def __get__(self, instance, owner=None):
             return instance.remote_dict['value']
 
@@ -211,7 +211,7 @@ class RemoteQueueMaster(list):
                      % (tags.name[tags.QUEUE_VAL], slave, self.name))
 
 
-class RemoteQueue(object):
+class RemoteQueue:
     """Remote queue class - slave side."""
     def __init__(self, name):
         self.name = name
@@ -283,7 +283,7 @@ class RemoteDictMaster(dict):
                      % (tags.name[tags.DICT_IN], slave, self.name))
 
 
-class RemoteDict(object):
+class RemoteDict:
     """Remote dictionary class - slave side."""
     def __init__(self, name, mutable=False):
         self._dict = {}
@@ -377,7 +377,7 @@ def is_remote_dict(d):
     return isinstance(d, RemoteDict) or isinstance(d, RemoteDictMaster)
 
 
-class RemoteLock(object):
+class RemoteLock:
     """Remote lock class - lock and unlock restricted access to the master."""
     def __init__(self):
         self.locked = False

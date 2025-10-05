@@ -13,7 +13,7 @@ import sfepy
 from sfepy.base.base import Struct
 from sfepy.base.log import Log
 
-class MaterialOptimizer(object):
+class MaterialOptimizer:
 
     @staticmethod
     def create_app(filename, is_homog=False, **kwargs):

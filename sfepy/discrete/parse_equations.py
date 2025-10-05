@@ -2,7 +2,7 @@ from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
      ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
      StringStart, StringEnd, CaselessLiteral, Forward, oneOf
 
-class TermParse(object):
+class TermParse:
     def __str__(self):
         ss = "%s\n" % self.__class__
         for key, val in self.__dict__.items():

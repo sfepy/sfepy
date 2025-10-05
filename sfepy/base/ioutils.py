@@ -121,15 +121,13 @@ def enc(string, encoding='utf-8'):
     """
     Encode given string or bytes using the specified encoding.
     """
-    if sys.version_info > (3, 0):
-        string = string.encode(encoding)
-    return string
+    return string.encode(encoding)
 
 def dec(val, encoding='utf-8'):
     """
     Decode given bytes using the specified encoding.
     """
-    if isinstance(val, bytes) and sys.version_info > (3, 0):
+    if isinstance(val, bytes):
         val = val.decode(encoding)
     return val
 
@@ -442,7 +440,7 @@ def read_sparse_matrix_from_hdf5(fd, group, output_format=None):
 def path_of_hdf5_group(group):
     return group._v_pathname
 
-class HDF5BaseData(object):
+class HDF5BaseData:
     """
     When storing values to HDF5, special classes can be used that wrap the
     stored data and modify the way the storing is done. This class is the base
