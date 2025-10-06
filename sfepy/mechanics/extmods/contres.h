@@ -8,7 +8,9 @@ extern "C" {  // only need to export C interface if used by C++ source code
 
 #include "common.h"
 
+#if !defined (__STDC_VERSION__) || __STDC_VERSION__ < 202311L
 typedef unsigned int bool;
+#endif
 
 #if defined (__linux__) || (__unix__) || (__APPLE__)
 
