@@ -10,15 +10,12 @@ except:
     use_multiprocessing = False
     managers = None
 
-try:
-    import queue
-except ImportError:
-    import Queue as queue
+import queue
 
 global_multiproc_dict = {}
 
 
-class MyQueue(object):
+class MyQueue:
     def __init__(self):
         self.queue = Queue()
 

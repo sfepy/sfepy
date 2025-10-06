@@ -53,7 +53,7 @@ class CoefVolume(MiniAppBase):
         return eval_equations(equations, variables, term_mode=term_mode)
 
 
-class HomogenizationWorker(object):
+class HomogenizationWorker:
     def __call__(self, problem, options, post_process_hook,
                  req_info, coef_info,
                  micro_states, store_micro_idxs, time_tag=''):

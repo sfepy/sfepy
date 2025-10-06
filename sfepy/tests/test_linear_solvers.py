@@ -48,7 +48,7 @@ equations = {
     'Temperature' : """dw_laplace.i.Omega(coef.val, s, t) = 0"""
 }
 
-class DiagPC(object):
+class DiagPC:
     """
     Diagonal (Jacobi) preconditioner.
 

@@ -59,7 +59,7 @@ newpage = r"""
    \newpage
 """
 
-header = """
+header = r"""
 .. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.6\linewidth}|p{0.15\linewidth}|
 .. list-table:: %s terms
    :widths: 15 10 60 15

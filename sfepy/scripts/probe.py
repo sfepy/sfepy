@@ -172,7 +172,7 @@ def generate_probes(filename_input, filename_results, options,
                 output('data ->', os.path.normpath(txt_filename))
 
 def integrate_along_line(x, y, is_radial=False):
-    """
+    r"""
     Integrate numerically (trapezoidal rule) a function :math:`y=y(x)`.
 
     If is_radial is True, multiply each :math:`y` by :math:`4 \pi x^2`.

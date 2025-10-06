@@ -54,7 +54,7 @@ def compose_system_compile_flags(is_posix: bool) -> list:
     return (cflags + ' ' + configure_cppflags + ' ' + configure_cflags).split()
 
 
-class Config(object):
+class Config:
     """
     Read and access the site configuration from the current directory.
     """

@@ -439,7 +439,7 @@ class Newton(NonlinearSolver):
             make the iteration residuals decreasing while for 'error'
             the solution error estimates should decrease."""),
         ('ls_on', 'float', 0.99999, False,
-         """Start the backtracking line-search by reducing the step, if
+         r"""Start the backtracking line-search by reducing the step, if
             :math:`||d(x^i)|| / ||d(x^{i-1})||` is larger than `ls_on`,
             where :math:`d` is either :math:`f` or :math:`\Delta x`
             depending on `ls_mode`."""),

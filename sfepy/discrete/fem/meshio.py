@@ -797,10 +797,7 @@ class HDF5MeshIO(MeshIO):
     _all = ''.join(map(chr, list(range(256))))
     _letters = string.ascii_letters + string.digits + '_'
     _rubbish = ''.join([ch for ch in set(_all) - set(_letters)])
-    if sys.version_info[0] >= 3:
-        _tr = str.maketrans(_rubbish, '_' * len(_rubbish))
-    else:
-        _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
+    _tr = str.maketrans(_rubbish, '_' * len(_rubbish))
 
     @staticmethod
     def read_mesh_from_hdf5(filename, group=None, mesh=None):

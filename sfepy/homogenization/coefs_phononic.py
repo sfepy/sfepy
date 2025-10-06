@@ -280,7 +280,7 @@ def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
     return slogs, gaps, kinds
 
 def get_callback(mass, solver_kind, mtx_b=None, mode='trace'):
-    """
+    r"""
     Return callback to solve band gaps or dispersion eigenproblem P.
 
     Notes
@@ -323,7 +323,7 @@ def get_callback(mass, solver_kind, mtx_b=None, mode='trace'):
     return eval(mode + '_callback')
 
 def find_zero(f0, f1, callback, freq_eps, zero_eps, mode):
-    """
+    r"""
     For f \in ]f0, f1[ find frequency f for which either the smallest (`mode` =
     0) or the largest (`mode` = 1) eigenvalue of problem P given by `callback`
     is zero.

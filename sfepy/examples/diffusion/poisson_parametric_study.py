@@ -153,7 +153,7 @@ def select_circ( x, y, z, diameter ):
     return out
 
 def vary_omega1_size( problem ):
-    """Vary size of \Omega1. Saves also the regions into options['output_dir'].
+    r"""Vary size of \Omega1. Saves also the regions into options['output_dir'].
 
     Input:
       problem: Problem instance
@@ -204,7 +204,7 @@ def vary_omega1_size( problem ):
         filename = join( output_dir,
                          ('log_%s.txt' % d_format) % ii )
         fd = open( filename, 'w' )
-        log_item = '$r(\Omega_1)$: %f\n' % diameter
+        log_item = r'$r(\Omega_1)$: %f\n' % diameter
         fd.write( log_item )
         fd.write( 'solution:\n' )
         nm.savetxt(fd, state())

@@ -259,7 +259,7 @@ def spause(msg=None):
 
 ##
 # 02.01.2005
-class Struct(object):
+class Struct:
     # 03.10.2005, c
     # 26.10.2005
     def __init__(self, **kwargs):
@@ -1028,9 +1028,11 @@ def structify(obj):
             out.__dict__[key] = structify(val)
     return out
 
+# deprecated
 def is_string(var):
     return isinstance(var, str)
 
+# deprecated
 def is_integer(var):
     return isinstance(var, int)
 

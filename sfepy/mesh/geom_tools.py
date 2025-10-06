@@ -1,6 +1,6 @@
 import numpy as nm
 
-class geometry(object):
+class geometry:
     """The geometry is given by a sets of points (d0), lines (d1), surfaces
     (d2) and volumes (d3). A lines are constructed from 2 points, a surface from
     any number of lines, a volume from any number of surfaces.
@@ -432,7 +432,7 @@ class geometry(object):
 
         return geo
 
-class geomobject(object):
+class geomobject:
     def getn(self):
         return self.n
 
