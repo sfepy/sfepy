@@ -374,6 +374,49 @@ def read_probes_as_annotations(filenames, add_label=True):
 
     return annotations
 
+def make_glyphs(mesh, scalars_name=None, geom_name=None):
+    if (geom_name is None) or (geom_name == 'arrows'):
+        glyphs = mesh.arrows
+
+    else:
+        vectors, vectors_name = mesh.active_vectors, mesh.active_vectors_name
+        if vectors is None or vectors_name is None:
+            return None
+
+        if vectors.ndim != 2:
+            raise ValueError('active vectors are not vectors.')
+
+        if scalars_name is None:
+            scalars_name = f'{vectors_name} Magnitude'
+            scale = nm.linalg.norm(vectors, axis=1)
+            mesh.point_data.set_array(scale, scalars_name)
+
+        if geom_name == 'cylinders':
+            geom = pv.Cylinder(
+                direction=(1, 0, 0), height=1.0, radius=0.05, resolution=8,
+            )
+
+        elif geom_name == 'cones':
+            geom = pv.Cone(
+                direction=(1, 0, 0), height=1.0, radius=0.05, resolution=8,
+            )
+        elif geom_name == 'lines':
+            geom = pv.Line(pointa=(0, 0, -0.5), pointb=(0, 0, 0.5))
+
+        elif geom_name == 'tubes':
+            line = pv.Line(pointa=(-0.5, 0, 0), pointb=(0.5, 0, 0))
+            geom = line.tube(radius=0.05, n_sides=8)
+
+        elif geom_name == 'spheres':
+            geom = pv.Sphere(radius=0.5, theta_resolution=8, phi_resolution=8)
+
+        else:
+            raise ValueError(f'unsupported glyph geometry! {geom_name}')
+
+        glyphs = mesh.glyph(orient=vectors_name, scale=scalars_name, geom=geom)
+
+    return glyphs
+
 def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar_bar_limits=None, ret_scalar_bar_limits=False,
             step_inc=None, use_cache=True):
