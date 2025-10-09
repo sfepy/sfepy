@@ -892,20 +892,24 @@ class StoreNumberAction(Action):
 
 helps = {
     'fields':
-        'fields to plot, options separated by ":" are possible:\n'
-        '"cX" - plot only Xth field component; '
-        '"e" - print edges; '
-        '"fX" - scale factor for warp/glyphs, see --factor option; '
-        '"g - glyphs (for vector fields or scalar fields), scale by factor; '
-        '"iX" - plot X isosurfaces; '
-        '"tX" - plot X streamlines, gradient employed for scalar fields; '
-        '"mX" - plot cells with mat_id=X; '
-        '"oX" - set opacity to X; '
-        '"pX" - plot in slot X; '
-        '"r" - recalculate cell data to point data; '
-        '"sX" - plot data in step X; '
-        '"vX" - plotting style: s=surface, w=wireframe, p=points; '
-        '"wX" - warp mesh by vector field X, scale by factor',
+        """fields to plot, options separated by ':' are possible:\n
+        'g[,geom[,X]]' - plot glyphs (arrows by default) for vector or scalar
+                         fields, where geom is one of ['arrows', 'cylinders',
+                         'cones', 'lines', 'tubes', 'spheres'], scale by factor
+                         F, and optionally by X scalar;
+        'iX' - plot X isosurfaces;
+        'tX[,Y]' - plot X streamlines, color optionally by Y, gradient employed
+                   for scalar fields X;
+        'wX' - warp mesh by vector field X, scale by factor F;
+        'fF[%%]' - set scale factor F for warp/glyphs, see --factor option;
+        'cC' - select Cth field component;
+        'r' - recalculate cell data to point data;
+        'sT' - plot data in step T;
+        'mM' - plot cells with mat_id=M;
+        'vP' - set plotting style to P: s=surface, w=wireframe, p=points;
+        'e' - print edges;
+        'oV' - set opacity to V;
+        'pI' - plot in slot I""",
     'fields_map':
         'map fields and cell groups, e.g. 1:u1,p1 2:u2,p2',
     'outline':
@@ -913,7 +917,7 @@ helps = {
     'warp':
         'warp mesh by vector field',
     'factor':
-        'scaling factor for mesh warp and glyphs.'
+        'scaling factor F for mesh warp and glyphs.'
         ' Append "%%" to scale relatively to the minimum bounding box size.',
     'edges':
         'plot cell edges',
