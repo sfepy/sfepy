@@ -374,6 +374,49 @@ def read_probes_as_annotations(filenames, add_label=True):
 
     return annotations
 
+def make_glyphs(mesh, scalars_name=None, geom_name=None):
+    if (geom_name is None) or (geom_name == 'arrows'):
+        glyphs = mesh.arrows
+
+    else:
+        vectors, vectors_name = mesh.active_vectors, mesh.active_vectors_name
+        if vectors is None or vectors_name is None:
+            return None
+
+        if vectors.ndim != 2:
+            raise ValueError('active vectors are not vectors.')
+
+        if scalars_name is None:
+            scalars_name = f'{vectors_name} Magnitude'
+            scale = nm.linalg.norm(vectors, axis=1)
+            mesh.point_data.set_array(scale, scalars_name)
+
+        if geom_name == 'cylinders':
+            geom = pv.Cylinder(
+                direction=(1, 0, 0), height=1.0, radius=0.05, resolution=8,
+            )
+
+        elif geom_name == 'cones':
+            geom = pv.Cone(
+                direction=(1, 0, 0), height=1.0, radius=0.05, resolution=8,
+            )
+        elif geom_name == 'lines':
+            geom = pv.Line(pointa=(0, 0, -0.5), pointb=(0, 0, 0.5))
+
+        elif geom_name == 'tubes':
+            line = pv.Line(pointa=(-0.5, 0, 0), pointb=(0.5, 0, 0))
+            geom = line.tube(radius=0.05, n_sides=8)
+
+        elif geom_name == 'spheres':
+            geom = pv.Sphere(radius=0.5, theta_resolution=8, phi_resolution=8)
+
+        else:
+            raise ValueError(f'unsupported glyph geometry! {geom_name}')
+
+        glyphs = mesh.glyph(orient=vectors_name, scale=scalars_name, geom=geom)
+
+    return glyphs
+
 def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar_bar_limits=None, ret_scalar_bar_limits=False,
             step_inc=None, use_cache=True):
@@ -572,7 +615,16 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar_label = scalar
 
         if 'g' in opts and is_point_field:  # glyphs
-            gfield = opts['g']
+            aux = opts['g'].split(',')
+            gfield = aux[0]
+            geom_name, scalar_name = None, None
+            if len(aux) > 2:
+                # Scaling scalar name.
+                scalar_name = aux[2]
+            if len(aux) > 1:
+                # Glyph geometry name name.
+                geom_name = aux[1]
+
             if isinstance(gfield, str):
                 is_gvector_field = ((gfield is not None)
                                     and (len(pipe[-1][gfield].shape) > 1)
@@ -585,7 +637,12 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             if is_gvector_field:
                 pipe[-1][gfield] *= factor
                 pipe[-1].set_active_vectors(gfield)
-                pipe.append(pipe[-1].arrows)
+
+                pipe.append(make_glyphs(
+                    pipe[-1],
+                    scalars_name=scalar_name,
+                    geom_name=geom_name,
+                ))
                 show_edges = False
                 plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
 
@@ -593,7 +650,11 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                 g_pipe = pipe[-1].compute_derivative(scalars=gfield)
                 g_pipe['gradient'] *= factor
                 g_pipe.set_active_vectors('gradient')
-                pipe.append(g_pipe.arrows)
+                pipe.append(make_glyphs(
+                    g_pipe,
+                    scalars_name=scalar_name,
+                    geom_name=geom_name,
+                ))
                 show_edges = False
                 plot_info.append('glyphs=grad(%s), factor=%.2e'
                                  % (field, factor))
@@ -606,9 +667,22 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar = field + '_%d' % comp
             pipe[-1][scalar] = field_data[:, comp]
         elif 't' in opts:  # streamlines
-            npts = opts.get('t')
-            if npts is True:
+            scalar = field
+            tube_radius = None
+            opt = opts['t']
+            if opt is True:
                 npts = 20
+
+            elif isinstance(opt, int):
+                npts = opt
+
+            else:
+                aux = opt.split(',')
+                npts = int(aux[0])
+                if len(aux) > 2:
+                    tube_radius = float(aux[2])
+                if len(aux) > 1:
+                    scalar = aux[1]
 
             if is_vector_field:
                 sl_vector = field
@@ -631,7 +705,11 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                                                   n_points=npts,
                                                   max_time=1e12)
 
-            pipe.append(streamlines)
+            if tube_radius is None:
+                pipe.append(streamlines)
+
+            else:
+                pipe.append(streamlines.tube(radius=tube_radius))
 
         isosurfaces = int(opts.get('i', options.isosurfaces))
         if isosurfaces > 0:  # iso-surfaces
@@ -814,20 +892,24 @@ class StoreNumberAction(Action):
 
 helps = {
     'fields':
-        'fields to plot, options separated by ":" are possible:\n'
-        '"cX" - plot only Xth field component; '
-        '"e" - print edges; '
-        '"fX" - scale factor for warp/glyphs, see --factor option; '
-        '"g - glyphs (for vector fields or scalar fields), scale by factor; '
-        '"iX" - plot X isosurfaces; '
-        '"tX" - plot X streamlines, gradient employed for scalar fields; '
-        '"mX" - plot cells with mat_id=X; '
-        '"oX" - set opacity to X; '
-        '"pX" - plot in slot X; '
-        '"r" - recalculate cell data to point data; '
-        '"sX" - plot data in step X; '
-        '"vX" - plotting style: s=surface, w=wireframe, p=points; '
-        '"wX" - warp mesh by vector field X, scale by factor',
+        """fields to plot, options separated by ':' are possible:\n
+        'g[,geom[,X]]' - plot glyphs (arrows by default) for vector or scalar
+                         fields, where geom is one of ['arrows', 'cylinders',
+                         'cones', 'lines', 'tubes', 'spheres'], scale by factor
+                         F, and optionally by X scalar;
+        'iX' - plot X isosurfaces;
+        'tX[,Y]' - plot X streamlines, color optionally by Y, gradient employed
+                   for scalar fields X;
+        'wX' - warp mesh by vector field X, scale by factor F;
+        'fF[%%]' - set scale factor F for warp/glyphs, see --factor option;
+        'cC' - select Cth field component;
+        'r' - recalculate cell data to point data;
+        'sT' - plot data in step T;
+        'mM' - plot cells with mat_id=M;
+        'vP' - set plotting style to P: s=surface, w=wireframe, p=points;
+        'e' - print edges;
+        'oV' - set opacity to V;
+        'pI' - plot in slot I""",
     'fields_map':
         'map fields and cell groups, e.g. 1:u1,p1 2:u2,p2',
     'outline':
@@ -835,7 +917,7 @@ helps = {
     'warp':
         'warp mesh by vector field',
     'factor':
-        'scaling factor for mesh warp and glyphs.'
+        'scaling factor F for mesh warp and glyphs.'
         ' Append "%%" to scale relatively to the minimum bounding box size.',
     'edges':
         'plot cell edges',
