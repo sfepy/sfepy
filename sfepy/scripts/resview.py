@@ -667,9 +667,22 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar = field + '_%d' % comp
             pipe[-1][scalar] = field_data[:, comp]
         elif 't' in opts:  # streamlines
-            npts = opts.get('t')
-            if npts is True:
+            scalar = field
+            tube_radius = None
+            opt = opts['t']
+            if opt is True:
                 npts = 20
+
+            elif isinstance(opt, int):
+                npts = opt
+
+            else:
+                aux = opt.split(',')
+                npts = int(aux[0])
+                if len(aux) > 2:
+                    tube_radius = float(aux[2])
+                if len(aux) > 1:
+                    scalar = aux[1]
 
             if is_vector_field:
                 sl_vector = field
@@ -692,7 +705,11 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                                                   n_points=npts,
                                                   max_time=1e12)
 
-            pipe.append(streamlines)
+            if tube_radius is None:
+                pipe.append(streamlines)
+
+            else:
+                pipe.append(streamlines.tube(radius=tube_radius))
 
         isosurfaces = int(opts.get('i', options.isosurfaces))
         if isosurfaces > 0:  # iso-surfaces
