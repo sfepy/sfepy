@@ -615,7 +615,16 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar_label = scalar
 
         if 'g' in opts and is_point_field:  # glyphs
-            gfield = opts['g']
+            aux = opts['g'].split(',')
+            gfield = aux[0]
+            geom_name, scalar_name = None, None
+            if len(aux) > 2:
+                # Scaling scalar name.
+                scalar_name = aux[2]
+            if len(aux) > 1:
+                # Glyph geometry name name.
+                geom_name = aux[1]
+
             if isinstance(gfield, str):
                 is_gvector_field = ((gfield is not None)
                                     and (len(pipe[-1][gfield].shape) > 1)
@@ -628,7 +637,12 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             if is_gvector_field:
                 pipe[-1][gfield] *= factor
                 pipe[-1].set_active_vectors(gfield)
-                pipe.append(pipe[-1].arrows)
+
+                pipe.append(make_glyphs(
+                    pipe[-1],
+                    scalars_name=scalar_name,
+                    geom_name=geom_name,
+                ))
                 show_edges = False
                 plot_info.append('glyphs=%s, factor=%.2e' % (field, factor))
 
@@ -636,7 +650,11 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
                 g_pipe = pipe[-1].compute_derivative(scalars=gfield)
                 g_pipe['gradient'] *= factor
                 g_pipe.set_active_vectors('gradient')
-                pipe.append(g_pipe.arrows)
+                pipe.append(make_glyphs(
+                    g_pipe,
+                    scalars_name=scalar_name,
+                    geom_name=geom_name,
+                ))
                 show_edges = False
                 plot_info.append('glyphs=grad(%s), factor=%.2e'
                                  % (field, factor))
