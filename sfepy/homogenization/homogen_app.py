@@ -39,7 +39,6 @@ class HomogenizationApp(HomogenizationEngine):
                       micro_update=get('micro_update', {}),
                       n_micro=get('n_micro', None),
                       multiprocessing=get('multiprocessing', True),
-                      use_mpi=get('use_mpi', False),
                       store_micro_idxs=get('store_micro_idxs', []),
                       volume=volume,
                       volumes=volumes)
@@ -219,7 +218,7 @@ class HomogenizationApp(HomogenizationEngine):
 
         multiproc_mode = None
         if opts.multiprocessing and multi.use_multiprocessing:
-            multiproc, multiproc_mode = multi.get_multiproc(mpi=opts.use_mpi)
+            multiproc, multiproc_mode = multi.get_multiproc()
 
             if multiproc_mode is not None:
                 upd_var = self.app_options.mesh_update_variable

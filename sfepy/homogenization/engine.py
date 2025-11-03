@@ -528,95 +528,6 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         return new_deps
 
 
-class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
-    def __call__(self, problem, options, post_process_hook,
-                 req_info, coef_info,
-                 micro_states, store_micro_idxs, chunks_per_worker,
-                 time_tag=''):
-        """Calculate homogenized correctors and coefficients.
-
-        Parameters and Returns
-        ----------------------
-        The same parameters and returns as :class:`HomogenizationWorkerMulti`.
-        """
-        multiproc = multi.multiproc_mpi
-
-        dependencies = multiproc.get_dict('dependecies', clear=True)
-        save_names = multiproc.get_dict('save_names', clear=True)
-        numdeps = multiproc.get_dict('numdeps', mutable=True, clear=True)
-        remaining = multiproc.get_int_value('remaining', 0)
-        tasks = multiproc.get_queue('tasks')
-
-        if micro_states is not None:
-            micro_chunk_tab, req_info, coef_info = \
-                self.chunk_micro_tasks(self.num_workers,
-                                       len(micro_states['coors']),
-                                       req_info, coef_info,
-                                       chunks_per_worker, store_micro_idxs)
-        else:
-            micro_chunk_tab = None
-
-        sorted_names = self.get_sorted_dependencies(req_info, coef_info,
-                                                    options.compute_only)
-
-        # calculate number of dependencies and inverse map
-        inverse_deps = {}
-        loc_numdeps = {}
-        for name in sorted_names:
-            if name.startswith('c.'):
-                reqs = coef_info[name[2:]].get('requires', [])
-            else:
-                reqs = req_info[name].get('requires', [])
-            loc_numdeps[name] = len(reqs)
-            if len(reqs) > 0:
-                for req in reqs:
-                    if req in inverse_deps:
-                        inverse_deps[req].append(name)
-                    else:
-                        inverse_deps[req] = [name]
-
-        if multiproc.mpi_rank == multiproc.mpi_master:  # master node
-            for k, v in loc_numdeps.items():
-                numdeps[k] = v
-
-            remaining.value = len(sorted_names)
-
-            for name in sorted_names:
-                if numdeps[name] == 0:
-                    tasks.put(name)
-
-            multiproc.master_loop()
-            multiproc.master_send_continue()
-
-            if micro_states is not None:
-                dependencies = self.dechunk_reqs_coefs(dependencies,
-                                                       len(micro_chunk_tab))
-
-            multiproc.master_send_task('deps', dependencies)
-            multiproc.master_send_continue()
-
-            return dependencies, save_names
-
-        else:  # slave node
-            lock = multiproc.RemoteLock()
-            multiproc.slave_get_task('engine')
-
-            self.calculate_req_multi(tasks, lock, remaining, numdeps,
-                                     inverse_deps, problem, options,
-                                     post_process_hook, req_info,
-                                     coef_info, save_names, dependencies,
-                                     micro_states,
-                                     time_tag, micro_chunk_tab,
-                                     str(multiproc.mpi_rank + 1))
-
-            multiproc.slave_task_done('engine')
-            multiproc.wait_for_tag(multiproc.tags.CONTINUE)
-            task, deps = multiproc.slave_get_task('get_deps')
-            multiproc.wait_for_tag(multiproc.tags.CONTINUE)
-
-            return deps, None
-
-
 class HomogenizationEngine(PDESolverApp):
     @staticmethod
     def process_options(options):
@@ -628,7 +539,6 @@ class HomogenizationEngine(PDESolverApp):
                                        'missing "requirements" in options!'),
                       compute_only=get('compute_only', None),
                       multiprocessing=get('multiprocessing', True),
-                      use_mpi=get('use_mpi', False),
                       store_micro_idxs=get('store_micro_idxs', []),
                       chunks_per_worker=get('chunks_per_worker', 1),
                       save_formats=get('save_formats', ['vtk', 'h5']),
@@ -708,10 +618,8 @@ class HomogenizationEngine(PDESolverApp):
 
         multiproc_mode = None
         if opts.multiprocessing and multi.use_multiprocessing:
-            multiproc, multiproc_mode = multi.get_multiproc(mpi=opts.use_mpi)
-            if multiproc_mode == 'mpi':
-                HomogWorkerMulti = HomogenizationWorkerMultiMPI
-            elif multiproc_mode == 'proc':
+            multiproc, multiproc_mode = multi.get_multiproc()
+            if multiproc_mode == 'proc':
                 HomogWorkerMulti = HomogenizationWorkerMulti
             else:
                 multiproc_mode = None
