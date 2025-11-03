@@ -5,7 +5,7 @@ import numpy as nm
 
 from sfepy.base.base import output, Struct
 from .geometry_element import GeometryElement
-from sfepy.discrete import Domain, PolySpace
+from sfepy.discrete import Domain, PolySpace, Region
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, \
     refine_3_8, refine_1_2
 from sfepy.discrete.fem.fe_surface import FESurface
@@ -17,7 +17,7 @@ class FEDomain(Domain):
     data shapes.
     """
 
-    def __init__(self, name, mesh, verbose=False, **kwargs):
+    def __init__(self, name, mesh, verbose=False, regions=None, **kwargs):
         """Create a Domain.
 
         Parameters
@@ -75,6 +75,27 @@ class FEDomain(Domain):
 
         self.reset_regions()
         self.clear_surface_groups()
+
+        if regions is not None:
+            for args0 in regions:
+                args = args0[:2] + (self,) + args0[2:-2]
+                reg = Region(*args)
+                for ii, ent in enumerate(args0[-2]):
+                    reg.entities[ii] = ent
+                reg.update_shape()
+                reg.extra_options = args0[-1]
+                self.regions.append(reg)
+
+    def __reduce__(self):
+        regions = []
+        for r in self.regions:
+            rentities = [r.get_entities(ii) for ii, ican in enumerate(r.can)]
+            regions.append((r.name, r.definition, r.parse_def, r.kind,
+                            r.parent, r.tdim, rentities, r.extra_options))
+
+        return (FEDomain, (self.name, self.mesh, self.verbose, regions))
+
+
 
     def get_mesh_coors(self, actual=False):
         """
