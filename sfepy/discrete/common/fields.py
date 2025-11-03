@@ -198,9 +198,9 @@ class Field(Struct):
         """
         Save current reference mappings to `mappings0` attribute.
         """
-        from sfepy.base.multiproc import is_remote_dict
+        from multiprocessing import managers
 
-        if is_remote_dict(self.mappings0):
+        if isinstance(self.mappings0, managers.DictProxy):
             for k, v in self.mappings.items():
                 self.mappings0[k] = (v[0], None)  # save PyCMapping only
         else:
