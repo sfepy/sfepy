@@ -1,13 +1,13 @@
 import numpy as nm
-
 from sfepy.base.base import output, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.homogenization.homogen_app import HomogenizationApp
 from sfepy.homogenization.coefficients import Coefficients
 import tables as pt
 from sfepy.discrete.fem.meshio import HDF5MeshIO
-import sfepy.linalg as la
 import os.path as op
+
+micro_problem_cache = {}
 
 
 def get_homog_coefs_linear(ts, coor, mode,
@@ -47,6 +47,8 @@ def get_homog_coefs_linear(ts, coor, mode,
             coefs = coefs[0]
 
         coefs.to_file_hdf5( coefs_filename )
+
+        micro_problem_cache[micro_filename] = app.problem
     else:
         coefs = Coefficients.from_file_hdf5( coefs_filename )
 
