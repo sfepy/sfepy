@@ -39,6 +39,9 @@ class PyCMapping(Struct):
 
         return 0
 
+    def __reduce__(self):
+        return (PyCMapping, (self.bf, self.det, self.volume, self.bfg,
+                             self.normal, self.dim))
 
 class PhysicalQPs(Struct):
     """
