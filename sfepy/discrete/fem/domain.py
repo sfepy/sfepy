@@ -17,7 +17,8 @@ class FEDomain(Domain):
     data shapes.
     """
 
-    def __init__(self, name, mesh, verbose=False, regions=None, **kwargs):
+    def __init__(self, name, mesh, verbose=False, regions=None,
+                 geom_els=None, poly_spaces=None, **kwargs):
         """Create a Domain.
 
         Parameters
@@ -29,29 +30,41 @@ class FEDomain(Domain):
         """
         Domain.__init__(self, name, mesh=mesh, verbose=verbose, **kwargs)
 
-        self.geom_els = geom_els = {}
-        for ig, desc in enumerate(mesh.descs):
-            gel = GeometryElement(desc)
+        if geom_els is None:
+            geom_els = {}
+            for ig, desc in enumerate(mesh.descs):
+                gel = GeometryElement(desc)
 
-            if gel.dim > 0:
-                # Create geometry elements of dimension - 1.
-                gel.create_surface_facet()
+                if gel.dim > 0:
+                    # Create geometry elements of dimension - 1.
+                    gel.create_surface_facet()
 
-            geom_els[desc] = gel
+                geom_els[desc] = gel
 
-        for gel in geom_els.values():
-            key = gel.get_interpolation_name()
+        geom_els_all = geom_els.copy()
+        for k, v in geom_els.items():
+            if isinstance(v.surface_facet, dict):
+                geom_els_all.update(v.surface_facet)
+            else:
+                geom_els_all[v.name] = v
 
-            gel.poly_space = PolySpace.any_from_args(key, gel, 1)
-            gel = gel.surface_facet
-            if isinstance(gel, dict):
-                for v in gel.values():
-                    key = v.get_interpolation_name()
-                    v.poly_space = PolySpace.any_from_args(key, v, 1)
-            elif gel is not None:
+        if poly_spaces is None:
+            poly_spaces = {}
+            for gel in geom_els_all.values():
                 key = gel.get_interpolation_name()
-                gel.poly_space = PolySpace.any_from_args(key, gel, 1)
 
+                poly_spaces[key] = PolySpace.any_from_args(key, gel, 1)
+                gel = gel.surface_facet
+                if isinstance(gel, dict):
+                    for v in gel.values():
+                        key = v.get_interpolation_name()
+                        poly_spaces[key] = PolySpace.any_from_args(key, v, 1)
+                elif gel is not None:
+                    key = gel.get_interpolation_name()
+                    poly_spaces[key] = PolySpace.any_from_args(key, gel, 1)
+
+        self.geom_els = geom_els
+        self.geom_poly_spaces = poly_spaces
         self.vertex_set_bcs = self.mesh.nodal_bcs
         self.cmesh_tdim = self.mesh.cmesh_tdim
 
@@ -64,7 +77,7 @@ class FEDomain(Domain):
         for cmesh in self.mesh.cmesh_tdim:
             if cmesh is not None:
                 cmesh.set_local_entities(gels)
-                cmesh.setup_entities()
+                cmesh.setup_entities()  # pickling/unpickling performance issue?
                 max_tdim = max(max_tdim, cmesh.tdim)
 
         self.cmesh = self.cmesh_tdim[max_tdim]
@@ -93,8 +106,8 @@ class FEDomain(Domain):
             regions.append((r.name, r.definition, r.parse_def, r.kind,
                             r.parent, r.tdim, rentities, r.extra_options))
 
-        return (FEDomain, (self.name, self.mesh, self.verbose, regions))
-
+        return (FEDomain, (self.name, self.mesh, self.verbose, regions,
+                           self.geom_els, self.geom_poly_spaces))
 
 
     def get_mesh_coors(self, actual=False):

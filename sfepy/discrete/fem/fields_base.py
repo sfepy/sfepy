@@ -198,7 +198,7 @@ def create_expression_output(expression, name, primary_field_name,
     vertex_coors = field.coors[:field.n_vertex_dof, :]
 
     ps = field.poly_space
-    gps = field.gel.poly_space
+    gps = field.geom_poly_space
     vertex_conn = field.econn[:, :field.gel.n_vertex]
 
     eval_dofs = get_eval_expression(expression,
@@ -280,6 +280,20 @@ class FEField(Field):
 
         self._set_approx_order(approx_order)
         self.gel, self.is_surface = _find_geometry(self.region)
+        gps = self.domain.geom_poly_spaces
+        gkey = self.gel.get_interpolation_name()
+        self.geom_poly_space = gps[gkey]
+        if not self.is_surface:
+            surface_facet = self.gel.surface_facet
+            if isinstance(surface_facet, dict):
+                self.sgeom_poly_space = {}
+                for k, v in surface_facet.items():
+                    gkey = v.get_interpolation_name()
+                    self.sgeom_poly_space[k] = gps[gkey]
+            else:
+                gkey = surface_facet.get_interpolation_name()
+                self.sgeom_poly_space = gps[gkey]
+
         self._setup_kind()
         self._setup_shape()
 
@@ -459,7 +473,7 @@ class FEField(Field):
                     raise NotImplementedError
                 self.coors[:] = coors
             else:
-                gps = self.gel.poly_space
+                gps = self.geom_poly_space
                 ps = self.poly_space
                 eval_nodal_coors(self.coors, coors, self.region,
                                  ps, gps, self.econn)
@@ -725,7 +739,7 @@ class FEField(Field):
         qp = self.get_qp(key, integral)
 
         if from_geometry:
-            ps = self.gel.poly_space
+            ps = self.geom_poly_space
 
         else:
             ps = self.poly_space
@@ -756,7 +770,7 @@ class FEField(Field):
         if bqpkey not in self.qp_coors:
             qp = self.get_qp(sd.face_type, integral)
 
-            ps_s = self.gel.surface_facet.poly_space
+            ps_s = self.sgeom_poly_space
             bf_s = ps_s.eval_basis(qp.vals)
 
             coors, faces = gel.coors, gel.get_surface_entities()
@@ -773,7 +787,7 @@ class FEField(Field):
         if bqpkey not in self.qp_coors:
             qp = self.get_qp(face_type, integral)
 
-            ps_s = self.gel.surface_facet[bkey].poly_space
+            ps_s = self.sgeom_poly_space[bkey]
             bf_s = ps_s.eval_basis(qp.vals)
 
             coors, faces = gel.coors, gel.get_surface_entities()
@@ -858,7 +872,7 @@ class FEField(Field):
         vertex_coors = self.coors[:self.n_vertex_dof, :]
 
         ps = self.poly_space
-        gps = self.gel.poly_space
+        gps = self.geom_poly_space
 
         vertex_conn = self.econn[:, :self.gel.n_vertex]
 
@@ -1236,7 +1250,7 @@ class FEField(Field):
         transform = (self.basis_transform[iels] if self.basis_transform
                      is not None else None)
 
-        geo_ps = self.gel.poly_space
+        geo_ps = self.geom_poly_space
         ps = self.poly_space
 
         if region.kind == 'cell':

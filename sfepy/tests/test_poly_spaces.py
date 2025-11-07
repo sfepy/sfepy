@@ -292,7 +292,7 @@ def test_gradients(gels):
         gel = gels[geom]
         conn = mesh.get_conn(gel.name)
 
-        geo_ps = field.gel.poly_space
+        geo_ps = field.geom_poly_space
         rmapping = FEMapping(mesh.coors, conn[rcell:rcell+1],
                              poly_space=geo_ps)
         rori = field.ori[:1] if field.ori is not None else None
