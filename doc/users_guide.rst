@@ -1111,6 +1111,8 @@ redundant, but are kept around to indicate the evaluation purpose of each term.
 Several examples of using the :func:`Problem.evaluate()
 <sfepy.discrete.problem.Problem.evaluate>` function are shown below.
 
+.. _solution_postprocessing:
+
 Solution Postprocessing
 -----------------------
 

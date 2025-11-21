@@ -268,6 +268,22 @@ DOFs, ``'adaptive'`` linearization has to be used, see :ref:`diffusion-sinbc`
   global numbers are on the entities, the cell-local ones are inside the
   cells next to each entity towards the cell centroids.
 
+
+6.3 How to calculate reaction forces?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The reaction forces can be obtained when computing the residuals as if no
+Dirichlet BCs were applied. To do this, try the following::
+
+    problem.time_update(ebcs={})
+    variables = problem.get_variables()
+    res = problem.equations.eval_residuals(variables())
+
+Then the `res` items should be almost zero everywhere except the original
+Dirichlet BCs nodes. If you define your problem declaratively, the above lines
+can be used e.g. in a post-process hook function, see
+:ref:`solution_postprocessing`.
+
 7. Finite element method implementation
 ---------------------------------------
 
