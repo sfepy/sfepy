@@ -615,15 +615,19 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
             scalar_label = scalar
 
         if 'g' in opts and is_point_field:  # glyphs
-            aux = opts['g'].split(',')
-            gfield = aux[0]
             geom_name, scalar_name = None, None
-            if len(aux) > 2:
-                # Scaling scalar name.
-                scalar_name = aux[2]
-            if len(aux) > 1:
-                # Glyph geometry name name.
-                geom_name = aux[1]
+            if isinstance(opts['g'], str):
+                aux = opts['g'].split(',')
+                gfield = aux[0]
+                if len(aux) > 2:
+                    # Scaling scalar name.
+                    scalar_name = aux[2]
+                if len(aux) > 1:
+                    # Glyph geometry name name.
+                    geom_name = aux[1]
+
+            else:
+                gfield = opts['g']
 
             if isinstance(gfield, str):
                 is_gvector_field = ((gfield is not None)
