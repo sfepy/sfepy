@@ -273,11 +273,15 @@ DOFs, ``'adaptive'`` linearization has to be used, see :ref:`diffusion-sinbc`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The reaction forces can be obtained when computing the residuals as if no
-Dirichlet BCs were applied. To do this, try the following::
+Dirichlet BCs (EBCs) were applied. To do this, try the following::
 
     problem.time_update(ebcs={})
     variables = problem.get_variables()
     res = problem.equations.eval_residuals(variables())
+
+    # Restore the original EBCs. In declarative mode, problem.conf.ebcs can be
+    # used as the ebcs argument.
+    problem.time_update(ebcs=ebcs)
 
 Then the `res` items should be almost zero everywhere except the original
 Dirichlet BCs nodes. If you define your problem declaratively, the above lines
