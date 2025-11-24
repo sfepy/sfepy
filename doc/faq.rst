@@ -279,6 +279,23 @@ Dirichlet BCs (EBCs) were applied. To do this, try the following::
     variables = problem.get_variables()
     res = problem.equations.eval_residuals(variables())
 
+    # Assuming there is a 2-component 'displacement' field and 'Left' region,
+    # print total reaction forces in x and y directions in the region.
+    fu = problem.fields['displacement']
+    ii = fu.get_dofs_in_region(problem.domain.regions['Left'])
+    idof = fu.n_components * ii + 0 # x components.
+    print(res[idof].sum())
+    idof = fu.n_components * ii + 1 # y components.
+    print(res[idof].sum())
+
+    # There is also a helper function to convert node indices to DOFs. The
+    # following code prints the same values as above.
+    from sfepy.discrete.common.dof_info import expand_nodes_to_equations
+    var = variables['u'] # state['u'] in a post-process hook function.
+    idof = expand_nodes_to_equations(ii, var.dofs, var.dofs)
+    print(res[idof[::2]].sum())
+    print(res[idof[1::2]].sum())
+
     # Restore the original EBCs. In declarative mode, problem.conf.ebcs can be
     # used as the ebcs argument.
     problem.time_update(ebcs=ebcs)
