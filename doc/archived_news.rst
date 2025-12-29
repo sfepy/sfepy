@@ -3,6 +3,9 @@
 Archived News
 =============
 
+* **30.09.2024** Version 2024.3 released (updated installation instructions,
+  new Stokes traction term, etc.), see :ref:`release notes <2024.2-2024.3>`.
+
 * **28.06.2024** Version 2024.2 released (multi-point constraints terms + new
   example, mixed formulation flexoelecticity terms, improved and new eigenvalue
   problem solvers, etc.), see :ref:`release notes <2024.1-2024.2>`.

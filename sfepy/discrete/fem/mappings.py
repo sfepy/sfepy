@@ -173,6 +173,9 @@ def eval_mapping_data_in_qp(coors, conn, bf_g, weights,
             es_arg2 = 'x' if ebf_g.shape[0] == 1 else 'c'
             bfg = nm.einsum(f'cqij,{es_arg2}qjk->cqik', mtxRMI, ebf_g,
                             optimize=True)
+
+        bfg = nm.ascontiguousarray(bfg)
+
     else:
         bfg = None
 

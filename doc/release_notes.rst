@@ -1,5 +1,48 @@
 # created: 20.07.2007 (-1)
 
+.. _2025.3-2025.4:
+
+from 2025.3 to 2025.4
+=====================
+
+- merge pull request #1232 from a-detiste/master
+
+  - drop Python 2 hybridation
+
+- merge pull request #1233 from a-detiste/master
+
+  - replace "basestr" with plain "str" everywhere
+  - remove basestr complitely
+
+- merge pull request #1234 from a-detiste/master
+
+  - remove usage of "six" shim
+
+- merge pull request #1235 from a-detiste/master
+
+  - more misc. Python2 cleanups
+
+- merge pull request #1236 from a-detiste/master
+
+  - compile with GCC-15
+
+- merge pull request #1237 from rc/resview-update-glyphs-streamlines
+
+  - new make_glyphs()
+  - support different glyphs and glyph scaling by scalar in pv_plot()
+  - support streamline coloring by scalar and tube radius in pv_plot()
+  - resview.py: update fields and factor help messages
+
+- merge pull request #1241 from rc/fix-resview-default-glyphs
+
+  - fix default glyph plotting in pv_plot()
+
+- merge pull request #1242 from rc/faq-reaction-forces
+
+  - docs: describe reaction forces calculation in FAQ
+  - docs: show how to restore original EBCs in FAQ
+  - docs: show how to calculate reaction forces components in a region in FAQ
+
 .. _2025.2-2025.3:
 
 from 2025.2 to 2025.3
