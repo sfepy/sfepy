@@ -748,7 +748,7 @@ uint32 mesh_count_incident(Mesh *mesh, int32 dim,
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, dent, dim)];
 
   if (!conn->num) {
-    errput("connectivity %d -> %d is not avaliable!\n", dent, dim);
+    errput("connectivity %d -> %d is not available!\n", dent, dim);
     ERR_CheckGo(num);
   }
 
@@ -773,7 +773,7 @@ int32 mesh_get_incident(Mesh *mesh,
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, dent, dim)];
 
   if (!conn->num) {
-    errput("connectivity %d -> %d is not avaliable!\n", dent, dim);
+    errput("connectivity %d -> %d is not available!\n", dent, dim);
     ERR_CheckGo(ret);
   }
 
@@ -803,7 +803,7 @@ int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, dim, dent)];
 
   if (!conn->num) {
-    errput("connectivity %d -> %d is not avaliable!\n", dim, dent);
+    errput("connectivity %d -> %d is not available!\n", dim, dent);
     ERR_CheckGo(ret);
   }
 
@@ -850,7 +850,7 @@ int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, dim, dent)];
 
   if (!conn->num) {
-    errput("connectivity %d -> %d is not avaliable!\n", dim, dent);
+    errput("connectivity %d -> %d is not available!\n", dim, dent);
     ERR_CheckGo(ret);
   }
 
@@ -1180,7 +1180,7 @@ inline int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim)
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, entity->dim, dim)];
 
   if (!conn->num) {
-    errput("required connectivity is not avaliable!\n");
+    errput("required connectivity is not available!\n");
     ERR_CheckGo(ret);
   }
   out->indices = conn->indices + conn->offsets[entity->ii];
