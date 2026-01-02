@@ -158,7 +158,7 @@ cpdef evaluate_in_rc(float64[:, :, ::1] out,
     element coordinates using the given interpolation.
 
     1. Evaluate basis functions or gradients of basis functions in the
-    reference coordinates. For gradients, tranform the values to the material
+    reference coordinates. For gradients, transform the values to the material
     coordinates.
     2. Interpolate source values using the basis functions/gradients.
 

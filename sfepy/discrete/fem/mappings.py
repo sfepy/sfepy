@@ -12,7 +12,7 @@ from sfepy.linalg.utils import invs_fast, dets_fast
 from sfepy.linalg import dot_sequences
 
 
-def tranform_coors_to_lower_dim(coors, to_dim):
+def transform_coors_to_lower_dim(coors, to_dim):
     """
     Transform element coordinates into XY plane or to X axis.
     """
@@ -358,7 +358,7 @@ class FEMapping(Mapping):
 
         tdim = poly_space.geometry.dim
         if not is_face and tdim < self.dim:
-            ecoors = tranform_coors_to_lower_dim(self.coors[self.conn, :],
+            ecoors = transform_coors_to_lower_dim(self.coors[self.conn, :],
                                                  tdim)
         else:
             ecoors = None
