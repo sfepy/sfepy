@@ -363,6 +363,52 @@ class OgdenTLTerm(HyperElasticTLBase):
                      _dh[1, 2, 0, 1], _dh[1, 2, 0, 2], _dh[1, 2, 1, 2]],
                 ])
 
+class LinearIsoTLTerm(HyperElasticTLBase):
+    r"""
+    St Venant-Kirchhoff hyperelastic material
+
+    Effective stress (2nd Piola-Kirchhoff) is
+    .. math::
+        \ull{S} = \lambda \, \tr{\ull{E}} \, \ull{I} + 2 \, \mu \, \ull{E}
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material : :math:`\lambda, \mu`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+    name = 'dw_tl_he_linear'
+    family_data_names = ['sym_c', 'tr_c']
+    arg_shapes = {'material' : '1, 2',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
+
+    sym_ident = nm.array([1, 1, 1, 0, 0, 0.]).reshape((1, 1, -1, 1))
+    mat_1 = nm.outer(sym_ident, sym_ident).reshape((1, 1, 6, 6))
+    mat_2 = nm.eye(6).reshape((1, 1, 6, 6))
+
+    def stress_function(self, out, material, *fargs, **kwargs):
+        lambdas = material[:, :, :, :1]
+        mus = material[:, :, :, 1:]
+        sym_c, tr_c = fargs
+
+        out[:] = (
+            mus * sym_c
+            +(.5 * lambdas * (tr_c - 3) - mus) * self.sym_ident
+        )
+        return out
+
+    def tan_mod_function(self, out, material, *fargs, **kwargs):
+        lambdas = material[:, :, :, :1]
+        mus = material[:, :, :, 1:]
+
+        out[:] = lambdas * self.mat_1 + 2 * mus * self.mat_2
+        return out
+
 class MooneyRivlinTLTerm(HyperElasticTLBase):
     r"""
     Hyperelastic Mooney-Rivlin term. Effective stress
