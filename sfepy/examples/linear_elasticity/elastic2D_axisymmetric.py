@@ -1,6 +1,5 @@
 r"""
 Axisymmetric Linear Elasticity (2D formulation)
-===============================================
 
 This example demonstrates a two-dimensional axisymmetric formulation of the
 three-dimensional static linear elasticity equations. The formulation is derived
@@ -239,6 +238,7 @@ a, b = 1e-3, 2e-3
 def define():
     import tempfile
     from sfepy.discrete.fem import Mesh
+    from sfepy.homogenization.utils import define_box_regions
 
     lam = E * nu / ((1 + nu) * (1 - 2 * nu))
     mu = E / (2 * (1 + nu))
@@ -271,6 +271,9 @@ def define():
 
     filename_mesh = tempfile.mktemp(suffix=".vtk", prefix="axisym_")
     mesh.write(filename_mesh, io="auto")
+
+    # Get bounding box for region definition
+    bbox = mesh.get_bounding_box()
 
     # -----------------------------
     # Material coefficient functions
@@ -320,33 +323,12 @@ def define():
             return {"c": c.reshape(-1, 1, 1)}
 
     # -----------------------------
-    # Regions: USE "vertices by <function>" (robust)
+    # Regions: Use define_box_regions for automatic boundary selection
     # -----------------------------
-    eps = 1e-6
-
-    def get_left(coors, domain=None):
-        rr = coors[:, 0]
-        return np.where(np.abs(rr - r_inner) < eps)[0]
-
-    def get_right(coors, domain=None):
-        rr = coors[:, 0]
-        return np.where(np.abs(rr - r_outer) < eps)[0]
-
-    def get_bottom(coors, domain=None):
-        zz = coors[:, 1]
-        return np.where(np.abs(zz - 0.0) < eps)[0]
-
-    def get_top(coors, domain=None):
-        zz = coors[:, 1]
-        return np.where(np.abs(zz - height) < eps)[0]
-
     regions = {
         "Omega": "all",
-        "Left": ("vertices by get_left", "vertex"),
-        "Right": ("vertices by get_right", "vertex"),
-        "Bottom": ("vertices by get_bottom", "vertex"),
-        "Top": ("vertices by get_top", "vertex"),
     }
+    regions.update(define_box_regions(2, bbox[0], bbox[1]))
 
     materials = {
         "m_rr": "material_rr",
@@ -379,11 +361,6 @@ def define():
         "material_poisson_zz": (material_poisson_zz,),
         "material_hoop_idx": (material_hoop_idx,),
         "material_hoop0": (material_hoop0,),
-
-        "get_left": (get_left,),
-        "get_right": (get_right,),
-        "get_bottom": (get_bottom,),
-        "get_top": (get_top,),
 
         # ur = a*r
         "bc_ur_left": (lambda ts, coors, **kw: a * r_inner * np.ones(len(coors)),),
@@ -428,7 +405,8 @@ def define():
 
     solvers = {
         "ls": ("ls.scipy_direct", {}),
-        "newton": ("nls.newton", {"i_max": 5, "eps_a": 1e-12, "eps_r": 1e-12}),
+        "newton": ("nls.newton", {"i_max": 1, "eps_a": 1e-12, "eps_r": 1e-12,
+                                  "eps_mode": "or", "lin_red": None}),
     }
 
     options = {

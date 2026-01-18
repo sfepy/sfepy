@@ -33,6 +33,7 @@ examples = [
     'large_deformation/active_fibres.py',
     'large_deformation/balloon.py',
     'large_deformation/perfusion_tl.py',
+    'linear_elasticity/elastic2D_axisymmetric.py',
     'linear_elasticity/elastic_contact_planes.py',
     'linear_elasticity/elastic_contact_sphere.py',
     'linear_elasticity/elastic_shifted_periodic.py',
