@@ -92,6 +92,8 @@ def define():
                            + dw_tl_he_mooney_rivlin.i.Omega(solid.kappa, v, u)
                            + dw_tl_bulk_penalty.i.Omega(solid.K, v, u)
                            = dw_surface_ltr.isurf.Top(load.val, v)""",
+        'Saint Venant-Kirchhoff' : """dw_tl_he_svk.i.Omega(solid.D, v, u)
+                                    = dw_surface_ltr.isurf.Top(load.val, v)""",
     }
 
     solvers = {
@@ -205,6 +207,18 @@ def main():
         for key, val in displacements.items():
             plt.plot(load, val)
             legend.append(key)
+
+        # analytical solution to SVK model
+        mu, lam = 3.846, 5.769
+        bulk = 8.333
+        youngs = 9 * bulk * mu / (3 * bulk + mu)
+        original_length = 3.0
+
+        stretches = nm.linspace(.5, 1.5, 101)
+        forces = 0.5 * youngs * stretches * (stretches**2 - 1)
+        disps = original_length * (stretches - 1)
+        plt.plot(forces, disps, 'k:')
+        legend.append('SVK analytical')
 
         plt.legend(legend, loc = 2)
         plt.xlabel('tension [kPa]')
