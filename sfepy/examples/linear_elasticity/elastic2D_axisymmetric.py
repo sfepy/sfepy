@@ -1,5 +1,5 @@
 r"""
-Axisymmetric Linear Elasticity (2D formulation)
+Axisymmetric Linear Elasticity (2D formulation).
 
 This example demonstrates a two-dimensional axisymmetric formulation of the
 three-dimensional static linear elasticity equations. The formulation is derived
@@ -216,12 +216,10 @@ linear elasticity problem under the stated axisymmetry assumptions. It is
 directly suitable for two-dimensional finite element discretizations using the
 axisymmetric weighting.
 
-To view the result, run the following command:
-
-.. code-block:: bash
+To run the example, execute one of the following commands::
 
    python3 -m sfepy.scripts.simple ./sfepy/examples/linear_elasticity/elastic2D_axisymmetric.py
-
+   sfepy-run sfepy/examples/linear_elasticity/elastic2D_axisymmetric.py
 """
 
 import numpy as np
