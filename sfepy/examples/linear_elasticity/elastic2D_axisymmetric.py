@@ -234,7 +234,6 @@ a, b = 1e-3, 2e-3
 
 
 def define():
-    import tempfile
     from sfepy.discrete.fem import Mesh
     from sfepy.homogenization.utils import define_box_regions
 
@@ -258,7 +257,7 @@ def define():
             conn.append([n0, n0 + 1, n0 + nr + 1, n0 + nr])
     conn = np.array(conn, dtype=np.int32)
 
-    mesh = Mesh.from_data(
+    filename_mesh = mesh = Mesh.from_data(
         "annulus",
         coors,
         None,
@@ -266,9 +265,6 @@ def define():
         [np.zeros(len(conn), dtype=np.int32)],
         ["2_4"],
     )
-
-    filename_mesh = tempfile.mktemp(suffix=".vtk", prefix="axisym_")
-    mesh.write(filename_mesh, io="auto")
 
     # Get bounding box for region definition
     bbox = mesh.get_bounding_box()
