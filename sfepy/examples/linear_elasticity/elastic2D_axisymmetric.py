@@ -304,11 +304,6 @@ def define():
             K[:, 1, 0] = mu * rr
             return {"K": K}
 
-    def material_hoop_idx(ts, coors, mode=None, **kwargs):
-        if mode == "qp":
-            val = lam * np.ones((coors.shape[0], 1, 1), dtype=np.float64)
-            return {"val": val}
-
     def material_hoop0(ts, coors, mode=None, **kwargs):
         if mode == "qp":
             rr = coors[:, 0]
@@ -329,7 +324,7 @@ def define():
         "m_zz": "material_zz",
         "m_prr": "material_poisson_rr",
         "m_pzz": "material_poisson_zz",
-        "m_hoop_idx": "material_hoop_idx",
+        "m_hoop_idx": ({'.val' : np.array([[1]])},),
         "m_hoop0": "material_hoop0",
     }
 
@@ -353,7 +348,6 @@ def define():
         "material_zz": (material_zz,),
         "material_poisson_rr": (material_poisson_rr,),
         "material_poisson_zz": (material_poisson_zz,),
-        "material_hoop_idx": (material_hoop_idx,),
         "material_hoop0": (material_hoop0,),
 
         # ur = a*r
