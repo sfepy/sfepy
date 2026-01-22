@@ -149,7 +149,7 @@ class FibresExponentialTLTerm(HyperElasticTLBase):
 
     :Arguments:
         - material_1 : :math:`\sigma`
-        - material_3 : :math:`k`
+        - material_2 : :math:`k`
         - material_3 : :math:`\epsilon_{0}`
         - material_4 : :math:`\ul{d}`
         - virtual    : :math:`\ul{v}`
@@ -245,7 +245,7 @@ class FibresSoftPlusExponentialTLTerm(HyperElasticTLBase):
     :Arguments:
         - material_0 : :math:`\alpha` (default: 50)
         - material_1 : :math:`\sigma`
-        - material_3 : :math:`k`
+        - material_2 : :math:`k`
         - material_3 : :math:`\epsilon_{0}`
         - material_4 : :math:`\ul{d}`
         - virtual    : :math:`\ul{v}`
@@ -293,7 +293,9 @@ class FibresSoftPlusExponentialTLTerm(HyperElasticTLBase):
         eps = compute_fibre_strain(green_strain, omega)
 
         tau0 = fibre_data.tau0 = sigma * nm.exp(k * (eps - eps0)) - 1.0
-        tau = (1.0 / alpha) * nm.log(1.0 + nm.exp(alpha * tau0))
+        # Stable relation for
+        # tau = (1.0 / alpha) * nm.log(1.0 + nm.exp(alpha * tau0))
+        tau = (1.0 / alpha) * nm.logaddexp(0, alpha * tau0)
 
         out[:] = omega * tau
 
@@ -308,8 +310,9 @@ class FibresSoftPlusExponentialTLTerm(HyperElasticTLBase):
             for ic in range(omega.shape[2]):
                 out[..., ir, ic] = omega[..., ir, 0] * omega[..., ic, 0]
 
-        aux = nm.exp(alpha * tau0)
-        sigmoid = aux / (1.0 + aux)
+        # Stable relation for
+        # sigmoid = nm.exp(alpha * tau0) / (1.0 + nm.exp(alpha * tau0))
+        sigmoid = 1.0 / (1.0 + nm.exp(-alpha * tau0))
         tan_mod = sigmoid * k * (tau0 + sigma)
 
         out[:] *= tan_mod
