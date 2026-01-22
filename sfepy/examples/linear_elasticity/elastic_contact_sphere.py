@@ -47,7 +47,7 @@ materials = {
     },),
     'cs' : ({
         'f' : [k, f0],
-        '.c' : [0.0, 0.0, 1.2],
+        '.c' : [0.0, 0.0, 1.0],
         '.r' : 0.8,
     },),
 }
@@ -70,15 +70,18 @@ ebcs = {
 equations = {
     'elasticity' :
     """dw_lin_elastic.2.Omega(solid.D, v, u)
-     + dw_contact_sphere.2.Top(cs.f, cs.c, cs.r, v, u)
+     + dw_contact_sphere.6.Top(cs.f, cs.c, cs.r, v, u)
      = 0""",
 }
 
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
     'newton' : ('nls.newton', {
-        'i_max' : 20,
-        'eps_a' : 1e-1,
+        'i_max' : 50,
+        'eps_a' : 1e-14,
+        'eps_r' : 1e-8,
+        'eps_mode' : 'or',
+        'step_red' : 0.8,
         'ls_on' : 2.0,
         'check' : 0,
         'delta' : 1e-6,
