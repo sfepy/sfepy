@@ -310,8 +310,9 @@ class FibresSoftPlusExponentialTLTerm(HyperElasticTLBase):
             for ic in range(omega.shape[2]):
                 out[..., ir, ic] = omega[..., ir, 0] * omega[..., ic, 0]
 
-        aux = nm.exp(alpha * tau0)
-        sigmoid = aux / (1.0 + aux)
+        # Stable relation for
+        # sigmoid = nm.exp(alpha * tau0) / (1.0 + nm.exp(alpha * tau0))
+        sigmoid = 1.0 / (1.0 + nm.exp(-alpha * tau0))
         tan_mod = sigmoid * k * (tau0 + sigma)
 
         out[:] *= tan_mod
