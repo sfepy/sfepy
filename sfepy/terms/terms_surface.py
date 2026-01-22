@@ -207,14 +207,14 @@ class ContactPlaneTerm(Term):
 
       .. math::
 
-         f(d) = 0 \mbox{ for } d \leq -\frac{2 r_0}{k} \;, \\
-         f(d) = \frac{k^2}{4 r_0} d^2 + k d + r_0
-         \mbox{ for } -\frac{2 r_0}{k} < d \leq 0 \;, \\
+         f(d) = 0 \mbox{ for } d \leq -\frac{2 f_0}{k} \;, \\
+         f(d) = \frac{k^2}{4 f_0} d^2 + k d + f_0
+         \mbox{ for } -\frac{2 f_0}{k} < d \leq 0 \;, \\
          f(d) = k d + f_0 \mbox{ for } d > 0 \;.
 
       In this case the dependence :math:`f(d)` is smooth, and a (small) force
       is applied even for (small) negative penetrations: :math:`-\frac{2
-      r_0}{k} < d \leq 0`.
+      f_0}{k} < d \leq 0`.
 
     :Definition:
 
@@ -360,14 +360,14 @@ class ContactSphereTerm(ContactPlaneTerm):
 
       .. math::
 
-         f(d) = 0 \mbox{ for } d \leq -\frac{2 r_0}{k} \;, \\
-         f(d) = \frac{k^2}{4 r_0} d^2 + k d + r_0
-         \mbox{ for } -\frac{2 r_0}{k} < d \leq 0 \;, \\
+         f(d) = 0 \mbox{ for } d \leq -\frac{2 f_0}{k} \;, \\
+         f(d) = \frac{k^2}{4 f_0} d^2 + k d + f_0
+         \mbox{ for } -\frac{2 f_0}{k} < d \leq 0 \;, \\
          f(d) = k d + f_0 \mbox{ for } d > 0 \;.
 
       In this case the dependence :math:`f(d)` is smooth, and a (small) force
       is applied even for (small) negative penetrations: :math:`-\frac{2
-      r_0}{k} < d \leq 0`.
+      f_0}{k} < d \leq 0`.
 
     :Definition:
 
