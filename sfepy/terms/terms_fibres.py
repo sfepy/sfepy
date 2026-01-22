@@ -149,7 +149,7 @@ class FibresExponentialTLTerm(HyperElasticTLBase):
 
     :Arguments:
         - material_1 : :math:`\sigma`
-        - material_3 : :math:`k`
+        - material_2 : :math:`k`
         - material_3 : :math:`\epsilon_{0}`
         - material_4 : :math:`\ul{d}`
         - virtual    : :math:`\ul{v}`
@@ -245,7 +245,7 @@ class FibresSoftPlusExponentialTLTerm(HyperElasticTLBase):
     :Arguments:
         - material_0 : :math:`\alpha` (default: 50)
         - material_1 : :math:`\sigma`
-        - material_3 : :math:`k`
+        - material_2 : :math:`k`
         - material_3 : :math:`\epsilon_{0}`
         - material_4 : :math:`\ul{d}`
         - virtual    : :math:`\ul{v}`
