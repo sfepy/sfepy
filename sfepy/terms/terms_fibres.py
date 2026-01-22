@@ -293,7 +293,9 @@ class FibresSoftPlusExponentialTLTerm(HyperElasticTLBase):
         eps = compute_fibre_strain(green_strain, omega)
 
         tau0 = fibre_data.tau0 = sigma * nm.exp(k * (eps - eps0)) - 1.0
-        tau = (1.0 / alpha) * nm.log(1.0 + nm.exp(alpha * tau0))
+        # Stable relation for
+        # tau = (1.0 / alpha) * nm.log(1.0 + nm.exp(alpha * tau0))
+        tau = (1.0 / alpha) * nm.logaddexp(0, alpha * tau0)
 
         out[:] = omega * tau
 
