@@ -363,6 +363,47 @@ class OgdenTLTerm(HyperElasticTLBase):
                      _dh[1, 2, 0, 1], _dh[1, 2, 0, 2], _dh[1, 2, 1, 2]],
                 ])
 
+class SaintVenantKirchhoffTLTerm(HyperElasticTLBase):
+    r"""
+    Saint Venant-Kirchhoff hyperelastic material
+
+    Effective stress (2nd Piola-Kirchhoff) is
+
+    .. math::
+        S_{ij} = D_{ijkl}\ E_{kl}
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material : :math:`D_{ijkl}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+    name = 'dw_tl_he_svk'
+    family_data_names = ['green_strain', 'mtx_f', 'sym_c']
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : 'S, S',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
+
+    def stress_function(self, out, mat, *fargs, **kwargs):
+        sym_e = fargs[0]
+        mat = HyperElasticBase.tile_mat(mat, sym_e.shape[0])
+        dim = self.region.dim
+        mat[:, :, :, dim:] *= 2 # fix shear components
+        out[:] = nm.einsum('ijkl,ijl...->ijk...', mat, sym_e)
+        return out
+
+    def tan_mod_function(self, out, mat, *fargs, **kwargs):
+        mat = HyperElasticBase.tile_mat(mat, fargs[0].shape[0])
+        dim = self.region.dim
+        mat[:, :, dim:, :] *= 2 # fix shear components
+        out[:] = mat
+        return out
+
 class MooneyRivlinTLTerm(HyperElasticTLBase):
     r"""
     Hyperelastic Mooney-Rivlin term. Effective stress
