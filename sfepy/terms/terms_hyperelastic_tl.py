@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
@@ -54,8 +55,8 @@ class NeoHookeanTLTerm(HyperElasticTLBase):
 class GenYeohTLTerm(HyperElasticTLBase):
     r"""
     Hyperelastic generalized Yeoh term [1]. Effective stress
-    :math:`S_{ij} = 2 p K (I_1 - 3)^{p-1} J^{-\frac{2}{3}}(\delta{ij} -
-    \frac{1}{3}C_{kk}C{ij}^{-1})`.
+    :math:`S_{ij} = 2 \sum_{k=1}^3 k K_k (I_1 - 3)^{m_k-1}
+    J^{-\frac{2}{3}} (\delta_{ij} - \frac{1}{3}C_{kk}C_{ij}^{-1})`.
 
     :Definition:
 
@@ -63,12 +64,12 @@ class GenYeohTLTerm(HyperElasticTLBase):
         \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
 
     :Arguments:
-        - material : :math:`p, K`
+        - material : :math:`K_1, K_2, K_3, m_1, m_2, m_3`
         - virtual  : :math:`\ul{v}`
         - state    : :math:`\ul{u}`
 
     [1] Travis W. Hohenberger, Richard J. Windslow, Nicola M. Pugno,
-    James J. C. Busfield. Aconstitutive Model For Both Lowand High
+    James J. C. Busfield. A Constitutive Model For Both Low and High
     Strain Nonlinearities In Highly Filled Elastomers And
     Implementation With User-Defined Material Subroutines In
     Abaqus. Rubber Chemistry And Technology, Vol. 92, No. 4,
@@ -76,110 +77,207 @@ class GenYeohTLTerm(HyperElasticTLBase):
     """
     name = 'dw_tl_he_genyeoh'
     family_data_names = ['det_f', 'tr_c', 'sym_inv_c']
-    arg_shapes = {'material' : '1, 2',
-                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    arg_shapes = [{'material': '1, 6',
+                   'virtual': ('D', 'state'), 'state': 'D'},
+                  {'material': '1, 2'}]
     geometries = ['3_4', '3_8']
 
     @staticmethod
-    def _get_single_stress(i_1, i_3, c_inv, coef, exp):
-        _bracket = (i_3**(-1 / 3) * i_1 - 3.)
-        _bracket_pow = _bracket**(exp - 1) \
-            if (_bracket > 0. or exp >= 1.) else 1.
-        out = 2 * exp * coef * _bracket_pow \
-            * i_3**(-1 / 3) * (nm.eye(3) - i_1 * c_inv / 3)
-        return out
+    def _get_stress_yeoh(i1, i3, c_inv_v, coef):
+        """
+        Parameters
+        ----------
+        i1 : array (n_cell, n_qp)
+            The first invariant.
+        i3 : array (n_cell, n_qp)
+            The third invariant (J^2).
+        c_inv_v : array (n_cell, n_qp, 6)
+            The inverse of Cauchy-Green tensor in Voigt order
+            [xx, yy, zz, xy, xz, yz].
+        coef : array (n_cell, n_qp, 6)
+            Material parameters [K1, K2, K3, EM, PE, QU].
+
+        Returns
+        -------
+        stress : array (n_cell, n_qp, 6)
+            The second Piola-Kirchhoff stress in Voigt order.
+        """
+        K1, K2, K3, EM, PE, QU = [coef[..., i] for i in range(6)]
+
+        bracket = i3 ** (-1. / 3.) * i1 - 3.0
+
+        # Safe power function logic consistent with original term
+        def _pow(x, p):
+            return nm.where((x > 0.) | (p >= 1.), x ** p, 1.)
+
+        b1 = _pow(bracket, EM - 1)
+        b2 = _pow(bracket, PE - 1)
+        b3 = _pow(bracket, QU - 1)
+
+        term = (EM * K1 * b1 + PE * K2 * b2 + QU * K3 * b3)
+        fact = 2.0 * i3 ** (-1. / 3.) * term
+
+        # Reconstruct 3x3 inverse C
+        c_inv = nm.empty(c_inv_v.shape[:-1] + (3, 3))
+        c_inv[..., 0, 0] = c_inv_v[..., 0]
+        c_inv[..., 1, 1] = c_inv_v[..., 1]
+        c_inv[..., 2, 2] = c_inv_v[..., 2]
+        c_inv[..., 0, 1] = c_inv[..., 1, 0] = c_inv_v[..., 3]
+        c_inv[..., 0, 2] = c_inv[..., 2, 0] = c_inv_v[..., 4]
+        c_inv[..., 1, 2] = c_inv[..., 2, 1] = c_inv_v[..., 5]
+
+        I = nm.eye(3)
+        S = fact[..., None, None] * (
+            I - (i1[..., None, None] / 3.) * c_inv
+        )
+
+        # Convert back to Voigt
+        stress = nm.empty(c_inv_v.shape)
+        stress[..., 0] = S[..., 0, 0]
+        stress[..., 1] = S[..., 1, 1]
+        stress[..., 2] = S[..., 2, 2]
+        stress[..., 3] = S[..., 0, 1]
+        stress[..., 4] = S[..., 0, 2]
+        stress[..., 5] = S[..., 1, 2]
+        return stress
 
     def stress_function(self, out, mat, *fargs, **kwargs):
         det_f, tr_c, inv_c = fargs
         mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
-        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
-        i_3 = det_f**2
-        ident = nm.array([1., 1, 1, 0, 0, 0])
+        # Backward compatibility for the original Yeoh term (2 parameters)
+        # Old format: [K1, m] -> New format: [K1, 0, 0, m, 1, 1]
+        if mat.shape[-1] == 2:
+            new_mat = nm.zeros(mat.shape[:-1] + (6,), dtype=mat.dtype)
+            new_mat[..., 0] = mat[..., 0]  # K1
+            new_mat[..., 3] = mat[..., 1]  # EM (m)
+            new_mat[..., 4] = 1.0          # PE (unused placeholder)
+            new_mat[..., 5] = 1.0          # QU (unused placeholder)
+            coef = new_mat
+        else:
+            coef = mat[..., :6]
 
-        n_cells, n_qps, _, _ = out.shape
-        for cell in range(n_cells):
-            for qp in range(n_qps):
-                _inv_c = inv_c[cell, qp]
-                _c_inv = nm.array([
-                    [_inv_c[0], _inv_c[3], _inv_c[4]],
-                    [_inv_c[3], _inv_c[1], _inv_c[5]],
-                    [_inv_c[4], _inv_c[5], _inv_c[2]],
-                ])[:, :, 0]
+        i3 = det_f ** 2
+        i1 = tr_c[..., 0, 0]
+        i3_ = i3[..., 0, 0]
+        c_inv_v = inv_c[..., 0]
 
-                _val = self._get_single_stress(
-                    tr_c[cell, qp, 0, 0], det_f[cell, qp, 0, 0]**2, _c_inv,
-                    coef[cell, qp, 0, 0], exp[cell, qp, 0, 0])
-                out[cell, qp, :, 0] = [
-                    _val[0, 0], _val[1, 1], _val[2, 2],
-                    _val[0, 1], _val[0, 2], _val[1, 2]]
+        stress_v = self._get_stress_yeoh(i1, i3_, c_inv_v, coef[..., 0, :])
+
+        out[..., 0] = stress_v
         return out
 
     @staticmethod
-    def _get_single_tan_mod(i_1, i_3, c_inv, coef, exp):
-        krond = nm.eye(3)
-        _bracket = i_3**(-1/3) * i_1 - 3
-        _bracket_p1 = _bracket**(exp - 1) \
-            if (_bracket > 0. or exp >= 1.) else 1.
-        _bracket_p2 = _bracket**(exp - 2) \
-            if (_bracket > 0. or exp >=  2.) else 0.
+    def _get_tan_mod_yeoh(i1, i3, c_inv_v, coef):
+        K1, K2, K3, EM, PE, QU = [coef[..., i] for i in range(6)]
+        bracket = i3 ** (-1. / 3.) * i1 - 3.0
 
-        tan_mod = nm.zeros((3, 3, 3, 3))
-        for ii, jj, kk, ll in zip(*[ind.flatten()
-                                    for ind in nm.indices(tan_mod.shape)]):
-            tan_mod[ii, jj, kk, ll] = 4 / 3 * exp * coef * (
-                3 * (exp - 1) * _bracket_p2 * i_3**(-2/3)
-                *krond[ii, jj] * krond[kk, ll]
-                -(
-                    (exp - 1) * _bracket_p2 * i_1 * i_3**(-2/3)
-                    +_bracket_p1 * i_3**(-1/3)
-                ) * (krond[ii, jj] * c_inv[kk, ll]
-                     +c_inv[ii, jj] * krond[kk, ll])
-                +(
-                    (exp - 1) * _bracket_p2 * i_1**2 * i_3**(-2/3)
-                    +_bracket_p1 * i_3**(-1/3) * i_1
-                ) / 3 * c_inv[ii, jj] * c_inv[kk, ll]
-                +.5 * _bracket_p1 * i_3**(-1/3) * i_1 * (
-                    c_inv[ii, kk] * c_inv[jj, ll]
-                    +c_inv[ii, ll] * c_inv[jj, kk])
-            )
+        # Safe power function logic consistent with original term
+        def _get_bracket_pow(ex):
+            b_m1 = nm.where((bracket > 0.) | (ex >= 1.),
+                            bracket ** (ex - 1), 1.)
+            b_m2 = nm.where((bracket > 0.) | (ex >= 2.),
+                            bracket ** (ex - 2), 0.)
+            return b_m1, b_m2
 
-        return tan_mod
+        bracket_m1, bracket_m2 = _get_bracket_pow(EM)
+        bracket_p1, bracket_p2 = _get_bracket_pow(PE)
+        bracket_q1, bracket_q2 = _get_bracket_pow(QU)
+
+        i3m13 = i3 ** (-1. / 3.)
+        i3m23 = i3 ** (-2. / 3.)
+        i1_2 = i1 * i1
+
+        # Reconstruct 3x3 inverse C
+        c_inv = nm.empty(c_inv_v.shape[:-1] + (3, 3))
+        c_inv[..., 0, 0] = c_inv_v[..., 0]
+        c_inv[..., 1, 1] = c_inv_v[..., 1]
+        c_inv[..., 2, 2] = c_inv_v[..., 2]
+        c_inv[..., 0, 1] = c_inv[..., 1, 0] = c_inv_v[..., 3]
+        c_inv[..., 0, 2] = c_inv[..., 2, 0] = c_inv_v[..., 4]
+        c_inv[..., 1, 2] = c_inv[..., 2, 1] = c_inv_v[..., 5]
+
+        eye3 = nm.eye(3)
+        D = nm.empty(c_inv_v.shape[:-1] + (6, 6))
+
+        idx = [(0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2)]
+        for I, (ii, jj) in enumerate(idx):
+            for J, (kk, ll) in enumerate(idx):
+                term = 0.
+
+                # EM term
+                term += EM * K1 * (
+                    3 * (EM - 1) * bracket_m2 * i3m23
+                    * eye3[ii, jj] * eye3[kk, ll]
+                    - ((EM - 1) * bracket_m2 * i1 * i3m23 + bracket_m1 * i3m13)
+                    * (eye3[ii, jj] * c_inv[..., kk, ll]
+                       + c_inv[..., ii, jj] * eye3[kk, ll])
+                    + ((EM - 1) * bracket_m2 * i1_2 * i3m23
+                       + bracket_m1 * i3m13 * i1) / 3.
+                    * c_inv[..., ii, jj] * c_inv[..., kk, ll]
+                    + 0.5 * bracket_m1 * i3m13 * i1
+                    * (c_inv[..., ii, kk] * c_inv[..., jj, ll]
+                       + c_inv[..., ii, ll] * c_inv[..., jj, kk])
+                )
+
+                # PE term
+                term += PE * K2 * (
+                    3 * (PE - 1) * bracket_p2 * i3m23
+                    * eye3[ii, jj] * eye3[kk, ll]
+                    - ((PE - 1) * bracket_p2 * i1 * i3m23 + bracket_p1 * i3m13)
+                    * (eye3[ii, jj] * c_inv[..., kk, ll]
+                       + c_inv[..., ii, jj] * eye3[kk, ll])
+                    + ((PE - 1) * bracket_p2 * i1_2 * i3m23
+                       + bracket_p1 * i3m13 * i1) / 3.
+                    * c_inv[..., ii, jj] * c_inv[..., kk, ll]
+                    + 0.5 * bracket_p1 * i3m13 * i1
+                    * (c_inv[..., ii, kk] * c_inv[..., jj, ll]
+                       + c_inv[..., ii, ll] * c_inv[..., jj, kk])
+                )
+
+                # QU term
+                term += QU * K3 * (
+                    3 * (QU - 1) * bracket_q2 * i3m23
+                    * eye3[ii, jj] * eye3[kk, ll]
+                    - ((QU - 1) * bracket_q2 * i1 * i3m23 + bracket_q1 * i3m13)
+                    * (eye3[ii, jj] * c_inv[..., kk, ll]
+                       + c_inv[..., ii, jj] * eye3[kk, ll])
+                    + ((QU - 1) * bracket_q2 * i1_2 * i3m23
+                       + bracket_q1 * i3m13 * i1) / 3.
+                    * c_inv[..., ii, jj] * c_inv[..., kk, ll]
+                    + 0.5 * bracket_q1 * i3m13 * i1
+                    * (c_inv[..., ii, kk] * c_inv[..., jj, ll]
+                       + c_inv[..., ii, ll] * c_inv[..., jj, kk])
+                )
+
+                D[..., I, J] = 4.0 / 3.0 * term
+        return D
 
     def tan_mod_function(self, out, mat, *fargs, **kwargs):
         det_f, tr_c, inv_c = fargs
         mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
-        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
-        n_cells, n_qps, _, _ = out.shape
-        for cell in range(n_cells):
-            for qp in range(n_qps):
-                _inv_c = inv_c[cell, qp, :, 0]
-                _c_inv = nm.array([
-                    [_inv_c[0], _inv_c[3], _inv_c[4]],
-                    [_inv_c[3], _inv_c[1], _inv_c[5]],
-                    [_inv_c[4], _inv_c[5], _inv_c[2]],
-                ])
+        # Backward compatibility for the original Yeoh term (2 parameters)
+        # Old format: [K1, m] -> New format: [K1, 0, 0, m, 1, 1]
+        if mat.shape[-1] == 2:
+            new_mat = nm.zeros(mat.shape[:-1] + (6,), dtype=mat.dtype)
+            new_mat[..., 0] = mat[..., 0]  # K1
+            new_mat[..., 3] = mat[..., 1]  # EM (m)
+            new_mat[..., 4] = 1.0          # PE (unused placeholder)
+            new_mat[..., 5] = 1.0          # QU (unused placeholder)
+            coef = new_mat
+        else:
+            coef = mat[..., :6]
 
-                _dh = self._get_single_tan_mod(
-                    tr_c[cell, qp, 0, 0], det_f[cell, qp, 0, 0]**2, _c_inv,
-                    coef[cell, qp, 0, 0], exp[cell, qp, 0, 0],
-                )
+        i3 = det_f ** 2
+        i1 = tr_c[..., 0, 0]
+        i3_ = i3[..., 0, 0]
+        c_inv_v = inv_c[..., 0]
 
-                out[cell, qp] = nm.array([
-                    [_dh[0, 0, 0, 0], _dh[0, 0, 1, 1], _dh[0, 0, 2, 2],
-                     _dh[0, 0, 0, 1], _dh[0, 0, 0, 2], _dh[0, 0, 1, 2]],
-                    [_dh[1, 1, 0, 0], _dh[1, 1, 1, 1], _dh[1, 1, 2, 2],
-                     _dh[1, 1, 0, 1], _dh[1, 1, 0, 2], _dh[1, 1, 1, 2]],
-                    [_dh[2, 2, 0, 0], _dh[2, 2, 1, 1], _dh[2, 2, 2, 2],
-                     _dh[2, 2, 0, 1], _dh[2, 2, 0, 2], _dh[2, 2, 1, 2]],
-                    [_dh[0, 1, 0, 0], _dh[0, 1, 1, 1], _dh[0, 1, 2, 2],
-                     _dh[0, 1, 0, 1], _dh[0, 1, 0, 2], _dh[0, 1, 1, 2]],
-                    [_dh[0, 2, 0, 0], _dh[0, 2, 1, 1], _dh[0, 2, 2, 2],
-                     _dh[0, 2, 0, 1], _dh[0, 2, 0, 2], _dh[0, 2, 1, 2]],
-                    [_dh[1, 2, 0, 0], _dh[1, 2, 1, 1], _dh[1, 2, 2, 2],
-                     _dh[1, 2, 0, 1], _dh[1, 2, 0, 2], _dh[1, 2, 1, 2]],
-                ])
+        tan_v = self._get_tan_mod_yeoh(i1, i3_, c_inv_v, coef[..., 0, :])
+
+        out[...] = tan_v
+        return out
 
 class OgdenTLTerm(HyperElasticTLBase):
     r"""
@@ -362,47 +460,6 @@ class OgdenTLTerm(HyperElasticTLBase):
                     [_dh[1, 2, 0, 0], _dh[1, 2, 1, 1], _dh[1, 2, 2, 2],
                      _dh[1, 2, 0, 1], _dh[1, 2, 0, 2], _dh[1, 2, 1, 2]],
                 ])
-
-class SaintVenantKirchhoffTLTerm(HyperElasticTLBase):
-    r"""
-    Saint Venant-Kirchhoff hyperelastic material
-
-    Effective stress (2nd Piola-Kirchhoff) is
-
-    .. math::
-        S_{ij} = D_{ijkl}\ E_{kl}
-
-    :Definition:
-
-    .. math::
-        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
-
-    :Arguments:
-        - material : :math:`D_{ijkl}`
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
-    """
-    name = 'dw_tl_he_svk'
-    family_data_names = ['green_strain', 'mtx_f', 'sym_c']
-    arg_types = ('material', 'virtual', 'state')
-    arg_shapes = {'material' : 'S, S',
-                  'virtual' : ('D', 'state'), 'state' : 'D'}
-    geometries = ['3_4', '3_8']
-
-    def stress_function(self, out, mat, *fargs, **kwargs):
-        sym_e = fargs[0]
-        mat = HyperElasticBase.tile_mat(mat, sym_e.shape[0])
-        dim = self.region.dim
-        mat[:, :, :, dim:] *= 2 # fix shear components
-        out[:] = nm.einsum('ijkl,ijl...->ijk...', mat, sym_e)
-        return out
-
-    def tan_mod_function(self, out, mat, *fargs, **kwargs):
-        mat = HyperElasticBase.tile_mat(mat, fargs[0].shape[0])
-        dim = self.region.dim
-        mat[:, :, dim:, :] *= 2 # fix shear components
-        out[:] = mat
-        return out
 
 class MooneyRivlinTLTerm(HyperElasticTLBase):
     r"""
