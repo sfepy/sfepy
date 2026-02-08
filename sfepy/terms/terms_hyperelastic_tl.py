@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
@@ -55,16 +54,23 @@ class NeoHookeanTLTerm(HyperElasticTLBase):
 class GenYeohTLTerm(HyperElasticTLBase):
     r"""
     Hyperelastic generalized Yeoh term [1]. Effective stress
-    :math:`S_{ij} = 2 \sum_{k=1}^3 k K_k (I_1 - 3)^{m_k-1}
-    J^{-\frac{2}{3}} (\delta_{ij} - \frac{1}{3}C_{kk}C_{ij}^{-1})`.
+    :math:`S_{ij} = 2 ( EM K1 (I_1 - 3)^{EM-1}
+    + PE K2 (I_1 - 3)^{PE-1}
+    + QU K3 (I_1 - 3)^{QU-1})
+    J^{-\frac{2}{3}}(\delta{ij} - \frac{1}{3}C_{kk}C{ij}^{-1})`.
 
     :Definition:
 
     .. math::
         \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
 
-    :Arguments:
-        - material : :math:`K_1, K_2, K_3, m_1, m_2, m_3`
+    :Arguments 1:
+        - material : :math:`K1, K2, K3, EM, PE, QU`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material : :math:`K1, EM` (backward compatible, sets :math:`K1=K3=0, PE=QU=1`)
         - virtual  : :math:`\ul{v}`
         - state    : :math:`\ul{u}`
 
@@ -100,7 +106,7 @@ class GenYeohTLTerm(HyperElasticTLBase):
         Returns
         -------
         stress : array (n_cell, n_qp, 6)
-            The second Piola-Kirchhoff stress in Voigt order.
+            The second Piola-Kirchhoff stress in vector order.
         """
         K1, K2, K3, EM, PE, QU = [coef[..., i] for i in range(6)]
 
@@ -108,7 +114,9 @@ class GenYeohTLTerm(HyperElasticTLBase):
 
         # Safe power function logic consistent with original term
         def _pow(x, p):
-            return nm.where((x > 0.) | (p >= 1.), x ** p, 1.)
+            x_safe = nm.where(x <= 0, 1., x)
+            result = x_safe ** p
+            return nm.where((x > 0.) | (p >= 0.), result, 1.)
 
         b1 = _pow(bracket, EM - 1)
         b2 = _pow(bracket, PE - 1)
@@ -131,7 +139,7 @@ class GenYeohTLTerm(HyperElasticTLBase):
             I - (i1[..., None, None] / 3.) * c_inv
         )
 
-        # Convert back to Voigt
+        # Convert back to vector storage
         stress = nm.empty(c_inv_v.shape)
         stress[..., 0] = S[..., 0, 0]
         stress[..., 1] = S[..., 1, 1]
@@ -151,8 +159,8 @@ class GenYeohTLTerm(HyperElasticTLBase):
             new_mat = nm.zeros(mat.shape[:-1] + (6,), dtype=mat.dtype)
             new_mat[..., 0] = mat[..., 0]  # K1
             new_mat[..., 3] = mat[..., 1]  # EM (m)
-            new_mat[..., 4] = 1.0          # PE (unused placeholder)
-            new_mat[..., 5] = 1.0          # QU (unused placeholder)
+            new_mat[..., 4] = 1.0  # PE (unused placeholder)
+            new_mat[..., 5] = 1.0  # QU (unused placeholder)
             coef = new_mat
         else:
             coef = mat[..., :6]
@@ -174,10 +182,17 @@ class GenYeohTLTerm(HyperElasticTLBase):
 
         # Safe power function logic consistent with original term
         def _get_bracket_pow(ex):
-            b_m1 = nm.where((bracket > 0.) | (ex >= 1.),
-                            bracket ** (ex - 1), 1.)
-            b_m2 = nm.where((bracket > 0.) | (ex >= 2.),
-                            bracket ** (ex - 2), 0.)
+            b_m1 = nm.ones_like(bracket)
+            b_m2 = nm.zeros_like(bracket)
+
+            safe_m1 = (bracket > 0.) | (ex >= 1.)
+            safe_m2 = (bracket > 0.) | (ex >= 2.)
+
+            if nm.any(safe_m1):
+                b_m1[safe_m1] = bracket[safe_m1] ** (ex[safe_m1] - 1)
+            if nm.any(safe_m2):
+                b_m2[safe_m2] = bracket[safe_m2] ** (ex[safe_m2] - 2)
+
             return b_m1, b_m2
 
         bracket_m1, bracket_m2 = _get_bracket_pow(EM)
@@ -263,8 +278,8 @@ class GenYeohTLTerm(HyperElasticTLBase):
             new_mat = nm.zeros(mat.shape[:-1] + (6,), dtype=mat.dtype)
             new_mat[..., 0] = mat[..., 0]  # K1
             new_mat[..., 3] = mat[..., 1]  # EM (m)
-            new_mat[..., 4] = 1.0          # PE (unused placeholder)
-            new_mat[..., 5] = 1.0          # QU (unused placeholder)
+            new_mat[..., 4] = 1.0  # PE (unused placeholder)
+            new_mat[..., 5] = 1.0  # QU (unused placeholder)
             coef = new_mat
         else:
             coef = mat[..., :6]
@@ -460,6 +475,47 @@ class OgdenTLTerm(HyperElasticTLBase):
                     [_dh[1, 2, 0, 0], _dh[1, 2, 1, 1], _dh[1, 2, 2, 2],
                      _dh[1, 2, 0, 1], _dh[1, 2, 0, 2], _dh[1, 2, 1, 2]],
                 ])
+
+class SaintVenantKirchhoffTLTerm(HyperElasticTLBase):
+    r"""
+    Saint Venant-Kirchhoff hyperelastic material
+
+    Effective stress (2nd Piola-Kirchhoff) is
+
+    .. math::
+        S_{ij} = D_{ijkl}\ E_{kl}
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material : :math:`D_{ijkl}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+    name = 'dw_tl_he_svk'
+    family_data_names = ['green_strain', 'mtx_f', 'sym_c']
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : 'S, S',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
+
+    def stress_function(self, out, mat, *fargs, **kwargs):
+        sym_e = fargs[0]
+        mat = HyperElasticBase.tile_mat(mat, sym_e.shape[0])
+        dim = self.region.dim
+        mat[:, :, :, dim:] *= 2 # fix shear components
+        out[:] = nm.einsum('ijkl,ijl...->ijk...', mat, sym_e)
+        return out
+
+    def tan_mod_function(self, out, mat, *fargs, **kwargs):
+        mat = HyperElasticBase.tile_mat(mat, fargs[0].shape[0])
+        dim = self.region.dim
+        mat[:, :, dim:, :] *= 2 # fix shear components
+        out[:] = mat
+        return out
 
 class MooneyRivlinTLTerm(HyperElasticTLBase):
     r"""
