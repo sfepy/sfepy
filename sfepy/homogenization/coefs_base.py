@@ -120,7 +120,7 @@ class CorrSolution(Struct):
 
         return out
 
-    def get_output(self, is_dump=False, var_map=None):
+    def get_output(self, is_dump=False, var_map=None, variables=None):
 
         out = {}
         for key, sol in self.iter_solutions():
@@ -131,7 +131,11 @@ class CorrSolution(Struct):
                     vname = var_name
 
                 dof_vector = sol[var_name]
-                if len(dof_vector.shape) == 1:
+                if variables is not None:
+                    var = variables[vname]
+                    shape = (var.n_nod, var.n_components)
+                    dof_vector = dof_vector.reshape(shape)
+                elif len(dof_vector.shape) == 1:
                     dof_vector = dof_vector[:, None]
 
                 if is_dump:
