@@ -12,7 +12,7 @@ import sfepy.linalg as la
 import sfepy.homogenization.multiproc as multiproc
 
 
-class HomogenizationApp(HomogenizationEngine):
+class HomogenizationApp(PDESolverApp):
     @staticmethod
     def process_options(options):
         """
