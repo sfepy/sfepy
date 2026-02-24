@@ -1,13 +1,50 @@
+import os.path as op
 import numpy as nm
+import tables as pt
 from sfepy.base.base import output, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.homogenization.homogen_app import HomogenizationApp
+from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.homogenization.coefficients import Coefficients
-import tables as pt
+from sfepy.discrete import Problem
 from sfepy.discrete.fem.meshio import HDF5MeshIO
-import os.path as op
 
-micro_problem_cache = {}
+homogen_app_cache = {}
+
+
+def get_homogen_app_form_cache(micro_filename):
+    return homogen_app_cache.get(micro_filename, None)
+
+
+def get_micro_conf(micro_filename, define_args, output_dir):
+    required, other = get_standard_keywords()
+    required.remove('equations')
+    conf = ProblemConf.from_file(micro_filename, required, other,
+                                 verbose=False, define_args=define_args)
+    if output_dir is not None:
+        conf.options.output_dir = output_dir
+
+    return conf
+
+
+def coefs_to_dict(coefs, mode, n):
+    out = {}
+    if mode == None:
+        for key, val in coefs.__dict__.items():
+            out[key] = val
+
+    elif mode == 'qp':
+        for key, val in coefs.__dict__.items():
+            if type( val ) == nm.ndarray or type(val) == nm.float64:
+                out[key] = nm.tile( val, (n, 1, 1) )
+            elif type(val) == dict:
+                for key2, val2 in val.items():
+                    if type(val2) == nm.ndarray or type(val2) == nm.float64:
+                        out[key+'_'+key2] = nm.tile(val2, (n, 1, 1))
+    else:
+        out = None
+
+    return out
 
 
 def get_homog_coefs_linear(ts, coor, mode,
@@ -15,16 +52,14 @@ def get_homog_coefs_linear(ts, coor, mode,
                            coefs_filename=None, define_args=None,
                            output_dir=None):
 
+    nc = None if coor is None else coor.shape[0]
+    if micro_filename in homogen_app_cache:
+        return coefs_to_dict(homogen_app_cache[micro_filename][0], mode, nc)
+
     oprefix = output.prefix
     output.prefix = 'micro:'
 
-    required, other = get_standard_keywords()
-    required.remove( 'equations' )
-
-    conf = ProblemConf.from_file(micro_filename, required, other,
-                                 verbose=False, define_args=define_args)
-    if output_dir is not None:
-        conf.options.output_dir = output_dir
+    conf = get_micro_conf(micro_filename, define_args, output_dir)
 
     if coefs_filename is None:
         coefs_filename = conf.options.get('coefs_filename', 'coefs')
@@ -38,41 +73,39 @@ def get_homog_coefs_linear(ts, coor, mode,
         else:
             regenerate = True
 
+    recovery_hook = conf.options.get('recovery_hook', None)
+
     if regenerate:
         options = Struct( output_filename_trunk = None )
 
         app = HomogenizationApp( conf, options, 'micro:' )
-        coefs = app()
+        coefs, deps = app(ret_all=True)
         if type(coefs) is tuple:
             coefs = coefs[0]
 
         coefs.to_file_hdf5( coefs_filename )
 
-        micro_problem_cache[micro_filename] = app.problem
+        rhook = (None if recovery_hook is None else
+                 conf.get_function(recovery_hook))
+        homogen_app_cache[micro_filename] = (coefs, app.he, deps, rhook)
     else:
         coefs = Coefficients.from_file_hdf5( coefs_filename )
-
-    out = {}
-    if mode == None:
-        for key, val in coefs.__dict__.items():
-            out[key] = val
-
-    elif mode == 'qp':
-        for key, val in coefs.__dict__.items():
-            if type( val ) == nm.ndarray or type(val) == nm.float64:
-                out[key] = nm.tile( val, (coor.shape[0], 1, 1) )
-            elif type(val) == dict:
-                for key2, val2 in val.items():
-                    if type(val2) == nm.ndarray or type(val2) == nm.float64:
-                        out[key+'_'+key2] = \
-                                          nm.tile(val2, (coor.shape[0], 1, 1))
-
-    else:
-        out = None
+        recovery_hook = conf.options.get('recovery_hook', None)
+        if recovery_hook is not None:
+            corrs = get_correctors_from_file_hdf5(dump_names=coefs.save_names)
+            rhook = conf.get_function(recovery_hook)
+            problem = Problem.from_conf(conf, init_equations=False,
+                                        init_solvers=False)
+            options = Struct(output_filename_trunk=None)
+            he = HomogenizationEngine(problem, options)
+            homogen_app_cache[micro_filename] = (coefs, he, corrs, rhook)
+        else:
+            homogen_app_cache[micro_filename] = (coefs, None, None, None)
 
     output.prefix = oprefix
 
-    return out
+    return coefs_to_dict(coefs, mode, nc)
+
 
 def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
                               term=None, problem=None,
@@ -84,21 +117,14 @@ def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
     oprefix = output.prefix
     output.prefix = 'micro:'
 
-    if not hasattr(problem, 'homogen_app'):
-        required, other = get_standard_keywords()
-        required.remove('equations')
-        micro_file = problem.conf.options.micro_filename
-        conf = ProblemConf.from_file(micro_file, required, other,
-                                     verbose=False, define_args=define_args)
-        if output_dir is not None:
-            conf.options.output_dir = output_dir
+    micro_filename = problem.conf.options.micro_filename
+    if micro_filename not in homogen_app_cache:
+        conf = get_micro_conf(micro_filename, define_args, output_dir)
         options = Struct(output_filename_trunk=None)
-        app = HomogenizationApp(conf, options, 'micro:',
-                                n_micro=coor.shape[0])
-        problem.homogen_app = app
-
+        app = HomogenizationApp(conf, options, 'micro:', n_micro=coor.shape[0])
+        homogen_app_cache[micro_filename] = app
     else:
-        app = problem.homogen_app
+        app = homogen_app_cache[micro_filename]
 
     if macro_data is not None:
         macro_data['macro_time_step'] = ts.step
