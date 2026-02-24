@@ -37,9 +37,9 @@ from sfepy.homogenization.recovery import compute_micro_u,\
 
 def recovery_le(pb, corrs, macro):
     out = {}
-    dim = corrs['corrs_le']['u_00'].shape[1]
-    mic_u = - compute_micro_u(corrs['corrs_le'], macro['strain'], 'u', dim)
-    mic_p = - compute_micro_u(corrs['corrs_le'], macro['strain'], 'p', dim)
+    dim = corrs['corrs_rs']['u_00'].shape[1]
+    mic_u = - compute_micro_u(corrs['corrs_rs'], macro['strain'], 'u', dim)
+    mic_p = - compute_micro_u(corrs['corrs_rs'], macro['strain'], 'p', dim)
 
     out['u_mic'] = Struct(name='output_data',
                           mode='vertex', data=mic_u)
@@ -140,7 +140,8 @@ options = {
     'output_dir': 'output',
     'coefs_filename': 'coefs_le_up',
     'recovery_hook': 'recovery_le',
-    'multiprocessing': False,
+    'max_workers': 2,
+    'multiprocessing': True,
 }
 
 equation_corrs = {
@@ -188,7 +189,7 @@ requirements = {
         'equations': equation_corrs,
         'set_variables': [('Pi', 'pis', 'u')],
         'class': cb.CorrDimDim,
-        'save_name': 'corrs_le',
+        'save_name': 'corrs_rs',
         'is_linear': True,
     },
 }
