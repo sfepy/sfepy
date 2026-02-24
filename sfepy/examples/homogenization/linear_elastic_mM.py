@@ -46,17 +46,12 @@ def post_process(out, pb, state, extend=False):
 def get_elements(coors, domain=None):
     return nm.arange(50, domain.shape.n_el, 100)
 
-regenerate = True
-
 def get_homog(ts, coors, mode=None,
               equations=None, term=None, problem=None, **kwargs):
-    global regenerate
-
-    out = get_homog_coefs_linear(ts, coors, mode, regenerate=regenerate,
+    out = get_homog_coefs_linear(ts, coors, mode,
                                  micro_filename=options['micro_filename'],
-                                 output_dir=problem.conf.options.output_dir)
-    regenerate = False
-
+                                 output_dir=problem.conf.options.output_dir,
+                                 regenerate=False)
     return out
 
 functions = {

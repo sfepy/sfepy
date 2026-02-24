@@ -55,10 +55,11 @@ def recovery_hook(pb, ncoors, region, ts,
         pb.save_state(filename, out=out, split_results_by=fpv)
 
 
-def def_mat(ts, mode, coors, term, pb):
+def def_mat(ts, coors, mode=None, term=None, problem=None, **kwargs):
     if not (mode == 'qp'):
         return
 
+    pb = problem
     if not hasattr(pb, 'family_data'):
         pb.family_data = HyperElasticULFamilyData()
 
@@ -139,7 +140,8 @@ options = {
     'output_dir': './output',
     'coefs_filename': 'coefs_hyper_homog',
     'multiprocessing': True,
-    'chunks_per_worker': 2,
+    'chunk_size': 10,
+    'max_workers': 5,
     'micro_update': {'coors': [('corrs_rs', 'u', 'mtx_e')]},
     'mesh_update_variable': 'u',
     'recovery_hook': 'recovery_hook',
@@ -153,8 +155,7 @@ fields = {
 functions = {
     'match_x_plane': (per.match_x_plane,),
     'match_y_plane': (per.match_y_plane,),
-    'mat_fce': (lambda ts, coors, mode=None, term=None, problem=None, **kwargs:
-                def_mat(ts, mode, coors, term, problem),),
+    'mat_fce': (def_mat,),
 }
 
 materials = {
