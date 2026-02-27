@@ -1,7 +1,6 @@
-import os
-
+import os.path as osp
 import numpy as nm
-
+from functools import partial
 from sfepy.base.base import get_default, Struct, output
 from sfepy.base.ioutils import get_print_info
 from sfepy.base.timing import Timer
@@ -11,17 +10,17 @@ from sfepy.base.conf import get_standard_keywords
 from sfepy.discrete import Problem, Region
 from sfepy.base.conf import ProblemConf
 from sfepy.homogenization.coefficients import Coefficients
-from sfepy.homogenization.micmac import get_correctors_from_file_hdf5
-import os.path as op
-import atexit
-
-shared = Struct()
-
-#
+from sfepy.homogenization.micmac import (micro_problem_cache,
+    get_correctors_from_file_hdf5)
+import sfepy.homogenization.multiproc as multiproc
+from sfepy.homogenization.engine import (HomogenizationWorker,
+    HomogenizationWorkerMulti)
 # TODO : interpolate fvars to macro times. ?mid-points?
 #
 # TODO : clean-up!
 #
+
+recovery_data_cache = {}
 
 
 def get_output_suffix(iel, ts, naming_scheme, format, output_format):
@@ -310,7 +309,7 @@ def recover_bones(problem, micro_problem, region, eps0,
 
     nodes_yc = micro_problem.domain.regions['Yc'].vertices
 
-    join = os.path.join
+    join = osp.join
     format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]
 
     for ii, iel in enumerate(region.cells):
@@ -381,7 +380,7 @@ def recover_bones(problem, micro_problem, region, eps0,
                                    micro_problem.output_format)
         micro_name = micro_problem.get_output_name(extra=suffix)
         filename = join(problem.output_dir,
-                        'recovered_' + os.path.basename(micro_name))
+                        'recovered_' + osp.basename(micro_name))
 
         micro_problem.save_state(filename, out=out, ts=ts)
 
@@ -408,7 +407,6 @@ def recover_paraflow(problem, micro_problem, region,
 
     to_output = micro_problem.variables.create_output
 
-    join = os.path.join
     format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]
 
     for ii, iel in enumerate(region.cells):
@@ -449,14 +447,14 @@ def recover_paraflow(problem, micro_problem, region,
         suffix = get_output_suffix(iel, ts, naming_scheme, format,
                                    micro_problem.output_format)
         micro_name = micro_problem.get_output_name(extra=suffix)
-        filename = join(problem.output_dir, 'recovered_' + micro_name)
+        filename = osp.join(problem.output_dir, 'recovered_' + micro_name)
 
         micro_problem.save_state(filename, out=out, ts=ts)
 
 
 def save_recovery_region(mac_pb, rname, filename=None):
-    filename = get_default(filename, os.path.join(mac_pb.output_dir,
-                                                  'recovery_region.vtk'))
+    filename = get_default(filename, osp.join(mac_pb.output_dir,
+                                              'recovery_region.vtk'))
 
     region = mac_pb.domain.regions[rname]
 
@@ -473,32 +471,6 @@ def save_recovery_region(mac_pb, rname, filename=None):
                           dofs=None)
 
     mac_pb.save_state(filename, out=out)
-
-
-_recovery_global_dict = {}
-
-
-def destroy_pool():
-    if 'pool' in _recovery_global_dict:
-        _recovery_global_dict['pool'].close()
-
-
-atexit.register(destroy_pool)
-
-
-def _recovery_hook(args):
-    idx, label, local_macro, verbose = args
-    pb, corrs, recovery_hook = _recovery_global_dict['hook_args']
-
-    output.set_output(quiet=False)
-    output.level = label[1]
-    output(label[0])
-    output.set_output(quiet=not(verbose))
-
-    if isinstance(corrs, list):
-        corrs = corrs[idx]
-
-    return recovery_hook(pb, corrs, local_macro)
 
 
 def get_recovery_points(region, eps0):
@@ -519,6 +491,34 @@ def get_recovery_points(region, eps0):
         ccoors[:, ii] = icoor.flatten()
 
     return ccoors
+
+
+def get_micro_problem(micro_filename, define_args, output_dir):
+    if micro_filename in micro_problem_cache:
+        pb = micro_problem_cache[micro_filename]
+        conf = pb.conf
+        recovery_hook = conf.options.get('recovery_hook', None)
+    else:
+        # Create a micro-problem instance.
+        required, other = get_standard_keywords()
+        required.remove('equations')
+        conf = ProblemConf.from_file(micro_filename, required, other,
+                                    verbose=False, define_args=define_args)
+        if output_dir is not None:
+            conf.options.output_dir = output_dir
+
+        recovery_hook = conf.options.get('recovery_hook', None)
+
+        if recovery_hook is not None:
+            pb = Problem.from_conf(conf, init_equations=False,
+                                   init_solvers=False)
+        else:
+            pb = None
+
+    if recovery_hook is not None:
+        recovery_hook = conf.get_function(recovery_hook)
+
+    return pb, recovery_hook
 
 
 def recover_micro_hook(micro_filename, region, macro, eps0,
@@ -563,79 +563,59 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
     verbose : bool
         The verbose terminal output.
     """
-    import sfepy.base.multiproc_proc as multi
+    if eval_mode not in ['constant', 'continuous']:
+        raise ValueError(f"Evaluation mode '{eval_mode}' not implemented!")
 
-    if 'micro_problem' not in _recovery_global_dict:
-        # Create a micro-problem instance.
-        required, other = get_standard_keywords()
-        required.remove('equations')
-        conf = ProblemConf.from_file(micro_filename, required, other,
-                                     verbose=False, define_args=define_args)
-        if output_dir is not None:
-            conf.options.output_dir = output_dir
+    rkey = f'{micro_filename}|{region_mode}|{eval_mode}'
+    if rkey not in recovery_data_cache:
+        pb, rhook = get_micro_problem(micro_filename, define_args, output_dir)
 
-        recovery_hook = conf.options.get('recovery_hook', None)
-        pb = None
-        if recovery_hook is not None:
-            recovery_hook = conf.get_function(recovery_hook)
-
+        if rhook is not None:
             if corrs is None:
                 # Coefficients and correctors
-                coefs_filename = conf.options.get('coefs_filename', 'coefs')
-                coefs_filename = op.join(conf.options.get('output_dir', '.'),
-                                         coefs_filename + '.h5')
+                opts = pb.conf.options
+                coefs_filename = opts.get('coefs_filename', 'coefs')
+                coefs_filename = osp.join(opts.get('output_dir', '.'),
+                                          coefs_filename + '.h5')
                 coefs = Coefficients.from_file_hdf5(coefs_filename)
                 corrs = \
                     get_correctors_from_file_hdf5(dump_names=coefs.save_names)
 
-            pb = Problem.from_conf(conf, init_equations=False,
-                                   init_solvers=False)
+            if isinstance(region, Region):
+                if region_mode == 'el_centers':
+                    dim = region.domain.mesh.dim
+                    ccoors = region.cmesh.get_centroids(dim)
+                    ccoors = ccoors[region.get_cells(), :]
+                    recovery_ids = region.get_entities(-1)
+                    recovery_ids_s = [f'(element {k})' for k in recovery_ids]
+                elif region_mode == 'tiled':
+                    ccoors = get_recovery_points(region, eps0)
+                    recovery_ids = nm.arange(ccoors.shape[0])
+                    recovery_ids_s = [f'(point {k})' for k in recovery_ids]
+                else:
+                    raise ValueError(
+                        f"Region mode '{region_mode}' not implemented!")
 
-        _recovery_global_dict['micro_problem'] = pb, corrs, recovery_hook
-    else:
-        pb, corrs, recovery_hook = _recovery_global_dict['micro_problem']
-
-    is_multiproc = pb.conf.options.get('multiprocessing', True)\
-        and multi.use_multiprocessing
-
-    if recovery_hook is not None:
-        if eval_mode not in ['constant', 'continuous']:
-            raise ValueError(f"Evaluation mode '{eval_mode}' not implemented!")
-
-        if isinstance(region, Region):
-            if region_mode == 'el_centers':
-                dim = region.domain.mesh.dim
-                ccoors = region.cmesh.get_centroids(dim)
-                ccoors = ccoors[region.get_cells(), :]
-                recovery_ids = region.get_entities(-1)
-                recovery_ids_s = [f'(element {k})' for k in recovery_ids]
-            elif region_mode == 'tiled':
-                ccoors = get_recovery_points(region, eps0)
+            else:
+                ccoors = region
                 recovery_ids = nm.arange(ccoors.shape[0])
                 recovery_ids_s = [f'(point {k})' for k in recovery_ids]
-            else:
-                raise ValueError(
-                    f"Region mode '{region_mode}' not implemented!")
 
+            rreg = ccoors, recovery_ids, recovery_ids_s
         else:
-            ccoors = region
-            recovery_ids = nm.arange(ccoors.shape[0])
-            recovery_ids_s = [f'(point {k})' for k in recovery_ids]
+            rreg = None
 
+        recovery_data_cache[rkey] = pb, corrs, rreg, rhook
+    else:
+        pb, corrs, rreg, rhook = recovery_data_cache[rkey]
+
+    if rreg is not None:
+        ccoors, recovery_ids, recovery_ids_s = rreg
         nrec = ccoors.shape[0]
 
         output(f'recovering {nrec} microsctructures...')
         timer = Timer(start=True)
-        output_level, output_fun = output.level, output.output_function
-
-        _recovery_global_dict['hook_args'] = pb, corrs, recovery_hook
-
-        if is_multiproc:
-            multi_local_macro = []
-            num_workers = nm.min([multi.cpu_count(), nrec])
-            _recovery_global_dict['pool'] = multi.Pool(processes=num_workers)
-        else:
-            outs = []
+        opts = pb.conf.options
 
         # Recover micro. region
         mesh = pb.domain.mesh
@@ -655,6 +635,21 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
 
             macro = new_macro
 
+        if opts.get('multiprocessing', True) and multiproc.use_multiprocessing:
+            multi_args = []
+            if len(multiproc.get_workers()) < 1:
+                dependencies = multiproc.get_dict('dependencies', clear=True)
+                dependencies.update(corrs)
+
+                worker = partial(HomogenizationWorkerMulti.worker,
+                                 pb, None, None, None, None, dependencies, None,
+                                 None, None)
+                multiproc.init_workers(worker)
+            qtasks, qdeps = multiproc.get_queues()
+        else:
+            multi_args = None
+            outs = []
+
         for ii in range(nrec):
             local_coors = mic_coors.copy()
             local_coors[:, :ccoors.shape[1]] += ccoors[ii]
@@ -663,8 +658,7 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
             ndoffset += mesh.n_nod
             rec_ids.append(nm.ones((mesh.n_el,)) * recovery_ids[ii])
 
-            label = (f'micro: {ii + 1}/{nrec} {recovery_ids_s[ii]}',
-                     output_level)
+            label = f'micro: {ii + 1}/{nrec} {recovery_ids_s[ii]}'
 
             local_macro = {'eps0': eps0}
 
@@ -695,18 +689,27 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
                     else:
                         local_macro[k] = v[ii, ...]
 
-            if is_multiproc:
-                multi_local_macro.append((ii, label, local_macro, verbose))
+            if multi_args is not None:
+                multi_args.append((local_macro, label, verbose))
             else:
-                outs.append(_recovery_hook((ii, label, local_macro, verbose)))
+                val = HomogenizationWorker.recover_micro(pb, corrs, rhook,
+                                                         local_macro,
+                                                         label, verbose)
+                outs.append(val)
 
         rec_ids = nm.hstack(rec_ids).reshape((-1, 1, 1, 1))
 
-        if is_multiproc:
-            pool = _recovery_global_dict['pool']
-            outs = list(pool.map(_recovery_hook, multi_local_macro))
+        if multi_args is not None:
+            for k, args in enumerate(multi_args):
+                qtasks.put((f'_recover_micro_{k}', args))
 
-        output.level, output.output_function = output_level, output_fun
+            outs = []
+            for _ in multi_args:
+                task, val = qdeps.get()
+                outs.append((int(task.split('_')[-1]), val))
+
+            outs.sort(key=lambda k: k[0])
+            outs = [k for _, k in outs]
 
         # Collect output data - by region
         outregs_data = {}
@@ -740,7 +743,7 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
         conn = nm.vstack(conn)
         cgroups = nm.tile(mesh.cmesh.cell_groups.squeeze(), (nrve,))
         # Get region mesh and data
-        output_dir = pb.conf.options.get('output_dir', '.')
+        output_dir = opts.get('output_dir', '.')
         for rn in outregs_data.keys():
             rlabel, cidxs = outregs_info[rn]
             gcidxs = nm.hstack([cidxs + mesh.n_el * ii for ii in range(nrve)])
@@ -764,7 +767,7 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
                                         data=rec_ids[gcidxs, ...])
             micro_name = pb.get_output_name(extra='recovered_%s%s'
                                             % (rlabel, recovery_file_tag))
-            filename = op.join(output_dir, op.basename(micro_name))
+            filename = osp.join(output_dir, osp.basename(micro_name))
             mesh_out = Mesh.from_data('recovery_%s' % rlabel, rcoors,
                                       ngroups[vidxs], [rconn],
                                       [cgroups[gcidxs]], [mesh.descs[0]])
