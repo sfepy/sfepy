@@ -5,8 +5,7 @@ from collections.abc import Iterable
 
 from sfepy.base.base import assert_, get_default, Struct
 from sfepy.discrete.evaluate import eval_equations
-from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis,\
-    rm_multi
+from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis
 
 
 class MiniAppBase(Struct):
@@ -313,7 +312,7 @@ class CorrEval(CorrMiniApp):
     def __call__(self, problem=None, data=None):
         problem = get_default(problem, self.problem)
         expr = self.expression
-        for req in map(rm_multi, self.requires):
+        for req in self.requires:
             expr = expr.replace(req, "data['%s']" % req)
 
         val = eval(expr)
@@ -847,7 +846,7 @@ class CoefSum(MiniAppBase):
 
     def __call__(self, volume, problem=None, data=None):
         coef = nm.zeros_like(data[self.requires[0]])
-        for req in map(rm_multi, self.requires):
+        for req in self.requires:
             coef += data[req]
 
         return coef
@@ -858,7 +857,7 @@ class CoefEval(MiniAppBase):
     """
     def __call__(self, volume, problem=None, data=None):
         expr = self.expression
-        for req in map(rm_multi, self.requires):
+        for req in self.requires:
             expr = expr.replace(req, "data['%s']" % req)
 
         coef = eval(expr)
