@@ -425,7 +425,7 @@ def pv_plot(filenames, options, plotter=None, step=None, annotations=None,
         fstep += step_inc
     if fstep < 0:
         return
-    if hasattr(plotter, 'resview_n_steps'): # Works for None as well.
+    if hasattr(plotter, '_resview_n_steps'): # Works for None as well.
         if fstep >= plotter._resview_n_steps:
             return
 
