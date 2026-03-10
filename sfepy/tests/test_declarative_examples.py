@@ -51,6 +51,7 @@ examples = [
     'linear_elasticity/multi_node_lcbcs.py',
     'linear_elasticity/nodal_lcbcs.py',
     'linear_elasticity/prestress_fibres.py',
+    'linear_elasticity/rigid_twist.py',
     'linear_elasticity/seismic_load.py',
     'linear_elasticity/shell10x_cantilever.py',
     'linear_elasticity/truss_bridge3d.py',
