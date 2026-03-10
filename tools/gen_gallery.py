@@ -524,6 +524,14 @@ custom = {
                                 0,1,0],
         },
     },
+    'linear_elasticity/rigid_twist.py': {
+        '': {
+            'fields': ['u:wu:f1:p0', '1:vw:wu:f1:p0', '1:vw:p0'],
+            'camera_position': [-1.13192,-2.44789,0.61645,
+                                -0.00254032,-0.0210679,-0.0753145,
+                                0.104205,0.227488,0.968189],
+        },
+    },
     'linear_elasticity/seismic_load.py': {
         '': {
             'fields': ['cauchy_stress:wu:f10:p0', '1:vw:p0'],
