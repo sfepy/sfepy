@@ -1351,6 +1351,9 @@ class DGField(FEField):
             # get boundary values
             vals[:] = fun(bcoors)
 
+        if not nm.isfinite(vals).all():
+            raise ValueError(f'infs or nans in DOF values obtained with {fun}!')
+
         if ret_coors:
             return bcoors, vals
         return vals
