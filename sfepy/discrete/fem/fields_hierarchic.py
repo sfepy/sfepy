@@ -226,6 +226,9 @@ class H1HierarchicVolumeField(H1Mixin, FEField):
 
         vals.shape = (len(nods), -1)
 
+        if not nm.isfinite(vals).all():
+            raise ValueError(f'infs or nans in DOF values set with {fun}!')
+
         return nods, vals
 
     def create_basis_context(self):

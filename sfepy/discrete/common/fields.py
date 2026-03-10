@@ -332,6 +332,9 @@ class Field(Struct):
 
         vals.shape = (len(nods), -1)
 
+        if not nm.isfinite(vals).all():
+            raise ValueError(f'infs or nans in DOF values set with {fun}!')
+
         return nods, vals
 
     def create_eval_mesh(self):
