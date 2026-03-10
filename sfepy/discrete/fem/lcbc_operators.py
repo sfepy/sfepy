@@ -335,6 +335,121 @@ class AverageForceOperator(LCBCOperator):
         self.n_sdof = len(nm.unique(seq))
         self.n_new_dof = 0
 
+class RigidTwistOperator(MRLCBCOperator):
+    """
+    Transformation matrix operator for rigid twist LCBCs.
+
+    One region (master) is provided as ``regions[0]``, the second (slave) via
+    its name in ``sregion_name`` argument. The two regions are rigid and can
+    rotate around an anchor point as a screw and nut. Small displacement
+    assumptions apply.
+
+    Examples
+    --------
+
+    ``'RigidM'`` and ``'RigidS'`` are regions with corresponding nodes, anchor is
+    ``[0, 0, 0]``, the thread axis direction is ``[1, 0, 0]`` and the thread
+    height parameter is ``0.1``::
+
+        lcbcs = {
+            'rt' : ('RigidM', {'u.all' : None}, None, 'rigid_twist',
+                    'RigidS', [0, 0, 0], [1, 0, 0], 0.1),
+        }
+
+    Notes
+    -----
+    Notation:
+
+    - :math:`d` = space dimension (2 or 3)
+    - :math:`A` = anchor point coordinates
+    - :math:`a` = thread axis unit direction
+    - :math:`h` = thread height parameter
+    - :math:`R` = spin matrix created using distances of regions coordinates
+      from :math:`A`
+
+    New DOFs:
+
+    - :math:`u_A` (d): anchor displacements vector
+    - :math:`o_A` (d): rotations around anchor
+    - :math:`\phi` (1): relative screw motion (drilling) angle of master and
+      slave regions
+
+    Constraints:
+
+    - master DOFs: :math:`u_M = u_A + R^M o_A - 1/2 (R^M + h) a \phi`
+    - slave DOFs: :math:`u_S = u_A + R^S o_A + 1/2 (R^S + h) a \phi`
+
+    Then with the :math:`2 d + 1` new DOFs denoted by :math:`q = [u_A, o_A,
+    \phi]`, the constraints can be expressed as :math:`u = [I, R, \pm W] q`,
+    where :math:`W = 1/2 (R + h) a`.
+    """
+    kind = 'rigid_twist'
+
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 sregion_name, anchor, axis, thread,
+                 variables, ts=None, functions=None):
+        MRLCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                                variables, functions=functions)
+        self.anchor = nm.array(anchor)
+        self.axis = nm.array(axis)
+        self.thread = thread
+
+        mvar = svar = variables[self.var_names[0]]
+
+        mfield = mvar.field
+        sfield = svar.field
+
+        mregion = self.region
+        sregion = sfield.domain.regions[sregion_name]
+
+        self.mnodes = mfield.get_dofs_in_region(mregion, merge=True)
+        self.snodes = sfield.get_dofs_in_region(sregion, merge=True)
+
+        mcoors = mfield.get_coor(self.mnodes)
+        scoors = sfield.get_coor(self.snodes)
+
+        n_mnod, dim = mcoors.shape
+        n_snod, dim = scoors.shape
+
+        mr = mcoors - self.anchor[None, :]
+        sr = scoors - self.anchor[None, :]
+
+        mtx_me = nm.tile(nm.eye(dim, dtype=nm.float64), (n_mnod, 1))
+        mtx_se = nm.tile(nm.eye(dim, dtype=nm.float64), (n_snod, 1))
+
+        mtx_mr = _create_spin_matrix(mr).reshape((n_mnod * dim, -1))
+        mtx_sr = _create_spin_matrix(sr).reshape((n_snod * dim, -1))
+
+        mtx_mw = -0.5 * (mtx_mr + thread) @ self.axis
+        mtx_sw = 0.5 * (mtx_sr + thread) @ self.axis
+
+        mtx = nm.vstack((
+            nm.hstack((mtx_me, mtx_mr, mtx_mw[:, None])),
+            nm.hstack((mtx_se, mtx_sr, mtx_sw[:, None])),
+        ))
+
+        n_nod = n_mnod + n_snod
+        self.n_new_dof = dim2sym(dim) + 1
+        self.n_sdof = 0
+        self.n_mdof = n_nod * dim
+        self.mtx = mtx
+
+        self.mdofs = expand_nodes_to_equations(self.mnodes, dof_names[0],
+                                               self.all_dof_names)
+        self.sdofs = expand_nodes_to_equations(self.snodes, dof_names[0],
+                                               self.all_dof_names)
+
+    def setup(self):
+        meq = self.eq_map.eq[self.mdofs]
+        seq = self.eq_map.eq[self.sdofs]
+
+        if nm.any(meq < 0) or nm.any(seq < 0):
+            raise ValueError(
+                'rigid_twist operator does not support E(P)BC-constrained DOFs!'
+            )
+
+        self.ameq = nm.concatenate((meq, seq))
+
 def _save_vectors(filename, vectors, region, mesh, data_name):
     """
     Save vectors defined in region nodes as vector data in mesh vertices.
