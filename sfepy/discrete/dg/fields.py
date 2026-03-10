@@ -1135,12 +1135,16 @@ class DGField(FEField):
         """
         if region is None:
             region = self.region
-            return self.set_cell_dofs(fun, region, dpn, warn)
+            nods, vals = self.set_cell_dofs(fun, region, dpn, warn)
         elif region.has_cells():
-            return self.set_cell_dofs(fun, region, dpn, warn)
+            nods, vals = self.set_cell_dofs(fun, region, dpn, warn)
         elif region.kind_tdim == self.dim - 1:
             nods, vals = self.set_facet_dofs(fun, region, dpn, warn)
-            return nods, vals
+
+        if not nm.isfinite(vals).all():
+            raise ValueError(f'infs or nans in DOF values set with {fun}!')
+
+        return nods, vals
 
     def set_cell_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
