@@ -14,6 +14,7 @@ from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import output_mesh_formats
 from sfepy.discrete.fem.mesh import fix_double_nodes
 from sfepy.discrete.fem.utils import prepare_translate
+from sfepy.linalg import make_axis_rotation_matrix
 import sfepy.mesh.mesh_tools as mt
 from sfepy.mesh.mesh_generators import gen_tiled_mesh
 
@@ -23,6 +24,10 @@ helps = {
     'center' : 'center of the output mesh (0 for origin or'
     ' comma-separated list for each axis) applied after scaling'
     ' [default: %(default)s]',
+    'rot_axis' : """rotation axis (x, y, z or comma-separated list of
+      coordinates) [default: %(default)s]""",
+    'rot_angle' : """rotation angle in degrees around rotation axis
+      [default: %(default)s]""",
     'refine' : 'uniform refinement level [default: %(default)s]',
     'format' : 'output mesh format (overrides filename_out extension)',
     'list' : 'list supported readable/writable output mesh formats',
@@ -104,6 +109,12 @@ def main():
     parser.add_argument('-c', '--center', metavar='center',
                         action='store', dest='center',
                         default=None, help=helps['center'])
+    parser.add_argument('--rot-axis', metavar='axis',
+                        action='store', dest='rot_axis',
+                        default=None, help=helps['rot_axis'])
+    parser.add_argument('--rot-angle', metavar='angle',
+                        action='store', type=float, dest='rot_angle',
+                        default=0.0, help=helps['rot_angle'])
     parser.add_argument('-r', '--refine', metavar='level',
                         action='store', type=int, dest='refine',
                         default=0, help=helps['refine'])
@@ -165,6 +176,17 @@ def main():
 
     scale = _parse_val_or_vec(options.scale, 'scale', parser)
     center = _parse_val_or_vec(options.center, 'center', parser)
+
+    if options.rot_axis in ('x', 'y', 'z'):
+        rot_axis = dict(
+            x=[1.0, 0.0, 0.0],
+            y=[0.0, 1.0, 0.0],
+            z=[0.0, 0.0, 1.0],
+        )[options.rot_axis]
+
+    else:
+        rot_axis = _parse_val_or_vec(options.rot_axis, 'rot_axis', parser)
+
     cell_dim = _parse_val_or_vec(options.cell_dim, 'cell_dim', parser)
 
     filename_in = options.filename_in
@@ -246,6 +268,11 @@ def main():
         cc = 0.5 * mesh.get_bounding_box().sum(0)
         shift = center - cc
         tr = nm.c_[nm.eye(mesh.dim, dtype=nm.float64), shift[:, None]]
+        mesh.transform_coors(tr)
+
+    if rot_axis is not None:
+        tr = make_axis_rotation_matrix(rot_axis,
+                                       nm.pi * options.rot_angle / 180.0)
         mesh.transform_coors(tr)
 
     if options.refine > 0:
