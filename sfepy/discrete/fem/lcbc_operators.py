@@ -341,8 +341,11 @@ class RigidTwistOperator(MRLCBCOperator):
 
     One region (master) is provided as ``regions[0]``, the second (slave) via
     its name in ``sregion_name`` argument. The two regions are rigid and can
-    rotate around an anchor point as a screw and nut. Small displacement
-    assumptions apply.
+    rotate around an anchor point as a screw and a nut. The relation between
+    the two regions is symmetric and togehter they behave like on a right-hand
+    thread, when the thread height parameter is positive, and left-hand thread,
+    when it is negative, see the example below. Small displacement assumptions
+    apply.
 
     Examples
     --------
