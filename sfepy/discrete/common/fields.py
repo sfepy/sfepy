@@ -198,13 +198,11 @@ class Field(Struct):
         """
         Save current reference mappings to `mappings0` attribute.
         """
-        import sfepy.base.multiproc as multi
+        from multiprocessing import managers
 
-        if multi.is_remote_dict(self.mappings0):
+        if isinstance(self.mappings0, managers.DictProxy):
             for k, v in self.mappings.items():
-                m, _ = self.mappings[k]
-                nv = (m.bf, m.bfg, m.det, m.volume, m.normal)
-                self.mappings0[k] = nv
+                self.mappings0[k] = (v[0], None)  # save PyCMapping only
         else:
             self.mappings0 = self.mappings.copy()
 
@@ -232,18 +230,10 @@ class Field(Struct):
         key : tuple
             The key of the mapping in `mappings` or `mappings0`.
         """
-        import sfepy.base.multiproc as multi
-
         key = (region.name, integral.order, integration)
 
         if get_saved:
             out = self.mappings0.get(key, None)
-            if multi.is_remote_dict(self.mappings0) and out is not None:
-                m, i = self.create_mapping(region, integral, integration)
-                m.bf[:], m.bfg[:], m.det[:], m.volume[:] = out[0:4]
-                if m.normal is not None:
-                    m.normal[:] = m[4]
-                out = m, i
         else:
             out = self.mappings.get(key, None)
 

@@ -223,13 +223,15 @@ class Domain(Struct):
 
         self.fix_element_orientation(geom_els=new_gel_entry, force_check=True)
 
+        gps = self.geom_poly_spaces
         key = gel.get_interpolation_name()
-
-        gel.poly_space = PolySpace.any_from_args(key, gel, 1)
+        if key not in gps:
+            gps[key] = PolySpace.any_from_args(key, gel, 1)
         gel = gel.surface_facet
         if gel is not None:
             key = gel.get_interpolation_name()
-            gel.poly_space = PolySpace.any_from_args(key, gel, 1)
+            if key not in gps:
+                gps[key] = PolySpace.any_from_args(key, gel, 1)
 
         select = f'cells of group {new_mat_id}'
         self._bnf.parseString(select)

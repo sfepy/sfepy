@@ -388,7 +388,7 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
         Create the context required for evaluating the field basis.
         """
         ps = self.poly_space
-        gps = self.gel.poly_space
+        gps = self.geom_poly_space
 
         mesh = self.create_mesh(extra_nodes=False)
 
@@ -421,7 +421,7 @@ class H1NodalVolumeField(H1NodalMixin, FEField):
 
             coors = self.poly_space.node_coors
 
-            bf = self.gel.poly_space.eval_basis(coors)
+            bf = self.geom_poly_space.eval_basis(coors)
             bf = bf[:,0,:].copy()
 
             conn = self.econn[:, :self.gel.n_vertex]
@@ -444,7 +444,7 @@ class H1SNodalVolumeField(H1NodalVolumeField):
         # Hack for tests to pass - the reference coordinates are determined
         # from vertices only - we can use the Lagrange basis context for the
         # moment. The true context for Field.evaluate_at() is not implemented.
-        gps = self.gel.poly_space
+        gps = self.geom_poly_space
         mesh = self.create_mesh(extra_nodes=False)
 
         ctx = geo_ctx = gps.create_context(self.cmesh, 0, 1e-15, 100, 1e-8)
@@ -467,7 +467,7 @@ class H1SEMVolumeField(H1NodalVolumeField):
         # Hack for tests to pass - the reference coordinates are determined
         # from vertices only - we can use the Lagrange basis context for the
         # moment. The true context for Field.evaluate_at() is not implemented.
-        gps = self.gel.poly_space
+        gps = self.geom_poly_space
         mesh = self.create_mesh(extra_nodes=False)
 
         ctx = geo_ctx = gps.create_context(self.cmesh, 0, 1e-15, 100, 1e-8)
