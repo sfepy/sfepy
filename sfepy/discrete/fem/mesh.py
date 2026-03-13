@@ -515,6 +515,18 @@ class Mesh(Struct):
         else:
             self.coors[:] = nm.dot(ref_coors, mtx_t.T)
 
+    def set_centre(self, centre):
+        """
+        Translate mesh coordinates so that `centre` is the mesh centre.
+
+        Parameters
+        ----------
+        centre : array
+            The new centre of the mesh.
+        """
+        cc = 0.5 * self.get_bounding_box().sum(0)
+        self.coors[:] += centre - cc
+
     def create_conn_graph(self, verbose=True):
         """
         Create a graph of mesh connectivity.

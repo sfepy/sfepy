@@ -265,10 +265,7 @@ def main():
         mesh.transform_coors(tr)
 
     if center is not None:
-        cc = 0.5 * mesh.get_bounding_box().sum(0)
-        shift = center - cc
-        tr = nm.c_[nm.eye(mesh.dim, dtype=nm.float64), shift[:, None]]
-        mesh.transform_coors(tr)
+        mesh.set_centre(center)
 
     if rot_axis is not None:
         tr = make_axis_rotation_matrix(rot_axis,
