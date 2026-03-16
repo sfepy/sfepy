@@ -108,7 +108,7 @@ def _get_edge_path(graph, seed, mask, cycle=False):
     path = [seed]
     mask[seed] = 1
 
-    row = graph[seed].indices
+    row = graph[seed:seed+1].indices
     nv = len(row)
     while nv:
         if nv == 2:
@@ -133,7 +133,7 @@ def _get_edge_path(graph, seed, mask, cycle=False):
         path.append(vert)
         mask[vert] = 1
 
-        row = graph[vert].indices
+        row = graph[vert:vert+1].indices
         nv = len(row)
 
     path = nm.array(path, dtype=nm.int32)
