@@ -91,7 +91,7 @@ class Evaluator(Struct):
         if self.problem.equations.variables.has_lcbc:
             mtx_lcbc = self.problem.equations.get_lcbc_operator()
 
-            vec_rr = mtx_lcbc.T * vec_r
+            vec_rr = mtx_lcbc.T @ vec_r
             if self.matrix_hook is not None:
                 vec_rr = self.matrix_hook(vec_rr, self.problem,
                                           call_mode='lcbc_residual')
@@ -128,7 +128,7 @@ class Evaluator(Struct):
         if self.problem.equations.variables.has_lcbc:
             mtx_lcbc = self.problem.equations.get_lcbc_operator()
 
-            mtx_r = mtx_lcbc.T * mtx * mtx_lcbc
+            mtx_r = mtx_lcbc.T @ mtx @ mtx_lcbc
             mtx_r = mtx_r.tocsr()
             mtx_r.sort_indices()
 
@@ -324,10 +324,10 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
     if variables.has_lcbc and mode == 'weak':
         mtx_lcbc = variables.mtx_lcbc
         if dw_mode == 'vector':
-            out = mtx_lcbc.T * out
+            out = mtx_lcbc.T @ out
 
         elif dw_mode == 'matrix':
-            out = mtx_lcbc.T * out * mtx_lcbc
+            out = mtx_lcbc.T @ out @ mtx_lcbc
             out = out.tocsr()
             out.sort_indices()
 
