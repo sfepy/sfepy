@@ -357,6 +357,10 @@ class Struct:
                 ss += '  %s:\n    %s array of %s\n' \
                       % (key, val.shape, val.dtype)
 
+            elif isinstance(val, sp.sparray):
+                ss += '  %s:\n    %s sparray of %s, %d nonzeros\n' \
+                      % (key, val.shape, val.dtype, val.nnz)
+
             elif isinstance(val, sp.spmatrix):
                 ss += '  %s:\n    %s spmatrix of %s, %d nonzeros\n' \
                       % (key, val.shape, val.dtype, val.nnz)
