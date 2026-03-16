@@ -16,7 +16,7 @@ def spy(mtx, eps=None, color='b', **kwargs):
     aux = mtx.tocoo()
     ij, val = nm.concatenate((aux.row[:,nm.newaxis],
                               aux.col[:,nm.newaxis]), 1), aux.data
-    n_item = aux.getnnz()
+    n_item = aux.nnz
     n_row, n_col = aux.shape
 
     if eps is not None:
