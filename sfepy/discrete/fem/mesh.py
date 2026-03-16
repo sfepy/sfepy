@@ -533,8 +533,8 @@ class Mesh(Struct):
 
         Returns
         -------
-        graph : csr_matrix
-            The mesh connectivity graph as a SciPy CSR matrix.
+        graph : csr_array
+            The mesh connectivity graph as a SciPy CSR array.
         """
         from sfepy.discrete.equations import create_dof_graph
 
