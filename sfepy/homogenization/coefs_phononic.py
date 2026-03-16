@@ -544,9 +544,9 @@ class SimpleEVP(CorrMiniApp):
         output('computing resonance frequencies...')
         tt = [0]
 
-        if isinstance(mtx_a, sc.sparse.spmatrix):
+        if isinstance(mtx_a, sc.sparse.sparray):
             mtx_a = mtx_a.toarray()
-        if isinstance(mtx_m, sc.sparse.spmatrix):
+        if isinstance(mtx_m, sc.sparse.sparray):
             mtx_m = mtx_m.toarray()
 
         eigs, mtx_s_phi = eig(mtx_a, mtx_m, return_time=tt,
