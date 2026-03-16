@@ -471,7 +471,7 @@ cdef class CMesh:
 
     def get_conn_as_graph(self, d1, d2):
         """
-        Get d1 -> d2 connectivity as a sparse matrix graph (values = ones).
+        Get d1 -> d2 connectivity as a sparse array graph (values = ones).
 
         For safety, creates a copy of the connectivity arrays. The connectivity
         is created if necessary.
@@ -481,11 +481,11 @@ cdef class CMesh:
         self.setup_connectivity(d1, d2)
         conn = self.get_conn(d1, d2)
 
-        graph = sps.csr_matrix((np.ones(conn.indices.shape[0], dtype=bool),
-                                np.array(conn.indices, copy=True,
-                                         dtype=np.int32),
-                                np.array(conn.offsets, copy=True,
-                                         dtype=np.int32)))
+        graph = sps.csr_array((np.ones(conn.indices.shape[0], dtype=bool),
+                               np.array(conn.indices, copy=True,
+                                        dtype=np.int32),
+                               np.array(conn.offsets, copy=True,
+                                        dtype=np.int32)))
 
         return graph
 
