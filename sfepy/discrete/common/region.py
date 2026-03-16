@@ -802,12 +802,12 @@ class Region(Struct):
 
     def get_edge_graph(self):
         """
-        Return the graph of region edges as a sparse matrix having uid(k) + 1
+        Return the graph of region edges as a sparse array having uid(k) + 1
         at (i, j) if vertex[i] is connected with vertex[j] by the edge k.
 
         Degenerate edges are ignored.
         """
-        from scipy.sparse import csr_matrix
+        from scipy.sparse import csr_array
 
         cmesh = self.cmesh
 
@@ -823,7 +823,7 @@ class Region(Struct):
         cols = e_verts[:, 1]
 
         num = self.vertices.max() + 1
-        graph = csr_matrix((vals, (rows, cols)), shape=(num, num))
+        graph = csr_array((vals, (rows, cols)), shape=(num, num))
 
         nnz = graph.nnz
         # Symmetrize.
