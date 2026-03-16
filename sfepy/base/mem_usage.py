@@ -62,7 +62,7 @@ def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
     if isinstance(obj, nm.ndarray):
         record.usage = obj.nbytes
 
-    elif isinstance(obj, sp.csr_matrix):
+    elif isinstance(obj, sp.csr_array, sp.csr_matrix):
         record.usage = (get_mem_usage(obj.data, usage, name='data',
                                       traversal_order=to, level=level)
                         + get_mem_usage(obj.indices, usage, name='indices',
