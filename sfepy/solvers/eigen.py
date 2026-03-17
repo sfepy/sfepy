@@ -122,7 +122,7 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
                     if nm.any(aux):
                         ls_solvers[k] = v
 
-                fake_mtx_a = sps.csc_matrix(mtx_a.shape)
+                fake_mtx_a = sps.csc_array(mtx_a.shape)
                 solver_name, solver_conf = conf.linear_solver
                 ls_conf = Struct(use_presolve=True, **solver_conf)
                 ls = ls_solvers[solver_name](ls_conf)
@@ -344,7 +344,7 @@ class SLEPcEigenvalueSolver(EigenvalueSolver):
             pmtx = mtx
 
         else:
-            mtx = sps.csr_matrix(mtx)
+            mtx = sps.csr_array(mtx)
 
             pmtx = self.petsc.Mat()
             pmtx.createAIJ(mtx.shape, csr=(mtx.indptr, mtx.indices, mtx.data),
