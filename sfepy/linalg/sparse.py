@@ -103,18 +103,18 @@ def compose_sparse(blocks, row_sizes=None, col_sizes=None):
 
     Returns
     -------
-    mtx : coo_matrix
-        The sparse matrix (COO format) composed from the given blocks.
+    mtx : coo_array
+        The sparse matrix (COO array format) composed from the given blocks.
 
     Examples
     --------
     Stokes-like problem matrix.
 
     >>> import scipy.sparse as sp
-    >>> A = sp.csr_matrix([[1, 0], [0, 1]])
-    >>> B = sp.coo_matrix([[1, 1]])
+    >>> A = sp.csr_array([[1, 0], [0, 1]])
+    >>> B = sp.coo_array([[1, 1]])
     >>> K = compose_sparse([[A, B.T], [B, 0]])
-    >>> print K.todense()
+    >>> print(K.todense())
     [[1 0 1]
      [0 1 1]
      [1 1 0]]
@@ -191,7 +191,7 @@ def compose_sparse(blocks, row_sizes=None, col_sizes=None):
             if isinstance(mtx, int) and (mtx == 0):
                 continue
 
-            aux = sp.coo_matrix(mtx)
+            aux = sp.coo_array(mtx)
 
             rows.append(aux.row + row_offsets[ir])
             cols.append(aux.col + col_offsets[ic])
@@ -201,24 +201,24 @@ def compose_sparse(blocks, row_sizes=None, col_sizes=None):
     cols = nm.concatenate(cols)
     datas = nm.concatenate(datas)
 
-    mtx = sp.coo_matrix((datas, (rows, cols)), shape=(n_row, n_col))
+    mtx = sp.coo_array((datas, (rows, cols)), shape=(n_row, n_col))
 
     return mtx
 
 def infinity_norm(mtx):
     """
-    Infinity norm of a sparse matrix (maximum absolute row sum).  
+    Infinity norm of a sparse matrix (maximum absolute row sum).
 
     Parameters
     ----------
-    mtx : spmatrix or array
+    mtx : sparray or array
         The sparse matrix.
-    
+
     Returns
     -------
     norm : float
         Infinity norm of the matrix.
-    
+
     Notes
     -----
     - This serves as an upper bound on spectral radius.
@@ -231,14 +231,14 @@ def infinity_norm(mtx):
     """
     ones = nm.ones(mtx.shape[1], dtype=mtx.dtype)
 
-    if sp.isspmatrix_csr(mtx) or sp.isspmatrix_csc(mtx):
+    if sp.issparse(mtx) and (mtx.format in ('csr', 'csc')):
         # Avoid copying index and ptr arrays.
         abs_mtx = mtx.__class__((nm.abs(mtx.data), mtx.indices ,mtx.indptr),
                                 shape=mtx.shape)
-        norm = (abs_mtx * ones).max()
+        norm = (abs_mtx @ ones).max()
 
-    elif sp.isspmatrix(mtx):
-        norm = (abs(mtx) * ones).max()
+    elif sp.issparse(mtx):
+        norm = (abs(mtx) @ ones).max()
 
     else:
         norm = nm.dot(nm.abs(mtx), ones).max()
