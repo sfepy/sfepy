@@ -7,14 +7,20 @@
 
    In past, work on SfePy was partially supported by the following projects:
 
+   - project `GA23-06220S`_ (Flexoelectric periodic structures for fluid
+     transport and energy harvesting) of the Czech Science Foundation, in
+     2023-2025;
+   - project `GF22-00863K`_ (Controllable metamaterials and smart structures:
+     Nonlinear problems, modelling and experiments) of the Czech Science
+     Foundation (LEAD Agency), in 2022-2025;
    - project `GA21-16406S`_ (Nonlinear Acoustics and Transport Processes in
-     Porous Periodic Structures) of the Czech Science Foundation, since 2021
+     Porous Periodic Structures) of the Czech Science Foundation, in 2021-2023;
    - project GA19-04956S (Dynamic and nonlinear behaviour of smart structures;
-     modelling and optimization) of the Czech Science Foundation, since 2019;
+     modelling and optimization) of the Czech Science Foundation, in 2019-2021;
    - the European Regional Development Fund-Project "Application of Modern
      Technologies in Medicine and Industry"
      (No. CZ.02.1.01/0.0/0.0/17_048/0007280) of the Czech Ministry of
-     Education, Youth and Sports, since 2018.
+     Education, Youth and Sports, in 2018-2022;
    - project GA17-12925S (Strength of materials and mechanical components based
      on iron: Multi-scale approach) of Czech Science Foundation, in 2017-2019;
    - project GA17-01618S (Fluid Acoustics in Periodic Micro-Architectures) of
