@@ -56,7 +56,7 @@ def eval_matrix(mtx, **kwargs):
 def convert_to_csr(m_in):
     m_out = {}
     for key, mtx in m_in.items():
-        m_out[key] = sps.csr_matrix(mtx)
+        m_out[key] = sps.csr_array(mtx)
 
     return m_out
 
@@ -143,8 +143,8 @@ def test_semismooth_newton():
         xg = vec_x[ig]
         xl = vec_x[il]
 
-        rw = ms['A'] * xw - ms['Bb'].T * xg - m['fs']
-        rg = ms['Bb'] * xw + xl * xg
+        rw = ms['A'] @ xw - ms['Bb'].T @ xg - m['fs']
+        rg = ms['Bb'] @ xw + xl * xg
 
         rwg = nm.r_[rw, rg]
 
@@ -161,7 +161,7 @@ def test_semismooth_newton():
 
         mx = nm.r_[mw, mg]
 
-        mx = sps.csr_matrix(mx)
+        mx = sps.csr_array(mx)
         return mx
 
     def fun_a(vec_x):
@@ -194,7 +194,7 @@ def test_semismooth_newton():
         ma[:,iw] = - fc * nm.sign(sn)[:,None] * md
         ma[:,ig] = nm.sign(xg)[:,None] * m['C']
 
-        return -sps.csr_matrix(ma)
+        return -sps.csr_array(ma)
 
     def fun_b(vec_x):
         xl = vec_x[il]
@@ -207,7 +207,7 @@ def test_semismooth_newton():
         mb = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
         mb[:,il] = m['C']
 
-        return sps.csr_matrix(mb)
+        return sps.csr_array(mb)
 
     vec_x0 = 0.1 * nm.ones((nx,), dtype=nm.float64)
 
