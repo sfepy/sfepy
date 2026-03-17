@@ -67,17 +67,17 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
             ssym['|M - M^T|'] = max_diff_csr(mtx_m, mtx_m.T)
             ssym['|D - D^T|'] = max_diff_csr(mtx_d, mtx_d.T)
             ssym['|K - K^T|'] = max_diff_csr(mtx_k, mtx_k.T)
-            ssym['|M - M^H|'] = max_diff_csr(mtx_m, mtx_m.H)
-            ssym['|D - D^H|'] = max_diff_csr(mtx_d, mtx_d.H)
-            ssym['|K - K^H|'] = max_diff_csr(mtx_k, mtx_k.H)
+            ssym['|M - M^H|'] = max_diff_csr(mtx_m, mtx_m.conj().T)
+            ssym['|D - D^H|'] = max_diff_csr(mtx_d, mtx_d.conj().T)
+            ssym['|K - K^H|'] = max_diff_csr(mtx_k, mtx_k.conj().T)
 
         if conf.method == 'companion':
             mtx_eye = -sps.eye(mtx_m.shape[0], dtype=mtx_m.dtype)
 
-            mtx_a = sps.bmat([[mtx_d, mtx_k],
-                              [mtx_eye, None]])
-            mtx_b = sps.bmat([[-mtx_m, None],
-                              [None, mtx_eye]])
+            mtx_a = sps.block_array([[mtx_d, mtx_k],
+                                     [mtx_eye, None]])
+            mtx_b = sps.block_array([[-mtx_m, None],
+                                     [None, mtx_eye]])
 
         elif conf.method == 'cholesky':
             from sksparse.cholmod import cholesky
@@ -85,27 +85,27 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
             factor = cholesky(mtx_m)
             perm = factor.P()
             ir = nm.arange(len(perm))
-            mtx_p = sps.coo_matrix((nm.ones_like(perm), (ir, perm)))
-            mtx_l = mtx_p.T * factor.L()
+            mtx_p = sps.coo_array((nm.ones_like(perm), (ir, perm)))
+            mtx_l = mtx_p.T @ factor.L()
 
             if conf.debug:
-                ssym['|S - LL^T|'] = max_diff_csr(mtx_m, mtx_l * mtx_l.T)
+                ssym['|S - LL^T|'] = max_diff_csr(mtx_m, mtx_l @ mtx_l.T)
 
-            mtx_eye = sps.eye(mtx_l.shape[0], dtype=nm.float64)
+            mtx_eye = sps.eye_array(mtx_l.shape[0], dtype=nm.float64)
 
-            mtx_a = sps.bmat([[-mtx_k, None],
-                              [None, mtx_eye]])
-            mtx_b = sps.bmat([[mtx_d, mtx_l],
-                              [mtx_l.T, None]])
+            mtx_a = sps.block_array([[-mtx_k, None],
+                                     [None, mtx_eye]])
+            mtx_b = sps.block_array([[mtx_d, mtx_l],
+                                     [mtx_l.T, None]])
 
         else:
             raise ValueError('unknown method! (%s)' % conf.method)
 
         if conf.debug:
             ssym['|A - A^T|'] = max_diff_csr(mtx_a, mtx_a.T)
-            ssym['|A - A^H|'] = max_diff_csr(mtx_a, mtx_a.H)
+            ssym['|A - A^H|'] = max_diff_csr(mtx_a, mtx_a.conj().T)
             ssym['|B - B^T|'] = max_diff_csr(mtx_b, mtx_b.T)
-            ssym['|B - B^H|'] = max_diff_csr(mtx_b, mtx_b.H)
+            ssym['|B - B^H|'] = max_diff_csr(mtx_b, mtx_b.conj().T)
 
             for key, val in sorted(ssym.items()):
                 output('{}: {}'.format(key, val))
