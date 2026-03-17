@@ -226,17 +226,17 @@ class SemismoothNewton(Newton):
             if step_mode == 'regular':
                 vec_dx = lin_solver(vec_r, mtx=mtx_jac)
 
-                vec_e = mtx_jac * vec_dx - vec_r
+                vec_e = mtx_jac @ vec_dx - vec_r
                 lerr = nla.norm(vec_e)
                 if lerr > (conf.eps_a * conf.lin_red):
                     output('linear system not solved! (err = %e)' % lerr)
 
                     output('switching to steepest descent step')
                     step_mode = 'steepest_descent'
-                    vec_dx = mtx_jac.T * vec_r
+                    vec_dx = mtx_jac.T @ vec_r
 
             else:
-                vec_dx = mtx_jac.T * vec_r
+                vec_dx = mtx_jac.T @ vec_r
 
             time_stats['solve'] = timer.stop()
 
@@ -302,10 +302,10 @@ class SemismoothNewton(Newton):
                 for ir in range(len(iz)):
                     row_a_z = mtx_a_z[ir]
                     row_b_z = mtx_b_z[ir]
-                    sqrt_ab[ir] = nm.sqrt((row_a_z * row_a_z.T).todense()
-                                          + (row_b_z * row_b_z.T).todense())
-                mul_a[iz] = ((mtx_a_z * vec_z) / sqrt_ab) - 1.0
-                mul_b[iz] = ((mtx_b_z * vec_z) / sqrt_ab) - 1.0
+                    sqrt_ab[ir] = nm.sqrt((row_a_z @ row_a_z.T).todense()
+                                          + (row_b_z @ row_b_z.T).todense())
+                mul_a[iz] = ((mtx_a_z @ vec_z) / sqrt_ab) - 1.0
+                mul_b[iz] = ((mtx_b_z @ vec_z) / sqrt_ab) - 1.0
 
         else:
             iz = nm.where(vec_a_r > vec_b_r)[0]
@@ -315,8 +315,10 @@ class SemismoothNewton(Newton):
             mul_a[iz] = 1.0
             mul_b[iz] = 0.0
 
-        mtx_ns = sp.spdiags(mul_a, 0, n_ns, n_ns) * mtx_a \
-                 + sp.spdiags(mul_b, 0, n_ns, n_ns) * mtx_b
+        mtx_ns = (sp.dia_array((mul_a[None, :], [0]), shape=(n_ns, n_ns))
+                  @ mtx_a
+                  + sp.dia_array((mul_b[None, :], [0]), shape=(n_ns, n_ns))
+                  @ mtx_b)
 
         mtx_jac = compose_sparse([[mtx_s], [mtx_ns]]).tocsr()
         mtx_jac.sort_indices()
