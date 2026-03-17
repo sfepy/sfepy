@@ -57,8 +57,7 @@ def test_assemble_vector_complex(data):
 def test_assemble_matrix(data):
     from sfepy.discrete.common.extmods.assemble import assemble_matrix
 
-    mtx = sps.csr_matrix(nm.ones((data.num, data.num),
-                                 dtype=nm.float64))
+    mtx = sps.csr_array(nm.ones((data.num, data.num), dtype=nm.float64))
     mtx.data[:] = 0.0
 
     assemble_matrix(mtx.data, mtx.indptr, mtx.indices, data.mtx_in_els,
@@ -78,8 +77,7 @@ def test_assemble_matrix(data):
 def test_assemble_matrix_complex(data):
     from sfepy.discrete.common.extmods.assemble import assemble_matrix_complex
 
-    mtx = sps.csr_matrix(nm.ones((data.num, data.num),
-                                 dtype=nm.complex128))
+    mtx = sps.csr_array(nm.ones((data.num, data.num), dtype=nm.complex128))
     mtx.data[:] = 0.0
     mtx_in_els = data.mtx_in_els.astype(nm.complex128) * (2 - 3j)
 
