@@ -169,8 +169,8 @@ class TestAdvectDGFluxTerm:
             te.a.data,  # advelo
         )
 
-        out = sp.csr_matrix((out, (iel1, iel2)),
-                            shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
+        out = sp.csr_array((out, (iel1, iel2)),
+                           shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
 
         assert expected.shape == out.shape
 
@@ -265,8 +265,8 @@ class TestDiffusionDGFluxTerm:
             te.D.data,  # advelo
         )
 
-        out = sp.csr_matrix((out, (iel1, iel2)),
-                            shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
+        out = sp.csr_array((out, (iel1, iel2)),
+                           shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
 
         assert expected.shape == out.shape
 
@@ -291,8 +291,8 @@ class TestDiffusionDGFluxTerm:
             te.D.data,  # advelo
         )
 
-        out = sp.csr_matrix((out, (iel1, iel2)),
-                            shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
+        out = sp.csr_array((out, (iel1, iel2)),
+                           shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
 
         assert expected.shape == out.shape
 
@@ -347,8 +347,8 @@ class TestDiffusionInteriorPenaltyTerm:
             te.D.data,
         )
 
-        out = sp.csr_matrix((out, (iel1, iel2)),
-                            shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
+        out = sp.csr_array((out, (iel1, iel2)),
+                           shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
         assert expected.shape == out.shape
 
 

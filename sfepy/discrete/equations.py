@@ -61,7 +61,7 @@ def create_dof_graph(rdc, cdc, shape, active_only=False):
         cols = cols[mask]
 
     vals = nm.broadcast_to(nm.ones(1, dtype=bool), rows.shape)
-    graph = sp.coo_matrix((vals, (rows, cols)), shape=shape)
+    graph = sp.coo_array((vals, (rows, cols)), shape=shape)
 
     return graph
 
@@ -88,7 +88,7 @@ def create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi, active_only=True,
 
     Returns
     -------
-    graph : boolean csr_matrix
+    graph : boolean csr_array
         The matrix graph.
     """
     blocks = []
@@ -132,7 +132,7 @@ def create_matrix_graph(rdcs, cdcs, irs, ics, rdi, cdi, active_only=True,
         if isinstance(blocks[ir][ic], int):
             blocks[ir][ic] = None
 
-    graph = sp.bmat(blocks, format='csr')
+    graph = sp.block_array(blocks, format='csr')
 
     return graph
 
@@ -593,8 +593,8 @@ class Equations(Container):
 
         Returns
         -------
-        matrix : csr_matrix
-            The matrix graph in the form of a CSR matrix with
+        matrix : csr_array
+            The matrix graph in the form of a CSR array with
             preallocated structure and zero data.
         """
         if not self.variables.has_virtuals():
@@ -632,7 +632,7 @@ class Equations(Container):
                % (nnz, 100.0 * float(nnz) / size), verbose=verbose)
 
         data = nm.zeros((nnz,), dtype=self.variables.dtype)
-        matrix = sp.csr_matrix((data, icol, prow), shape)
+        matrix = sp.csr_array((data, icol, prow), shape)
 
         return matrix
 
@@ -734,7 +734,7 @@ class Equations(Container):
         diff_vars : list of str
             The names of parameters with respect to the equations are
             differentiated if `dw_mode` is ``'sensitivity'``.
-        asm_obj : ndarray or spmatrix
+        asm_obj : ndarray or sparray
             The object for storing the evaluation result in the ``'weak'`` mode.
         select_term : function(term)
             Optional boolean function returning True for terms that should be
@@ -894,8 +894,8 @@ class Equations(Container):
         state : array
             The vector of DOF values. Note that it is needed only in
             nonlinear terms.
-        tangent_matrix : csr_matrix
-            The preallocated CSR matrix with zero data.
+        tangent_matrix : csr_array
+            The preallocated CSR array with zero data.
         by_blocks : bool
             If True, return the individual blocks composing the whole
             matrix. Each equation should then correspond to one
@@ -919,7 +919,7 @@ class Equations(Container):
 
         Returns
         -------
-        out : csr_matrix or dict of csr_matrix
+        out : csr_array or dict of csr_array
             The assembled matrix. If `by_blocks` is True, a dictionary
             is returned instead, with keys given by `block_name` part
             of the individual equation names.
@@ -1075,7 +1075,7 @@ class Equation(Struct):
         diff_vars : list of str
             The names of parameters with respect to the equation is
             differentiated if `dw_mode` is ``'sensitivity'``.
-        asm_obj : ndarray or spmatrix
+        asm_obj : ndarray or sparray
             The object for storing the evaluation result in the ``'weak'`` mode.
         select_term : function(term)
             Optional boolean function returning True for terms that should be

@@ -385,7 +385,7 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options, wdir=None):
 
         output('symmetry checks:')
         output('%s - %s^T:' % (key, key), max_diff_csr(mtx, mtx.T))
-        output('%s - %s^H:' % (key, key), max_diff_csr(mtx, mtx.H))
+        output('%s - %s^H:' % (key, key), max_diff_csr(mtx, mtx.conj().T))
 
     return pb, wdir, bzone, mtxs
 
@@ -413,7 +413,7 @@ def build_evp_matrices(mtxs, val, mode, pb):
     """
     if mode == 'omega':
         mtx_a = mtxs['K'] + val**2 * mtxs['S'] + val * mtxs['R']
-        output('A - A^H:', max_diff_csr(mtx_a, mtx_a.H))
+        output('A - A^H:', max_diff_csr(mtx_a, mtx_a.conj().T))
 
         evp_mtxs = (mtx_a, mtxs['M'])
 

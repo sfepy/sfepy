@@ -1949,7 +1949,7 @@ class Problem(Struct):
         -------
         out : dict or result
             The evaluation result. In 'weak' mode it is the vector or sparse
-            matrix, depending on `dw_mode`. Otherwise, it is a dict of results
+            array, depending on `dw_mode`. Otherwise, it is a dict of results
             with equation names as keys or a single result for a single
             equation.
         """

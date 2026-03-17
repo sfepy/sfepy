@@ -18,7 +18,7 @@ def create_mass_matrix(field):
 
     Returns
     -------
-    mtx : csr_matrix
+    mtx : csr_array
         The mass matrix in CSR format.
     """
     u = FieldVariable('u', 'unknown', field)
@@ -226,7 +226,7 @@ def project_to_facets(region, fun, dpn, field):
     rows = nm.concatenate(rows)
     cols = nm.concatenate(cols)
     mvals = nm.concatenate(mvals)
-    mtx = sps.coo_matrix((mvals, (rows, cols)), shape=(n_dof, n_dof)).tocsc()
+    mtx = sps.coo_array((mvals, (rows, cols)), shape=(n_dof, n_dof)).tocsc()
 
     vals = nm.zeros((n_dof, dpn), dtype=nm.float64)
 

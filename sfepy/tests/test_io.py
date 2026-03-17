@@ -17,7 +17,7 @@ def test_sparse_matrix_hdf5(output_dir):
     aux = nm.random.rand(5, 5)
     aux[1,:] = aux[:,2] = aux[3,:] = 0.0
 
-    mtx = sp.csr_matrix(aux, dtype = nm.float64)
+    mtx = sp.csr_array(aux, dtype = nm.float64)
     tst.report('saving matrix into %s...' % filename)
     write_sparse_matrix_hdf5(filename, mtx)
     tst.report('reading...')

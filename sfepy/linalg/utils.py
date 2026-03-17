@@ -255,7 +255,7 @@ def assemble1d(ar_out, indx, ar_in):
     """
     if len(indx) > 0:
         zz = nm.zeros_like(indx)
-        aux = sc.sparse.coo_matrix((ar_in, (indx, zz)), dtype=ar_in.dtype)
+        aux = sc.sparse.coo_array((ar_in, (indx, zz)), dtype=ar_in.dtype)
         aux = aux.tocsr().tocoo() # This sums the duplicates.
 
         ar_out[aux.row] += aux.data

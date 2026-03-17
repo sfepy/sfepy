@@ -318,9 +318,9 @@ class DiffusionDGFluxTerm(DGTerm):
             out = self._function_matrix(out, state, diff_var, field, region, D)
 
             # vals, ielsi, ielsj = out[:3]
-            # from scipy.sparse import coo_matrix
-            # extra = coo_matrix((vals, (ielsi, ielsj)),
-            #                    shape=2*(field.n_el_nod * field.n_cell,))
+            # from scipy.sparse import coo_array
+            # extra = coo_array((vals, (ielsi, ielsj)),
+            #                   shape=2*(field.n_el_nod * field.n_cell,))
             # M = extra.toarray()
             # u = state.data[0]
             # Mu = nm.dot(M, u).reshape((field.n_cell, field.n_el_nod))

@@ -110,7 +110,7 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
     def laplacian(coors, weights):
 
         n_nod = coors.shape[0]
-        displ = (weights - sps.identity(n_nod)) * coors
+        displ = (weights - sps.eye_array(n_nod)) @ coors
 
         return displ
 
@@ -184,19 +184,19 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
         cols2 = fc1[idxs]
         crows = nm.concatenate((rows1, rows2))
         ccols = nm.concatenate((cols1, cols2))
-        costs = sps.coo_matrix((nm.ones_like(crows), (crows, ccols)),
-                               shape=(n_nod, n_nod),
-                               dtype=nm.double)
+        costs = sps.coo_array((nm.ones_like(crows), (crows, ccols)),
+                              shape=(n_nod, n_nod),
+                              dtype=nm.double)
 
         # generate weights matrix
         idxs = list(range(n_nod))
-        aux = sps.coo_matrix((1.0 / nm.asarray(costs.sum(1)).squeeze(),
-                              (idxs, idxs)),
-                             shape=(n_nod, n_nod),
-                             dtype=nm.double)
+        aux = sps.coo_array((1.0 / nm.asarray(costs.sum(1)).squeeze(),
+                             (idxs, idxs)),
+                            shape=(n_nod, n_nod),
+                            dtype=nm.double)
 
         #aux.setdiag(1.0 / costs.sum(1))
-        weights = (aux.tocsc() * costs.tocsc()).tocsr()
+        weights = (aux.tocsc() @ costs.tocsc()).tocsr()
 
     coors = taubin(mesh.coors, weights, lam, mu, n_iter)
 
@@ -310,8 +310,8 @@ def merge_lines(mesh, eps=1e-18):
     n_v = coors.shape[0]
     n_e = conns.shape[0]
     row = nm.repeat(nm.arange(n_e), 2)
-    aux = sps.coo_matrix((nm.ones((n_e * 2,), dtype=bool),
-                          (row, conns.flatten())), shape=(n_e, n_v))
+    aux = sps.coo_array((nm.ones((n_e * 2,), dtype=bool),
+                         (row, conns.flatten())), shape=(n_e, n_v))
     v2e = aux.tocsc()
     n_epv = nm.diff(v2e.indptr)
 
@@ -421,8 +421,8 @@ def extract_edges(mesh, eps=1e-16):
         n_ef = nm.diff(se_off)[0]  # = 2
         n_sf = se_map.shape[0] // n_ef
         row = nm.repeat(nm.arange(n_sf), n_ef)
-        sf2e = sps.coo_matrix((nm.ones((n_sf * n_ef,), dtype=bool),
-                               (row , se_map0)), shape=(n_sf, n_se))
+        sf2e = sps.coo_array((nm.ones((n_sf * n_ef,), dtype=bool),
+                              (row , se_map0)), shape=(n_sf, n_se))
         # edge to face map (n_edge x 2)
         se2f = sf2e.tocsc().indices.reshape((sedges.shape[0], 2))
 

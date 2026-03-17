@@ -358,7 +358,7 @@ def write_sparse_matrix_to_hdf5(fd, group, mtx):
     ----------
     group: tables.group.group
         The hdf5 file group the matrix will be read from.
-    mtx: scipy.sparse.base.spmatrix
+    mtx: scipy.sparse.sparray
         The writed matrix
     """
     try:
@@ -404,13 +404,13 @@ def read_sparse_matrix_from_hdf5(fd, group, output_format=None):
 
     Returns
     -------
-    scipy.sparse.base.spmatrix
+    scipy.sparse.sparray
         Readed matrix
     """
     info = group.info
     data = group.data
 
-    constructors = {'csr' : sp.csr_matrix, 'csc' : sp.csc_matrix}
+    constructors = {'csr' : sp.csr_array, 'csc' : sp.csc_array}
 
     format = dec(info.format.read())
     dtype = dec(info.dtype.read())
@@ -741,7 +741,8 @@ def write_to_hdf5(fd, group, name, data, cache=None,
         if isinstance(data, str):
             return save_value('str', nm.array(enc(data)))
 
-        if isinstance(data, (sp.csr_matrix, sp.csc_matrix)):
+        if isinstance(data, (sp.csr_array, sp.csc_array,
+                             sp.csr_matrix, sp.csc_matrix)):
             return save_by_function('sparse_matrix',
                                     write_sparse_matrix_to_hdf5,
                                     data, cached=True)

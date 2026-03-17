@@ -93,8 +93,8 @@ class MRLCBCOperator(LCBCOperator):
         # Remove empty columns, update new DOF count.
         mtx = mtx.tocsc()
         indptr = nm.unique(mtx.indptr)
-        self.mtx = sp.csc_matrix((mtx.data, mtx.indices, indptr),
-                                 shape=(mtx.shape[0], indptr.shape[0] - 1))
+        self.mtx = sp.csc_array((mtx.data, mtx.indices, indptr),
+                                shape=(mtx.shape[0], indptr.shape[0] - 1))
         self.n_mdof = self.mtx.shape[0]
         self.n_dof_new = self.mtx.shape[1]
 
@@ -214,7 +214,7 @@ class Rigid2Operator(LCBCOperator):
         rows = nm.repeat(meq, len(seq))
         cols = nm.tile(seq, len(meq))
         n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
-        mtx = sp.coo_matrix((mtx.ravel(), (rows, cols)), shape=n_dofs)
+        mtx = sp.coo_array((mtx.ravel(), (rows, cols)), shape=n_dofs)
 
         self.mtx = mtx.tocsr()
         self.ameq = meq
@@ -325,7 +325,7 @@ class AverageForceOperator(LCBCOperator):
         rows = nm.repeat(meq, len(seq))
         cols = nm.tile(seq, len(meq))
         n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
-        mtx = sp.coo_matrix((mtx.ravel(), (rows, cols)), shape=n_dofs)
+        mtx = sp.coo_array((mtx.ravel(), (rows, cols)), shape=n_dofs)
 
         self.mtx = mtx.tocsr()
         self.ameq = meq
@@ -521,7 +521,7 @@ class NoPenetrationOperator(MRLCBCOperator):
         data = nm.concatenate(data)
 
         n_np_dof = n_nod * (dim - 1)
-        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dim, n_np_dof))
+        mtx = sp.coo_array((data, (rows, cols)), shape=(n_nod * dim, n_np_dof))
 
         self.n_mdof = n_nod * dim
         self.n_new_dof = n_np_dof
@@ -561,7 +561,7 @@ class NormalDirectionOperator(MRLCBCOperator):
         rows = nm.arange(data.shape[0])
         cols = nm.repeat(nm.arange(n_nod), dim)
 
-        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dim, n_nod))
+        mtx = sp.coo_array((data, (rows, cols)), shape=(n_nod * dim, n_nod))
 
         self.n_mdof = n_nod * dim
         self.n_new_dof = n_nod
@@ -616,7 +616,7 @@ class IntegralMeanValueOperator(MRLCBCOperator):
         rows = nm.arange(data.shape[0])
         cols = nm.zeros((data.shape[0],))
 
-        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dpn, 1))
+        mtx = sp.coo_array((data, (rows, cols)), shape=(n_nod * dpn, 1))
 
         self.n_mdof = n_nod * dpn
         self.n_new_dof = 1
@@ -743,7 +743,7 @@ class NodalLCOperator(MRLCBCOperator):
         cols = nm.array(cols, dtype=nm.int32)
         data = nm.array(data, dtype=nm.float64)
 
-        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dpn, n_new))
+        mtx = sp.coo_array((data, (rows, cols)), shape=(n_nod * dpn, n_new))
 
         self.n_mdof = n_nod * dpn
         self.n_new_dof = n_new
@@ -805,7 +805,7 @@ class ShiftedPeriodicOperator(LCBCOperator):
 
         ones = nm.ones(num, dtype=nm.float64)
         n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
-        mtx = sp.coo_matrix((ones, (meq, seq)), shape=n_dofs)
+        mtx = sp.coo_array((ones, (meq, seq)), shape=n_dofs)
 
         self.mtx = mtx.tocsr()
 
@@ -899,7 +899,7 @@ class MultiNodeLCOperator(LCBCOperator):
         idxs = [(snds[:, None] * dpn + aux).ravel() for snds in smap.T]
         cols = seq[nm.hstack(idxs)]
 
-        mtx = sp.coo_matrix((vals, (rows, cols)), shape=n_dofs)
+        mtx = sp.coo_array((vals, (rows, cols)), shape=n_dofs)
         self.mtx = mtx.tocsr()
 
         self.ameq = meq
@@ -1034,8 +1034,8 @@ class LCBCOperators(Container):
 
         Returns
         -------
-        mtx_lc : csr_matrix
-            The global LCBC operator in the form of a CSR matrix.
+        mtx_lc : csr_array
+            The global LCBC operator in the form of a CSR array.
         rhs_lc : array
             The right-hand side for non-homogeneous LCBCs.
         lcdi : DofInfo
@@ -1097,7 +1097,7 @@ class LCBCOperators(Container):
                 iis, icols = self.ics[rvar_name]
                 ici = nm.searchsorted(iis, ii)
                 ics = nm.arange(coff + icols[ici], coff + icols[ici+1])
-                if isinstance(op.mtx, sp.spmatrix):
+                if isinstance(op.mtx, sp.sparray):
                     lr, lc, lv = sp.find(op.mtx)
                     rows.append(irs[lr])
                     cols.append(ics[lc])
@@ -1128,12 +1128,12 @@ class LCBCOperators(Container):
         data = nm.concatenate(data)
 
         if new_only:
-            mtx_lc = sp.coo_matrix((data, (rows, cols)),
-                                   shape=(n_dof, n_dof_new))
+            mtx_lc = sp.coo_array((data, (rows, cols)),
+                                  shape=(n_dof, n_dof_new))
 
         else:
-            mtx_lc = sp.coo_matrix((data, (rows, cols)),
-                                   shape=(n_dof, n_dof_active))
+            mtx_lc = sp.coo_array((data, (rows, cols)),
+                                  shape=(n_dof, n_dof_active))
 
             ir = nm.where(lcbc_mask)[0]
             ic = nm.empty((n_dof_free,), dtype=nm.int32)
@@ -1142,9 +1142,9 @@ class LCBCOperators(Container):
                     ii = nm.arange(fdi.n_dof[var_name], dtype=nm.int32)
                     ic[fdi.indx[var_name]] = lcdi.indx[var_name].start + ii
 
-            mtx_lc2 = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
-                                    shape=(n_dof, n_dof_active),
-                                    dtype=nm.float64)
+            mtx_lc2 = sp.coo_array((nm.ones((ir.shape[0],)), (ir, ic)),
+                                   shape=(n_dof, n_dof_active),
+                                   dtype=nm.float64)
 
             mtx_lc = mtx_lc + mtx_lc2
 

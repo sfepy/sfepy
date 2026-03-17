@@ -340,7 +340,7 @@ class NewmarkSATS(NewmarkTS):
 
             size = at.shape[0]
             I = sps.eye(size, dtype=nm.float64)
-            zz = sps.dia_matrix((size, size), dtype=nm.float64)
+            zz = sps.dia_array((size, size), dtype=nm.float64)
             if self.ts.step > 0:
                 duda = -ck * I
                 dvda = -cc * I
@@ -362,19 +362,19 @@ class NewmarkSATS(NewmarkTS):
             if self.ts.step > 0:
                 size = at.shape[0]
                 I = sps.eye(size, dtype=nm.float64)
-                zz = sps.dia_matrix((size, size), dtype=nm.float64)
+                zz = sps.dia_array((size, size), dtype=nm.float64)
                 duda0 = -ck0 * I
                 dudv0 = -dt * I
                 dudu0 = -I
                 dvda0 = -cc0 * I
                 dvdv0 = -I
-                return sps.bmat([[zz, zz, zz],
-                                 [dudu0, dudv0, duda0],
-                                 [zz, dvdv0, dvda0]])
+                return sps.block_array([[zz, zz, zz],
+                                        [dudu0, dudv0, duda0],
+                                        [zz, dvdv0, dvda0]])
 
             else:
-                return sps.csr_matrix((self.sa_info.n_dof, self.sa_info.n_dof),
-                                      dtype=nm.float64)
+                return sps.csr_array((self.sa_info.n_dof, self.sa_info.n_dof),
+                                     dtype=nm.float64)
 
         def efun_grad_par(at):
             mtx = nm.zeros((self.sa_info.n_dof, self.sa_info.n_par),

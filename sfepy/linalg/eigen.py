@@ -30,9 +30,9 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
 
     Parameters
     ----------
-    mtx : spmatrix or array
+    mtx : sparray or array
         The sparse matrix :math:`A`.
-    precond : spmatrix or array, optional
+    precond : sparray or array, optional
         The preconditioner matrix. Any object that can be multiplied by
         vector can be passed.
     i_max : int
@@ -73,7 +73,7 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
             shift = abs(shift) * mtx_norm
 
         output('eigenvalue shift:', shift, verbose=verbose)
-        mtx = mtx + shift * sp.eye(n_row, n_row, dtype=mtx.dtype)
+        mtx = mtx + shift * sp.eye_array(n_row, n_row, dtype=mtx.dtype)
 
     mtx = aslinearoperator(mtx)
 
@@ -92,7 +92,7 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
         z0 = r0
 
     else:
-        z0 = precond * r0
+        z0 = precond @ r0
 
     x = x0
     z = z0
@@ -110,7 +110,7 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
 
     for ii in range(i_max):
         p = z + beta * p
-        q = mtx * p
+        q = mtx @ p
 
         alpha = rho0 / nm.dot(p, q)
         if (not nm.isfinite(alpha)) or abs(alpha) < 1e-16:
@@ -125,7 +125,7 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
             z = r
 
         else:
-            z = precond * r
+            z = precond @ r
 
         norm_r = norm(r)
         norm_rs.append(norm_r)

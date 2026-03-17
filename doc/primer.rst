@@ -388,8 +388,8 @@ matrix is saved in `pb` as a `sparse matrix`_:
 
     In [11]: K
     Out[11]:
-    <94x94 sparse matrix of type '<type 'numpy.float64'>'
-            with 1070 stored elements in Compressed Sparse Row format>
+    <Compressed Sparse Row sparse array of dtype 'float64'
+            with 1070 stored elements and shape (94, 94)>
 
     In [12]: print(K)
       (0, 0)        2443.95959851

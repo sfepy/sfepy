@@ -45,7 +45,7 @@ def _get_cs_matrix_hash(mtx, chunk_size=100000):
     return digest
 
 def _is_new_matrix(mtx, mtx_digest, force_reuse=False):
-    if not isinstance(mtx, sps.csr_matrix):
+    if not isinstance(mtx, sps.csr_array):
         return True, mtx_digest
 
     if force_reuse:
@@ -745,7 +745,7 @@ class PETScKrylovSolver(LinearSolver):
             pmtx = mtx
 
         else:
-            mtx = sps.csr_matrix(mtx)
+            mtx = sps.csr_array(mtx)
 
             pmtx = self.petsc.Mat()
             pmtx.createAIJ(mtx.shape, csr=(mtx.indptr, mtx.indices, mtx.data),
@@ -923,7 +923,7 @@ class MUMPSSolver(LinearSolver):
             is_new, mtx_digest = False, None
 
         if is_new or (self.mumps_ls is None):
-            if not isinstance(mtx, sps.coo_matrix):
+            if not isinstance(mtx, sps.coo_array):
                 mtx = mtx.tocoo()
 
             is_sym = self.coo_is_symmetric(mtx)
@@ -1284,7 +1284,7 @@ class MultiProblem(ScipyDirect):
                                     nm.ones((nn,), dtype=nm.int32) * jjr])
 
         # create new matrix
-        new_mtx = sps.coo_matrix((aux_data, (aux_rows, aux_cols))).tocsr()
+        new_mtx = sps.coo_array((aux_data, (aux_rows, aux_cols))).tocsr()
 
         res0 = ScipyDirect.__call__(self, new_rhs, mtx=new_mtx)
 

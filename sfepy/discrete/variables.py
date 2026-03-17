@@ -623,10 +623,10 @@ class Variables(Container):
 
         if self.has_lcbc:
             if self.has_lcbc_rhs:
-                svec = self.mtx_lcbc * svec + self.vec_lcbc
+                svec = self.mtx_lcbc @ svec + self.vec_lcbc
 
             else:
-                svec = self.mtx_lcbc * svec
+                svec = self.mtx_lcbc @ svec
 
         if vec is None:
             vec = self.create_vec()
@@ -788,7 +788,7 @@ class Variables(Container):
                 if force:
                     r_vec = self.reduce_vec(self.vec, follow_epbc=follow_epbc)
                     # This just sets the correct vector size (wrong values)!
-                    r_vec = self.mtx_lcbc.T * r_vec
+                    r_vec = self.mtx_lcbc.T @ r_vec
 
                 else:
                     raise ValueError('Reduced state DOFs are not available!')

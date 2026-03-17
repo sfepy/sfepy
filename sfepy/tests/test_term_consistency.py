@@ -160,7 +160,7 @@ def test_eval_matrix(problem):
     mtx = problem.evaluate('dw_diffusion.i.Omega(m2.K, ts, us)',
                            mode='weak', dw_mode='matrix')
 
-    val2 = nm.dot(vec, mtx * vec)
+    val2 = nm.dot(vec, mtx @ vec)
 
     ok = (nm.abs(val1 - val2) / nm.abs(val1)) < 1e-14
     tst.report('eval: %s, weak: %s, ok: %s' % (val1, val2, ok))
@@ -181,7 +181,7 @@ def test_vector_matrix(problem):
 
     mtx = problem.evaluate("dw_diffusion.i.Omega(m2.K, ts, us)",
                            mode='weak', dw_mode='matrix')
-    aux2g = mtx * state()
+    aux2g = mtx @ state()
     problem.time_update(ebcs=problem.conf.ebcs,
                         epbcs=problem.conf.epbcs)
     aux2 = problem.equations.reduce_vec(aux2g, follow_epbc=True)

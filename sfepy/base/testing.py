@@ -71,7 +71,8 @@ def assert_equal(a, b, msg='assertion of equality failed!'):
     elif isinstance(a, nm.ndarray):
         nm.testing.assert_array_equal(a,b)
 
-    elif isinstance(a, (scipy.sparse.csr_matrix, scipy.sparse.csc_matrix)):
+    elif isinstance(a, (scipy.sparse.csr_array, scipy.sparse.csc_array,
+                        scipy.sparse.csr_matrix, scipy.sparse.csc_matrix)):
         nm.testing.assert_array_equal(a.data, b.data)
         nm.testing.assert_array_equal(a.indices, b.indices)
         nm.testing.assert_array_equal(a.indptr, b.indptr)

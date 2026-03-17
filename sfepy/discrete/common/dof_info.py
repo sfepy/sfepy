@@ -530,7 +530,7 @@ class EquationMap(Struct):
 
         Returns
         -------
-        mtx : coo_matrix
+        mtx : coo_array
             The matrix :math:`R`.
         """
         # EBC.
@@ -544,7 +544,7 @@ class EquationMap(Struct):
         cols = nm.r_[cols, ic[ii]]
 
         ones = nm.ones(rows.shape[0], dtype=nm.float64)
-        mtx = sp.coo_matrix((ones, (rows, cols)),
-                            shape=(self.eq.shape[0], self.n_eq))
+        mtx = sp.coo_array((ones, (rows, cols)),
+                           shape=(self.eq.shape[0], self.n_eq))
 
         return mtx

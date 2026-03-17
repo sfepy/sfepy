@@ -297,8 +297,7 @@ def test_hdf5_meshio():
         'struct': Struct(
             double=nm.arange(4, dtype=float),
             int=nm.array([2,3,4,7]),
-            sparse=sps.csr_matrix(nm.array([1,0,0,5]).
-                                  reshape((2,2)))
+            sparse=sps.csr_array(nm.array([1,0,0,5]).reshape((2,2)))
          )
     }
 
