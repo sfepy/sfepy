@@ -8,8 +8,8 @@ def test_compose_sparse():
     ok = True
 
     # basic
-    ma = sps.csr_matrix([[1, 0], [0, 1]])
-    mb = sps.coo_matrix([[1, 1]])
+    ma = sps.csr_array([[1, 0], [0, 1]])
+    mb = sps.coo_array([[1, 1]])
     mk = compose_sparse([[ma, mb.T], [mb, 0]])
     expected = nm.array([[1, 0, 1],
                          [0, 1, 1],
@@ -20,8 +20,8 @@ def test_compose_sparse():
     ok = ok and _ok
 
     # sizes and slices
-    ma = sps.csr_matrix([[2, 3]])
-    mb = sps.coo_matrix([[4, 5, 6]])
+    ma = sps.csr_array([[2, 3]])
+    mb = sps.coo_array([[4, 5, 6]])
 
     mk = compose_sparse([[ma, mb]], col_sizes=[2, 3])
     expected = nm.array([[2, 3, 4, 5, 6]])
