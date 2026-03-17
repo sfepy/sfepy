@@ -1583,11 +1583,11 @@ class Term(Struct):
         Assemble the results of term evaluation.
 
         For standard terms, assemble the values in `val` corresponding to
-        elements/cells `iels` into a vector or a CSR sparse matrix `asm_obj`,
+        elements/cells `iels` into a vector or a CSR sparse array `asm_obj`,
         depending on `mode`.
 
         For terms with a dynamic connectivity (e.g. contact terms), in
-        `'matrix'` mode, return the extra COO sparse matrix instead. The extra
+        `'matrix'` mode, return the extra COO sparse array instead. The extra
         matrix has to be added to the global matrix by the caller. By default,
         this is done in :func:`Equations.evaluate()
         <sfepy.discrete.equations.Equations.evaluate()>`.
@@ -1684,7 +1684,7 @@ class Term(Struct):
                 assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)
 
             else:
-                from scipy.sparse import coo_matrix
+                from scipy.sparse import coo_array
 
                 vals, rows, cols, rvar, cvar = val
                 if rvar.eq_map is not None:
@@ -1694,8 +1694,8 @@ class Term(Struct):
                     active = (rows >= 0) & (cols >= 0)
                     vals, rows, cols = vals[active], rows[active], cols[active]
 
-                extra = coo_matrix((sign * vals, (rows, cols)),
-                                   shape=asm_obj.shape)
+                extra = coo_array((sign * vals, (rows, cols)),
+                                  shape=asm_obj.shape)
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
