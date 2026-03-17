@@ -909,7 +909,7 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
                              lin_solver=None, iter_hook=None, status=None):
                     vec_r = self.fun(vec_x0)
                     # Dummy all-zero matrix to make standard_call() happy.
-                    mtx_a = sps.csr_matrix((vec_r.shape[0], vec_r.shape[0]))
+                    mtx_a = sps.csr_array((vec_r.shape[0], vec_r.shape[0]))
                     return self.lin_solver(-vec_r, mtx=mtx_a)
 
             nlst = self._create_nlst_a(nls, dt, u, v, 0.5 * dt, 'matrix',
