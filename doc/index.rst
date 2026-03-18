@@ -112,15 +112,12 @@
 
    Work on SfePy is partially supported by the following ongoing projects:
 
+   - project `26-21297S`_ (Dynamical behavior of 3D printed magneto-active
+     polymer structures: Experiments and modelling) of the Czech Science
+     Foundation, since 2026;
    - project `GA24-12291S`_ (Multiscale modelling of acoustics-driven fluid
      suspensions flows in adaptive porous structures) of the Czech Science
-     Foundation, since 2024
-   - project `GA23-06220S`_ (Flexoelectric periodic structures for fluid
-     transport and energy harvesting) of the Czech Science Foundation, since
-     2023
-   - project `GF22-00863K`_ (Controllable metamaterials and smart structures:
-     Nonlinear problems, modelling and experiments) of the Czech Science
-     Foundation (LEAD Agency), since 2022
+     Foundation, since 2024;
 
    See also :doc:`archived_support`.
 
