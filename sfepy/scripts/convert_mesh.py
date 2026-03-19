@@ -83,6 +83,28 @@ helps = {
       optimization level and a choice of optimizing operations. 5. "V"
       (optional) - if present, mesh statistics are printed. Consult the tetgen
       documentation for details. Examples: --remesh='rq2/0 a1e-8 O9/7 V'""",
+    'extract_by_matid': """extract mesh cells by a given "mat_id".
+      The "math_id" can be an integer, range '(a,b)', or a list '[a,b,c]'.""",
+    'extract_by_nodegroup': """extract mesh cells where all nodes have
+      the "node_groups" values equal to a given "node_group". The
+      "node_group" can be an integer, range '(a,b)', or a list '[a,b,c]'.""",
+    'extrude': """extrude the given 2D mesh. The options can be the following:
+      "c[<list of [<float>,<float>,<float>]>]" - defines the points of the
+      extrusion path, each point means one element layer, or
+      "c[<float>,<int>]" - sets the extrusion path in the z-direction with
+      defining the element thickness and the number of layers element layers, the
+      extrusion path, each point means one element layer, or
+      "t" (optional) - defines the twist angle in each layer,
+      "s" (optional) - sets scaling in each layer.
+      Example: --extrude='c0.1,10 t0.2 s0.9'""",
+    'revolve': """revolve the given 2D mesh around the axis. The point on
+      the axis is defined by options "p[<float>,<float>,<float>]" and the axis
+      direction by "v[<float>,<float>,<float>]". The revolution angle can be
+      specified in degrees by "m[<float>]", it is equal to 360 deg. if not
+      given. The number of division is given by "n[<int>]".
+      Example: --revolve='p[-1,-2,0] v[1,0,0] n12 m180'""",
+    'mirror': """mirror the given mesh using a plane defined by a point and
+      a normal vector. Example: -mirror='p[-0.5,-0.2,0] v[0,1,0]'""",
 }
 
 def _parse_val_or_vec(option, name, parser):
@@ -99,6 +121,21 @@ def _parse_val_or_vec(option, name, parser):
             sys.exit(1)
 
     return option
+
+
+def _parse_fun_args(s, args_tab):
+    args, dargs = {}, None
+
+    for arg in s.split():
+        for a, n in args_tab:
+            if arg.startswith(a):
+                args[n] = nm.array(literal_eval(arg[1:]))
+                break
+        else:
+            dargs = nm.array(literal_eval(arg))
+
+    return args, dargs
+
 
 def main():
     parser = ArgumentParser(description=__doc__,
@@ -160,6 +197,21 @@ def main():
     parser.add_argument('--remesh', metavar='options',
                         action='store', dest='remesh',
                         default=None, help=helps['remesh'])
+    parser.add_argument('-i', '--extract-by-matid', metavar='matid',
+                        action='store', dest='extract_by_matid',
+                        default=None, help=helps['extract_by_matid'])
+    parser.add_argument('-n', '--extract-by-nodegroup', metavar='node_group',
+                        action='store', dest='extract_by_nodegroup',
+                        default=None, help=helps['extract_by_nodegroup'])
+    parser.add_argument('--extrude', metavar='options',
+                        action='store', dest='extrude',
+                        default=None, help=helps['extrude'])
+    parser.add_argument('--revolve', metavar='options',
+                        action='store', dest='revolve',
+                        default=None, help=helps['revolve'])
+    parser.add_argument('--mirror', metavar='options',
+                        action='store', dest='mirror',
+                        default=None, help=helps['revolve'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()
@@ -298,18 +350,7 @@ def main():
                               [conns], [mesh.cmesh.cell_groups], [desc])
 
     if options.cell_vertices_only:
-        data = list(mesh._get_io_data())
-        vertices = nm.unique([nm.unique(conn.ravel()) for conn in data[2]])
-
-        remap = prepare_translate(vertices, nm.arange(len(vertices)))
-
-        coors = data[0][vertices]
-        ngroups = data[1][vertices]
-        conns = [remap[conn] for conn in data[2]]
-
-        mesh = Mesh.from_data(mesh.name + '_cleaned',
-                              coors, ngroups,
-                              conns, data[3], data[4])
+        mesh = mt.get_cell_vertices_only(mesh)
 
     if options.save_per_mat:
         desc = mesh.descs[0]
@@ -349,6 +390,39 @@ def main():
         surf_mesh = Mesh.from_region(region, mesh,
                                      localize=True, is_surface=True)
         mesh = surf_mesh
+
+    if options.extract_by_matid is not None:
+        cgroup = options.extract_by_matid
+        if isinstance(cgroup, str):
+            cgroup = literal_eval(cgroup)
+
+        mesh = mt.get_mesh_by(mesh, cgroup)
+
+    if options.extract_by_nodegroup is not None:
+        ngroup = options.extract_by_nodegroup
+        if isinstance(ngroup, str):
+            ngroup = literal_eval(ngroup)
+
+        mesh = mt.get_mesh_by_ngroup(mesh, ngroup)
+
+    if options.extrude is not None:
+        args, darg = _parse_fun_args(options.extrude,
+                                     [('c', 'cline'), ('t', 'twist'),
+                                      ('s', 'scale'), ('v', 'nvec')])
+        if darg is not None and 'cline' not in args:
+            args['cline'] = darg
+
+        mesh = mt.extrude(mesh, **args)
+
+    if options.revolve is not None:
+        args, _ = _parse_fun_args(options.extrude,
+                                  [('p', 'p'), ('v', 'v'),
+                                   ('n', 'nphi'), ('m', 'phi_max')])
+        mesh = mt.revolve(mesh, **args)
+
+    if options.mirror is not None:
+        args, _ = _parse_fun_args(options.mirror, [('p', 'p'), ('v', 'v')])
+        mesh = mt.mirror(mesh, **args)
 
     if options.print_surface:
         domain.fix_element_orientation()
