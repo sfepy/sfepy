@@ -1,11 +1,14 @@
 import numpy as nm
 import scipy.sparse as sps
 from scipy.sparse.csgraph import connected_components
+from scipy.spatial.transform import Rotation
+from scipy.spatial import cKDTree
 
 from sfepy.base.compat import factorial
 from sfepy.base.base import output
 from sfepy.discrete.equations import create_dof_graph
 from sfepy.discrete.fem import Mesh, FEDomain
+from sfepy.discrete.fem.utils import prepare_translate
 
 def elems_q2t(el):
 
@@ -25,7 +28,7 @@ def elems_q2t(el):
     ns, nn = q2t.shape
     nel *= ns
 
-    out = nm.zeros((nel, nn), dtype=nm.int32);
+    out = nm.zeros((nel, nn), dtype=nm.int32)
 
     for ii in range(ns):
         idxs = nm.arange(ii, nel, ns)
@@ -217,86 +220,6 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
 
     return coors
 
-def expand2d(mesh2d, dist, rep):
-    """
-    Expand 2D planar mesh into 3D volume,
-    convert triangular/quad mesh to tetrahedrons/hexahedrons.
-
-    Parameters
-    ----------
-    mesh2d : Mesh
-        The 2D mesh.
-    dist : float
-        The elements size in the 3rd direction.
-    rep : int
-        The number of elements in the 3rd direction.
-
-    Returns
-    -------
-    mesh3d : Mesh
-        The 3D mesh.
-    """
-    if len(mesh2d.descs) > 1:
-        raise ValueError('More than one cell type (%s). Not supported!'
-                         % ', '.join(mesh2d.descs))
-
-    nel = mesh2d.n_el
-    nnd = mesh2d.n_nod
-    et = mesh2d.descs[0]
-    coors = mesh2d.coors
-    conn = mesh2d.get_conn(et)
-
-    zcoor = nm.arange(rep + 1) * dist
-    coors3d = nm.hstack([nm.tile(coors, (rep + 1, 1)),
-                         nm.tile(zcoor, (nnd,1)).T.flatten()[:,nm.newaxis]])
-    ngroups = nm.tile(mesh2d.cmesh.vertex_groups, (rep + 1,))
-
-    if et == '2_4':
-        descs3d = '3_8'
-        conn3d = nm.zeros((nel * rep, 8), dtype=nm.int32)
-        mats3d = nm.tile(mesh2d.cmesh.cell_groups, (1, rep)).squeeze()
-
-    elif et == '2_3':
-        descs3d = '3_4'
-        conn3d = nm.zeros((3 * nel * rep, 4), dtype=nm.int32)
-        mats3d = nm.tile(mesh2d.cmesh.cell_groups, (1, 3 * rep)).squeeze()
-
-    for ii in range(rep):
-        bgn0 = nnd * ii
-        bgn1 = bgn0 + nnd
-        if et == '2_4':
-            bge0 = nel * ii
-            bge1 = bge0 + nel
-            conn3d[bge0:bge1,:4] = conn + bgn0
-            conn3d[bge0:bge1,4:] = conn + bgn1
-
-        elif et == '2_3':
-            # 0 1 2 5
-            bge0 = 3 * nel * ii
-            bge1 = bge0 + nel
-            conn3d[bge0:bge1,:] = nm.array([conn[:,0] + bgn0,
-                                            conn[:,1] + bgn0,
-                                            conn[:,2] + bgn0,
-                                            conn[:,2] + bgn1]).T
-            # 0 1 5 4
-            bge0 += nel
-            bge1 += nel
-            conn3d[bge0:bge1,:] = nm.array([conn[:,0] + bgn0,
-                                            conn[:,1] + bgn0,
-                                            conn[:,2] + bgn1,
-                                            conn[:,1] + bgn1]).T
-            # 0 4 5 3
-            bge0 += nel
-            bge1 += nel
-            conn3d[bge0:bge1,:] = nm.array([conn[:,0] + bgn0,
-                                            conn[:,1] + bgn1,
-                                            conn[:,2] + bgn1,
-                                            conn[:,0] + bgn1]).T
-
-    mesh3d = Mesh.from_data('mesh', coors3d, ngroups, [conn3d],
-                            [mats3d], [descs3d])
-
-    return mesh3d
 
 def merge_lines(mesh, eps=1e-18):
     """
@@ -509,3 +432,449 @@ def surface_components(gr_s, surf_faces):
         comps.append(comp)
 
     return n_comp, comps
+
+
+def get_cell_vertices_only(mesh):
+    """
+    Remove vertices not used in any cell.
+
+    Parameters
+    ----------
+    mesh: Mesh
+        FE mesh
+
+    Returns
+    -------
+    out: Mesh
+        FE mesh
+    """
+    data = list(mesh._get_io_data())
+    vertices = nm.unique([nm.unique(conn.ravel()) for conn in data[2]])
+
+    remap = prepare_translate(vertices, nm.arange(len(vertices)))
+
+    coors = data[0][vertices]
+    ngroups = data[1][vertices]
+    conns = [remap[conn] for conn in data[2]]
+
+    return Mesh.from_data(mesh.name + '_cleaned', coors, ngroups,
+                          conns, data[3], data[4])
+
+
+def get_mesh_by_cgroup(mesh, value, cell_vertices_only=True):
+    """
+    Extract mesh cells using cell_group value(s).
+
+    Parameters
+    ----------
+    mesh: Mesh
+        FE mesh
+    value: int, list, or tuple
+        Select cells with a given value, list, or range: (value[0], value[1])
+    cell_vertices_only: bool
+        If True, remove free vertices
+
+    Returns
+    -------
+    out: Mesh
+        FE mesh
+    """
+    new_conns, new_mat_ids, new_descs = [], [], []
+
+    for desc in mesh.descs:
+        conns, cidxs = mesh.get_conn(desc, ret_cells=True)
+        mat_ids = mesh.cmesh.cell_groups[cidxs]
+
+        if isinstance(value, tuple):
+            ncidxs = nm.logical_and(mat_ids >= value[0], mat_ids <= value[1])
+        elif isinstance(value, list):
+            ncidxs = nm.logical_or.reduce([mat_ids == k for k in value])
+        else:
+            ncidxs = mat_ids == value
+
+        if ncidxs.sum() > 0:
+            new_conns.append(conns[ncidxs])
+            new_mat_ids.append(mat_ids[ncidxs])
+            new_descs.append(desc)
+
+    out = Mesh.from_data(mesh.name, mesh.coors,
+                         mesh.cmesh.vertex_groups,
+                         new_conns, new_mat_ids, new_descs)
+
+    if cell_vertices_only:
+        out = get_cell_vertices_only(out)
+
+    return out
+
+
+def get_mesh_by_ngroup(mesh, value, cell_vertices_only=True):
+    """
+    Extract mesh cells using cell_group value(s).
+
+    Parameters
+    ----------
+    mesh: Mesh
+        FE mesh
+    value: int, list, or tuple
+        Select nodes with a given value, list, or range: (value[0], value[1])
+    cell_vertices_only: bool
+        If True, remove free vertices
+
+    Returns
+    -------
+    out: Mesh
+        FE mesh
+    """
+    vgroups = mesh.cmesh.vertex_groups
+    if isinstance(value, tuple):
+        vidxs = nm.logical_and(vgroups >= value[0], vgroups <= value[1])
+    elif isinstance(value, list):
+        vidxs = nm.logical_or.reduce([vgroups == k for k in value])
+    else:
+        vidxs = vgroups == value
+
+    new_vgroups = vgroups[vidxs]
+    new_coors = mesh.coors[vidxs]
+
+    remap = -nm.ones((len(vidxs),), dtype=nm.int64)
+    remap[vidxs] = nm.arange(vidxs.sum())
+
+    new_conns, new_mat_ids, new_descs = [], [], []
+    for desc in mesh.descs:
+        conns, cidxs = mesh.get_conn(desc, ret_cells=True)
+        mat_ids = mesh.cmesh.cell_groups[cidxs]
+        ncidxs = (remap[conns] >= 0).sum(axis=1) == conns.shape[1]
+
+        if ncidxs.sum() > 0:
+            new_conns.append(remap[conns[ncidxs]])
+            new_mat_ids.append(mat_ids[ncidxs])
+            new_descs.append(desc)
+
+    out = Mesh.from_data(mesh.name, new_coors, new_vgroups,
+                         new_conns, new_mat_ids, new_descs)
+
+    if cell_vertices_only:
+        out = get_cell_vertices_only(out)
+
+    return out
+
+
+def stack_descs(conns, mat_ids, descs):
+    sdescs = set(descs)
+    sconns = {k: [] for k in sdescs}
+    smat_ids = {k: [] for k in sdescs}
+
+    for k, desc in enumerate(descs):
+        sconns[desc].append(conns[k])
+        smat_ids[desc].append(mat_ids[k])
+
+    return ([nm.vstack(sconns[k]) for k in sdescs],
+            [nm.hstack(smat_ids[k]) for k in sdescs],
+            list(sdescs))
+
+
+def extrude(mesh, cline, twist=None, scale=None, nvec=None,
+            wedge_to_tetra=True):
+    """
+    Create a solid 3D mesh from a given planar 2D mesh by extruding it.
+    The new points in each layer lie in a plane perpendicular to one of the
+    cline segments. Each layer can be twisted and scaled.
+
+    Parameters
+    ----------
+    mesh: Mesh
+        2D planar FE mesh (tri or quad elements)
+    cline: list of coordinates
+        Points of central line.
+    twist: float, or array
+        Angle of twist in each layer.
+    scale: float, or array
+        Scale factor in each layer.
+    nvec: array
+        Normal vectors of layers.
+    wedge_to_tetra: bool
+        If True, convert wedge elements to tetrahedrons.
+
+    Returns
+    -------
+    out: Mesh
+        3D FE mesh
+    """
+    def get_rotation(v0, v1):
+        cross = nm.cross(v0, v1)
+        dot = nm.dot(v0, v1)
+
+        if nm.linalg.norm(cross) < 1e-18:
+            # Already aligned or opposite
+            if dot > 0:
+                rotation = Rotation.identity()
+            else:
+                # pi/2 rotation around any perpendicular axis
+                axis = nm.array([0, 1, 0])
+                if nm.allclose(v0, axis):
+                    axis = nm.array([1, 0, 0])
+                axis = nm.cross(v0, axis)
+                axis /= nm.linalg.norm(axis)
+                rotation = Rotation.from_rotvec(nm.pi * axis)
+        else:
+            axis = cross / nm.linalg.norm(cross)
+            angle = nm.arccos(nm.clip(dot, -1.0, 1.0))
+            rotation = Rotation.from_rotvec(angle * axis)
+
+        return rotation
+
+    coors0 = mesh.coors
+    if coors0.shape[1] == 2:
+        coors0 = nm.hstack([coors0, coors0[:, [0]] * 0])
+
+    ccoor = nm.mean(coors0, axis=0)
+    coors0 = coors0 - ccoor[None, :]
+
+    nvec0 = nm.array([0, 0, 1.])
+
+    cline = nm.array(cline)
+    if len(cline.shape) == 1:
+        dz, nz = cline[0], int(cline[1])
+        cline = nm.tile(ccoor, (nz + 1, 1))
+        cline[:, 2] = nm.arange(nz + 1) * dz
+
+    if nvec is not None:
+        nvec = nm.array(nvec)
+        if len(nvec.shape) == 0:
+            nvec = nm.repeat(nvec, len(cline) - 1)
+    else:
+        nvec = cline[1:] - cline[:-1]
+
+    nvec = nvec / nm.linalg.norm(nvec, axis=1)[:, None]
+
+    if twist is not None:
+        twist = nm.array(twist)
+        if len(twist.shape) == 0:
+            twist = nm.cumsum(nm.repeat(twist, len(cline)))
+
+    if scale is not None:
+        scale = nm.array(scale)
+        if len(scale.shape) == 0:
+            scale = nm.cumsum(nm.repeat(scale, len(cline)))
+
+    new_coors = [coors0 + cline[[0], :]]
+    new_conns, new_mat_ids, new_descs = [], [], []
+    mat_ids = mesh.cmesh.cell_groups
+    nnd = coors0.shape[0]
+    new_vgroups = nm.hstack([mesh.cmesh.vertex_groups] * len(cline))
+
+    for k in range(len(cline) - 1):
+        rotation = get_rotation(nvec0, nvec[k])
+        coors = rotation.apply(coors0)
+
+        if twist is not None:
+            rotation = Rotation.from_rotvec(nvec[k] * twist[k])
+            coors = rotation.apply(coors)
+
+        if scale is not None:
+            coors *= scale[k] 
+
+        new_coors.append(coors + cline[[k + 1], :])
+
+        for desc in mesh.descs:
+            conns, cidxs = mesh.get_conn(desc, ret_cells=True)
+            econns = nm.hstack([conns + nnd * k, conns + nnd * (k + 1)])
+            emat_ids = mat_ids[cidxs]
+            if econns.shape[1] == 6:
+                if wedge_to_tetra:  # wedges -> 3 x tetrahedron
+                    econns1 = nm.empty((3* econns.shape[0], 4),
+                                       dtype=econns.dtype)
+                    econns1[0::3] = econns[:, [0, 1, 2, 5]]
+                    econns1[1::3] = econns[:, [0, 1, 5, 4]]
+                    econns1[2::3] = econns[:, [0, 4, 5, 3]]
+                    econns = econns1
+                    emat_ids = nm.repeat(mat_ids, 3)
+
+            new_conns.append(econns)
+            new_mat_ids.append(emat_ids)
+            new_descs.append(f'3_{econns.shape[1]}')
+
+    out = Mesh.from_data(mesh.name,
+                         nm.vstack(new_coors), new_vgroups,
+                         *stack_descs(new_conns, new_mat_ids, new_descs))
+
+    return out
+
+
+def expand2d(mesh2d, dist, rep):
+    """
+    Expand a 2D planar mesh into a 3D volume,
+    convert triangular/quad elements to tetrahedrons/hexahedrons.
+
+    Parameters
+    ----------
+    mesh2d : Mesh
+        The 2D mesh.
+    dist : float
+        The elements size in the 3rd direction.
+    rep : int
+        The number of elements in the 3rd direction.
+
+    Returns
+    -------
+    mesh3d : Mesh
+        The 3D mesh.
+    """
+    return extrude(mesh2d, (dist, rep))
+
+
+def get_unique_coor_map(coors, eps=1e-18):
+    tree = cKDTree(coors)
+    pairs = nm.array(list(tree.query_pairs(r=eps)))
+
+    if len(pairs) > 0:
+        n, row, col = len(coors), pairs[:, 0], pairs[:, 1]
+        graph = sps.csr_array((nm.ones(len(row)), (row, col)), shape=(n, n))
+        _, remap = connected_components(graph + graph.T)
+
+        return remap
+
+
+def merge_nodes(mesh, eps=1e-12):
+    """
+    Merge duplicate mesh nodes.
+
+    Parameters
+    ----------
+    mesh: Mesh
+        FE mesh.
+    eps: float
+        Tolerance for duplicity search.
+
+    Returns
+    -------
+    mesh: Mesh
+        FE mesh.
+    """
+    remap = get_unique_coor_map(mesh.coors, eps=eps)
+
+    if remap is not None:
+        _, nidxs = nm.unique(remap, return_index=True)
+        new_conns, new_mat_ids = [], []
+        for desc in mesh.descs:
+            conns, cidxs = mesh.get_conn(desc, ret_cells=True)
+            new_mat_ids.append(mesh.cmesh.cell_groups[cidxs])
+            new_conns.append(remap[conns])
+
+        return Mesh.from_data(mesh.name, mesh.coors[nidxs],
+                              mesh.cmesh.vertex_groups[nidxs],
+                              new_conns, new_mat_ids, mesh.descs)
+    else:
+        return mesh
+
+
+def revolve(mesh, nphi, p, v=(1, 0, 0), phi_max=None, wedge_to_tetra=True):
+    """
+    Create a solid 3D mesh from a given planar 2D mesh by revolving it
+    around the axis defined by a vector.
+
+    Parameters
+    ----------
+    mesh: Mesh
+        2D planar FE mesh.
+    nphi: int
+        Number of elements in the circumferential direction
+    p: list, tuple, or numpy.ndarray
+        Coordinates of a point on the axis of rotation
+    v: list, tuple, or numpy.ndarray
+        Directional vector of the axis of rotation
+    phi_max: float or None
+        Angle of the revolution, if None, 360 degrees is used (closed loop)
+    wedge_to_tetra: bool
+        If True, convert wedge elements to tetrahedrons.
+
+    Returns
+    -------
+    out: Mesh
+        3D FE mesh.
+    """
+    if phi_max is None:
+        phi_max = 360
+        phi = nm.linspace(0, 2*nm.pi, nphi + 1)
+    else:
+        phi = nm.linspace(0, nm.deg2rad(phi_max), nphi + 1)
+
+    p = nm.array(p)[None, :]
+    v = nm.array(v)
+
+    coors = mesh.coors
+    ccoor = nm.mean(coors, axis=0)
+    if coors.shape[1] == 2:
+        ccoor = nm.array([ccoor[0], ccoor[1], 0])
+
+    cline = nm.vstack([Rotation.from_rotvec(v * ph).apply(ccoor - p)
+                       for ph in phi]) + p
+ 
+    nvec0 = nm.array([0, 0, 1])
+    nvec = nm.vstack([Rotation.from_rotvec(v * ph).apply(nvec0)
+                      for ph in phi[1:]])
+
+    out = extrude(mesh, cline, nvec=nvec, wedge_to_tetra=wedge_to_tetra)
+
+    if phi_max == 360:
+        out = merge_nodes(out)
+
+    return out
+
+
+def mirror(mesh, p, v):
+    """
+    Duplicate the mesh by mirroring it. The mirror plane is defined by a point
+    in the plane and by a normal vector to that plane.
+
+    Parameters
+    ----------
+    mesh: Mesh
+        FE mesh.
+    p: list, tuple, or numpy.ndarray
+        Coordinates of a point at the mirror plane.
+    v: list, tuple, or numpy.ndarray
+        Normal vector of the mirror plane.
+
+    Returns
+    -------
+    out: Mesh
+        FE mesh.
+    """
+    mirror_map = {
+        '2_3': nm.array([1, 0, 2]),
+        '2_4': nm.array([1, 0, 3, 2]),
+        '3_4': nm.array([1, 0, 2, 3]),
+        '3_8': nm.array([1, 0, 3, 2, 5, 4, 7, 6]),
+    }
+    coors = mesh.coors
+    if coors.shape[1] == 2:
+        coors = nm.hstack([coors, coors[:, [0]] * 0])
+
+    p = nm.asarray(p)[None, :]
+    v = nm.asarray(v)
+
+    v = v / nm.linalg.norm(v)
+
+    vc = coors - p
+    dist = nm.dot(vc, v)
+
+    new_coors = nm.vstack([
+        coors,
+        coors - 2 * dist[:, None] * v
+    ])
+
+    new_vgroups = nm.hstack([mesh.cmesh.vertex_groups] * 2)
+    new_conns, new_mat_ids, new_descs = [], [], []
+    i1 = coors.shape[0]
+
+    for desc in mesh.descs:
+        conns, cidxs = mesh.get_conn(desc, ret_cells=True)
+        new_mat_ids.append(nm.hstack([mesh.cmesh.cell_groups[cidxs]] * 2))
+        new_descs.append(desc)
+        new_conns.append(nm.vstack([conns, conns[:, mirror_map[desc]] + i1]))
+
+    out = Mesh.from_data(mesh.name, new_coors, new_vgroups,
+                         new_conns, new_mat_ids, mesh.descs)
+
+    return merge_nodes(out)
