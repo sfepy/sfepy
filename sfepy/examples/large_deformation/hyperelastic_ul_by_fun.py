@@ -6,8 +6,8 @@ and the stress tensor are calculated by a user defined function.
 from functools import partial
 
 import numpy as nm
-from hyperelastic_ul import (filename_mesh, options, regions, fields,
-    variables, ebcs, functions)
+from .hyperelastic_ul import (filename_mesh, options, regions, fields,
+                              variables, ebcs, functions)
 
 mu, K = 20., 1000.
 
