@@ -92,7 +92,7 @@ helps = {
       "c[<list of [<float>,<float>,<float>]>]" - defines the points of the
       extrusion path, each point means one element layer, or
       "c[<float>,<int>]" - sets the extrusion path in the z-direction with
-      defining the element thickness and the number of layers element layers, the
+      defining the element thickness and the number of element layers, the
       extrusion path, each point means one element layer, or
       "t" (optional) - defines the twist angle in each layer,
       "s" (optional) - sets scaling in each layer.
@@ -100,11 +100,11 @@ helps = {
     'revolve': """revolve the given 2D mesh around the axis. The point on
       the axis is defined by options "p[<float>,<float>,<float>]" and the axis
       direction by "v[<float>,<float>,<float>]". The revolution angle can be
-      specified in degrees by "m[<float>]", it is equal to 360 deg. if not
-      given. The number of division is given by "n[<int>]".
+      specified in degrees by "m[<float>]", it is equal to 360 deg, if not
+      given. The number of divisions is given by "n[<int>]".
       Example: --revolve='p[-1,-2,0] v[1,0,0] n12 m180'""",
     'mirror': """mirror the given mesh using a plane defined by a point and
-      a normal vector. Example: -mirror='p[-0.5,-0.2,0] v[0,1,0]'""",
+      a normal vector. Example: --mirror='p[-0.5,-0.2,0] v[0,1,0]'""",
 }
 
 def _parse_val_or_vec(option, name, parser):
@@ -211,7 +211,7 @@ def main():
                         default=None, help=helps['revolve'])
     parser.add_argument('--mirror', metavar='options',
                         action='store', dest='mirror',
-                        default=None, help=helps['revolve'])
+                        default=None, help=helps['mirror'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()
