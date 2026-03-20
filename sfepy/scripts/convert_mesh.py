@@ -415,7 +415,7 @@ def main():
         mesh = mt.extrude(mesh, **args)
 
     if options.revolve is not None:
-        args, _ = _parse_fun_args(options.extrude,
+        args, _ = _parse_fun_args(options.revolve,
                                   [('p', 'p'), ('v', 'v'),
                                    ('n', 'nphi'), ('m', 'phi_max')])
         mesh = mt.revolve(mesh, **args)
