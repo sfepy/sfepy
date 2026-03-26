@@ -257,7 +257,7 @@ def main():
     eok += report(out, '...', -2, -1, '1.644e-01', match_numbers=True)
 
     out, err = check_output('python3 sfepy/examples/large_deformation/compare_elastic_materials.py -n')
-    eok += report(out, '...', -8, 5, '1.068759e-14', eps=1e-13)
+    eok += report(out, '...', -8, 5, '6.844842e-08', eps=1e-7)
 
     out, err = check_output('python3 sfepy/examples/linear_elasticity/linear_elastic_interactive.py')
     eok += report(out, '...', -18, 0, '1.62128841139e-14', eps=1e-13)

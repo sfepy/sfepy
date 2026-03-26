@@ -179,8 +179,8 @@ def main():
 
     # Solve the problem. Output is ignored, results stored by using the
     # step_hook.
-    u_t = solve_branch(problem, linear_tension)
     u_c = solve_branch(problem, linear_compression)
+    u_t = solve_branch(problem, linear_tension)
 
     # Get pressure load by calling linear_*() for each time step.
     ts = problem.get_timestepper()
@@ -214,13 +214,13 @@ def main():
         youngs = 9 * bulk * mu / (3 * bulk + mu)
         original_length = 3.0
 
-        stretches = nm.linspace(.5, 1.5, 101)
+        stretches = nm.linspace(.3, 1.5, 101)
         forces = 0.5 * youngs * stretches * (stretches**2 - 1)
         disps = original_length * (stretches - 1)
         plt.plot(forces, disps, 'k:')
         legend.append('SVK analytical')
 
-        plt.legend(legend, loc = 2)
+        plt.legend(legend, loc=2)
         plt.xlabel('tension [kPa]')
         plt.ylabel('displacement [mm]')
         plt.grid(True)
