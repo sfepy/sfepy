@@ -1,5 +1,243 @@
 # created: 20.07.2007 (-1)
 
+.. _2025.4-2026.1:
+
+from 2025.4 to 2026.1
+=====================
+
+- merge pull request #1245 from a-detiste/master
+
+  - fix typos
+  - there's more but I don't want to brink an API
+
+- merge pull request #1246 from zhangrongchuan/axisymmetric-elasticity-example
+
+  - Add axisymmetric linear elasticity example with define_box_regions and Add
+    to declarative examples test
+  - Delete sfepy/examples/doc directory
+  - elastic2D_axisymmetric.py: update docstring
+  - elastic2D_axisymmetric.py: do not save mesh in define()
+  - elastic2D_axisymmetric.py: fix m_hoop_idx special parameter in define()
+
+- merge pull request #1249 from rc/update-contact-bodies-examples
+
+  - fix docstrings of ContactPlaneTerm, ContactSphereTerm
+  - increase contact quadrature order and tweak elastic_contact_sphere.py
+    example
+  - increase contact quadrature order and tweak elastic_contact_planes.py
+    example
+
+- merge pull request #1250 from rc/fix-dw-tl-fib-spe
+
+  - fix docstrings of FibresExponentialTLTerm, FibresSoftPlusExponentialTLTerm
+  - use stable relation in FibresSoftPlusExponentialTLTerm.stress_function()
+  - use stable relation in FibresSoftPlusExponentialTLTerm.tan_mod_function()
+
+- merge pull request #1248 from heczis/add_linear_tl_material
+
+  - Add St.Venant-Kirchhoff hyperelastic material
+  - Resolve PR issues
+  - Add SVK to compare_elastic_materials.py
+
+- merge pull request #1253 from vlukes/new-video-tutorial
+
+  - new video tutorial by @AbdulRehman-Fayyaz (#1247)
+
+- merge pull request #1252 from vlukes/fix-sphinx-build-for-venv
+
+  - fix sphinx-build when combining virtualenv and system-site-packages
+  - update Makefile to make possible setting the python interpreter
+
+- merge pull request #1254 from siyuantan-gx/master
+
+  - Add files via upload
+  - Added support for 3-term Generalized Yeoh model
+
+    Changes:
+
+    1. Extended Material Parameters:
+
+       - The term now accepts 6 material parameters: [K1, K2, K3, m1, m2, m3]
+         (often denoted as EM, PE, QU for the exponents).
+       - Original implementation only supported a single term [K1, m1].
+
+    2. Updated Constitutive Equations:
+
+       - The strain energy density function (W) now includes three terms: $W =
+         \sum_{i=1}^3 K_i (I_1 - 3)^{m_i}$
+       - The stress (stress_function) and tangent modulus (tan_mod_function)
+         calculations have been updated to sum contributions from all three
+         terms.
+
+    3. Backward Compatibility:
+
+       - The arg_shapes definition now supports both (n_cell, n_qp, 1, 6) and
+         the legacy (n_cell, n_qp, 1, 2) shapes.
+       - Added logic to automatically map legacy 2-parameter inputs [K1, m1] to
+         the new 6-parameter format [K1, 0, 0, m1, 1, 1], ensuring existing
+         problem description files continue to work without modification.
+
+    4. Vectorization:
+
+       - Refactored the stress and tangent modulus calculations to be fully
+         vectorized for better performance and readability (removing explicit
+         loops over cells and quadrature points). Verification:
+       - Verified that the new implementation reproduces results for the
+         single-term case.
+       - Confirmed that legacy input files run successfully. Reference: [1]
+         Travis W. Hohenberger, Richard J. Windslow, Nicola M. Pugno,
+         James J. C. Busfield. A Constitutive Model For Both Low and High
+         Strain Nonlinearities In Highly Filled Elastomers And Implementation
+         With User-Defined Material Subroutines In Abaqus. Rubber Chemistry And
+         Technology, Vol. 92, No. 4, Pp. 653-686 (2019)
+
+  - Refactor GenYeohTLTerm and restore SaintVenantKirchhoffTLTerm
+  - Update GenYeohTLTerm to use new parameter names
+
+- merge pull request #1260 from rc/make-new-plotter-attributes-private
+
+  - make new plotter attributes private, fix for pyvista >= 0.46 - update
+    pv_plot(), main()
+
+- merge pull request #1261 from rc/fix-presolve-with-lcbcs
+
+  - store presolved matrix for linear problems in Problem.mtx_presolved in
+    .solve()
+
+    - update .reset(), .set_equations_instance()
+    - the presolved matrix differs from .mtx_a when LCBCs are present
+
+  - fix Evaluator.eval_tangent_matrix() for linear problems and LCBCs
+
+- merge pull request #1263 from rc/fix-resview-n-step-check
+
+  - fix #1260 attribute name regression in pv_plot()
+
+- merge pull request #1264 from rc/check-finiteness-in-set-dofs
+
+  - update Field.set_dofs() to check values finiteness
+  - update DGField.set_dofs() to check values finiteness
+  - update H1HierarchicVolumeField.set_dofs() to check values finiteness
+  - update H1NodalMixin.set_dofs() to check values finiteness
+  - update DGField.get_bc_facet_values() to check values finiteness
+
+- merge pull request #1265 from rc/rigid-twist-lcbcs
+
+  - new RigidTwistOperator, .__init__(), .setup(), implements rigid_twist LCBCs
+  - new sfepy/examples/linear_elasticity/rigid_twist.py example, new define()
+  - test rigid_twist.py example in test_examples()
+  - gen_gallery.py: add custom view for rigid_twist.py example
+  - new meshes/3d/cut-cylinder.vtk
+  - update docstring of RigidTwistOperator
+
+- merge pull request #1267 from rc/convert-mesh-rotate
+
+  - convert_mesh.py: new --rot-axis, --rot-angle options, update main()
+
+- merge pull request #1268 from rc/combine-meshes-script
+
+  - new Mesh.set_centre()
+  - new sfepy/scripts/combine_meshes.py - new combine_meshes(), add_args(),
+    main()
+  - gen_mesh.py: add combine_meshes.py as subcommand in main(), add
+    descriptions
+  - convert_mesh.py: use Mesh.set_centre() in main()
+
+- merge pull request #1269 from rc/use-sparray
+
+  - support sparray in Struct._str()
+  - update sfepy/base/ioutils.py for sparray
+
+    - update docstring of write_sparse_matrix_to_hdf5()
+    - update read_sparse_matrix_from_hdf5(), write_to_hdf5()
+
+  - update get_mem_usage(), assert_equal() for sparray (cs*_array)
+  - update spy() for sparray()
+  - return coo_array from EquationMap.get_reduced()
+  - return csr_array from CMesh.get_conn_as_graph()
+  - return csr_array from Region.get_edge_graph()
+  - return csr_array from Equations.create_matrix_graph()
+
+    - update create_dof_graph(), create_matrix_graph()
+    - update .eval_tangent_matrices() docstring
+    - update Equation.evaluate() docstring
+
+  - update Evaluator.eval_residual(), .eval_tangent_matrix(), eval_equations()
+  - update LCBC operators for sparray
+
+    - update MRLCBCOperator.treat_pbcs()
+    - update .__init__() of Rigid2Operator, AverageForceOperator,
+      NoPenetrationOperator, NormalDirectionOperator,
+      IntegralMeanValueOperator, NodalLCOperator, ShiftedPeriodicOperator,
+      MultiNodeLCOperator
+    - update LCBCOperators.make_global_operator()
+
+  - update Mesh.create_conn_graph() docstring
+  - update _get_edge_path() for sparray
+  - update Problem.eval_equations() docstring
+  - update create_mass_matrix() docstring, project_to_facets() to use
+    coo_array()
+  - update Variables.make_full_vec(), .get_reduced_state() for sparray
+  - update NewmarkSATS.efun_grad(), .efun_grad0() for sparray
+  - update SimpleEVP.__call__() for sparray()
+  - update cg_eigs() for sparray
+  - return coo_array from compose_sparse(), update infinity_norm() for sparray
+  - use coo_array in assemble1d()
+  - use coo_array in smooth_mesh(), merge_lines(), extract_edges()
+  - update eigenvalue solvers for sparray
+
+    - use csc_array in ScipyEigenvalueSolver.__call__(), csr_array in
+      SLEPcEigenvalueSolver.create_petsc_matrix()
+
+  - update linear solvers for sparray
+
+    - use csr_array in _is_new_matrix(),
+      PETScKrylovSolver.create_petsc_matrix()
+    - use coo_array in MUMPSSolver.presolve(), MultiProblem.__call__()
+
+  - update LQuadraticEVPSolver.__call__() for sparray
+  - update assemble_matrices(), build_evp_matrices() for sparray
+  - update SemismoothNewton.__call__(), .compute_jacobian() for sparray
+  - use csr_array in CentralDifferenceTS.create_nlst()
+  - update Term.assemble_to() for sparray
+  - use coo_array in DiffusionDGFluxTerm.function() comment
+  - use csr_array in test_assemble_matrix(), test_assemble_matrix_complex()
+  - use csr_array in DG terms tests
+
+    - update TestAdvectDGFluxTerm.test_function_implicit_1D(),
+      TestDiffusionDGFluxTerm.test_function_implicit_right_1D(),
+      .test_function_implicit_left_1D(),
+      TestDiffusionInteriorPenaltyTerm.test_function_implicit_1D()
+
+  - use csr_array in test_sparse_matrix_hdf5()
+  - use csr_array in test_hdf5_meshio()
+  - update convert_to_csr(), test_semismooth_newton() for sparray
+  - update test_compose_sparse() for sparray
+  - update test_eval_matrix(), test_vector_matrix() for sparray
+  - docs: update primer for sparray
+  - update numpy, scipy minimal versions
+
+- merge pull request #1270 from rc/update-support-2026
+
+  - docs: update support
+
+- merge pull request #1271 from vlukes/new-mesh-utils
+
+  - new mesh funcs: extrude(), revolve(), mirror(), get_mesh_by_*()
+  - make funcs callable via sfepy-convert script
+  - fix help strings
+  - fix parsing of options for '--revolve'
+
+- merge pull request #1272 from rc/use-rel-import-in-example
+
+  - use relative import - fixes gen_gallery.py failure
+
+- merge pull request #1274 from rc/update-compare-elastic-materials-example
+
+  - tweak plot in main() of compare_elastic_materials.py example, switch branch
+    order
+  - test_install.py: update main() for current compare_elastic_materials.py
+
 .. _2025.3-2025.4:
 
 from 2025.3 to 2025.4

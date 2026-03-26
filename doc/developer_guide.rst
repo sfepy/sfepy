@@ -1351,6 +1351,7 @@ Scripts
    :maxdepth: 2
 
    src/sfepy/scripts/blockgen
+   src/sfepy/scripts/combine_meshes
    src/sfepy/scripts/convert_mesh
    src/sfepy/scripts/cylindergen
    src/sfepy/scripts/gen_iga_patch
