@@ -1,6 +1,12 @@
 News
 ====
 
+* **26.03.2026** Version 2026.1 released (axisymmetric linear elasticity
+  example, Saint Venant-Kirchhoff hyperelastic term, improved generalized Yeoh
+  term, rigid twist linear combination boundary conditions + example, sparse
+  arrays are used instead of sparse matrices, new mesh creation and
+  manipulation utilities, etc.), see :ref:`release notes <2025.4-2026.1>`.
+
 * **29.12.2025** Version 2025.4 released (Python 2 code clean up, improved
   vector field visualizations in sfepy-view, etc.), see :ref:`release notes
   <2025.3-2025.4>`.
@@ -20,9 +26,5 @@ News
   term for the UL formulation, speed-up of sparse matrix graph allocation and
   assembling of matrices with many nonzeros in a row, etc.), see :ref:`release
   notes <2024.4-2025.1>`.
-
-* **29.12.2024** Version 2024.4 released (MUMPS solver interface moved to new
-  mumpspy package, python-mumps support, new contact term based on IPC toolkit,
-  etc.), see :ref:`release notes <2024.3-2024.4>`.
 
 For historians: see :ref:`archived_news`.
