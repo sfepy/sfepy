@@ -44,6 +44,20 @@ class L2ConstantVolumeField(Field):
         self.cmesh = self.region.cmesh
 
         self.gel, self.is_surface = _find_geometry(self.region)
+        gkey = self.gel.get_interpolation_name()
+        self.geom_poly_space = self.domain.geom_poly_spaces[gkey]
+        if not self.is_surface:
+            gps = self.domain.geom_poly_spaces
+            surface_facet = self.gel.surface_facet
+            if isinstance(surface_facet, dict):
+                self.sgeom_poly_space = {}
+                for k, v in surface_facet.items():
+                    gkey = v.get_interpolation_name()
+                    self.sgeom_poly_space[k] = gps[gkey]
+            else:
+                gkey = surface_facet.get_interpolation_name()
+                self.sgeom_poly_space = gps[gkey]
+
         self._setup_kind()
         self._create_interpolant()
 
@@ -179,7 +193,7 @@ class L2ConstantVolumeField(Field):
 
         if integration == 'cell':
             ps = self.poly_space
-            geo_ps = self.gel.poly_space
+            geo_ps = self.geom_poly_space
             dconn = domain.get_conn(tdim=region.tdim, cells=iels)
             qp_coors, qp_weights = integral.get_qp(self.gel.name)
             bf = ps.eval_basis(qp_coors)
@@ -188,13 +202,14 @@ class L2ConstantVolumeField(Field):
             if self.is_surface:
                 gel = self.gel
                 ps = self.poly_space
+                geo_ps = self.geom_poly_space
 
             else:
                 gel = self.gel.surface_facet
+                geo_ps = self.sgeom_poly_space
                 ps = PolySpace.any_from_args('aux', gel, self.approx_order,
                                              basis='lagrange')
 
-            geo_ps = gel.poly_space
             domain.create_surface_group(region)
             sd = domain.surface_groups[region.name]
             dconn = sd.get_connectivity()

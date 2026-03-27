@@ -242,7 +242,7 @@ class Problem(Struct):
 
     def __init__(self, name, conf=None, functions=None,
                  domain=None, fields=None, equations=None, auto_conf=True,
-                 active_only=True):
+                 active_only=True, unpickle=False):
         if conf is None:
             self.conf = Struct(options={}, ics={},
                                ebcs={}, epbcs={}, lcbcs={}, materials={},
@@ -284,6 +284,16 @@ class Problem(Struct):
         self.not_active_only_modify_matrix = self.conf.options.get(
             'not_active_only_modify_matrix', True,
         )
+
+        if unpickle:
+            self.set_fields(conf.fields)
+            if hasattr(conf, 'equations'):
+                self.set_equations(conf.equations)
+            self.set_conf_solvers(conf.solvers, conf.options)
+
+    def __reduce__(self):
+        return (Problem, (self.name, self.conf, self.functions, self.domain,
+                          None, None, False, self.active_only, True))
 
     def reset(self):
         if hasattr(self.conf, 'options'):

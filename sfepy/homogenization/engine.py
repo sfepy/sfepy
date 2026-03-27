@@ -1,13 +1,11 @@
-import gc
 from copy import copy
-
+from functools import partial
+import os.path as osp
 from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import PDESolverApp, Application
 from .coefs_base import MiniAppBase, CoefEval
-from .utils import rm_multi
 from sfepy.discrete.evaluate import eval_equations
-import sfepy.base.multiproc as multi
-import numpy as nm
+import sfepy.homogenization.multiproc as multiproc
 
 
 def insert_sub_reqs(reqs, levels, req_info):
@@ -43,6 +41,42 @@ def get_dict_idxval(dict_array, idx):
     return {k: v[idx] for k, v in dict_array.items()}
 
 
+def deps_to_corrs(problem, dependencies, keys=None):
+    if keys is None:
+        keys = dependencies.keys()
+
+    vs = problem.get_variables(auto_create=True)
+    out = {}
+    for k in keys:
+        if not k.startswith('c.'):
+            v = dependencies[k]
+            if hasattr(v, 'get_output'):
+                out[k] = v.get_output(variables=vs)
+            else:
+                out[k] = v
+
+    return out
+
+
+def rm_chtag(key):
+    idx = key.find('|ch:')
+    return key[:idx] if idx > 0 else key
+
+
+def chunk_req_info(name, req_info):
+    idx = name.find('|ch:')
+    if idx > 0:
+        name0, ctag = name[:idx], name[idx:]
+        out = req_info[name0].copy()
+        reqs = out.get('requires', [])
+        if len(reqs) > 0:
+            out['requires'] = [k + ctag for k in reqs]
+
+        return out
+    else:
+        return req_info[name]
+
+
 class CoefVolume(MiniAppBase):
     def __call__(self, volume, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -55,8 +89,8 @@ class CoefVolume(MiniAppBase):
 
 class HomogenizationWorker:
     def __call__(self, problem, options, post_process_hook,
-                 req_info, coef_info,
-                 micro_states, store_micro_idxs, time_tag=''):
+                 req_info, coef_info, micro_states, store_micro_idxs,
+                 chunk_size=None, time_tag=''):
         """Calculate homogenized correctors and coefficients.
 
         Parameters
@@ -75,6 +109,8 @@ class HomogenizationWorker:
             The configurations of multiple microstructures.
         store_micro_idxs : list of int
             The indices of microstructures whose results are to be stored.
+        chunk_size: int or None
+            The number of microstructures in one chunks
         time_tag : str
             The label corresponding to the actual time step and iteration,
             used in the corrector file names.
@@ -88,6 +124,7 @@ class HomogenizationWorker:
         """
         dependencies = {}
         save_names = {}
+
         sorted_names = self.get_sorted_dependencies(req_info, coef_info,
                                                     options.compute_only)
         for name in sorted_names:
@@ -95,13 +132,13 @@ class HomogenizationWorker:
                 if micro_states is not None:
                     req_info[name]['store_idxs'] = (store_micro_idxs, 0)
 
-            val = self.calculate_req(problem, options, post_process_hook,
-                                     name, req_info, coef_info, save_names,
-                                     dependencies, micro_states,
-                                     time_tag)
+            val, sn = self.calculate_req(problem, options, post_process_hook,
+                                         req_info, coef_info, dependencies,
+                                         micro_states, time_tag,
+                                         None, name, '0')
 
             dependencies[name] = val
-            gc.collect()
+            save_names.update(sn)
 
         return dependencies, save_names
 
@@ -128,14 +165,14 @@ class HomogenizationWorker:
     @staticmethod
     def calculate(mini_app, problem, dependencies, dep_requires,
                   save_names, micro_states, chunk_tab, mode, proc_id):
-        if micro_states is None:
-            data = {key: dependencies[key] for key in dep_requires
-                    if 'Volume_' not in key}
-            volume = {key[9:]: dependencies[key]
-                      for key in dep_requires if 'Volume_' in key}
-            mini_app.requires = [ii for ii in mini_app.requires
-                                 if 'c.Volume_' not in ii]
+        data = {rm_chtag(key): dependencies[key] for key in dep_requires
+                if 'Volume_' not in key}
+        volume = {rm_chtag(key[9:]): dependencies[key] for key in dep_requires
+                  if 'Volume_' in key}
+        mini_app.requires = [rm_chtag(ii) for ii in mini_app.requires
+                             if 'c.Volume_' not in ii]
 
+        if micro_states is None:
             if mode == 'coefs':
                 val = mini_app(volume, data=data)
             else:
@@ -143,20 +180,12 @@ class HomogenizationWorker:
                     save_names[mini_app.name] = mini_app.get_save_name_base()
                 val = mini_app(data=data)
         else:
-            data = {rm_multi(key): dependencies[key]
-                    for key in dep_requires if 'Volume_' not in key}
-            volume = {rm_multi(key[9:]): dependencies[key]
-                      for key in dep_requires if 'Volume_' in key}
-            mini_app.requires = [ii for ii in mini_app.requires
-                                 if 'c.Volume_' not in ii]
-
-            if '|multiprocessing_' in mini_app.name\
-                    and chunk_tab is not None:
-                chunk_id = int(mini_app.name[-3:])
-                chunk_tag = '-%d' % (chunk_id + 1)
+            if '|ch:' in mini_app.name and chunk_tab is not None:
+                chunk_id = int(mini_app.name.split('|ch:')[1])
+                chunk_tag = f'-{chunk_id}'
                 local_state = \
                     {k: v[chunk_tab[chunk_id]] if v is not None else None
-                    for k, v in micro_states.items()}
+                     for k, v in micro_states.items()}
             else:
                 chunk_tag = ''
                 local_state = micro_states
@@ -167,8 +196,7 @@ class HomogenizationWorker:
 
             local_coors = local_state['coors']
             for im in range(len(local_coors)):
-                output('== micro %s%s-%d =='
-                       % (proc_id, chunk_tag, im + 1))
+                output(f'== micro {proc_id}{chunk_tag}-{im} ==')
                 problem.micro_state = (local_state, im)
                 problem.set_mesh_coors(local_coors[im], update_fields=True,
                                        clear_all=False, actual=True)
@@ -179,8 +207,7 @@ class HomogenizationWorker:
                 else:
                     if hasattr(mini_app, 'store_idxs')\
                             and im in mini_app.store_idxs[0]:
-                        store_id = '_%04d'\
-                            % (mini_app.store_idxs[1] + im)
+                        store_id = '_%04d' % (mini_app.store_idxs[1] + im)
                         if save_name is not None:
                             mini_app.save_name = save_name + store_id
                             key = mini_app.name
@@ -202,8 +229,8 @@ class HomogenizationWorker:
 
     @staticmethod
     def calculate_req(problem, opts, post_process_hook,
-                      name, req_info, coef_info, save_names, dependencies,
-                      micro_states, time_tag='', chunk_tab=None, proc_id='0'):
+                      req_info, coef_info, dependencies,
+                      micro_states, time_tag, chunk_tab, name, proc_id):
         """Calculate a requirement, i.e. correctors or coefficients.
 
         Parameters
@@ -220,8 +247,6 @@ class HomogenizationWorker:
             The definition of correctors.
         coef_info : dict
             The definition of homogenized coefficients.
-        save_names : dict
-            The dictionary containing names of saved correctors.
         dependencies : dict
             The dependencies required by the correctors/coefficients.
         micro_states : array
@@ -240,20 +265,21 @@ class HomogenizationWorker:
         -------
         val : coefficient/corrector or list of coefficients/correctors
             The resulting homogenized coefficients or correctors.
+        save_names : dict
+            The dictionary containing names of saved correctors.
         """
+        save_names = {}
+
         # compute coefficient
         if name.startswith('c.'):
-            coef_name = name[2:]
+            output('computing %s...' % name[2:])
 
-            output('computing %s...' % coef_name)
-
-            cargs = coef_info[coef_name]
-            mini_app = MiniAppBase.any_from_conf(coef_name, problem, cargs)
+            cargs = chunk_req_info(name[2:], coef_info)
+            mini_app = MiniAppBase.any_from_conf(name[2:], problem, cargs)
             problem.clear_equations()
 
             # Pass only the direct dependencies, not the indirect ones.
             dep_requires = cargs.get('requires', [])
-
             val = HomogenizationWorker.calculate(mini_app, problem,
                                                  dependencies, dep_requires,
                                                  save_names, micro_states,
@@ -265,7 +291,7 @@ class HomogenizationWorker:
         else:
             output('computing dependency %s...' % name)
 
-            rargs = req_info[name]
+            rargs = chunk_req_info(name, req_info)
             mini_app = MiniAppBase.any_from_conf(name, problem, rargs)
             mini_app.setup_output(save_formats=opts.save_formats,
                                   post_process_hook=post_process_hook,
@@ -277,7 +303,6 @@ class HomogenizationWorker:
 
             # Pass only the direct dependencies, not the indirect ones.
             dep_requires = rargs.get('requires', [])
-
             val = HomogenizationWorker.calculate(mini_app, problem,
                                                  dependencies, dep_requires,
                                                  save_names, micro_states,
@@ -285,154 +310,31 @@ class HomogenizationWorker:
 
             output('...done')
 
-        return val
-
-
-class HomogenizationWorkerMulti(HomogenizationWorker):
-    def __init__(self, num_workers):
-        self.num_workers = num_workers
-
-    def __call__(self, problem, options, post_process_hook,
-                 req_info, coef_info,
-                 micro_states, store_micro_idxs, chunks_per_worker,
-                 time_tag=''):
-        """Calculate homogenized correctors and coefficients.
-
-        Parameters
-        ----------
-        The same parameters as :class:`HomogenizationWorker`, extended by:
-        chunks_per_worker : int
-            The number of chunks per one worker.
-
-        Returns
-        -------
-        The same returns as :class:`HomogenizationWorker`.
-        """
-        multiproc = multi.multiproc_proc
-
-        dependencies = multiproc.get_dict('dependecies', clear=True)
-        save_names = multiproc.get_dict('save_names', clear=True)
-        numdeps = multiproc.get_dict('numdeps', clear=True)
-        remaining = multiproc.get_int_value('remaining', 0)
-        tasks = multiproc.get_queue('tasks')
-        lock = multiproc.get_lock('lock')
-
-        if micro_states is not None:
-            micro_chunk_tab, req_info, coef_info = \
-                self.chunk_micro_tasks(self.num_workers,
-                                       len(micro_states['coors']),
-                                       req_info, coef_info,
-                                       chunks_per_worker, store_micro_idxs)
-        else:
-            micro_chunk_tab = None
-
-        sorted_names = self.get_sorted_dependencies(req_info, coef_info,
-                                                    options.compute_only)
-
-        remaining.value = len(sorted_names)
-
-        # calculate number of dependencies and inverse map
-        inverse_deps = {}
-        for name in sorted_names:
-            if name.startswith('c.'):
-                reqs = coef_info[name[2:]].get('requires', [])
-            else:
-                reqs = req_info[name].get('requires', [])
-            numdeps[name] = len(reqs)
-            if len(reqs) > 0:
-                for req in reqs:
-                    if req in inverse_deps:
-                        inverse_deps[req].append(name)
-                    else:
-                        inverse_deps[req] = [name]
-
-        for name in sorted_names:
-            if numdeps[name] == 0:
-                tasks.put(name)
-
-        workers = []
-        for ii in range(self.num_workers):
-            args = (tasks, lock, remaining, numdeps, inverse_deps,
-                    problem, options, post_process_hook, req_info,
-                    coef_info, save_names, dependencies, micro_states,
-                    time_tag, micro_chunk_tab, str(ii + 1))
-            w = multiproc.Process(target=self.calculate_req_multi,
-                                  args=args)
-            w.start()
-            workers.append(w)
-
-        # block until all workes are terminated
-        for w in workers:
-            w.join()
-
-        if micro_states is not None:
-            dependencies = self.dechunk_reqs_coefs(dependencies,
-                                                   len(micro_chunk_tab))
-
-        return dependencies, save_names
+        return val, save_names
 
     @staticmethod
-    def calculate_req_multi(tasks, lock, remaining, numdeps, inverse_deps,
-                            problem, opts, post_process_hook,
-                            req_info, coef_info, save_names, dependencies,
-                            micro_states, time_tag, chunk_tab, proc_id):
-        """Calculate a requirement in parallel.
+    def recover_micro(problem, corrs, rhook, macro_data):
+        out = []
+        corrs_dict = deps_to_corrs(problem, corrs)
+        for local_macro, label in macro_data:
+            output(label, verbose=True)
+            out.append(rhook(problem, corrs_dict, local_macro))
 
-        Parameters
-        ----------
-        tasks : queue
-            The queue of requirements to be solved.
-        lock : lock
-            The multiprocessing lock used to ensure save access to the global
-            variables.
-        remaining : int
-            The number of remaining requirements.
-        numdeps : dict
-            The number of dependencies for the each requirement.
-        inverse_deps : dict
-            The inverse dependencies - which requirements depend
-            on a given one.
-
-        For the definition of other parameters see 'calculate_req'.
-        """
-        while remaining.value > 0:
-            name = tasks.get()
-
-            if name is None:
-                continue
-
-            save_names_loc = {}
-            val = HomogenizationWorker.calculate_req(problem, opts,
-                post_process_hook, name, req_info, coef_info, save_names_loc,
-                dependencies, micro_states, time_tag, chunk_tab, proc_id)
-
-            lock.acquire()
-            dependencies[name] = val
-            remaining.value -= 1
-            if name in inverse_deps:
-                for iname in inverse_deps[name]:
-                    numdeps[iname] -= 1  # iname depends on name
-                    if numdeps[iname] == 0:  # computed all direct dependecies?
-                        tasks.put(iname)  # yes, put iname to queue
-
-            save_names.update(save_names_loc)
-            lock.release()
+        return out
 
     @staticmethod
-    def process_reqs_coefs(old, num_workers, store_idxs=[]):
+    def process_reqs_coefs(orig, nchunk, store_idxs=[]):
         new = {}
-        for k, v in old.items():
+        for k, v in orig.items():
             if k == 'filenames':
-                new[k] = v.copy()
                 continue
 
-            for ii in range(num_workers):
-                lab = '|multiprocessing_%03d' % ii
+            for ii in range(nchunk):
+                lab = f'|ch:{ii}'
                 key = k + lab
-                new[key] = v.copy()
-                val = new[key]
-                if 'requires' in val:
-                    val['requires'] = [jj + lab for jj in val['requires']]
+                val = new[key] = {}
+                if 'requires' in v:
+                    val['requires'] = [jj + lab for jj in v['requires']]
                 if len(store_idxs) > 0:
                     if len(store_idxs[ii][0]) > 0:
                         val['store_idxs'] = store_idxs[ii]
@@ -441,25 +343,154 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
 
         return new
 
+class HomogenizationWorkerMulti(HomogenizationWorker):
     @staticmethod
-    def chunk_micro_tasks(num_workers, num_micro, reqs, coefs,
-                          chunks_per_worker=1, store_micro_idxs=[]):
+    def calculate_req(*args):
+        proc_id = ''.join(k for k in multiproc.get_proc_id() if k.isdigit())
+        output.set_output_prefix(f'he-w{proc_id}:')
+        new_args = args + (proc_id, )
+
+        return HomogenizationWorker.calculate_req(*new_args)
+
+    @staticmethod
+    def recover_req(*args):
+        proc_id = ''.join(k for k in multiproc.get_proc_id() if k.isdigit())
+        output.set_output_prefix(f'he-w{proc_id}:')
+        new_args = args + (proc_id, )
+
+        return HomogenizationWorker.calculate_req(*new_args)
+
+    @staticmethod
+    def rhook_call(problem, dependencies, rhook, macro_data):
+        proc_id = ''.join(k for k in multiproc.get_proc_id() if k.isdigit())
+        output.set_output_prefix(f'he-w{proc_id}:')
+
+        corrs = deps_to_corrs(problem, dependencies)
+        local_macro, label = macro_data
+        output(label, verbose=True)
+
+        return rhook(problem, corrs, local_macro)
+
+    @staticmethod
+    def recover_micro(problem, corrs, rhook, macro_data):
+        dependencies = multiproc.get_dict('dependencies')
+        dependencies.update({k: v for k, v in corrs.items()
+                             if k not in dependencies})
+
+        workers = multiproc.get_workers()
+        if workers is None:
+            conf_file_dir = osp.split(problem.conf.__file__)[0]
+            max_workers = problem.conf.options.get('max_workers', None)
+            workers = multiproc.init_workers(conf_file_dir, max_workers)
+
+        rhook = problem.conf.options.get('recovery_hook', None)
+        rhook = problem.conf.get_function(rhook)
+        wfun = partial(HomogenizationWorkerMulti.rhook_call,
+                       problem, dependencies, rhook)
+
+        out = [k for k in workers.map(wfun, macro_data)]
+
+        return out
+
+    def __call__(self, problem, options, post_process_hook,
+                 req_info, coef_info, micro_states, store_micro_idxs,
+                 chunk_size, time_tag=''):
+        """Calculate homogenized correctors and coefficients in separated
+           processes.
+
+        Parameters
+        ----------
+        The same parameters as :class:`HomogenizationWorker`, extended by:
+        chunk_size : int
+            The number of chunks per one worker.
+
+        Returns
+        -------
+        The same returns as :class:`HomogenizationWorker`.
+        """
+        dependencies = multiproc.get_dict('dependencies', clear=True)
+
+        if micro_states is not None and chunk_size is not None:
+            micro_chunk_tab, req_info_ch, coef_info_ch = \
+                self.chunk_micro_tasks(len(micro_states['coors']),
+                                       req_info, coef_info,
+                                       chunk_size, store_micro_idxs)
+        else:
+            micro_chunk_tab = None
+            req_info_ch, coef_info_ch = req_info, coef_info
+
+        workers = multiproc.get_workers()
+        if workers is None:
+            conf_file_dir = osp.split(problem.conf.__file__)[0]
+            max_workers = problem.conf.options.get('max_workers', None)
+            workers = multiproc.init_workers(conf_file_dir, max_workers)
+
+        wfun = partial(HomogenizationWorkerMulti.calculate_req, problem,
+                       options, post_process_hook, req_info, coef_info,
+                       dependencies, micro_states, time_tag, micro_chunk_tab)
+
+        sorted_names = self.get_sorted_dependencies(req_info_ch, coef_info_ch,
+                                                    options.compute_only)
+
+        # calculate number of dependencies and inverse map
+        numdeps = {}
+        inverse_deps = {}
+        for name in sorted_names:
+            if name.startswith('c.'):
+                reqs = coef_info_ch[name[2:]].get('requires', [])
+            else:
+                reqs = req_info_ch[name].get('requires', [])
+            numdeps[name] = len(reqs)
+            if len(reqs) > 0:
+                for req in reqs:
+                    if req in inverse_deps:
+                        inverse_deps[req].append(name)
+                    else:
+                        inverse_deps[req] = [name]
+
+        save_names = {}
+        remaining = len(sorted_names)
+
+        while remaining > 0:
+            if len(numdeps) > 0:
+                tasks = [k for k, v in numdeps.items() if v == 0]
+                numdeps = {k: v for k, v in numdeps.items() if v > 0}
+
+            for task, (dep, snames) in zip(tasks, workers.map(wfun, tasks)):
+                dependencies[task] = dep
+                save_names.update(snames)
+
+                if task in inverse_deps:
+                    for itask in inverse_deps[task]:
+                        numdeps[itask] -= 1  # itask depends on task
+
+                remaining -= 1
+
+        if micro_chunk_tab is not None:
+            dependencies = self.dechunk_reqs_coefs(dependencies,
+                                                   len(micro_chunk_tab))
+        else:
+            dependencies = dependencies.copy()
+
+        return dependencies, save_names
+
+    @staticmethod
+    def chunk_micro_tasks(num_micro, reqs, coefs,
+                          chunk_size, store_micro_idxs=[]):
         """
         Split multiple microproblems into several chunks
         that can be processed in parallel.
 
         Parameters
         ----------
-        num_workers : int
-            The number of available CPUs.
         num_micro : int
             The number of microstructures.
         reqs : dict
             The requirement definitions.
         coefs : dict
             The coefficient definitions.
-        chunks_per_worker : int
-            The number of chunks per one worker.
+        chunk_size : int
+            The number of microproblems per chunk.
         store_micro_idxs : list of int
             The indices of microstructures whose results are to be stored.
 
@@ -468,27 +499,23 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         micro_tab : list of slices
             The indices of microproblems contained in each chunk.
         new_reqs : dict
-            The new requirement definitions.
+            The new requirement definitions - .
         new_coefs : dict
             The new coefficient definitions.
         """
-        chsize = int(nm.ceil(float(num_micro)
-                     / (num_workers * chunks_per_worker)))
-
         micro_tab = []
         store_idxs = []
-        for ii in range(0, num_micro, chsize):
-            jj = chsize + ii
-            chunk_end = num_micro if jj > num_micro else jj
-            micro_tab.append(slice(ii, chunk_end))
+        for ii in range(0, num_micro, chunk_size):
+            jj = chunk_size + ii
+            micro_tab.append(slice(ii, min([num_micro, jj])))
             if len(store_micro_idxs) > 0:
                 store_idxs.append(([k - ii for k in store_micro_idxs
                                     if k >= ii and k < jj], ii))
 
-        nw = len(micro_tab)
+        nchunk = len(micro_tab)
         self = HomogenizationWorkerMulti
-        new_reqs = self.process_reqs_coefs(reqs, nw, store_idxs)
-        new_coefs = self.process_reqs_coefs(coefs, nw)
+        new_reqs = self.process_reqs_coefs(reqs, nchunk, store_idxs)
+        new_coefs = self.process_reqs_coefs(coefs, nchunk)
 
         return micro_tab, new_reqs, new_coefs
 
@@ -510,111 +537,11 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
             The merged dependencies.
         """
         new_deps = {}
-        for ii in range(num_chunks):
-            ilab = '_%03d' % ii
-            for k in deps.keys():
-                idx = k.rfind('|multiprocessing_')
-                if idx > 0:
-                    if not(k[-4:] == ilab):
-                        continue
-                    key = k[:idx]
-                    if key in new_deps:
-                        new_deps[key] += deps[k]
-                    else:
-                        new_deps[key] = deps[k]
-                else:
-                    new_deps[k] = deps[k]
+        for dep in set([rm_chtag(k) for k in deps.keys()]):
+            new_deps[dep] = sum([deps[f'{dep}|ch:{ii}']
+                                 for ii in range(num_chunks)], [])
 
         return new_deps
-
-
-class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
-    def __call__(self, problem, options, post_process_hook,
-                 req_info, coef_info,
-                 micro_states, store_micro_idxs, chunks_per_worker,
-                 time_tag=''):
-        """Calculate homogenized correctors and coefficients.
-
-        Parameters and Returns
-        ----------------------
-        The same parameters and returns as :class:`HomogenizationWorkerMulti`.
-        """
-        multiproc = multi.multiproc_mpi
-
-        dependencies = multiproc.get_dict('dependecies', clear=True)
-        save_names = multiproc.get_dict('save_names', clear=True)
-        numdeps = multiproc.get_dict('numdeps', mutable=True, clear=True)
-        remaining = multiproc.get_int_value('remaining', 0)
-        tasks = multiproc.get_queue('tasks')
-
-        if micro_states is not None:
-            micro_chunk_tab, req_info, coef_info = \
-                self.chunk_micro_tasks(self.num_workers,
-                                       len(micro_states['coors']),
-                                       req_info, coef_info,
-                                       chunks_per_worker, store_micro_idxs)
-        else:
-            micro_chunk_tab = None
-
-        sorted_names = self.get_sorted_dependencies(req_info, coef_info,
-                                                    options.compute_only)
-
-        # calculate number of dependencies and inverse map
-        inverse_deps = {}
-        loc_numdeps = {}
-        for name in sorted_names:
-            if name.startswith('c.'):
-                reqs = coef_info[name[2:]].get('requires', [])
-            else:
-                reqs = req_info[name].get('requires', [])
-            loc_numdeps[name] = len(reqs)
-            if len(reqs) > 0:
-                for req in reqs:
-                    if req in inverse_deps:
-                        inverse_deps[req].append(name)
-                    else:
-                        inverse_deps[req] = [name]
-
-        if multiproc.mpi_rank == multiproc.mpi_master:  # master node
-            for k, v in loc_numdeps.items():
-                numdeps[k] = v
-
-            remaining.value = len(sorted_names)
-
-            for name in sorted_names:
-                if numdeps[name] == 0:
-                    tasks.put(name)
-
-            multiproc.master_loop()
-            multiproc.master_send_continue()
-
-            if micro_states is not None:
-                dependencies = self.dechunk_reqs_coefs(dependencies,
-                                                       len(micro_chunk_tab))
-
-            multiproc.master_send_task('deps', dependencies)
-            multiproc.master_send_continue()
-
-            return dependencies, save_names
-
-        else:  # slave node
-            lock = multiproc.RemoteLock()
-            multiproc.slave_get_task('engine')
-
-            self.calculate_req_multi(tasks, lock, remaining, numdeps,
-                                     inverse_deps, problem, options,
-                                     post_process_hook, req_info,
-                                     coef_info, save_names, dependencies,
-                                     micro_states,
-                                     time_tag, micro_chunk_tab,
-                                     str(multiproc.mpi_rank + 1))
-
-            multiproc.slave_task_done('engine')
-            multiproc.wait_for_tag(multiproc.tags.CONTINUE)
-            task, deps = multiproc.slave_get_task('get_deps')
-            multiproc.wait_for_tag(multiproc.tags.CONTINUE)
-
-            return deps, None
 
 
 class HomogenizationEngine(PDESolverApp):
@@ -628,9 +555,9 @@ class HomogenizationEngine(PDESolverApp):
                                        'missing "requirements" in options!'),
                       compute_only=get('compute_only', None),
                       multiprocessing=get('multiprocessing', True),
-                      use_mpi=get('use_mpi', False),
                       store_micro_idxs=get('store_micro_idxs', []),
-                      chunks_per_worker=get('chunks_per_worker', 1),
+                      chunk_size=get('chunk_size', 1),
+                      chunks_per_worker=get('chunks_per_worker', None),
                       save_formats=get('save_formats', ['vtk', 'h5']),
                       coefs_info=get('coefs_info', None))
 
@@ -694,6 +621,14 @@ class HomogenizationEngine(PDESolverApp):
 
         return coef_info
 
+    def recover(self, corrs, rhook, macro_data):
+        if self.app_options.multiprocessing and multiproc.use_multiprocessing:
+            rcall = HomogenizationWorkerMulti.recover_micro
+        else:
+            rcall = HomogenizationWorker.recover_micro
+
+        return rcall(self.problem, corrs, rhook, macro_data)
+
     def call(self, ret_all=False, time_tag=''):
         problem = self.problem
         opts = self.app_options
@@ -705,46 +640,29 @@ class HomogenizationEngine(PDESolverApp):
         coef_info = self.define_volume_coef(coef_info, self.volumes)
 
         is_store_filenames = coef_info.pop('filenames', None) is not None
-
-        multiproc_mode = None
-        if opts.multiprocessing and multi.use_multiprocessing:
-            multiproc, multiproc_mode = multi.get_multiproc(mpi=opts.use_mpi)
-            if multiproc_mode == 'mpi':
-                HomogWorkerMulti = HomogenizationWorkerMultiMPI
-            elif multiproc_mode == 'proc':
-                HomogWorkerMulti = HomogenizationWorkerMulti
+        if opts.multiprocessing and multiproc.use_multiprocessing:
+            worker = HomogenizationWorkerMulti()
+            if (self.micro_states is not None
+                    and opts.chunks_per_worker is not None):
+                nch = (multiproc.cpu_count() - 1) * opts.chunks_per_worker
+                # ceil division
+                chunk_size = -(len(self.micro_states['coors']) // -nch)
             else:
-                multiproc_mode = None
-
-        if multiproc_mode is not None:
-            num_workers = multi.get_num_workers()
-            # if self.micro_states is not None:
-            #     n_micro = len(self.micro_states['coors'])
-            #     if num_workers > n_micro:
-            #         num_workers = n_micro
-            worker = HomogWorkerMulti(num_workers)
-            dependencies, save_names = \
-                worker(problem, opts, self.post_process_hook,
-                       req_info, coef_info, self.micro_states,
-                       self.app_options.store_micro_idxs,
-                       self.app_options.chunks_per_worker, time_tag)
-
+                chunk_size = opts.chunk_size
         else:  # no multiprocessing
             worker = HomogenizationWorker()
-            dependencies, save_names = \
-                worker(problem, opts, self.post_process_hook,
-                       req_info, coef_info, self.micro_states,
-                       self.app_options.store_micro_idxs, time_tag)
+            chunk_size = None
+
+        dependencies, save_names = worker(problem, opts,
+                                          self.post_process_hook,
+                                          req_info, coef_info,
+                                          self.micro_states,
+                                          opts.store_micro_idxs,
+                                          chunk_size, time_tag)
 
         deps = {}
 
-        if save_names is None and dependencies is not None:  # slave mode
-            coefs = None
-            for name in dependencies.keys():
-                data = dependencies[name]
-                if not name.startswith('c.'):
-                    deps[name] = data
-        else:
+        if dependencies is not None:
             coefs = Struct()
             for name in dependencies.keys():
                 data = dependencies[name]
@@ -758,21 +676,8 @@ class HomogenizationEngine(PDESolverApp):
                     deps[name] = data
 
             # Store filenames of all requirements as a "coefficient".
-            if is_store_filenames:
-                for name in save_names.keys():
-                    if '|multiprocessing_' in name:
-                        mname = rm_multi(name)
-                        if mname in save_names:
-                            save_names[mname] += save_names[name]
-                        else:
-                            save_names[mname] = save_names[name]
-                        del(save_names[name])
-
-                if multiproc_mode == 'proc':
-                    coefs.save_names = save_names._getvalue()
-                else:
-                    coefs.save_names = save_names
-
+            if is_store_filenames and save_names is not None:
+                coefs.save_names = save_names
 
             if opts.coefs_info is not None:
                 coefs.info = opts.coefs_info

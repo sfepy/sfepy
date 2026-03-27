@@ -5,8 +5,7 @@ from collections.abc import Iterable
 
 from sfepy.base.base import assert_, get_default, Struct
 from sfepy.discrete.evaluate import eval_equations
-from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis,\
-    rm_multi
+from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis
 
 
 class MiniAppBase(Struct):
@@ -121,7 +120,7 @@ class CorrSolution(Struct):
 
         return out
 
-    def get_output(self, is_dump=False, var_map=None):
+    def get_output(self, is_dump=False, var_map=None, variables=None):
 
         out = {}
         for key, sol in self.iter_solutions():
@@ -132,7 +131,11 @@ class CorrSolution(Struct):
                     vname = var_name
 
                 dof_vector = sol[var_name]
-                if len(dof_vector.shape) == 1:
+                if variables is not None:
+                    var = variables[vname]
+                    shape = (var.n_nod, var.n_components)
+                    dof_vector = dof_vector.reshape(shape)
+                elif len(dof_vector.shape) == 1:
                     dof_vector = dof_vector[:, None]
 
                 if is_dump:
@@ -313,7 +316,7 @@ class CorrEval(CorrMiniApp):
     def __call__(self, problem=None, data=None):
         problem = get_default(problem, self.problem)
         expr = self.expression
-        for req in map(rm_multi, self.requires):
+        for req in self.requires:
             expr = expr.replace(req, "data['%s']" % req)
 
         val = eval(expr)
@@ -847,7 +850,7 @@ class CoefSum(MiniAppBase):
 
     def __call__(self, volume, problem=None, data=None):
         coef = nm.zeros_like(data[self.requires[0]])
-        for req in map(rm_multi, self.requires):
+        for req in self.requires:
             coef += data[req]
 
         return coef
@@ -858,7 +861,7 @@ class CoefEval(MiniAppBase):
     """
     def __call__(self, volume, problem=None, data=None):
         expr = self.expression
-        for req in map(rm_multi, self.requires):
+        for req in self.requires:
             expr = expr.replace(req, "data['%s']" % req)
 
         coef = eval(expr)

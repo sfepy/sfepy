@@ -274,17 +274,10 @@ class Mesh(Struct):
         """
         Create a mesh from mesh IO data.
         """
-        mesh = Mesh(name)
-        mesh._set_io_data(coors=coors,
-                          ngroups=ngroups,
-                          conns=conns,
-                          mat_ids=mat_ids,
-                          descs=descs,
-                          nodal_bcs=nodal_bcs)
-        mesh._set_shape_info()
-        return mesh
+        io_data = (coors, ngroups, conns, mat_ids, descs, nodal_bcs)
+        return Mesh(name, io_data=io_data)
 
-    def __init__(self, name='mesh', cmesh=None):
+    def __init__(self, name='mesh', cmesh=None, io_data=None):
         """
         Create a Mesh.
 
@@ -298,12 +291,20 @@ class Mesh(Struct):
             If given, use this as the cmesh.
         """
         Struct.__init__(self, name=name, nodal_bcs={}, io=None)
+        if io_data is not None:
+            self._set_io_data(*io_data)
+            self._set_shape_info()
+
         if cmesh is not None:
             self.cmesh_tdim = [None] * 4
             self.cmesh = self.cmesh_tdim[cmesh.tdim] = cmesh
             self._collect_descs()
             self._coors = self.cmesh.coors
             self._set_shape_info()
+
+    def __reduce__(self):
+        io_data = self._get_io_data() + (None,)
+        return (Mesh, (self.name, None, io_data))
 
     def copy(self, name=None):
         """
