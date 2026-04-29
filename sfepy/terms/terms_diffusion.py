@@ -343,7 +343,7 @@ class SurfaceFluxTerm(Term):
         \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j p
 
     :Arguments:
-        - material: :math:`\ul{K}`
+        - material: :math:`\ull{K}`
         - parameter:  :math:`p`,
     """
     name = 'ev_surface_flux'
@@ -355,6 +355,12 @@ class SurfaceFluxTerm(Term):
 
     def get_fargs(self, mat, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
+        if mode == 'qp':
+            raise ValueError(
+                'qp mode is not supported in ev_surface_flux term!'
+                ' Use ev_surface_flux2 term instead.'
+            )
+
         sg, _ = self.get_mapping(parameter)
 
         grad = self.get(parameter, 'grad')
