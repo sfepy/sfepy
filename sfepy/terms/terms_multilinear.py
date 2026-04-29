@@ -1934,6 +1934,41 @@ class SurfaceFluxOperatorTerm(ETermBase):
             normals, mat, var1, var2, mode=mode, diff_var=diff_var,
         )
 
+class SurfaceFlux2Term(ETermBase):
+    r"""
+    Surface flux term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ul{n} \cdot \ull{K} \cdot \nabla p
+
+    :Arguments:
+        - material: :math:`\ull{K}` (optional)
+        - parameter:  :math:`p`,
+    """
+    name = 'ev_surface_flux2'
+    arg_types = ('opt_material', 'parameter')
+    arg_shapes = [{'opt_material' : 'D, D', 'parameter' : 1},
+                  {'opt_material' : None}]
+    integration = 'facet_extra'
+    modes = ('eval',)
+
+    def get_function(self, mat, var1, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        normals = self.get_normals(var1)
+        if mat is None:
+            return self.make_function(
+                'i,0.i',
+                normals, var1, mode=mode, diff_var=diff_var,
+            )
+
+        else:
+            return self.make_function(
+                'i,ij,0.j',
+                normals, mat, var1, mode=mode, diff_var=diff_var,
+            )
+
 class SurfacePiezoFluxOperatorTerm(ETermBase):
     r"""
     Surface piezoelectric flux operator term.
