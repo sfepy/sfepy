@@ -28,15 +28,12 @@ from sfepy import data_dir
 from sfepy.base.base import output
 import numpy as nm
 
-def define(alphas=None):
-
+def define(alphas=None, order=1, qp_order=4, i_max=20,
+           output_dir='output/poisson_nonlinear_parametric'):
     filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
-
     if alphas is None:
-        alphas = [0.0, 0.25, 0.5, 1.0, 2.0]
-
+        alphas = [0, 1000, 10000, 100000, 1000000]
     _state = {'alpha': 0.0}
-
     def conductivity(u):
         val = 1.0 + _state['alpha'] * u**2
         return val
@@ -64,7 +61,7 @@ def define(alphas=None):
         for alpha in alphas:
             _state['alpha'] = alpha
 
-            alpha_tag = str(alpha).replace('.', '_')
+            alpha_tag = f'{alpha:010.2f}'.replace('.', '_')
             problem.setup_output(
                 output_filename_trunk=ofn_trunk + '_alpha_' + alpha_tag,
                 output_dir=output_dir,
@@ -85,7 +82,7 @@ def define(alphas=None):
     }
 
     fields = {
-        'fu': ('real', 1, 'Omega', 1),
+        'fu': ('real', 1, 'Omega', order), 
     }
 
     variables = {
@@ -104,11 +101,14 @@ def define(alphas=None):
 
     functions = {
         'get_rhs': (get_rhs,),
+        'conductivity': (conductivity,),
+        'd_conductivity': (d_conductivity,),
     }
 
     integrals = {
-        'i': 1,
+        'i': qp_order, 
     }
+
 
     equations = {
         'Balance': """
@@ -120,17 +120,19 @@ def define(alphas=None):
     solvers = {
         'ls': ('ls.scipy_direct', {}),
         'newton': ('nls.newton', {
-            'i_max': 20,
+            'i_max': i_max,  
             'eps_a': 1e-10,
             'eps_r': 1.0,
         }),
+        
     }
 
     options = {
         'nls': 'newton',
         'ls': 'ls',
         'parametric_hook': 'vary_alpha',
-        'output_dir': 'output/poisson_nonlinear_parametric',
+        'output_dir': output_dir, 
+
     }
 
     return locals()
