@@ -894,6 +894,11 @@ class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
 
     def get_fargs(self, perm, ref_porosity, pressure, displacement,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
+        if mode == 'qp':
+            raise ValueError(
+                'qp mode is not supported in ev_tl_surface_flux term!'
+            )
+
         sg, _ = self.get_mapping(displacement)
         name = displacement.name
         fd = self.get_family_data(displacement, self.region, self.integral,
