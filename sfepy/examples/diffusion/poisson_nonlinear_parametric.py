@@ -82,7 +82,7 @@ def define(alphas=None, order=1, qp_order=4, i_max=20,
     }
 
     fields = {
-        'fu': ('real', 1, 'Omega', order), 
+        'fu': ('real', 1, 'Omega', order),
     }
 
     variables = {
@@ -106,9 +106,8 @@ def define(alphas=None, order=1, qp_order=4, i_max=20,
     }
 
     integrals = {
-        'i': qp_order, 
+        'i': qp_order,
     }
-
 
     equations = {
         'Balance': """
@@ -120,19 +119,17 @@ def define(alphas=None, order=1, qp_order=4, i_max=20,
     solvers = {
         'ls': ('ls.scipy_direct', {}),
         'newton': ('nls.newton', {
-            'i_max': i_max,  
+            'i_max': i_max,
             'eps_a': 1e-10,
             'eps_r': 1.0,
         }),
-        
     }
 
     options = {
         'nls': 'newton',
         'ls': 'ls',
         'parametric_hook': 'vary_alpha',
-        'output_dir': output_dir, 
-
+        'output_dir': output_dir,
     }
 
     return locals()
