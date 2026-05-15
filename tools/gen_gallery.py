@@ -168,6 +168,15 @@ custom = {
             'camera': [30, 60, 1.],
         },
     },
+    'diffusion/poisson_nonlinear_parametric.py': {
+        'command': 'sfepy-run sfepy/examples/diffusion/poisson_nonlinear_parametric.py',
+        'result': 'output/poisson_nonlinear_parametric/square_unit_tri_alpha_1000000_00.vtk',
+        'dim': 2,
+        'sfepy-view-options': {
+            '': {
+            },
+        },
+    },
     'diffusion/poisson_parallel_interactive.py': {
         'command': 'python3 sfepy/examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --shape=101,101',
         'result': 'output-parallel/sol.h5',
