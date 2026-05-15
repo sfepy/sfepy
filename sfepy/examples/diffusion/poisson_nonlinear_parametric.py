@@ -23,6 +23,19 @@ The diffusion coefficient depends on the solution:
 
 The problem is solved for several values of :math:`\alpha`, and the
 solutions are compared to the linear case :math:`\alpha = 0`.
+
+Usage Examples
+--------------
+
+- Run with the default parameters::
+
+    sfepy-run sfepy/examples/diffusion/poisson_nonlinear_parametric.py
+    sfepy-view output/poisson_nonlinear_parametric/square_unit_tri_alpha_*.vtk -2
+
+- Use custom values of :math:`\alpha`, show :math:`\nabla u`::
+
+    sfepy-run sfepy/examples/diffusion/poisson_nonlinear_parametric.py -d "alphas=[1e5,5e5,1e6]"
+    sfepy-view output/poisson_nonlinear_parametric/square_unit_tri_alpha_*.vtk -2 -f u:gu:p0 u:p0 --no-scalar-bars
 """
 from sfepy import data_dir
 from sfepy.base.base import output
