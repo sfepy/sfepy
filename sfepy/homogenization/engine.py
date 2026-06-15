@@ -43,7 +43,7 @@ def get_dict_idxval(dict_array, idx):
 
 def deps_to_corrs(problem, dependencies, keys=None):
     if keys is None:
-        keys = dependencies.keys()
+        keys = [k for k in dependencies.keys() if not isinstance(k, tuple)]
 
     vs = problem.get_variables(auto_create=True)
     out = {}
@@ -692,6 +692,8 @@ class HomogenizationEngine(PDESolverApp):
         if dependencies is not None:
             coefs = Struct()
             for name in dependencies.keys():
+                if isinstance(name, tuple):
+                    continue
                 data = dependencies[name]
                 if name.startswith('c.'):
                     coef_name = name[2:]
