@@ -7,9 +7,7 @@ from sfepy.base.base import get_default, Struct
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import PDESolverApp
-import sfepy.discrete.fem.periodic as per
 import sfepy.linalg as la
-import sfepy.homogenization.multiproc as multiproc
 
 
 class HomogenizationApp(PDESolverApp):
@@ -214,14 +212,6 @@ class HomogenizationApp(PDESolverApp):
         if self.micro_states is not None:
             self.update_micro_states()
             self.he.set_micro_states(self.micro_states)
-
-        if opts.multiprocessing and multiproc.use_multiprocessing:
-            upd_var = self.app_options.mesh_update_variable
-            if upd_var is not None:
-                uvar = self.problem.create_variables([upd_var])[upd_var]
-                uvar.field.mappings0 = multiproc.get_dict('mappings0')
-
-            per.periodic_cache = multiproc.get_dict('periodic_cache')
 
         time_tag = ('' if itime is None else '_t%03d' % itime)\
             + ('' if iiter is None else '_i%03d' % iiter)

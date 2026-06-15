@@ -346,11 +346,37 @@ class HomogenizationWorker:
 class HomogenizationWorkerMulti(HomogenizationWorker):
     @staticmethod
     def calculate_req(*args):
+        import sfepy.discrete.fem.periodic as per
+
         proc_id = ''.join(k for k in multiproc.get_proc_id() if k.isdigit())
         output.set_output_prefix(f'he-w{proc_id}:')
         new_args = args + (proc_id, )
 
-        return HomogenizationWorker.calculate_req(*new_args)
+        problem, dependencies = args[0], args[5]
+
+        for dk in dependencies.keys():
+            if isinstance(dk, tuple):
+                if dk[0] == 'periodic_cache':
+                    if dk[1] not in per.periodic_cache:
+                        per.periodic_cache[dk[1]] = dependencies[dk]
+                elif dk[0] == 'mappings0':
+                    if dk[2] not in problem.fields[dk[1]].mappings0:
+                        problem.fields[dk[1]].mappings0[dk[2]] = dk[3]
+
+        out = HomogenizationWorker.calculate_req(*new_args)
+
+        for k, v in per.periodic_cache.items():
+            dkey = ('periodic_cache', k)
+            if dkey not in dependencies:
+                dependencies[dkey] = v
+
+        for fk, fv in problem.fields.items():
+            for mk, mv in fv.mappings0.items():
+                dkey = ('mappings0', fk, mk, mv)
+                if dkey not in dependencies:
+                    dependencies[dkey] = mv
+
+        return out
 
     @staticmethod
     def recover_req(*args):
@@ -421,7 +447,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
 
         workers = multiproc.get_workers()
         if workers is None:
-            conf_file_dir = osp.split(problem.conf.__file__)[0]
+            conf_file_dir = osp.split(problem.conf._filename)[0]
             max_workers = problem.conf.options.get('max_workers', None)
             workers = multiproc.init_workers(conf_file_dir, max_workers)
 
@@ -537,7 +563,8 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
             The merged dependencies.
         """
         new_deps = {}
-        for dep in set([rm_chtag(k) for k in deps.keys()]):
+        for dep in set([rm_chtag(k) for k in deps.keys()
+                        if not isinstance(k, tuple)]):
             new_deps[dep] = sum([deps[f'{dep}|ch:{ii}']
                                  for ii in range(num_chunks)], [])
 
