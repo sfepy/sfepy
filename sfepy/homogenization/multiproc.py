@@ -4,31 +4,15 @@ Multiprocessing functions.
 import sys
 
 try:
-    #
-    # Multiprocessing_proc implementation is currently broken on platforms
-    # using 'spawn' method as default.
-    #
-    # ToDo: we really need a real fix (Linux fork() method seems to be
-    #       insecure/deprecated) !
-    #
-    if sys.platform.startswith('win'):
-        use_multiprocessing = False
-    elif sys.platform == 'darwin' and \
-        sys.version_info.major == 3 and sys.version_info.minor == 8:
-        use_multiprocessing = False
-    else:
-        from multiprocessing import (Queue, Manager, cpu_count,
-            current_process, set_start_method)
-        from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import (Manager, cpu_count,
+        current_process, set_start_method)
+    from concurrent.futures import ProcessPoolExecutor
 
-        if not current_process().name.startswith('HomogWorkerProcess'):
-        #     # set_start_method('forkserver')
-        #     # set_forkserver_preload(["numpy", "sfepy"])
-        #     # set_start_method('fork')
-            set_start_method('spawn')
-            use_multiprocessing = cpu_count() > 1
-        else:
-           use_multiprocessing = False
+    if not current_process().name.startswith('HomogeniationWorkerProcess'):
+        set_start_method('spawn')
+        use_multiprocessing = cpu_count() > 1
+    else:
+        use_multiprocessing = False
 except:
     use_multiprocessing = False
 
