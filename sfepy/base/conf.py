@@ -447,7 +447,8 @@ class ProblemConf(Struct):
                    if isinstance(v, ModuleType)]
 
         # not serializable
-        to_remove = ['__builtins__', '_raw'] + [k for k, _, _ in modules]
+        to_remove = ['__builtins__'] + [k for k, _, _ in modules]
+
         define_dict = {k: v for k, v in self.__dict__.items()
                        if k not in to_remove}
 
@@ -466,7 +467,7 @@ class ProblemConf(Struct):
         self.transform_input_trivial()
         self._raw = {}
         for key, val in define_dict.items():
-            if isinstance(val, dict):
+            if isinstance(val, dict) and key not in ['__builtins__', '_raw']:
                 self._raw[key] = copy(val)
 
         self.transform_input()
