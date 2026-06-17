@@ -141,7 +141,7 @@ options = {
     'coefs_filename': 'coefs_le_up',
     'recovery_hook': 'recovery_le',
     'max_workers': 2,
-    'multiprocessing': True,
+    'multiprocessing': False,
 }
 
 equation_corrs = {
