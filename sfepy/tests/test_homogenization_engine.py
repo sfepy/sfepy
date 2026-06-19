@@ -65,11 +65,11 @@ def test_chunk_micro():
     coefs = he.define_volume_coef(coefs, volumes)
     orig_deps_num = len(requirements) + len(coefs)
 
-    num_workers, num_micro, chunks_per_worker = 5, 61, 2
+    num_micro, chunk_size = 61, 2
     store_micro_idxs = [0, 1, 18, 20, 21]
     micro_chunk_tab, requirements, coefs = \
-        hwm.chunk_micro_tasks(num_workers, num_micro, requirements, coefs,
-                              chunks_per_worker, store_micro_idxs)
+        hwm.chunk_micro_tasks(num_micro, requirements, coefs,
+                              chunk_size, store_micro_idxs)
 
     dep_names = hwm.get_sorted_dependencies(requirements, coefs, None)
 
@@ -78,7 +78,7 @@ def test_chunk_micro():
 
     deps = {}
     for k in dep_names:
-        chunk_id = int(k[-3:])
+        chunk_id = int(k.split('|ch:')[1])
         nmic = len(range(*micro_chunk_tab[chunk_id].indices(num_micro)))
         deps[k] = [1] * nmic
         if k[2:] in coefs and 'Volume_total' not in k:

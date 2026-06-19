@@ -91,6 +91,9 @@ class PolySpace(Struct):
 
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
+    def __reduce__(self):
+        return (self.__class__, (self.name, self.geometry, self.order))
+
     def eval_basis(self, coors, diff=0, ori=None, force_axis=False,
                    transform=None, suppress_errors=False, eps=1e-15):
         """

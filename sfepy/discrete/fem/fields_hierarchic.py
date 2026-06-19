@@ -238,7 +238,7 @@ class H1HierarchicVolumeField(H1Mixin, FEField):
         # Hack for tests to pass - the reference coordinates are determined
         # from vertices only - we can use the Lagrange basis context for the
         # moment. The true context for Field.evaluate_at() is not implemented.
-        gps = self.gel.poly_space
+        gps = self.geom_poly_space
         mesh = self.create_mesh(extra_nodes=False)
 
         ctx = geo_ctx = gps.create_context(self.cmesh, 0, 1e-15, 100, 1e-8)

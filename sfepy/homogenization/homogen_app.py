@@ -7,12 +7,10 @@ from sfepy.base.base import get_default, Struct
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import PDESolverApp
-import sfepy.discrete.fem.periodic as per
 import sfepy.linalg as la
-import sfepy.base.multiproc as multi
 
 
-class HomogenizationApp(HomogenizationEngine):
+class HomogenizationApp(PDESolverApp):
     @staticmethod
     def process_options(options):
         """
@@ -39,7 +37,6 @@ class HomogenizationApp(HomogenizationEngine):
                       micro_update=get('micro_update', {}),
                       n_micro=get('n_micro', None),
                       multiprocessing=get('multiprocessing', True),
-                      use_mpi=get('use_mpi', False),
                       store_micro_idxs=get('store_micro_idxs', []),
                       volume=volume,
                       volumes=volumes)
@@ -53,7 +50,6 @@ class HomogenizationApp(HomogenizationEngine):
                                   self.app_options.get('n_micro', None))
         self.updating_corrs = None
         self.micro_state_cache = {}
-        self.multiproc_mode = None
         self.micro_states = None if self.n_micro is None else {}
 
         # macroscopic data given in problem options dict.
@@ -216,19 +212,6 @@ class HomogenizationApp(HomogenizationEngine):
         if self.micro_states is not None:
             self.update_micro_states()
             self.he.set_micro_states(self.micro_states)
-
-        multiproc_mode = None
-        if opts.multiprocessing and multi.use_multiprocessing:
-            multiproc, multiproc_mode = multi.get_multiproc(mpi=opts.use_mpi)
-
-            if multiproc_mode is not None:
-                upd_var = self.app_options.mesh_update_variable
-                if upd_var is not None:
-                    uvar = self.problem.create_variables([upd_var])[upd_var]
-                    uvar.field.mappings0 = multiproc.get_dict('mappings0',
-                                                              soft_set=True)
-                per.periodic_cache = multiproc.get_dict('periodic_cache',
-                                                        soft_set=True)
 
         time_tag = ('' if itime is None else '_t%03d' % itime)\
             + ('' if iiter is None else '_i%03d' % iiter)

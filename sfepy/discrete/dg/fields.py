@@ -192,6 +192,8 @@ class DGField(FEField):
         self.poly_space_basis = poly_space_basis
         self.force_bubble = False
         self._create_interpolant()
+        gkey = self.gel.get_interpolation_name()
+        self.geom_poly_space = self.domain.geom_poly_spaces[gkey]
 
         # DOFs
         self._setup_shape()
@@ -1087,7 +1089,7 @@ class DGField(FEField):
             # qp = self.integral.get_qp(self.gel.name)
             iels = region.get_cells()
 
-            geo_ps = self.gel.poly_space
+            geo_ps = self.geom_poly_space
             ps = self.poly_space
             bf = self.eval_basis('v', 0, integral, iels=iels)
 

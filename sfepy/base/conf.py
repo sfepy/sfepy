@@ -7,9 +7,11 @@ Notes
 Short syntax: key is suffixed with '__<number>' to prevent collisions with long
 syntax keys -> both cases can be used in a single input.
 """
+import sys
 import re
 import numpy as nm
-
+import importlib
+from types import ModuleType
 from sfepy.base.base import (Struct, IndexedStruct, dict_to_struct,
                              output, copy, update_dict_recursively,
                              import_file, assert_, get_default)
@@ -413,7 +415,7 @@ class ProblemConf(Struct):
 
     def __init__(self, define_dict, funmod=None, filename=None,
                  required=None, other=None, verbose=True, override=None,
-                 setup=True):
+                 setup=True, load_modules=[]):
         if override:
             if isinstance(override, Struct):
                 override = override.__dict__
@@ -426,6 +428,32 @@ class ProblemConf(Struct):
             self.setup(funmod=funmod, filename=filename,
                        required=required, other=other)
 
+        for key, name, path in load_modules:
+            if name in sys.modules:
+                module = sys.modules[name]
+            else:
+                if path is not None:
+                    spec = importlib.util.spec_from_file_location(name, path)
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                else:
+                    module = importlib.import_module(name)
+
+            self.__dict__[key] = module
+
+    def __reduce__(self):
+        modules = [(k, v.__name__, getattr(v, '__file__', None))
+                   for k, v in self.__dict__.items()
+                   if isinstance(v, ModuleType)]
+
+        # not serializable
+        to_remove = ['__builtins__'] + [k for k, _, _ in modules]
+
+        define_dict = {k: v for k, v in self.__dict__.items()
+                       if k not in to_remove}
+
+        return (self.__class__, (define_dict, None, None, None, None,
+                                 self.verbose, None, False, modules))
 
     def setup(self, define_dict=None, funmod=None, filename=None,
               required=None, other=None):
@@ -439,7 +467,7 @@ class ProblemConf(Struct):
         self.transform_input_trivial()
         self._raw = {}
         for key, val in define_dict.items():
-            if isinstance(val, dict):
+            if isinstance(val, dict) and key not in ['__builtins__', '_raw']:
                 self._raw[key] = copy(val)
 
         self.transform_input()

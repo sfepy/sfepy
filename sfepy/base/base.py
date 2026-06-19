@@ -1,7 +1,8 @@
 import sys
 import os
+import importlib
 from copy import copy, deepcopy
-from types import MethodType
+from types import MethodType, ModuleType
 from .getch import getch
 
 import numpy as nm
@@ -143,7 +144,6 @@ def import_file(filename, package_name=None, can_reload=True):
         mod = __import__(name)
 
     if (name in sys.modules) and can_reload:
-        import importlib
         importlib.reload(mod)
 
     if remove_path:
@@ -490,6 +490,25 @@ class Struct:
             other.name = get_default(name, self.name + '_copy')
 
         return other
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # replace module objects with their names
+        for attr, val in state.items():
+            if isinstance(val, ModuleType):
+                state[attr] = {"__module__": val.__name__}
+
+        return state
+
+    def __setstate__(self, state):
+        for attr, val in state.items():
+            if isinstance(val, dict) and "__module__" in val:
+                # dynamically import the module
+                state[attr] = importlib.import_module(val["__module__"])
+
+        self.__dict__.update(state)
+
+
 #
 # 12.07.2007, c
 class IndexedStruct(Struct):
