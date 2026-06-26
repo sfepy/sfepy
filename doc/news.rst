@@ -1,6 +1,10 @@
 News
 ====
 
+* **26.06.2026** Version 2026.2 released (refactoring of multiprocessing
+  features, nonlinear diffusion parametric example, surface flux term suitable
+  for postprocessing, etc.), see :ref:`release notes <2026.1-2026.2>`.
+
 * **26.03.2026** Version 2026.1 released (axisymmetric linear elasticity
   example, Saint Venant-Kirchhoff hyperelastic term, improved generalized Yeoh
   term, rigid twist linear combination boundary conditions + example, sparse
@@ -19,12 +23,5 @@ News
   variants of the Newton solver for nonlinear problems, new large deformation
   exponential fibres term with smooth response, etc.), see :ref:`release notes
   <2025.1-2025.2>`.
-
-* **26.03.2025** Version 2025.1 released (improved block preconditioning
-  support in PETSc-based linear solvers, user functions for assembling and
-  linear system scaling, pypardiso based linear solver, general hyperelastic
-  term for the UL formulation, speed-up of sparse matrix graph allocation and
-  assembling of matrices with many nonzeros in a row, etc.), see :ref:`release
-  notes <2024.4-2025.1>`.
 
 For historians: see :ref:`archived_news`.
