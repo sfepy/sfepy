@@ -1,5 +1,56 @@
 # created: 20.07.2007 (-1)
 
+.. _2026.1-2026.2:
+
+from 2026.1 to 2026.2
+=====================
+
+- merge pull request #1279 from rc/ev-surface-flux2-term
+
+  - new SurfaceFlux2Term (ev_surface_flux2) - new .get_function()
+  - raise unsupported qp mode error in SurfaceFluxTerm.get_fargs(), fix
+    docstring
+  - raise unsupported qp mode error in SurfaceFluxTLTerm.get_fargs()
+
+- merge pull request #1277 from ansh-shrivastava-sdsu/nonlinear-parametric-example
+
+  - add nonlinear diffusion parametric example first draft
+  - fix: parametric output filenames, add define(), improve docstring
+  - Polish nonlinear parametric diffusion example
+  - Remove trailing whitespace
+
+- merge pull request #1280 from rc/test-poisson-nonlinear-parametric
+
+  - add usage to poisson_nonlinear_parametric.py example docstring
+  - gen_gallery.py: add custom view for poisson_nonlinear_parametric.py example
+  - test poisson_nonlinear_parametric.py example in test_examples()
+
+- merge pull request #1262 from vlukes/multiprocessing-refactoring
+
+  - make PyCMapping picklable
+  - make Struct class picklable
+  - make Domain and Mesh classes picklable
+  - make Problem class picklable
+  - fix remote dict check in Field.save_mappings()
+  - make Fields picklable - remove cross references
+  - remove support for MPI based parallel evaluation of homog. coeffs
+  - multiprocessing: use ProcessPoolExecutor and spawn method
+  - cache problem instance for later use
+  - micro recovery handled by HomogenizationWorker(Multi)
+  - update coefs/corrs tasks splitting
+  - reshape output fields with help of problem variables
+  - fix parent class
+  - update micro/macro coupling
+  - update linear and nonlinear homog. examples
+  - simplify example: use 'dw_ul_he_by_fun' term
+  - fix tests of homog. workers
+  - clean up
+  - share periodic cache and field mappings via 'dependecies' shared dict
+  - fix for tuple keys in 'dependencies' shared dict
+  - make ProblemConf class picklable
+  - dump '_raw' dict in ProblemConf instance
+  - disable multiprocessing in homog. example - GitHub specific issue
+
 .. _2025.4-2026.1:
 
 from 2025.4 to 2026.1
