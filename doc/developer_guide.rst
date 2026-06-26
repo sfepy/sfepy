@@ -1080,9 +1080,6 @@ sfepy.base package
    src/sfepy/base/log
    src/sfepy/base/log_plotter
    src/sfepy/base/mem_usage
-   src/sfepy/base/multiproc
-   src/sfepy/base/multiproc_mpi
-   src/sfepy/base/multiproc_proc
    src/sfepy/base/parse_conf
    src/sfepy/base/plotutils
    src/sfepy/base/reader
@@ -1216,6 +1213,7 @@ sfepy.homogenization package
    src/sfepy/homogenization/engine
    src/sfepy/homogenization/homogen_app
    src/sfepy/homogenization/micmac
+   src/sfepy/homogenization/multiproc
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
 
