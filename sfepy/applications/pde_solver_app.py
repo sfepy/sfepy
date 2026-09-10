@@ -1,4 +1,5 @@
 import os
+from functools import partial
 
 from sfepy.base.base import output, dict_to_struct, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
@@ -156,7 +157,7 @@ class PDESolverApp(Application):
                                           self.app_options.use_equations)
 
     def setup_output_info(self, problem, options):
-        """Modifies both problem and options!"""
+        """Modifies self, problem and options!"""
         if options.output_filename_trunk is None:
             if self.conf.get('filename_mesh') is not None:
                 filename_mesh = self.conf.filename_mesh
@@ -195,6 +196,28 @@ class PDESolverApp(Application):
             split_results_by=self.app_options.split_results_by,
             linearization=self.app_options.linearization)
 
+        ofn_trunk = self.problem.ofn_trunk
+        inodir = partial(os.path.join, self.problem.output_dir)
+
+        optdict = vars(options)
+        self.save_names = Struct(
+            ebc=inodir(ofn_trunk + '_ebc.vtk')
+            if optdict.get('save_ebc', False) else None,
+
+            ebc_nodes=inodir(ofn_trunk + '_ebc_nodes.vtk')
+            if optdict.get('save_ebc_nodes', False) else None,
+
+            regions=inodir(ofn_trunk + '_region')
+            if optdict.get('save_regions', False) else None,
+
+            regions_as_groups=inodir(ofn_trunk + '_regions')
+            if optdict.get('save_regions_as_groups', False) else None,
+        )
+
+    def apply_saves(self):
+        if any(self.save_names.to_dict().values()):
+            save_only(self.conf, self.save_names, problem=self.problem)
+
     def call(self, status=None):
         problem = self.problem
         options = self.options
@@ -202,24 +225,10 @@ class PDESolverApp(Application):
         if self.pre_process_hook is not None: # User pre_processing.
             self.pre_process_hook(problem)
 
-        ofn_trunk = problem.ofn_trunk
-        self.save_names = Struct(ebc=ofn_trunk + '_ebc.vtk'
-                                 if options.save_ebc else None,
-
-                                 ebc_nodes=ofn_trunk + '_ebc_nodes.vtk'
-                                 if options.save_ebc_nodes else None,
-
-                                 regions=ofn_trunk + '_region'
-                                 if options.save_regions else None,
-
-                                 regions_as_groups=ofn_trunk + '_regions'
-                                 if options.save_regions_as_groups else None)
-
-        if any(self.save_names.to_dict().values()):
-            save_only(self.conf, self.save_names, problem=problem)
+        self.apply_saves()
 
         if options.solve_not:
-            return None, None, None
+            return problem, None
 
         state = problem.solve(
             status=status, save_results=self.app_options.save_results,

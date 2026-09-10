@@ -195,6 +195,11 @@ class HomogenizationApp(PDESolverApp):
 
         ret_all = get_default(ret_all, opts.return_all)
 
+        self.apply_saves()
+
+        if hasattr(self.options, 'solve_not') and self.options.solve_not:
+            return Coefficients(), {}
+
         force_init_he = hasattr(self.problem, 'force_init_he')\
             and self.problem.force_init_he
         if not hasattr(self, 'he') or force_init_he:
