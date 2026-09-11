@@ -396,7 +396,7 @@ def main():
         if isinstance(cgroup, str):
             cgroup = literal_eval(cgroup)
 
-        mesh = mt.get_mesh_by(mesh, cgroup)
+        mesh = mt.get_mesh_by_cgroup(mesh, cgroup)
 
     if options.extract_by_nodegroup is not None:
         ngroup = options.extract_by_nodegroup
