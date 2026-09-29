@@ -1,5 +1,113 @@
 # created: 20.07.2007 (-1)
 
+.. _2026.2-2026.3:
+
+from 2026.2 to 2026.3
+=====================
+
+- merge pull request #1284 from rc/fix-extend-cell-data
+
+  - fix extend_cell_data() for L2 surface fields
+
+- merge pull request #1285 from rc/update-debug
+
+  - replace debug() returned by get_debug() by new debug(), remove get_debug()
+  - move module level import to top
+
+- merge pull request #1286 from rc/debug-terms
+
+  - start debugger in Term.eval_real(), .eval_complex() according to .debug
+    attr
+  - start debugger in Term.assemble_to() according to .debug attr
+  - start debugger in ETermBase._eval() according to .debug attr
+
+- merge pull request #1287 from rc/l2-discontinuous-fields
+
+  - remove useless code in Region.get_cell_indices()
+  - new Region.get_entity_indices()
+  - update eval_nodal_coors() for facet regions
+  - obey self.is_surface in FEField.extend_dofs() for zero order fields
+  - new _get_sgeom_poly_space() - update FEField.__init__(),
+    L2ConstantVolumeField.__init__()
+  - new L2Mixin to hold common L2 methods from L2ConstantVolumeField - move
+    L2ConstantVolumeField._create_interpolant(), .setup_extra_data(),
+    .get_data_shape(), .create_mapping()
+  - new L2DiscontinuousVolumeField, L2DiscontinuousSurfaceField - new
+    L2DiscontinuousVolumeField.__init__(), .get_econn(), .get_dofs_in_region()
+  - update Field.from_conf() for new L2 fields
+  - remove H1DiscontinuousField
+
+- merge pull request #1288 from rc/rigid-lagrange-example
+
+  - new make_cross_matrices()
+  - import numpy at top level of test_linalg.py
+  - new cross2d(), test_make_cross_matrices() in test_linalg.py
+  - new sfepy/examples/linear_elasticity/rigid_lagrange.py example - new
+    get_pars(), define()
+  - test rigid_lagrange.py example in test_examples()
+  - gen_gallery.py: add custom view for rigid_lagrange.py example
+  - change eterm backend to numpy in define() of rigid_lagrange.py example
+
+- merge pull request #1289 from rc/dim-nonsym-coefficients
+
+  - new CoefDimNonSym, CoefNonSymDim
+
+- merge pull request #1290 from rc/corr-apply-function
+
+  - new CorrApplyFunction
+  - update CorrApplyFunction docstring, do not use .variables attribute -
+    collect variable names automatically
+
+- merge pull request #1292 from rc/fix-build-time-dependencies, closes #1291
+
+  - move sfepy_config_dir to sfepy/config.py, update Config.__init__()
+  - put sfepy_config_dir into sfepy namespace, use __add__ in sfepy/__init__.py
+  - update sfepy_config_dir import
+  - update check_versions() to fail only when missing cython and numpy
+  - fix package_check() for pytables raising RuntimeError on failed blosc
+    import
+
+- merge pull request #1293 from rc/update-corr-apply-function
+
+  - pass problem, data to user function in CorrApplyFunction.__call__()
+
+    - new ._convert_value()
+    - allow no requirements
+    - update docstring
+
+  - replace CorrEval by CorrApplyFunction subclass
+
+- merge pull request #1297 from rc/fix-circular-terms-import, closes #1295
+
+  - fix circular terms import by using local imports in Equations. Equation
+
+- merge pull request #1296 from heczis/fix_material_opt
+
+  - Fix material_opt example
+  - Fix pickle error
+  - use consistent name for problem
+
+- merge pull request #1298 from rc/update-corr-apply-function
+
+  - update CorrApplyFunction.__call__() for correctors without components
+
+- merge pull request #1299 from rc/update-regions-ebcs-saves
+
+  - fix return value of PDESolverApp.call() with --solve-not option
+  - new PDESolverApp.apply_saves(), update .call(), .setup_output_info() - save
+    names are set in .setup_output_info() and obey problem output directory
+  - obey --save-* and --solve-not options in HomogenizationApp.call()
+  - fix PDESolverApp.setup_output_info() for no save names in options
+  - fix HomogenizationApp.call() for no solve_not in options
+
+- merge pull request #1300 from rc/fix-extract-by-matid
+
+  - convert_mesh.py: fix --extract-by-matid in main()
+
+- merge pull request #1301 from rc/fix-bg-save-log
+
+  - fix BandGaps.save_log()
+
 .. _2026.1-2026.2:
 
 from 2026.1 to 2026.2
