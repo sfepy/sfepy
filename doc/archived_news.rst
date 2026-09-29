@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **26.06.2025** Version 2025.2 released (NumPy 2.0 compatibility, line search
+  variants of the Newton solver for nonlinear problems, new large deformation
+  exponential fibres term with smooth response, etc.), see :ref:`release notes
+  <2025.1-2025.2>`.
+
 * **26.03.2025** Version 2025.1 released (improved block preconditioning
   support in PETSc-based linear solvers, user functions for assembling and
   linear system scaling, pypardiso based linear solver, general hyperelastic
