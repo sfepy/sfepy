@@ -1094,10 +1094,10 @@ class BandGaps(MiniAppBase):
                 fd.write(format
                          % (bg.name, kind[ir], rng[0], rng[1], ii, f0, f1))
 
+        freq_range = bg.freq_range_initial
         n_row = len(freq_range)
         fd.write('\nn_resonance: %d\n' % n_row)
         fd.write('valid f\n')
-        freq_range = bg.freq_range_initial
         valid_in_range = bg.valid[bg.eig_range]
         format = "%%d %s\n" % ff
         for ir in range(n_row):
