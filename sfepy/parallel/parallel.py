@@ -731,6 +731,34 @@ def create_petsc_matrix(sizes, mtx_prealloc=None, comm=None):
 
     return pmtx
 
+def create_petsc_vecs(pmtx, mode='both'):
+    if mode == 'both':
+        try:
+            out = pmtx.getVecs()
+
+        except AttributeError:
+            out = pmtx.createVecs()
+
+    elif mode == 'left':
+        try:
+            out = pmtx.getVecLeft()
+
+        except AttributeError:
+            out = pmtx.createVecLeft()
+
+    elif mode == 'right':
+        try:
+            out = pmtx.getVecRight()
+
+        except AttributeError:
+            out = pmtx.createVecRight()
+
+    else:
+        raise ValueError('mode must be "both", "left" or "right"!'
+                         f' (is "{mode}")')
+
+    return out
+
 def create_petsc_system(mtx, sizes, pdofs, drange, is_overlap=True,
                         comm=None, verbose=False):
     """
