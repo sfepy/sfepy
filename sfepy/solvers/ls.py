@@ -765,6 +765,8 @@ class PETScKrylovSolver(LinearSolver):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, comm=None, context=None,
                  **kwargs):
+        from sfepy.parallel.parallel import create_petsc_vecs
+
         eps_a = get_default(eps_a, conf.eps_a)
         eps_r = get_default(eps_r, conf.eps_r)
         i_max = get_default(i_max, conf.i_max)
@@ -818,7 +820,7 @@ class PETScKrylovSolver(LinearSolver):
             prhs = rhs
 
         else:
-            prhs = pmtx.getVecLeft()
+            prhs = create_petsc_vecs(pmtx, mode='left')
             prhs[...] = rhs
 
         if x0 is not None:
@@ -826,13 +828,13 @@ class PETScKrylovSolver(LinearSolver):
                 psol = x0
 
             else:
-                psol = pmtx.getVecRight()
+                psol = create_petsc_vecs(pmtx, mode='right')
                 psol[...] = x0
 
             ksp.setInitialGuessNonzero(True)
 
         else:
-            psol = pmtx.getVecRight()
+            psol = create_petsc_vecs(pmtx, mode='right')
 
             ksp.setInitialGuessNonzero(False)
 
