@@ -1146,7 +1146,7 @@ def update_dict_recursively(dst, src, tuples_too=False,
 
             if tuples_too and isinstance(dst[key], tuple) \
                    and isinstance(src[key], tuple):
-                out = map(tuplezip, zip(src[key], dst[key]))
+                out = map(tuplezip, zip(dst[key], src[key]))
                 out = tuple(out)
                 dst[key] = out[:len(dst[key])]
                 continue
