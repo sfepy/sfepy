@@ -9,7 +9,7 @@ def test_override_field_tuple():
     override = {'fields': {'temperature': ('real', 'scalar', 'Omega', 3)}}
     conf = ProblemConf.from_dict(data, None, required=[], override=override)
 
-    field = next(iter(conf.fields.values()))
+    field = list(conf.fields.values())[0]
     assert field.approx_order == 3
 
 
@@ -19,7 +19,7 @@ def test_override_material_dictionary_in_tuple():
     saved = deepcopy(override)
     conf = ProblemConf.from_dict(data, None, required=[], override=override)
 
-    material = next(iter(conf.materials.values()))
+    material = list(conf.materials.values())[0]
     assert material.values == {'k': 2.5, 'density': 3.0}
     assert override == saved
 
@@ -29,7 +29,7 @@ def test_override_boundary_tuple():
     override = {'ebcs': {'left': ('Right', {'u.all': 3.25})}}
     conf = ProblemConf.from_dict(data, None, required=[], override=override)
 
-    boundary = next(iter(conf.ebcs.values()))
+    boundary = list(conf.ebcs.values())[0]
     assert boundary.region == 'Right'
     assert boundary.dofs == {'u.all': 3.25}
 
