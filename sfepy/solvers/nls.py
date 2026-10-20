@@ -845,6 +845,8 @@ class PETScNonlinearSolver(NonlinearSolver):
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None,
                  pmtx=None, prhs=None, comm=None):
+        from sfepy.parallel.parallel import create_petsc_vecs
+
         conf = self.conf
         fun = get_default(fun, self.fun)
         fun_grad = get_default(fun_grad, self.fun_grad)
@@ -861,7 +863,7 @@ class PETScNonlinearSolver(NonlinearSolver):
             psol = vec_x0
 
         else:
-            psol = pmtx.getVecLeft()
+            psol = create_petsc_vecs(pmtx, mode='right')
             psol[...] = vec_x0
 
         snes = self.petsc.SNES()
