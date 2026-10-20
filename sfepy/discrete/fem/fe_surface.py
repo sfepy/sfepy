@@ -1,7 +1,8 @@
 import numpy as nm
 
 from sfepy.base.base import get_default, Struct
-from sfepy.discrete.fem.facets import build_orientation_map
+from sfepy.discrete.fem.facets import (build_orientation_map,
+                                     get_facet_dof_corner_weights)
 from sfepy.discrete.fem.utils import prepare_remap
 
 class FESurface(Struct):
@@ -87,11 +88,7 @@ class FESurface(Struct):
                 and n_fp > field.gel.surface_facet.n_vertex):
             face = field.gel.get_surface_entities()[0]
             oo, _, _ = build_orientation_map(len(face))
-            bf = field.geom_poly_space.eval_basis(field.poly_space.node_coors)
-            # Lagrange nodes lie on the 1/order lattice. Integer corner
-            # weights avoid sorting differences caused by round-off.
-            scale = field.approx_order**field.gel.dim
-            weights = nm.rint(bf[:, 0, :] * scale).astype(nm.int64)
+            weights = get_facet_dof_corner_weights(field)
             # Extended facets follow the basis on the first facet.
             fw = weights[field.efaces[0]][:, face]
             ori_map = nm.zeros((max(oo) + 1, n_fp), dtype=nm.int32)

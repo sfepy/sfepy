@@ -22,6 +22,7 @@ from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
                                       invert_remap, get_min_value)
+from sfepy.discrete.fem.facets import get_facet_dof_corner_weights
 from sfepy.discrete.fem.mappings import FEMapping
 from sfepy.discrete.fem.fe_surface import FESurface, FEPhantomSurface
 from sfepy.discrete.integrals import Integral
@@ -455,9 +456,7 @@ class FEField(Field):
                 and gel.dim == self.region.dim and self.approx_order > 1
                 and gel.name in ('2_3', '2_4', '3_4', '3_8')):
             vertices = gel.get_surface_entities()
-            bf = self.geom_poly_space.eval_basis(self.poly_space.node_coors)
-            weights = nm.rint(bf[:, 0, :] * self.approx_order**gel.dim)
-            weights = weights.astype(nm.int64)
+            weights = get_facet_dof_corner_weights(self)
             # Facet mappings use the basis on the first facet. Match its
             # node ordering, including the directions of interior edge nodes.
             reference = weights[self.efaces[0]][:, vertices[0]]
