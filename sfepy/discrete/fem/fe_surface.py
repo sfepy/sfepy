@@ -78,8 +78,28 @@ class FESurface(Struct):
         else:
             return surface
 
-    def set_orientation_map(self):
+    def set_orientation_map(self, field=None):
         n_fp = self.n_fp
+        if (field is not None
+                and field.family_name == 'volume_H1_lagrange'
+                and field.gel.dim == field.region.dim
+                and field.gel.name in ('2_3', '2_4', '3_4', '3_8')
+                and n_fp > field.gel.surface_facet.n_vertex):
+            face = field.gel.get_surface_entities()[0]
+            oo, _, _ = build_orientation_map(len(face))
+            bf = field.geom_poly_space.eval_basis(field.poly_space.node_coors)
+            # Lagrange nodes lie on the 1/order lattice. Integer corner
+            # weights avoid sorting differences caused by round-off.
+            scale = field.approx_order**field.gel.dim
+            weights = nm.rint(bf[:, 0, :] * scale).astype(nm.int64)
+            # Extended facets follow the basis on the first facet.
+            fw = weights[field.efaces[0]][:, face]
+            ori_map = nm.zeros((max(oo) + 1, n_fp), dtype=nm.int32)
+            for ori, (_, perm) in oo.items():
+                ori_map[ori] = nm.lexsort(fw[:, perm].T)
+            self.ori_map = ori_map
+            return
+
         if n_fp <= 4:
             oo, _, _ = build_orientation_map(n_fp)
             ori_map = nm.zeros((nm.max(list(oo.keys())) + 1, n_fp),
@@ -89,7 +109,7 @@ class FESurface(Struct):
         else:
             self.ori_map = None
 
-    def setup_mirror_connectivity(self, region, mirror_name):
+    def setup_mirror_connectivity(self, region, mirror_name, field=None):
         """
         Setup mirror surface connectivity required to integrate over a
         mirror region.
@@ -113,6 +133,9 @@ class FESurface(Struct):
 
         if mirror_name in self.meconn:
             return
+
+        if field is not None:
+            self.set_orientation_map(field)
 
         mregion = region.get_mirror_region(mirror_name)
         mmap = get_omap(mregion, self.ori_map)

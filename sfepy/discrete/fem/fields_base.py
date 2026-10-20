@@ -451,6 +451,23 @@ class FEField(Field):
                 efs = efs[:, nm.newaxis]
             self.efaces = nm.hstack((self.efaces, efs))
 
+        if (self.family_name == 'volume_H1_lagrange'
+                and gel.dim == self.region.dim and self.approx_order > 1
+                and gel.name in ('2_3', '2_4', '3_4', '3_8')):
+            vertices = gel.get_surface_entities()
+            bf = self.geom_poly_space.eval_basis(self.poly_space.node_coors)
+            weights = nm.rint(bf[:, 0, :] * self.approx_order**gel.dim)
+            weights = weights.astype(nm.int64)
+            # Facet mappings use the basis on the first facet. Match its
+            # node ordering, including the directions of interior edge nodes.
+            reference = weights[self.efaces[0]][:, vertices[0]]
+            reference_order = nm.lexsort(reference.T)
+            for ifa, face in enumerate(vertices[1:], 1):
+                local = weights[self.efaces[ifa]][:, face]
+                local_order = nm.lexsort(local.T)
+                self.efaces[ifa, reference_order] = self.efaces[
+                    ifa, local_order]
+
         if gel.dim == 3:
             self.eedges = gel.edges.copy()
             efs = node_desc.edge
@@ -1222,7 +1239,7 @@ class FEField(Field):
 
         if name in self.extra_data and trace_region is not None:
             sd = self.extra_data[name]
-            sd.setup_mirror_connectivity(region, trace_region)
+            sd.setup_mirror_connectivity(region, trace_region, self)
 
     def setup_point_data(self, field, region):
         name = f'pd_{region.name}'
