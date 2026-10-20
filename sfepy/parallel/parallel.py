@@ -781,7 +781,7 @@ def create_petsc_system(mtx, sizes, pdofs, drange, is_overlap=True,
     output('pmtx ownership:', own_range, verbose=verbose)
     assert_(own_range == drange)
 
-    psol, prhs = pmtx.getVecs()
+    psol, prhs = create_petsc_vecs(pmtx)
 
     own_range = prhs.getOwnershipRange()
     output('prhs ownership:', own_range, verbose=verbose)
