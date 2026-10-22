@@ -181,7 +181,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
 
     origin = centre - nm.array([0.5 * length, 0.0, 0.0])
 
-    dfi = 2.0 * (nm.pi - open_angle) / nfi
+    dfi = (2.0 * nm.pi - open_angle) / nfi
     if is_open:
         nnfi = nfi + 1
     else:
