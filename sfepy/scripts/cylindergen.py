@@ -32,9 +32,12 @@ helps = {
     'force_hollow' :
     'force hollow mesh even if inner radii a1 = b1 = 0',
     'is_open' :
-    'generate an open cylinder segment',
+    'generate an open cylinder segment with the opening between'
+    ' [start_angle, start_angle+open_angle]',
+    'start_angle' :
+    'starting angle in degrees [default: %(default)s]',
     'open_angle' :
-    'opening angle in radians [default: %(default)s]',
+    'opening angle in degrees [default: %(default)s]',
     'non_uniform' :
     'space the mesh nodes in radial direction so that the element'\
     ' volumes are (approximately) the same, making thus the elements towards'\
@@ -62,6 +65,7 @@ def gen_cylinder(options):
                              axis=options.axis,
                              force_hollow=options.force_hollow,
                              is_open=options.is_open,
+                             start_angle=options.start_angle,
                              open_angle=options.open_angle,
                              non_uniform=options.non_uniform,
                              make_2d=options.is_2d,
@@ -98,6 +102,9 @@ def add_args(parser):
     parser.add_argument("--is-open",
                         action = "store_true", dest = "is_open",
                         default = False, help = helps['is_open'])
+    parser.add_argument("--start-angle", metavar = 'angle', type=float,
+                        action = "store", dest = "start_angle",
+                        default = '0.0', help = helps['start_angle'])
     parser.add_argument("--open-angle", metavar = 'angle', type=float,
                         action = "store", dest = "open_angle",
                         default = '0.0', help = helps['open_angle'])

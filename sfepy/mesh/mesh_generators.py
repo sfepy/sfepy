@@ -123,8 +123,9 @@ def gen_block_mesh(dims, shape, centre, mat_id=0, name='block',
     return mesh
 
 def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
-                      is_open=False, open_angle=0.0, non_uniform=False,
-                      make_2d=False, name='cylinder', verbose=True):
+                      is_open=False, start_angle=0.0, open_angle=0.0,
+                      non_uniform=False, make_2d=False, name='cylinder',
+                      verbose=True):
     """
     Generate a cylindrical mesh along an axis. Its cross-section can be
     ellipsoidal.
@@ -145,9 +146,12 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     force_hollow : boolean
         Force hollow mesh even if inner radii a1 = b1 = 0.
     is_open : boolean
-        Generate an open cylinder segment.
+        Generate an open cylinder segment with the opening between
+        [start_angle, start_angle+open_angle]
+    start_angle : float
+        Starting angle in degrees.
     open_angle : float
-        Opening angle in radians.
+        Opening angle in degrees.
     non_uniform : boolean
         If True, space the mesh nodes in radial direction so that the element
         volumes are (approximately) the same, making thus the elements towards
@@ -166,6 +170,10 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     dims = nm.asarray(dims, dtype=nm.float64)
     shape = nm.asarray(shape, dtype=nm.int32)
     centre = nm.asarray(centre, dtype=nm.float64)
+
+    start_angle *= nm.pi / 180.0
+    open_angle *= nm.pi / 180.0
+    mesh_angle0 = start_angle + open_angle
 
     a1, b1, a2, b2, length = dims
     nr, nfi, nl = shape
@@ -199,7 +207,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     n_nod = nr * nnfi * nl - mr
     coors = nm.zeros((n_nod, 3), dtype=nm.float64)
 
-    angles = nm.linspace(open_angle, open_angle+(nfi)*dfi, nfi+1)
+    angles = nm.linspace(mesh_angle0, mesh_angle0 + (nfi)*dfi, nfi+1)
     xs = nm.linspace(0.0, length, nl)
     if non_uniform:
         ras = nm.zeros((nr,), dtype=nm.float64)
