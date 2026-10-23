@@ -9,9 +9,10 @@ Notes
 -----
 History: pre-git versions already from from 13.06.2006.
 """
-from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
-     Group, Optional, ZeroOrMore, nums, alphas, alphanums,\
-     Combine, StringStart, StringEnd, Forward, oneOf, ParseException
+from pyparsing import (Literal, CaselessLiteral, Word, DelimitedList,
+                       Group, Optional, ZeroOrMore, nums, alphas, alphanums,
+                       Combine, StringStart, StringEnd, Forward, one_of,
+                       ParseException)
 
 ParseException # Needed for importing elsewhere.
 
@@ -96,21 +97,21 @@ def create_bnf(stack):
     _by = Literal('by')
     _copy = Literal('copy')
 
-    _mv = Literal('-v').setParseAction(replace('OA_SubV'))
-    _me = Literal('-e').setParseAction(replace('OA_SubE'))
-    _mf = Literal('-f').setParseAction(replace('OA_SubF'))
-    _mc = Literal('-c').setParseAction(replace('OA_SubC'))
-    _ms = Literal('-s').setParseAction(replace('OA_SubS'))
-    _pv = Literal('+v').setParseAction(replace('OA_AddV'))
-    _pe = Literal('+e').setParseAction(replace('OA_AddE'))
-    _pf = Literal('+f').setParseAction(replace('OA_AddF'))
-    _pc = Literal('+c').setParseAction(replace('OA_AddC'))
-    _ps = Literal('+s').setParseAction(replace('OA_AddS'))
-    _inv = Literal('*v').setParseAction(replace('OA_IntersectV'))
-    _ine = Literal('*e').setParseAction(replace('OA_IntersectE'))
-    _inf = Literal('*f').setParseAction(replace('OA_IntersectF'))
-    _inc = Literal('*c').setParseAction(replace('OA_IntersectC'))
-    _ins = Literal('*s').setParseAction(replace('OA_IntersectS'))
+    _mv = Literal('-v').set_parse_action(replace('OA_SubV'))
+    _me = Literal('-e').set_parse_action(replace('OA_SubE'))
+    _mf = Literal('-f').set_parse_action(replace('OA_SubF'))
+    _mc = Literal('-c').set_parse_action(replace('OA_SubC'))
+    _ms = Literal('-s').set_parse_action(replace('OA_SubS'))
+    _pv = Literal('+v').set_parse_action(replace('OA_AddV'))
+    _pe = Literal('+e').set_parse_action(replace('OA_AddE'))
+    _pf = Literal('+f').set_parse_action(replace('OA_AddF'))
+    _pc = Literal('+c').set_parse_action(replace('OA_AddC'))
+    _ps = Literal('+s').set_parse_action(replace('OA_AddS'))
+    _inv = Literal('*v').set_parse_action(replace('OA_IntersectV'))
+    _ine = Literal('*e').set_parse_action(replace('OA_IntersectE'))
+    _inf = Literal('*f').set_parse_action(replace('OA_IntersectF'))
+    _inc = Literal('*c').set_parse_action(replace('OA_IntersectC'))
+    _ins = Literal('*s').set_parse_action(replace('OA_IntersectS'))
     regop = (_mv | _me | _mf | _mc | _ms |
              _pv | _pe | _pf | _pc | _ps |
              _inv | _ine | _inf | _inc | _ins)
@@ -118,7 +119,7 @@ def create_bnf(stack):
     lpar  = Literal("(").suppress()
     rpar  = Literal(")").suppress()
 
-    _all = Literal('all').setParseAction(replace('KW_All'))
+    _all = Literal('all').set_parse_action(replace('KW_All'))
     vertex = Literal('vertex')
     vertices = Literal('vertices')
     cell = Literal('cell')
@@ -131,56 +132,56 @@ def create_bnf(stack):
     set_name = Word(nums) | ident
 
     function = Word(alphas + '_', alphanums + '_')
-    function = Group(function).setParseAction(join_tokens)
+    function = Group(function).set_parse_action(join_tokens)
 
     region = Combine(Literal('r.') + Word(alphas + '_-',
                                           '_-' + alphas + nums + '.'))
     region = Group(Optional(_copy, default='nocopy') + region)
-    region.setParseAction(replace('KW_Region', keep=True))
+    region.set_parse_action(replace('KW_Region', keep=True))
 
-    coor = oneOf('x y z')
-    boolop = oneOf('& |')
-    relop = oneOf('< > <= >= != ==')
+    coor = one_of('x y z')
+    boolop = one_of('& |')
+    relop = one_of('< > <= >= != ==')
     bool_term = (ZeroOrMore('(') + (coor | fnumber) + relop + (coor | fnumber)
                  + ZeroOrMore(')'))
     relation = Forward()
     relation << (ZeroOrMore('(')
                  + bool_term + ZeroOrMore(boolop + relation)
                  + ZeroOrMore(')'))
-    relation = Group(relation).setParseAction(join_tokens)
+    relation = Group(relation).set_parse_action(join_tokens)
 
-    nos = Group(vertices + _of + surface).setParseAction(replace('E_VOS'))
-    nir = Group(vertices + _in + relation).setParseAction(
+    nos = Group(vertices + _of + surface).set_parse_action(replace('E_VOS'))
+    nir = Group(vertices + _in + relation).set_parse_action(
         replace('E_VIR', keep=True))
-    nbf = Group(vertices + _by + function).setParseAction(
+    nbf = Group(vertices + _by + function).set_parse_action(
         replace('E_VBF', keep=True))
-    ebf = Group(cells + _by + function).setParseAction(
+    ebf = Group(cells + _by + function).set_parse_action(
         replace('E_CBF', keep=True))
-    eog = Group(cells + _of + group + Word(nums)).setParseAction(
+    eog = Group(cells + _of + group + Word(nums)).set_parse_action(
         replace('E_COG', keep=True))
-    nog = Group(vertices + _of + group + Word(nums)).setParseAction(
+    nog = Group(vertices + _of + group + Word(nums)).set_parse_action(
         replace('E_VOG', keep=True))
-    onir = Group(vertex + _in + region).setParseAction(
+    onir = Group(vertex + _in + region).set_parse_action(
         replace_with_region('E_OVIR', 2))
-    ni = Group(vertex + delimitedList(inumber)).setParseAction(
+    ni = Group(vertex + DelimitedList(inumber)).set_parse_action(
         replace('E_VI', keep=True))
-    ei = Group(cell + delimitedList(inumber)).setParseAction(
+    ei = Group(cell + DelimitedList(inumber)).set_parse_action(
         replace('E_CI', keep=True))
-    noset = Group(vertices + _of + _set + set_name).setParseAction(
+    noset = Group(vertices + _of + _set + set_name).set_parse_action(
         replace('E_VOSET', keep=True))
-    eoset = Group(cells + _of + _set + set_name).setParseAction(
+    eoset = Group(cells + _of + _set + set_name).set_parse_action(
         replace('E_COSET', keep=True))
 
     region_expression = Forward()
 
     atom1 = (_all | region | ni | onir | nos | nir | nbf
              | ei | ebf | eog | nog | noset | eoset)
-    atom1.setParseAction(to_stack(stack))
+    atom1.set_parse_action(to_stack(stack))
     atom2 = (lpar + region_expression.suppress() + rpar)
     atom = (atom1 | atom2)
 
     aux = (regop + region_expression)
-    aux.setParseAction(to_stack(stack))
+    aux.set_parse_action(to_stack(stack))
     region_expression << atom + ZeroOrMore(aux)
     region_expression = StringStart() + region_expression + StringEnd()
 

@@ -40,12 +40,12 @@ def create_parser(slist, current_section):
     section = pp.Combine(colon
                          + pp.Word(pp.alphas, pp.alphanums + '_ ')
                          + colon)
-    section.setParseAction(set_section(current_section))
-    section.setName('section')
+    section.set_parse_action(set_section(current_section))
+    section.set_name('section')
 
     text = pp.SkipTo(section | pp.StringEnd())
-    text.setParseAction(to_list(slist, current_section))
-    text.setName('text')
+    text.set_parse_action(to_list(slist, current_section))
+    text.set_name('text')
 
     doc = pp.StringStart()\
            + pp.Optional(text) + pp.ZeroOrMore(section + text)\
@@ -214,7 +214,7 @@ def typeset_term_table(fd, keys, table, title):
         if doc is not None:
             sec_list[:] = []
             current_section[0] = ''
-            parser.parseString(doc)
+            parser.parse_string(doc)
 
             dd = [x[1] for x in sec_list if x[0].lower() == 'definition']
             if len(dd):

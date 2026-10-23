@@ -31,7 +31,7 @@ def test_parse_equations():
         term_descs[:] = []
         try:
             bnf = create_bnf(term_descs)
-            bnf.parseString(test_str)
+            bnf.parse_string(test_str)
         except:
             tst.report('failed: %s' % test_str)
             n_fail += 1
@@ -81,7 +81,7 @@ def test_parse_regions():
         stack[:] = []
 
         try:
-            bnf.parseString(test_str)
+            bnf.parse_string(test_str)
 
         except:
             tst.report('failed: %s' % test_str)

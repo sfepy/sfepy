@@ -22,7 +22,7 @@ try:
 except ImportError:
     jnp = jax = None
 
-from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
+from pyparsing import (Word, Suppress, one_of, OneOrMore, DelimitedList,
                        Combine, alphas, alphanums, Literal)
 from functools import partial
 from copy import copy
@@ -67,13 +67,13 @@ def parse_term_expression(texpr):
     simple_arg = Word(alphanums + '.:')
     arrow = Literal('->').suppress()
     letter = Word(alphas, exact=1)
-    mod_arg = oneOf(mods) + lparen + simple_arg + rparen + arrow + letter
+    mod_arg = one_of(mods) + lparen + simple_arg + rparen + arrow + letter
     arg = OneOrMore(simple_arg ^ mod_arg)
     modifiers = []
-    arg.setParseAction(collect_modifiers(modifiers))
+    arg.set_parse_action(collect_modifiers(modifiers))
 
-    parser = delimitedList(Combine(arg))
-    eins = parser.parseString(texpr, parseAll=True)
+    parser = DelimitedList(Combine(arg))
+    eins = parser.parse_string(texpr, parse_all=True)
     return eins, modifiers
 
 def append_all(seqs, item, ii=None):
