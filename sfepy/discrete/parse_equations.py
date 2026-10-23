@@ -1,6 +1,6 @@
-from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
-     ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
-     StringStart, StringEnd, CaselessLiteral, Forward, oneOf
+from pyparsing import (Combine, Literal, Word, DelimitedList, Group, Optional,
+     ZeroOrMore, OneOrMore, nums, alphas, alphanums,
+     StringStart, StringEnd, CaselessLiteral, Forward, one_of)
 
 class TermParse:
     def __str__(self):
@@ -40,7 +40,7 @@ def create_bnf(term_descs):
     multiplier"""
 
     lc = ['+']  # Linear combination context.
-    equal = Literal("=").setParseAction(rhs(lc))
+    equal = Literal("=").set_parse_action(rhs(lc))
     zero = Literal("0").suppress()
 
     point = Literal(".")
@@ -50,7 +50,7 @@ def create_bnf(term_descs):
                       Optional(point + Optional(Word(nums))) +
                       Optional(e + Word("+-" + nums, nums)))
     number = fnumber + Optional(Literal('j'), default='')
-    add_op = oneOf('+ -')
+    add_op = one_of('+ -')
     number_expr = Forward()
     number_expr << Optional(add_op) + ZeroOrMore('(') + number \
                 + ZeroOrMore(add_op + number_expr) \
@@ -76,7 +76,7 @@ def create_bnf(term_descs):
                     + ')', adjacent=False)
 
     generalized_var = derivative | derivative2 | trace | variable
-    args = Group(delimitedList(generalized_var))
+    args = Group(DelimitedList(generalized_var))
 
     flag = Literal('a')
 
@@ -91,13 +91,13 @@ def create_bnf(term_descs):
                        | ident("region"))
                 ))("term_desc") + "("
             + Optional(args, default=[''])("args") + ")")
-    term.setParseAction(collect_term(term_descs, lc))
+    term.set_parse_action(collect_term(term_descs, lc))
 
     rhs1 = equal + OneOrMore(term)
     rhs2 = equal + zero
     equation = StringStart() + OneOrMore(term) \
                + Optional(rhs1 | rhs2) + StringEnd()
-    ## term.setDebug()
+    ## term.set_debug()
     return equation
 
 if __name__ == "__main__":
@@ -109,7 +109,7 @@ if __name__ == "__main__":
 
     term_descs = []
     bnf = create_bnf(term_descs)
-    out = bnf.parseString(test_str)
+    out = bnf.parse_string(test_str)
 
     print('out:', out, '\n')
     for tp in term_descs:

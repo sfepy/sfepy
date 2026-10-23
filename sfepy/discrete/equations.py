@@ -21,7 +21,7 @@ def parse_definition(equation_def):
     term_descs = []
     bnf = create_bnf(term_descs)
     try:
-        bnf.parseString(equation_def)
+        bnf.parse_string(equation_def)
     except:
         raise ValueError('cannot parse equation! (%s)' % equation_def)
 

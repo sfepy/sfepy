@@ -139,7 +139,7 @@ def split_complex_args(args):
     return newargs
 
 def create_arg_parser(allow_derivatives=False):
-    from pyparsing import (Literal, Word, OneOrMore, delimitedList, Group,
+    from pyparsing import (Literal, Word, OneOrMore, DelimitedList, Group,
                            StringStart, StringEnd, Combine, Optional, nums,
                            alphas, alphanums)
 
@@ -148,7 +148,7 @@ def create_arg_parser(allow_derivatives=False):
 
     history = Optional(Literal('[').suppress() + inumber
                        + Literal(']').suppress(), default=0)("history")
-    history.setParseAction(lambda str, loc, toks: int(toks[0]))
+    history.set_parse_action(lambda str, loc, toks: int(toks[0]))
 
     variable = Group(Word(alphas, alphanums + '._') + history)
 
@@ -168,7 +168,7 @@ def create_arg_parser(allow_derivatives=False):
     else:
         generalized_var = derivative | trace | variable
 
-    args = StringStart() + delimitedList(generalized_var) + StringEnd()
+    args = StringStart() + DelimitedList(generalized_var) + StringEnd()
 
     return args
 
@@ -475,7 +475,7 @@ class Term(Struct):
         self.arg_trace_regions = {}
 
         parser = create_arg_parser(allow_derivatives=allow_derivatives)
-        self.arg_desc = parser.parseString(self.arg_str)
+        self.arg_desc = parser.parse_string(self.arg_str)
         for arg in self.arg_desc:
             derivative = None
             trace = False

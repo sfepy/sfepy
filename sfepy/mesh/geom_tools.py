@@ -318,7 +318,7 @@ class geometry:
         """
 
         from pyparsing import Word, Optional, nums, Combine, Literal, \
-             CaselessLiteral, Group, OneOrMore, StringEnd, restOfLine, \
+             CaselessLiteral, Group, OneOrMore, StringEnd, rest_of_line, \
              ParseException, alphanums, Keyword, ZeroOrMore
 
         e = CaselessLiteral("E")
@@ -380,7 +380,7 @@ class geometry:
                 Word(alphanums)+eq+fnum+semi
                 )
 
-        comment = Group( Literal("//")+restOfLine).suppress()
+        comment = Group( Literal("//")+rest_of_line).suppress()
 
         command = point | line | lineloop | circle | planesurface | ruledsurface | \
                 surfaceloop | volume | physicalsurface | physicalvolume | comment \
@@ -389,7 +389,7 @@ class geometry:
         grammar= OneOrMore(command)+StringEnd()
 
         try:
-            tokens= grammar.parseFile(filename)
+            tokens= grammar.parse_file(filename)
         except ParseException as err:
             print(err.line)
             print(" "*(err.column-1) + "^")

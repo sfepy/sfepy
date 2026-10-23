@@ -234,7 +234,7 @@ class Domain(Struct):
                 gps[key] = PolySpace.any_from_args(key, gel, 1)
 
         select = f'cells of group {new_mat_id}'
-        self._bnf.parseString(select)
+        self._bnf.parse_string(select)
         region = visit_stack(self._region_stack, region_op,
                              region_leaf(self, self.regions, select,
                                          functions, tdim))
@@ -258,7 +258,7 @@ class Domain(Struct):
 
         stack = self._region_stack
         try:
-            self._bnf.parseString(select)
+            self._bnf.parse_string(select)
         except ParseException:
             print('parsing failed:', select)
             raise

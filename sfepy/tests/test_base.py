@@ -120,7 +120,7 @@ def test_parse_conf():
     ld = list_dict()
 
     def parse(x):
-        out = ld.parseString(x, True)[0]
+        out = ld.parse_string(x, True)[0]
         return out
 
     assert_(parse("1,2") == ([1,2],{}))

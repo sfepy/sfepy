@@ -137,10 +137,10 @@ def report_tests(out, return_item=False):
     If not, print the output.
     """
     from pyparsing import (Word, Combine, Suppress, Optional, OneOrMore,
-                           delimitedList, nums, Literal)
+                           DelimitedList, nums, Literal)
     from functools import partial
-    integer = Word(nums).setName('integer')
-    real = Combine(Word(nums) + '.' + Optional(Word(nums))).setName('real')
+    integer = Word(nums).set_name('integer')
+    real = Combine(Word(nums) + '.' + Optional(Word(nums))).set_name('real')
 
     equals = Suppress(OneOrMore('='))
     _stats = {}
@@ -153,16 +153,16 @@ def report_tests(out, return_item=False):
     word = ((integer + 'failed') |
             (integer + 'passed') |
             (integer + 'deselected') |
-            (integer + 'warnings')).setParseAction(add_stat)
+            (integer + 'warnings')).set_parse_action(add_stat)
 
     line = (equals +
-            Optional(delimitedList(word)) +
+            Optional(DelimitedList(word)) +
             'in' +
             (real + (Literal('s') | 'seconds'))
-            .setParseAction(partial(add_stat, key='seconds')) +
+            .set_parse_action(partial(add_stat, key='seconds')) +
             equals)
 
-    line.searchString(out)
+    line.search_string(out)
 
     keys = ['failed', 'passed', 'deselected', 'warnings', 'seconds']
     stats = {key : _stats.get(key, '0') for key in keys}

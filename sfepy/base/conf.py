@@ -295,7 +295,7 @@ def dict_from_string(string, allow_tuple=False, free_word=False):
     parser = create_bnf(allow_tuple=allow_tuple, free_word=free_word)
 
     out = {}
-    for r in parser.parseString(string, parseAll=True):
+    for r in parser.parse_string(string, parse_all=True):
         out.update(r)
 
     return out
