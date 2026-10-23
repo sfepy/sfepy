@@ -106,6 +106,27 @@ _quad_ori_groups = {
     63 : 63,
 }
 
+def get_facet_dof_corner_weights(field):
+    """
+    Return integer reference-corner weights of volume Lagrange field nodes.
+
+    The nodes lie on the 1/order lattice. Integer weights avoid sorting
+    differences caused by floating-point round-off when matching facets.
+
+    Parameters
+    ----------
+    field : FEField
+        The volume H1 Lagrange field.
+
+    Returns
+    -------
+    weights : array
+        The integer geometric corner weights of each field node.
+    """
+    bf = field.geom_poly_space.eval_basis(field.poly_space.node_coors)
+    scale = field.approx_order**field.gel.dim
+    return nm.rint(bf[:, 0, :] * scale).astype(nm.int64)
+
 def build_orientation_map(n_fp):
     """
     The keys are binary masks of the lexicographical ordering of facet
