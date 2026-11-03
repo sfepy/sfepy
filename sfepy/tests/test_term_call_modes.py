@@ -253,6 +253,10 @@ def _test_single_term(data, term_cls, domain, rname):
             elif 'dw_contact_ipc' in term_cls.name:
                 material_value = {'material_p' : 'NONE'}
 
+            elif term_cls.name in ('dw_contact', 'dw_contact_friction',
+                                   'dw_contact_mass'):
+                material_value = {'opt_material' : 'two_half_pass'}
+
             else:
                 material_value = 1.0
             aux = make_term_args(arg_shapes, arg_kinds, ats, mode, domain,
@@ -363,7 +367,7 @@ def test_term_call_modes(data):
                                                 rname)
 
                     except ModuleNotFoundError as exc:
-                        _ok = exc.name in {'ipctk'}
+                        _ok = exc.name in {'ipctk', 'contactino'}
 
                     except:
                         _ok = False

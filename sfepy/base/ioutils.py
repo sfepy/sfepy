@@ -939,3 +939,12 @@ def get_or_create_hdf5_group(fd, path, from_group=None):
        else:
            from_group = pt.create_group(from_group, name)
     return from_group
+
+def markdown_table_from_dict(adict, header=('option', 'value')):
+    """
+    Format the items of a dictionary as a two-column Markdown table.
+    """
+    lines = ['| %s | %s |' % header, '| --- | --- |']
+    lines.extend('| %s | %s |' % (key, val) for key, val in adict.items())
+
+    return '\n'.join(lines) + '\n'

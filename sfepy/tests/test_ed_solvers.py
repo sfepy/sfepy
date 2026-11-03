@@ -438,3 +438,29 @@ def test_active_only(output_dir):
     variables_t = pb.solve(save_results=False)
 
     assert nm.allclose(variables_f(), variables_t(), atol=1e-7, rtol=0)
+
+def test_get_max_eigenfrequency():
+    import scipy.sparse as sps
+    import scipy.linalg as sla
+    from sfepy.solvers.ts_solvers import get_max_eigenfrequency
+
+    # A chain of springs with the stiffness k and masses m: omega_max tends
+    # to 2 sqrt(k / m).
+    n, k, m = 200, 4.0, 1.0
+    mtx_k = sps.diags_array([2 * k * nm.ones(n), -k * nm.ones(n - 1),
+                             -k * nm.ones(n - 1)], offsets=[0, 1, -1]).tocsr()
+    mtx_m = sps.diags_array(m * nm.ones(n)).tocsr()
+    omega = get_max_eigenfrequency(mtx_k, mtx_m)
+    tst.report('lumped mass: omega_max = %.6f' % omega)
+    assert abs(omega - 2.0 * nm.sqrt(k / m)) < 1e-3
+
+    # A general (non-diagonal) mass matrix.
+    mtx_m = (mtx_m + sps.diags_array([0.1 * nm.ones(n - 1),
+                                      0.1 * nm.ones(n - 1)],
+                                     offsets=[1, -1])).tocsr()
+    omega = get_max_eigenfrequency(mtx_k, mtx_m)
+    exact = nm.sqrt(sla.eigh(mtx_k.toarray(), mtx_m.toarray(),
+                             eigvals_only=True).max())
+    tst.report('consistent mass: omega_max = %.6f (dense %.6f)'
+               % (omega, exact))
+    assert abs(omega - exact) < 1e-8 * exact

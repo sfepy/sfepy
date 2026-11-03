@@ -29,6 +29,13 @@ class HyperElasticTLBase(HyperElasticBase):
     hyperelastic_mode = 0
     get_family_data = HyperElasticTLFamilyData()
 
+    # Voigt order of the symmetric tensors: [xx, yy, zz, xy, xz, yz] in 3D,
+    # [xx, yy, xy] in 2D.
+    voigt_indices = {
+        2 : [(0, 0), (1, 1), (0, 1)],
+        3 : [(0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2)],
+    }
+
 class NeoHookeanTLTerm(HyperElasticTLBase):
     r"""
     Hyperelastic neo-Hookean term. Effective stress
@@ -50,6 +57,111 @@ class NeoHookeanTLTerm(HyperElasticTLBase):
 
     stress_function = staticmethod(terms.dq_tl_he_stress_neohook)
     tan_mod_function = staticmethod(terms.dq_tl_he_tan_mod_neohook)
+
+class NeoHookeanCompressibleTLTerm(HyperElasticTLBase):
+    r"""
+    Hyperelastic compressible neo-Hookean term [1]_ with the strain energy
+    density :math:`W = \frac{\mu}{2} (\tr(\ull{C}) - 3) - \mu \ln J +
+    \frac{\lambda}{2} (\ln J)^2`, i.e. the second Piola-Kirchhoff stress
+    :math:`S_{ij} = \mu (\delta_{ij} - C^{-1}_{ij}) + \lambda \ln J
+    C^{-1}_{ij}` and the material tangent :math:`\mathcal{C}_{ijkl} = \lambda
+    C^{-1}_{ij} C^{-1}_{kl} + (\mu - \lambda \ln J) (C^{-1}_{ik} C^{-1}_{jl}
+    + C^{-1}_{il} C^{-1}_{jk})`. The Lame parameters :math:`\lambda`,
+    :math:`\mu` are those of the small strain limit.
+
+    In 2D, the plane stress state is assumed: the out-of-plane component
+    :math:`C_{33}` follows from :math:`S_{33} = 0`, i.e. :math:`\mu (C_{33} -
+    1) + \lambda \ln J = 0` with :math:`J^2 = \det(\ull{C}) C_{33}`, solved by
+    the Newton method in each quadrature point, and the condensed tangent is
+    the above one with :math:`\lambda` replaced by :math:`2 \lambda \mu' /
+    (\lambda + 2 \mu')`, :math:`\mu' = \mu - \lambda \ln J`.
+
+    .. [1] J. Bonet, R. D. Wood, Nonlinear Continuum Mechanics for Finite
+           Element Analysis, 2nd ed., Cambridge University Press, 2008,
+           Sec. 6.4.3.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material : :math:`[\lambda, \mu]`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+    name = 'dw_tl_he_neohook_compressible'
+    family_data_names = ['det_f', 'sym_inv_c']
+    arg_shapes = {'material' : '1, 2',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+
+    @staticmethod
+    def solve_plane_stress(lam, mu, det_c, i_max=50, eps=1e-14):
+        r"""
+        The out-of-plane component :math:`C_{33}` of the plane stress state:
+        the root of :math:`\mu (c - 1) + \lambda / 2 \ln(\det(C) c) = 0`,
+        which is unique, as the left-hand side increases with :math:`c`.
+        """
+        cc = nm.ones_like(det_c)
+        for ii in range(i_max):
+            ff = mu * (cc - 1.0) + 0.5 * lam * nm.log(det_c * cc)
+            dc = ff / (mu + 0.5 * lam / cc)
+            cc = nm.maximum(cc - dc, 0.5 * cc)
+            if nm.abs(dc).max() < eps:
+                break
+        return cc
+
+    def _get_pars(self, mat, det_f, inv_c):
+        """
+        The Lame parameters, ln J, the effective first Lame parameter of the
+        tangent and the inverse Cauchy-Green tensor, shape (..., dim, dim).
+        """
+        dim = self.region.dim
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
+        lam, mu = mat[..., 0, 0], mat[..., 0, 1]
+        jj = det_f[..., 0, 0]
+
+        c_inv = nm.empty(inv_c.shape[:-2] + (dim, dim), dtype=inv_c.dtype)
+        for ii, (ir, ic) in enumerate(self.voigt_indices[dim]):
+            c_inv[..., ir, ic] = c_inv[..., ic, ir] = inv_c[..., ii, 0]
+
+        if dim == 2:
+            c33 = self.solve_plane_stress(lam, mu, jj**2)
+            ln_j = 0.5 * nm.log(jj**2 * c33)
+            mup = mu - lam * ln_j
+            lam_t = 2.0 * lam * mup / (lam + 2.0 * mup)
+
+        else:
+            ln_j = nm.log(jj)
+            lam_t = lam
+
+        return lam, mu, ln_j, lam_t, c_inv
+
+    def stress_function(self, out, mat, *fargs, **kwargs):
+        det_f, inv_c = fargs
+        lam, mu, ln_j, lam_t, c_inv = self._get_pars(mat, det_f, inv_c)
+
+        for ii, (ir, ic) in enumerate(self.voigt_indices[self.region.dim]):
+            out[..., ii, 0] = (mu * ((ir == ic) - c_inv[..., ir, ic])
+                               + lam * ln_j * c_inv[..., ir, ic])
+        return out
+
+    def tan_mod_function(self, out, mat, *fargs, **kwargs):
+        det_f, inv_c = fargs
+        lam, mu, ln_j, lam_t, c_inv = self._get_pars(mat, det_f, inv_c)
+
+        mup = mu - lam * ln_j
+        indices = self.voigt_indices[self.region.dim]
+        for ii, (ir, ic) in enumerate(indices):
+            for jj, (kr, kc) in enumerate(indices):
+                out[..., ii, jj] = (lam_t * c_inv[..., ir, ic]
+                                    * c_inv[..., kr, kc]
+                                    + mup * (c_inv[..., ir, kr]
+                                             * c_inv[..., ic, kc]
+                                             + c_inv[..., ir, kc]
+                                             * c_inv[..., ic, kr]))
+        return out
 
 class GenYeohTLTerm(HyperElasticTLBase):
     r"""

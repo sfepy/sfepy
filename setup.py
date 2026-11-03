@@ -136,6 +136,8 @@ def check_versions(show_only=False):
                   show_only=True)
     package_check('ipctk', INFO.IPCTK_MIN_VERSION, optional=True,
                   show_only=True)
+    package_check('contactino', INFO.CONTACTINO_MIN_VERSION, optional=True,
+                  show_only=True)
     package_check('pypardiso', INFO.PYPARDISO_MIN_VERSION, optional=True,
                   show_only=True)
 

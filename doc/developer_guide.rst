@@ -1242,7 +1242,6 @@ sfepy.mechanics package
    src/sfepy/mechanics/shell10x
    src/sfepy/mechanics/tensors
    src/sfepy/mechanics/units
-   src/sfepy/mechanics/extmods/ccontres
 
 sfepy.mesh package
 ^^^^^^^^^^^^^^^^^^
@@ -1376,6 +1375,7 @@ Tests
    src/sfepy/tests/test_base
    src/sfepy/tests/test_cmesh
    src/sfepy/tests/test_conditions
+   src/sfepy/tests/test_contact
    src/sfepy/tests/test_declarative_examples
    src/sfepy/tests/test_dg_field
    src/sfepy/tests/test_dg_terms_calls

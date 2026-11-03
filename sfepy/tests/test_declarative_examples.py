@@ -58,7 +58,6 @@ examples = [
     'linear_elasticity/shell10x_cantilever.py',
     'linear_elasticity/truss_bridge3d.py',
     'linear_elasticity/truss_bridge.py',
-    'linear_elasticity/two_bodies_contact.py',
     'linear_elasticity/wedge_mesh.py',
     'multi_physics/biot.py',
     'multi_physics/biot_npbc.py',
@@ -78,6 +77,18 @@ examples = [
     'quantum/oscillator.py',
     'quantum/well.py',
 ]
+
+try:
+    import contactino; contactino
+
+except ImportError:
+    pass
+
+else:
+    examples.extend([
+        'linear_elasticity/explicit_dynamic_contact.py',
+        'linear_elasticity/two_bodies_contact.py',
+    ])
 
 try:
     from igakit import igalib; igalib
