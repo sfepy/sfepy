@@ -47,6 +47,9 @@ omit_images = [
     'band_gaps_conf.py',
     'dg_plot_1D.py',
     'example_dg_common.py',
+    'ring_wall_contact.py', # Long calculation.
+    'three_rings_self_contact.py', # Long calculation.
+    'tilted_cylinders_contact.py', # Long calculation.
     'homogenization_opt.py', # Is parameterized.
     'linear_elasticity_opt.py', # Is parameterized.
     'linear_homogenization_postproc.py',

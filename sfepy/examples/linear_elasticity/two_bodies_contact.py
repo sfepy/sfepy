@@ -54,6 +54,7 @@ from functools import partial
 import inspect
 
 from sfepy.base.base import output
+from sfepy.base.ioutils import markdown_table_from_dict
 from sfepy.base.log import Log
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.meshio import UserMeshIO
@@ -93,13 +94,6 @@ def gen_two_bodies(dims0, shape0, centre0, dims1, shape1, centre1, shift1):
     mesh = Mesh.from_data(name, coors, ngroups, [conn], [mat_id], m0.descs)
 
     return mesh
-
-def markdown_table_from_dict(adict):
-    header = '| option | value |\n'
-    separator = '| --- | --- |\n'
-    rows = '\n'.join([f'| {key} | {val} |' for key, val in adict.items()])
-
-    return header + separator + rows
 
 def define(
         dims0=(1.0, 1.0, 0.5),
