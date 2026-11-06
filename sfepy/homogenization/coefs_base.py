@@ -1,4 +1,5 @@
 import os
+from functools import reduce
 
 import numpy as nm
 from collections.abc import Iterable
@@ -321,6 +322,12 @@ class CorrApplyFunction(CorrMiniApp):
     :meth:`CorrApplyFunction.__call__()`) and the requirements in the order
     specified in the `'requires'` list in the corrector configuration.
 
+    The result is initialized by a deep copy of the first requirement. The
+    function is applied only to those variables that appear in all
+    requirements. Therefore, the variables of the first requirement not present
+    in all requirements keep their values, and the variables not present in the
+    first requirement are not present in the result.
+
     If there are no requirements, either `'variables'` or `'variable'` key must
     be present in the corrector configuration.
 
@@ -360,20 +367,30 @@ class CorrApplyFunction(CorrMiniApp):
         return corr_sol
 
     def __call__(self, problem=None, data=None):
-        """
-        test
-        """
         problem = get_default(problem, self.problem)
 
         if self.requires:
             corr_sol = data[self.requires[0]].copy(deep=True)
 
-            var_names = set()
+            req_names = {}
+            for req in self.requires:
+                if hasattr(corr_sol, 'components'):
+                    state = data[req].states[corr_sol.components[0]]
+
+                else:
+                    state = data[req].state
+
+                req_names[req] = tuple(state.keys())
+
+            var_names = reduce(lambda x, y: set(x).union(y), req_names.values())
+            common_names = reduce(lambda x, y: set(x).intersection(y),
+                                  req_names.values())
+
             if hasattr(corr_sol, 'components'):
                 for indx in corr_sol.components:
                     sol = corr_sol.states[indx]
 
-                    for var_name in sol.keys():
+                    for var_name in common_names:
                         args = [problem, data]
 
                         for req in self.requires:
@@ -381,11 +398,10 @@ class CorrApplyFunction(CorrMiniApp):
                             args.append(op)
 
                         sol[var_name][:] = self.function(*args)
-                        var_names.update(var_name)
 
             else:
                 sol = corr_sol.state
-                for var_name in sol.keys():
+                for var_name in common_names:
                     args = [problem, data]
 
                     for req in self.requires:
@@ -393,7 +409,6 @@ class CorrApplyFunction(CorrMiniApp):
                         args.append(op)
 
                     sol[var_name][:] = self.function(*args)
-                    var_names.update(var_name)
 
         else:
             val = self.function(problem, data)
