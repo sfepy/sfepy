@@ -15,7 +15,7 @@ homogen_app_cache = {}
 def get_app_key(micro_filename, define_args):
     key = f'{micro_filename}'
     if define_args is not None and 'filename_mesh' in define_args:
-        key += f'|{define_args['filename_mesh']}'
+        key += f'|{define_args["filename_mesh"]}'
 
     return key
 
