@@ -12,8 +12,16 @@ from sfepy.discrete.fem.meshio import HDF5MeshIO
 homogen_app_cache = {}
 
 
-def get_homogen_app_form_cache(micro_filename):
-    return homogen_app_cache.get(micro_filename, None)
+def get_app_key(micro_filename, define_args):
+    key = f'{micro_filename}'
+    if define_args is not None and 'filename_mesh' in define_args:
+        key += f'|{define_args['filename_mesh']}'
+
+    return key
+
+
+def get_homogen_app_from_cache(key):
+    return homogen_app_cache.get(key, None)
 
 
 def get_micro_conf(micro_filename, define_args, output_dir):
@@ -53,8 +61,10 @@ def get_homog_coefs_linear(ts, coor, mode,
                            output_dir=None):
 
     nc = None if coor is None else coor.shape[0]
-    if micro_filename in homogen_app_cache:
-        return coefs_to_dict(homogen_app_cache[micro_filename][0], mode, nc)
+    app_key = get_app_key(micro_filename, define_args)
+
+    if app_key in homogen_app_cache and not regenerate:
+        return coefs_to_dict(homogen_app_cache[app_key][0], mode, nc)
 
     oprefix = output.prefix
     output.prefix = 'micro:'
@@ -87,7 +97,7 @@ def get_homog_coefs_linear(ts, coor, mode,
 
         rhook = (None if recovery_hook is None else
                  conf.get_function(recovery_hook))
-        homogen_app_cache[micro_filename] = (coefs, app.he, deps, rhook)
+        homogen_app_cache[app_key] = (coefs, app.he, deps, rhook)
     else:
         coefs = Coefficients.from_file_hdf5( coefs_filename )
         recovery_hook = conf.options.get('recovery_hook', None)
@@ -98,9 +108,9 @@ def get_homog_coefs_linear(ts, coor, mode,
                                         init_solvers=False)
             options = Struct(output_filename_trunk=None)
             he = HomogenizationEngine(problem, options)
-            homogen_app_cache[micro_filename] = (coefs, he, corrs, rhook)
+            homogen_app_cache[app_key] = (coefs, he, corrs, rhook)
         else:
-            homogen_app_cache[micro_filename] = (coefs, None, None, None)
+            homogen_app_cache[app_key] = (coefs, None, None, None)
 
     output.prefix = oprefix
 
@@ -118,13 +128,15 @@ def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
     output.prefix = 'micro:'
 
     micro_filename = problem.conf.options.micro_filename
-    if micro_filename not in homogen_app_cache:
+    app_key = get_app_key(micro_filename, define_args)
+
+    if app_key not in homogen_app_cache:
         conf = get_micro_conf(micro_filename, define_args, output_dir)
         options = Struct(output_filename_trunk=None)
         app = HomogenizationApp(conf, options, 'micro:', n_micro=coor.shape[0])
-        homogen_app_cache[micro_filename] = app
+        homogen_app_cache[app_key] = app
     else:
-        app = homogen_app_cache[micro_filename]
+        app = homogen_app_cache[app_key]
 
     if macro_data is not None:
         macro_data['macro_time_step'] = ts.step
