@@ -6,7 +6,7 @@ from sfepy.base.timing import Timer
 from sfepy.discrete.fem import extend_cell_data, Mesh
 from sfepy.homogenization.utils import coor_to_sym
 from sfepy.discrete import Region
-from sfepy.homogenization.micmac import get_homogen_app_form_cache
+from sfepy.homogenization.micmac import get_homogen_app_from_cache, get_app_key
 # TODO : interpolate fvars to macro times. ?mid-points?
 #
 # TODO : clean-up!
@@ -530,9 +530,11 @@ def recover_micro_hook(micro_filename, region, macro, eps0,
     if eval_mode not in ['constant', 'continuous']:
         raise ValueError(f"Evaluation mode '{eval_mode}' not implemented!")
 
-    rkey = f'{micro_filename}|{region_mode}|{eval_mode}'
+    app_key = get_app_key(micro_filename, define_args)
+    rkey = f'{app_key}|{region_mode}|{eval_mode}'
+
     if rkey not in recovery_data_cache:
-        aux = get_homogen_app_form_cache(micro_filename)
+        aux = get_homogen_app_from_cache(app_key)
         if aux is None or aux[-1] is None:
             raise ValueError('"recovery_hook" is not set!')
 
