@@ -22,6 +22,7 @@ from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
                                       invert_remap, get_min_value)
+from sfepy.discrete.fem.facets import get_facet_dof_corner_weights
 from sfepy.discrete.fem.mappings import FEMapping
 from sfepy.discrete.fem.fe_surface import FESurface, FEPhantomSurface
 from sfepy.discrete.integrals import Integral
@@ -450,6 +451,21 @@ class FEField(Field):
             if efs.ndim < 2:
                 efs = efs[:, nm.newaxis]
             self.efaces = nm.hstack((self.efaces, efs))
+
+        if (self.family_name == 'volume_H1_lagrange'
+                and gel.dim == self.region.dim and self.approx_order > 1
+                and gel.name in ('2_3', '2_4', '3_4', '3_8')):
+            vertices = gel.get_surface_entities()
+            weights = get_facet_dof_corner_weights(self)
+            # Facet mappings use the basis on the first facet. Match its
+            # node ordering, including the directions of interior edge nodes.
+            reference = weights[self.efaces[0]][:, vertices[0]]
+            reference_order = nm.lexsort(reference.T)
+            for ifa, face in enumerate(vertices[1:], 1):
+                local = weights[self.efaces[ifa]][:, face]
+                local_order = nm.lexsort(local.T)
+                self.efaces[ifa, reference_order] = self.efaces[
+                    ifa, local_order]
 
         if gel.dim == 3:
             self.eedges = gel.edges.copy()
@@ -1222,7 +1238,7 @@ class FEField(Field):
 
         if name in self.extra_data and trace_region is not None:
             sd = self.extra_data[name]
-            sd.setup_mirror_connectivity(region, trace_region)
+            sd.setup_mirror_connectivity(region, trace_region, self)
 
     def setup_point_data(self, field, region):
         name = f'pd_{region.name}'
