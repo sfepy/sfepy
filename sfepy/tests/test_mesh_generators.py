@@ -40,6 +40,30 @@ def test_gen_extended_block_mesh(output_dir):
     csum = nm.sum(mesh.coors - nm.min(mesh.coors, axis=0), axis=0)
     assert nm.linalg.norm(csum - nm.array([1932, 1380, 2760])) < tolerance
 
+def test_gen_solid_cylinder_mesh(output_dir):
+    from sfepy.discrete.fem import FEDomain
+    from sfepy.mesh.mesh_generators import gen_solid_cylinder_mesh
+
+    for axis in 'xyz':
+        mesh = gen_solid_cylinder_mesh(1.0, 2.0, [9, 5], [1, 2, 3],
+                                       axis=axis, verbose=False)
+        filename = op.join(output_dir, 'gen_solid_cylinder_%s.mesh' % axis)
+        mesh.write(filename)
+
+        iaxis = 'xyz'.index(axis)
+        rel = mesh.coors - [1, 2, 3]
+        rr = nm.linalg.norm(nm.delete(rel, iaxis, axis=1), axis=1)
+        assert abs(rr.max() - 1.0) < tolerance
+        assert abs(nm.abs(rel[:, iaxis]).max() - 1.0) < tolerance
+
+        domain = FEDomain('domain', mesh)
+        volumes = domain.cmesh.get_volumes(3)
+        assert (volumes > 0).all()
+        # The inscribed polygon has 4 x 8 sides.
+        exact = 32 * nm.sin(nm.pi / 32) * nm.cos(nm.pi / 32) * 2.0
+        assert abs(volumes.sum() - exact) < 1e-2 * exact
+    tst.report('solid cylinder meshes generated')
+
 def test_gen_tiled_mesh(output_dir):
     from sfepy.mesh.mesh_generators import gen_block_mesh, gen_tiled_mesh
 
