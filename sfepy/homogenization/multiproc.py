@@ -47,7 +47,10 @@ def get_proc_id():
 
 def init_workers(wdir, max_workers=None, **kwargs):
     if use_multiprocessing:
-        sys.path.append(wdir)
+        if isinstance(wdir, (list, tuple)):
+            sys.path += list(wdir)
+        else:
+            sys.path.append(wdir)
         active_workers['pool'] = ProcessPoolExecutor(max_workers, **kwargs)
 
         return active_workers['pool']
