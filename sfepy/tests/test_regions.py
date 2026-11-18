@@ -119,7 +119,18 @@ def test_operators(data):
     tst.report('  vertices:', _ok)
     ok = ok and _ok
 
-    sel = 'vertex 20 *v vertices of group 0'
+    sel = 'vertex 20'
+    tst.report('select:', sel)
+    _ok = False
+    try:
+        reg = data.domain.create_region('reg', sel, kind='vertex',
+                                        allow_empty=False)
+    except ValueError:
+        _ok = True
+    tst.report('  exception raised:', _ok)
+    ok = ok and _ok
+
+    sel = 'vertex 12 *v vertices of group 0'
     tst.report('select:', sel, ', allow_empty == False')
     _ok = False
     try:
@@ -130,13 +141,23 @@ def test_operators(data):
     tst.report('  exception raised:', _ok)
     ok = ok and _ok
 
-    sel = 'vertex 20 *v vertices of group 0'
+    sel = 'vertex 12 *v vertices of group 0'
     tst.report('select:', sel, ', allow_empty == True')
     reg = data.domain.create_region('reg', sel, kind='vertex',
                                     allow_empty=True)
-    av = []
-    _ok = (reg.vertices == nm.array(av)).all()
+    _ok = len(reg.vertices) == 0
     tst.report('  vertices:', _ok)
+    ok = ok and _ok
+
+    sel = 'cell 20'
+    tst.report('select:', sel)
+    _ok = False
+    try:
+        reg = data.domain.create_region('reg', sel, kind='cell',
+                                        allow_empty=False)
+    except ValueError:
+        _ok = True
+    tst.report('  exception raised:', _ok)
     ok = ok and _ok
 
     sel = 'r.r1 -c cell 1, 4, 5'

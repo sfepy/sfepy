@@ -129,12 +129,25 @@ def region_leaf(domain, regions, rdef, functions, tdim):
             region.vertices = aux.vertices[0:1]
 
         elif token == 'E_VI':
-            region.vertices = nm.array([int(ii) for ii in details[1:]],
-                                       dtype=nm.uint32)
+            vertices = nm.array([int(ii) for ii in details[1:]],
+                                dtype=nm.uint32)
+            if nm.all((vertices >= 0) & (vertices < region.cmesh.n_coor)):
+                region.vertices = vertices
+
+            else:
+                raise ValueError(
+                    f'region vertices must be in [0, {region.cmesh.n_coor-1}]'
+                )
 
         elif token == 'E_CI':
-            region.cells = nm.array([int(ii) for ii in details[1:]],
-                                    dtype=nm.uint32)
+            cells = nm.array([int(ii) for ii in details[1:]], dtype=nm.uint32)
+            if nm.all((cells >= 0) & (cells < region.cmesh.n_el)):
+                region.cells = cells
+
+            else:
+                raise ValueError(
+                    f'region cells must be in [0, {region.cmesh.n_el-1}]'
+                )
 
         else:
             output('token "%s" unkown - check regions!' % token)
