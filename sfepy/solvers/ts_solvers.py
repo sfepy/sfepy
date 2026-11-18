@@ -384,6 +384,40 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
 #
 # Elastodynamics solvers.
 #
+def get_max_eigenfrequency(mtx_k, mtx_m):
+    r"""
+    The largest eigenfrequency :math:`\omega_{max}` of :math:`K x =
+    \omega^2 M x`, giving the critical time step :math:`2 / \omega_{max}` of
+    the explicit central difference scheme.
+
+    Parameters
+    ----------
+    mtx_k : sparse matrix
+        The stiffness matrix (a tangent matrix for nonlinear problems).
+    mtx_m : sparse matrix
+        The mass matrix. A diagonal (lumped) one is handled by scaling, a
+        general one by the generalized eigenvalue problem.
+
+    Returns
+    -------
+    omega_max : float
+        The largest eigenfrequency.
+    """
+    import scipy.sparse as sps
+    from scipy.sparse.linalg import eigsh
+
+    mtx_m = sps.csr_array(mtx_m)
+    if mtx_m.nnz == nm.count_nonzero(mtx_m.diagonal()):
+        dd = 1.0 / nm.sqrt(mtx_m.diagonal())
+        mtx_a = sps.diags_array(dd) @ mtx_k @ sps.diags_array(dd)
+        lam = eigsh(mtx_a, k=1, which='LA', return_eigenvectors=False)[0]
+
+    else:
+        lam = eigsh(mtx_k, k=1, M=mtx_m, which='LA',
+                    return_eigenvectors=False)[0]
+
+    return nm.sqrt(lam)
+
 def transform_equations_ed(equations, materials):
     """
     Transform equations and variables for :class:`ElastodynamicsBaseTS`-based
@@ -937,6 +971,309 @@ class CentralDifferenceTS(ElastodynamicsBaseTS):
         atp = nlst(at)
         vtp = nlst.v(atp)
         utp = nlst.u()
+
+        vect = pack(utp, vtp, atp)
+
+        return vect
+
+class CentralDifferencePCTS(ElastodynamicsBaseTS):
+    r"""
+    Explicit central differences with the predictor-corrector treatment of
+    contact [1]_, [2]_.
+
+    The acceleration at the end of a step is the sum of the predictor
+    acceleration given by all terms but the contact ones, and of the corrector
+    acceleration given by the contact terms evaluated in the configuration
+    predicted for the end of the next step:
+
+    .. math::
+        \ddot{\ul{u}}_{pr} = M^{-1} \ul{r}(\ul{u}_{n+1}) \;, \quad
+        \ul{u}_{pr} = \ul{u}_{n+1} + \Delta t\, \dot{\ul{u}}_{n+1/2}
+        + \Delta t^2 \ddot{\ul{u}}_{pr} \;, \\
+        (M + M_c(\ul{u}_{pr})) \Delta \ddot{\ul{u}}
+        = - \ul{f}_c(\ul{u}_{pr}) \;, \quad
+        \ddot{\ul{u}}_{n+1} = \ddot{\ul{u}}_{pr} + \Delta \ddot{\ul{u}} \;.
+
+    The terms named in ``contact_terms`` (the contact forces
+    :math:`\ul{f}_c`) enter only the correction and the terms named in
+    ``contact_mass_terms`` (the inertia penalty of the bipenalty method)
+    only the corrector mass :math:`M_c`; the other terms of the mass equation
+    give the constant mass matrix :math:`M`. With the inertia penalty chosen
+    by the criteria of [2]_, the correction removes the predicted penetration
+    and the mass penalty does not act on the internal forces.
+
+    The linear solver solves with :math:`M` and with :math:`M + M_c`. The
+    reciprocal mass matrix solver :class:`RMMSolver
+    <sfepy.solvers.ls.RMMSolver>` is supported: the correction then uses the
+    Woodbury identity restricted to the contact DOFs, so no system is
+    factorized. The total contact force :math:`M \Delta \ddot{\ul{u}}` of the
+    last step is available in the ``contact_force`` attribute.
+
+    With ``correction='terms'``, the contact terms provide the displacement
+    correction :math:`\Delta \ul{u}_c` of the predicted configuration
+    themselves (:meth:`ContactTerm.get_configuration_correction()
+    <sfepy.terms.terms_contact.ContactTerm.get_configuration_correction>`:
+    the contact library removes the predicted penetration with the inverse
+    mass of the host on the contact DOFs, i.e. the forward-increment Lagrange
+    multiplier correction, the exact limit of the bipenalty
+    predictor-corrector independent of the penalty parameters), and
+    :math:`\Delta \ddot{\ul{u}} = \Delta \ul{u}_c / \Delta t^2`. The
+    contact mass terms are then not evaluated. With friction, the correction
+    also removes the slip increment of the points in contact inside the
+    Coulomb cone, measured from the corrected configuration of the previous
+    step, which is committed right after each correction. The inverse mass is
+    the diagonal of a lumped mass matrix or the block of the reciprocal mass
+    matrix.
+
+    .. [1] R. Kolman, J. Kopačka, J. A. González, S. S. Cho, K. C. Park,
+           Bi-penalty stabilized technique with predictor-corrector time scheme
+           for contact-impact problems of elastic bars, Math. Comput. Simul.
+           189 (2021) 305-324.
+    .. [2] Y.-J. Kwon, J.-G. Kim, S. S. Cho, J. A. González, A stabilized
+           bipenalty formulation using a predictor-corrector scheme for
+           explicit contact-impact analysis, Int. J. Numer. Meth. Engng 126
+           (2025) e70119.
+    """
+    name = 'ts.central_difference_pc'
+
+    _parameters = [
+        ('contact_terms', 'list of str',
+         ['dw_contact', 'dw_contact_friction'], False,
+         'The names of the terms giving the contact forces (the correction'
+         ' phase).'),
+        ('contact_mass_terms', 'list of str', ['dw_contact_mass'], False,
+         'The names of the terms giving the corrector mass (the inertia'
+         ' penalty).'),
+        ('correction', "'host' or 'terms'", 'host', False,
+         'The corrector: the host solves (M + M_c) da = -f_c with the contact'
+         ' and contact mass terms, or the contact terms provide the'
+         ' displacement correction of the predicted configuration'
+         ' themselves.'),
+    ] + ElastodynamicsBaseTS._common_parameters
+
+    def __init__(self, conf, nls=None, tsc=None, context=None, **kwargs):
+        ElastodynamicsBaseTS.__init__(self, conf, nls=nls, tsc=tsc,
+                                      context=context, **kwargs)
+        self.mass_matrix = None
+        self.contact_force = None
+        self.n_active = 0
+
+        cterms = set(self.conf.contact_terms)
+        mterms = set(self.conf.contact_mass_terms)
+        uname = self.conf.var_names['u']
+        dduname = self.conf.var_names['ddu']
+
+        def vname(term):
+            return term.get_virtual_variable().primary_var_name
+
+        self.sel_predictor = lambda term: ((vname(term) == uname)
+                                           and (term.name not in cterms))
+        self.sel_contact = lambda term: ((vname(term) == uname)
+                                         and (term.name in cterms))
+        self.sel_mass = lambda term: ((vname(term) == dduname)
+                                      and (term.name not in mterms))
+        self.sel_contact_mass = lambda term: ((vname(term) == dduname)
+                                              and (term.name in mterms))
+
+    def clear_lin_solver(self, clear_constant_matrices=True):
+        ElastodynamicsBaseTS.clear_lin_solver(
+            self, clear_constant_matrices=clear_constant_matrices,
+        )
+        if clear_constant_matrices:
+            self.mass_matrix = None
+
+    def get_mass_matrix(self, nls, vec, unpack):
+        """
+        The constant mass matrix without the contact mass terms.
+        """
+        if self.mass_matrix is None:
+            ia = unpack.indices[4]
+            aux = nls.fun_grad(vec, select_term=self.sel_mass)
+            mtx = aux[ia, ia].tocsr()
+            mtx.eliminate_zeros()
+            self.mass_matrix = mtx
+
+        return self.mass_matrix
+
+    def solve_corrector(self, nls, mtx_c, rhs):
+        """
+        Solve :math:`(M + M_c) x = rhs`, :math:`M_c` being nonzero only on
+        the contact DOFs.
+        """
+        from sfepy.solvers.ls import RMMSolver
+
+        ls = nls.lin_solver
+        if isinstance(ls, RMMSolver):
+            if ls.mtx_im is None:
+                ls(rhs, mtx=self.mass_matrix)
+            mtx_im = ls.mtx_im
+
+            mtx_c = mtx_c.tocsr()
+            mtx_c.eliminate_zeros()
+            idx = nm.union1d(*mtx_c.nonzero())
+            mtx_a = mtx_c[idx][:, idx].toarray()
+
+            # Woodbury: (C^-1 + P A P^T)^-1 = C - C P A (I + P^T C P A)^-1 P^T C.
+            cf = mtx_im @ rhs
+            mtx_cp = mtx_im.tocsc()[:, idx].toarray()
+            mtx_s = mtx_cp[idx, :]
+            aux = nm.linalg.solve(nm.eye(len(idx)) + mtx_s @ mtx_a, cf[idx])
+            return cf - mtx_cp @ (mtx_a @ aux)
+
+        else:
+            mtx = (self.mass_matrix + mtx_c).tocsr()
+            return ls(rhs, mtx=mtx)
+
+    def get_inverse_mass_block(self, nls, ieq):
+        """
+        The inverse mass on the mass equations `ieq` as COO triplets with
+        indices local to `ieq`: the diagonal of a lumped mass matrix or the
+        block of the reciprocal mass matrix of :class:`RMMSolver
+        <sfepy.solvers.ls.RMMSolver>`.
+        """
+        from sfepy.solvers.ls import RMMSolver
+
+        ls = nls.lin_solver
+        if isinstance(ls, RMMSolver):
+            if ls.mtx_im is None:
+                ls(nm.zeros(self.mass_matrix.shape[0]), mtx=self.mass_matrix)
+            blk = ls.mtx_im.tocsr()[ieq][:, ieq].tocoo()
+            return blk.row, blk.col, blk.data
+
+        else:
+            mtx = self.mass_matrix
+            diag = mtx.diagonal()
+            if mtx.nnz != nm.count_nonzero(diag):
+                raise ValueError("the correction by the contact terms needs"
+                                 " a lumped (diagonal) mass matrix or the"
+                                 " reciprocal mass matrix solver (ls.rmm)!")
+            if not nm.all(diag[ieq] > 0.0):
+                raise ValueError('zero mass in a contact DOF!')
+            loc = nm.arange(len(ieq), dtype=nm.int32)
+            return loc, loc, 1.0 / diag[ieq]
+
+    def get_contact_terms(self):
+        """
+        The contact terms of the problem equations.
+        """
+        return [term for equation in self.context.equations
+                for term in equation.terms if self.sel_contact(term)]
+
+    def terms_correction(self, nls, vec, dt, unpack):
+        """
+        The corrector acceleration from the displacement corrections of the
+        predicted configuration provided by the contact terms, see
+        :meth:`ContactTerm.get_configuration_correction()
+        <sfepy.terms.terms_contact.ContactTerm.get_configuration_correction>`.
+        The problem variables have to hold the predicted state `vec`.
+        """
+        from sfepy.terms.terms import Term
+
+        pb = self.context
+        ia = unpack.indices[4]
+        ia0 = nm.arange(len(vec))[ia][0]
+        dduvar = pb.equations.variables[self.conf.var_names['ddu']]
+        # Mass block equations of the ddu DOFs, -1 for constrained DOFs.
+        eqs = Term.get_global_equations(dduvar, len(vec))
+        eqs[eqs >= 0] -= ia0
+
+        def get_inverse_mass(dofs):
+            eq = eqs[dofs]
+            ok = nm.where(eq >= 0)[0]
+            rows, cols, vals = self.get_inverse_mass_block(nls, eq[ok])
+            return ok[rows], ok[cols], vals
+
+        da = nm.zeros(self.mass_matrix.shape[0], dtype=nm.float64)
+        for equation in pb.equations:
+            for term in equation.terms:
+                if not self.sel_contact(term):
+                    continue
+
+                if not hasattr(term, 'get_configuration_correction'):
+                    raise ValueError('the term %s cannot provide the'
+                                     ' configuration correction!' % term.name)
+
+                dofs, duc = term.get_configuration_correction(get_inverse_mass)
+                # The corrected configuration is the actual one at the end of
+                # the next step: commit it as the reference of the slip
+                # increment of the next correction (frictional terms), instead
+                # of the implicit commit after a time step.
+                term.commit_on_advance = False
+                term.commit_correction()
+                eq = eqs[dofs]
+                ok = eq >= 0
+                da[eq[ok]] += duc[ok] / dt**2
+
+        return da
+
+    def corrected_acceleration(self, nls, u, vh, dt, unpack):
+        """
+        The predictor acceleration at the configuration `u` plus the corrector
+        acceleration from the contact evaluated at the configuration predicted
+        from `u`, the mid-step velocity `vh` and the predictor acceleration.
+        """
+        iue, iu, ie, iv, ia = unpack.indices
+        if unpack.n_arg != 3:
+            raise ValueError('%s does not support extra variables!'
+                             % self.name)
+
+        # The residual evaluations below set the state of the problem
+        # variables, which may share memory with the solver vectors.
+        u = nm.array(u, copy=True)
+        vh = nm.array(vh, copy=True)
+
+        zz = nm.zeros_like(u)
+        vec = nm.r_[u, zz, zz]
+        mtx_m = self.get_mass_matrix(nls, vec, unpack)
+
+        res = nls.fun(vec, select_term=self.sel_predictor)
+        rt = res[iu] + res[iv] + res[ia]
+        a_pr = nls.lin_solver(-rt, mtx=mtx_m)
+
+        u_pr = u + dt * vh + dt**2 * a_pr
+        vec_pr = nm.r_[u_pr, zz, zz]
+        fc = nls.fun(vec_pr, select_term=self.sel_contact)
+        fct = fc[iu] + fc[iv] + fc[ia]
+
+        if not nm.any(fct):
+            self.contact_force = nm.zeros_like(u)
+            self.n_active = 0
+            return a_pr
+
+        if self.conf.correction == 'host':
+            mtx_c = nls.fun_grad(vec_pr,
+                                 select_term=self.sel_contact_mass)[ia, ia]
+            da = self.solve_corrector(nls, mtx_c, -fct)
+
+        else:
+            da = self.terms_correction(nls, vec_pr, dt, unpack)
+
+        self.contact_force = mtx_m @ da
+        self.n_active = int(nm.count_nonzero(fct))
+
+        return a_pr + da
+
+    def get_a0(self, nls, u0, e0, v0, unpack):
+        u0c, v0c = u0.copy(), v0.copy()
+        a0 = self.corrected_acceleration(nls, u0c, v0c, self.ts.dt, unpack)
+        # The evaluations in corrected_acceleration() set the problem state,
+        # which may share memory with u0, v0 (the initial state vector).
+        u0[...] = u0c
+        v0[...] = v0c
+        output_array_stats(a0, 'initial acceleration', verbose=self.verbose)
+        return a0
+
+    def step(self, ts, vec, nls, pack, unpack, **kwargs):
+        """
+        Solve a single time step.
+        """
+        dt = ts.dt
+        ut, vt, at = unpack(vec)
+
+        vh = vt + 0.5 * dt * at
+        utp = ut + dt * vh
+        atp = self.corrected_acceleration(nls, utp, vh, dt, unpack)
+        vtp = vh + 0.5 * dt * atp
 
         vect = pack(utp, vtp, atp)
 

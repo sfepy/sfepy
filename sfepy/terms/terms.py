@@ -1589,6 +1589,36 @@ class Term(Struct):
         else:
             return dct
 
+    @staticmethod
+    def get_global_equations(var, n_rows):
+        """
+        Map the DOFs of the variable `var` to the equation (row/column)
+        numbers of an assembled object with `n_rows` rows: the active
+        equation numbers plus the variable offset in the reduced (active
+        DOFs only) system, or the DOF numbers plus the variable offset in the
+        full system. Constrained DOFs get -1.
+
+        Used by terms with a dynamic connectivity, which return their values
+        with DOF indices local to the variable.
+        """
+        variables = var._variables
+        if (variables is None) or (var.eq_map is None):
+            return nm.arange(var.n_dof, dtype=nm.int32)
+
+        if n_rows == variables.di.n_dof_total:
+            # Full system (active_only is False).
+            eq = nm.arange(var.n_dof, dtype=nm.int32)
+            eq[var.eq_map.eq_ebc] = -1
+            eq[var.eq_map.master] = eq[var.eq_map.slave]
+            offset = variables.di.indx[var.name].start
+
+        else:
+            eq = var.eq_map.eq.copy()
+            offset = variables.adi.indx[var.name].start
+
+        eq[eq >= 0] += offset
+        return eq
+
     def assemble_to(self, asm_obj, val, iels, mode='vector', diff_var=None):
         """
         Assemble the results of term evaluation.
@@ -1635,12 +1665,10 @@ class Term(Struct):
 
             else:
                 vals, rows, var = val
-                if var.eq_map is not None:
-                    eq = var.eq_map.eq
-
-                    rows = eq[rows]
-                    active = (rows >= 0)
-                    vals, rows = vals[active], rows[active]
+                eq = self.get_global_equations(var, asm_obj.shape[0])
+                rows = eq[rows]
+                active = (rows >= 0)
+                vals, rows = vals[active], rows[active]
 
                 # Assumes no repeated indices in rows!
                 asm_obj[rows] += vals
@@ -1704,12 +1732,12 @@ class Term(Struct):
                 from scipy.sparse import coo_array
 
                 vals, rows, cols, rvar, cvar = val
-                if rvar.eq_map is not None:
-                    req, ceq = rvar.eq_map.eq, cvar.eq_map.eq
+                req = self.get_global_equations(rvar, asm_obj.shape[0])
+                ceq = self.get_global_equations(cvar, asm_obj.shape[1])
 
-                    rows, cols = req[rows], ceq[cols]
-                    active = (rows >= 0) & (cols >= 0)
-                    vals, rows, cols = vals[active], rows[active], cols[active]
+                rows, cols = req[rows], ceq[cols]
+                active = (rows >= 0) & (cols >= 0)
+                vals, rows, cols = vals[active], rows[active], cols[active]
 
                 extra = coo_array((sign * vals, (rows, cols)),
                                   shape=asm_obj.shape)

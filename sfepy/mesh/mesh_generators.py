@@ -122,6 +122,78 @@ def gen_block_mesh(dims, shape, centre, mat_id=0, name='block',
     mesh = Mesh.from_data(name, coors, None, [conn], [mat_ids], [desc])
     return mesh
 
+def gen_solid_cylinder_mesh(radius, length, shape, centre, axis='z',
+                             core=0.5, mat_id=0, name='cylinder',
+                             verbose=True):
+    r"""
+    Generate a 3D hexahedral mesh of a solid circular cylinder with an
+    O-grid ("butterfly") cross-section: a structured block mesh of the square
+    :math:`[-1, 1]^2` is mapped onto the disk so that the central square of the
+    half-width `core` x `radius` stays a square and the outer layers blend
+    from it to the circle. Unlike :func:`gen_cylinder_mesh()` with zero inner
+    radii, there are no degenerate elements on the axis.
+
+    Parameters
+    ----------
+    radius : float
+        The radius of the cylinder.
+    length : float
+        The length of the cylinder along its axis.
+    shape : array of 2 ints
+        Shape (counts of nodes along the sides of the cross-section square and
+        along the axis) of the mesh.
+    centre : array of 3 floats
+        Centre of the cylinder.
+    axis: one of 'x', 'y', 'z'
+        The axis of the cylinder.
+    core : float
+        The half-width of the central square relative to the radius (less
+        than :math:`1 / \sqrt{2}`).
+    mat_id : int, optional
+        The material id of all elements.
+    name : string
+        Mesh name.
+    verbose : bool
+        If True, show progress of the mesh generation.
+
+    Returns
+    -------
+    mesh : Mesh instance
+    """
+    n_xs, n_ax = shape
+    mesh = gen_block_mesh((2.0, 2.0, length), (n_xs, n_xs, n_ax),
+                          (0.0, 0.0, 0.0), mat_id=mat_id, name=name,
+                          verbose=verbose)
+    uu, vv, zz = mesh.coors.T
+
+    # The square "ring" parameter, the direction to the unit square boundary
+    # and the blending parameter of the outer layers (the inner square
+    # boundary at ss = 0.5).
+    ss = nm.maximum(nm.abs(uu), nm.abs(vv))
+    ss0 = 0.5
+    with nm.errstate(invalid='ignore', divide='ignore'):
+        dd = nm.where(ss[:, None] > 0, nm.c_[uu, vv] / ss[:, None], 0.0)
+    dnorm = nm.maximum(nm.linalg.norm(dd, axis=1), 1.0)
+    aa = core * radius
+    tt = nm.clip((ss - ss0) / (1.0 - ss0), 0.0, 1.0)
+
+    inner = ss <= ss0
+    xy = nm.empty((len(uu), 2), dtype=nm.float64)
+    xy[inner] = (aa / ss0) * nm.c_[uu, vv][inner]
+    xy[~inner] = (((1.0 - tt) * aa)[:, None] * dd
+                  + (tt * radius / dnorm)[:, None] * dd)[~inner]
+
+    # Cyclic permutations keep the element orientation.
+    iaxis, ics = {'x' : (0, (1, 2)), 'y' : (1, (2, 0)),
+                  'z' : (2, (0, 1))}[axis]
+    coors = nm.empty_like(mesh.coors)
+    coors[:, ics[0]] = xy[:, 0]
+    coors[:, ics[1]] = xy[:, 1]
+    coors[:, iaxis] = zz
+    mesh.coors[:] = coors + nm.asarray(centre, dtype=nm.float64)
+
+    return mesh
+
 def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                       is_open=False, start_angle=0.0, open_angle=0.0,
                       non_uniform=False, make_2d=False, name='cylinder',
