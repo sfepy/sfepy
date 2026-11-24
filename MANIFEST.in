@@ -36,7 +36,6 @@ include sfepy/discrete/fem/extmods/lobatto1d_template.[ch]
 include sfepy/discrete/iga/extmods/nurbs.[ch]
 
 include sfepy/terms/extmods/*.[ch]
-include sfepy/mechanics/extmods/contres.[ch]
 
 include sfepy/solvers/matlab_eig.m
 
