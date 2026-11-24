@@ -113,7 +113,7 @@ def recursive_glob(top_dir, pattern):
 
     Parameters
     ----------
-    topdir : str
+    top_dir : str
         The top-level directory.
     pattern : str or list of str
         The pattern or list of patterns to match.

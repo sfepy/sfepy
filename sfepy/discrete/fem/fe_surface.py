@@ -164,7 +164,7 @@ class FESurface(Struct):
         local : bool
             If True, return local connectivity w.r.t. surface nodes,
             otherwise return global connectivity w.r.t. all mesh nodes.
-        trace_trace : None or str
+        trace_region : None or str
             If not None, return mirror connectivity according to `local`.
         """
         if trace_region is None:

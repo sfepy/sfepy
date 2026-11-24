@@ -184,8 +184,6 @@ class geometry:
 
         Parameters
         ----------
-        geo : geometry
-            geometry description
         filename : string
             file name
         """
