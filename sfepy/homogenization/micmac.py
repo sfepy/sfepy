@@ -1,3 +1,4 @@
+import os
 import os.path as op
 import numpy as nm
 import tables as pt
@@ -8,6 +9,7 @@ from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.discrete import Problem
 from sfepy.discrete.fem.meshio import HDF5MeshIO
+import sfepy.homogenization.multiproc as multiproc
 
 homogen_app_cache = {}
 
@@ -55,30 +57,20 @@ def coefs_to_dict(coefs, mode, n):
     return out
 
 
-def get_homog_coefs_linear(ts, coor, mode,
-                           micro_filename=None, regenerate=False,
-                           coefs_filename=None, define_args=None,
-                           output_dir=None):
-
-    nc = None if coor is None else coor.shape[0]
-    app_key = get_app_key(micro_filename, define_args)
-
-    if app_key in homogen_app_cache and not regenerate:
-        return coefs_to_dict(homogen_app_cache[app_key][0], mode, nc)
-
-    oprefix = output.prefix
-    output.prefix = 'micro:'
-
-    conf = get_micro_conf(micro_filename, define_args, output_dir)
-
+def get_coefs_linear_from_conf(conf, app_key, coefs_filename, regenerate,
+                               output_prefix='micro:'):
+    """
+    Compute or load the homogenized coefficients of a linear micro problem
+    given by `conf`.
+    """
     if coefs_filename is None:
         coefs_filename = conf.options.get('coefs_filename', 'coefs')
         coefs_filename = op.join(conf.options.get('output_dir', '.'),
                                  coefs_filename) + '.h5'
 
     if not regenerate:
-        if op.exists( coefs_filename ):
-            if not pt.is_hdf5_file( coefs_filename ):
+        if op.exists(coefs_filename):
+            if not pt.is_hdf5_file(coefs_filename):
                 regenerate = True
         else:
             regenerate = True
@@ -86,20 +78,20 @@ def get_homog_coefs_linear(ts, coor, mode,
     recovery_hook = conf.options.get('recovery_hook', None)
 
     if regenerate:
-        options = Struct( output_filename_trunk = None )
+        options = Struct(output_filename_trunk = None)
 
-        app = HomogenizationApp( conf, options, 'micro:' )
+        app = HomogenizationApp(conf, options, output_prefix)
         coefs, deps = app(ret_all=True)
         if type(coefs) is tuple:
             coefs = coefs[0]
 
-        coefs.to_file_hdf5( coefs_filename )
+        coefs.to_file_hdf5(coefs_filename)
 
         rhook = (None if recovery_hook is None else
                  conf.get_function(recovery_hook))
         homogen_app_cache[app_key] = (coefs, app.he, deps, rhook)
     else:
-        coefs = Coefficients.from_file_hdf5( coefs_filename )
+        coefs = Coefficients.from_file_hdf5(coefs_filename)
         recovery_hook = conf.options.get('recovery_hook', None)
         if recovery_hook is not None:
             corrs = get_correctors_from_file_hdf5(dump_names=coefs.save_names)
@@ -112,9 +104,109 @@ def get_homog_coefs_linear(ts, coor, mode,
         else:
             homogen_app_cache[app_key] = (coefs, None, None, None)
 
-    output.prefix = oprefix
+    return coefs
+
+
+def get_homog_coefs_linear(ts, coor, mode,
+                           micro_filename=None,
+                           regenerate=False, coefs_filename=None,
+                           define_args=None, output_dir=None):
+    nc = None if coor is None else coor.shape[0]
+    app_key = get_app_key(micro_filename, define_args)
+
+    if app_key in homogen_app_cache and not regenerate:
+        coefs = homogen_app_cache[app_key][0]
+
+    else:
+        oprefix = output.prefix
+        output.prefix = 'micro:'
+
+        conf = get_micro_conf(micro_filename, define_args, output_dir)
+        coefs = get_coefs_linear_from_conf(conf, micro_filename,
+                                           coefs_filename, regenerate)
+
+        output.prefix = oprefix
 
     return coefs_to_dict(coefs, mode, nc)
+
+
+def solve_micro_linear(args, nested_mp=False):
+    micro_filename, define_args, flag, output_dir = args
+    output_prefix = f'micro [{flag}]:'
+
+    conf = get_micro_conf(micro_filename, define_args, None)
+    if output_dir is None:
+        output_dir = conf.options.get('output_dir', '.')
+    conf.options.output_dir = op.join(output_dir, f'micro_{flag}')
+    if not op.isdir(conf.options.output_dir):
+        os.mkdir(conf.options.output_dir)
+
+    # avoid nested multiprocess pool
+    if not nested_mp:
+        conf.options.multiprocessing = False
+
+    coefs = get_coefs_linear_from_conf(conf, None, None, True, output_prefix)
+
+    return coefs
+
+
+def get_homog_coefs_linear_multiple(ts, coor, mode,
+                                    micro_filename=None,
+                                    micro_args=None, micro_ids=None,
+                                    output_dir=None, multiprocessing=True):
+    """
+    Compute the homogenized coefficients of a linear micro problem
+    for several distinct micro FE meshes, solving the micro problems
+    in separate processes. Each problem gets its own output directory
+    for the coefficient and corrector files.
+
+    Parameters
+    ----------
+    ts, coor, mode:
+        The standard material function arguments.
+    micro_filename: str or list of str
+        The micro problem description file(s).
+    micro_args: dict
+        The micro problem define arguments.
+    micro_ids: list
+        The flag for each micro problem.
+    output_dir: str
+        The base output directory.
+    multiprocessing: bool
+        If True, solve each micro problem in a separate process.
+        Disable nested multiprocessing.
+
+    Returns
+    -------
+    out: list
+        The list of homogenized coefficients.
+    """
+
+    if not isinstance(micro_filename, (list, tuple)):
+        micro_filename = [micro_filename] * len(micro_args)
+
+    tasks = []
+
+    for k, (micro_fn, def_args) in enumerate(zip(micro_filename, micro_args)):
+        flag = micro_ids[k] if micro_ids is not None else k
+        tasks.append((micro_fn, def_args, str(flag), output_dir))
+
+    if multiprocessing and multiproc.use_multiprocessing:
+        workers = multiproc.get_workers()
+        if workers is None:
+            conf_file_dirs = [op.split(fn)[0] for fn in micro_filename]
+            workers = multiproc.init_workers(conf_file_dirs)
+
+        output('solving %d micro problem(s) using %d process(es)...'
+               % (len(tasks), workers._max_workers))
+
+        coefs = list(workers.map(solve_micro_linear, tasks))
+    else:
+        coefs = [solve_micro_linear(task, True) for task in tasks]
+
+    output('... done')
+
+    return coefs
 
 
 def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
