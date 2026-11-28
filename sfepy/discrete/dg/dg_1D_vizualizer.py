@@ -480,8 +480,7 @@ def animate_1D_DG_sol(coors, t0, t1, u,
         time step size, if None and tn is not None computed as (t1- t0) / tn otherwise set to 1
         if dt and tn are both None, t0 and t1 are ignored and solution is animated as if in time 0 ... ntime_steps (Default value = None)
     exact :
-         (Default value = lambda x)
-    t: 0 :
+         (Default value = lambda x, t: 0)
 
     delay :
          (Default value = None)

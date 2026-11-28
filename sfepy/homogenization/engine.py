@@ -97,7 +97,7 @@ class HomogenizationWorker:
         ----------
         problem : problem
             The problem definition - microscopic problem.
-        opts : struct
+        options : struct
             The options of the homogenization application.
         post_process_hook : function
             The postprocessing hook.

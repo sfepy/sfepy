@@ -181,8 +181,6 @@ class HomogenizationApp(PDESolverApp):
         ret_all : bool or None
             If not None, it can be used to override the 'return_all' option.
             If True, also the dependencies are returned.
-        time_tag: str
-            The time tag used in file names.
 
         Returns
         -------
