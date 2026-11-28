@@ -64,7 +64,7 @@ class Config:
     """
 
     def __init__(self):
-        from importlib.machinery import SourceFileLoader
+        import importlib.util
 
         cwd = os.getcwd()
         config_filename = os.path.join(cwd, 'site_cfg.py')
@@ -81,8 +81,10 @@ class Config:
                 pass
 
         try:
-            self.site_cfg = (SourceFileLoader('site_cfg', config_filename)
-                             .load_module())
+            spec = importlib.util.spec_from_file_location('site_cfg',
+                                                          config_filename)
+            self.site_cfg = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(self.site_cfg)
 
         except FileNotFoundError:
             print(f'Warning: SfePy site configuration file ({config_filename})'
